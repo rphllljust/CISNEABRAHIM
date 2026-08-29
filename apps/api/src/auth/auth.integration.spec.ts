@@ -115,7 +115,7 @@ describe('Auth PostgreSQL integration', () => {
     await expect(
       authService.login({ login, password: AUTH_TEST_PASSWORD }, clientKey('disabled')),
     ).rejects.toMatchObject({
-      response: { error: { code: AUTH_ERROR_CODES.ACCOUNT_DISABLED } },
+      response: { error: { code: AUTH_ERROR_CODES.INVALID_CREDENTIALS } },
     });
   });
 

@@ -7,6 +7,7 @@ import {
 import type { FastifyRequest } from 'fastify';
 import { AUTH_ERROR_CODES } from '../errors/auth-error-codes';
 import { AuthHttpException } from '../errors/auth-http.exception';
+import { SessionValidationService } from '../services/session-validation.service';
 import { TokenService, type AccessTokenClaims } from '../services/token.service';
 
 export type AuthenticatedRequest = FastifyRequest & {
@@ -15,9 +16,12 @@ export type AuthenticatedRequest = FastifyRequest & {
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  constructor(private readonly tokenService: TokenService) {}
+  constructor(
+    private readonly tokenService: TokenService,
+    private readonly sessionValidation: SessionValidationService,
+  ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const header = request.headers.authorization;
 
@@ -38,9 +42,9 @@ export class JwtAuthGuard implements CanActivate {
       );
     }
 
+    let claims: AccessTokenClaims;
     try {
-      request.auth = this.tokenService.verifyAccessToken(token);
-      return true;
+      claims = this.tokenService.verifyAccessToken(token);
     } catch {
       throw new AuthHttpException(
         HttpStatus.UNAUTHORIZED,
@@ -48,5 +52,9 @@ export class JwtAuthGuard implements CanActivate {
         'Invalid access token.',
       );
     }
+
+    await this.sessionValidation.assertActiveSession(claims.sub, claims.sid);
+    request.auth = claims;
+    return true;
   }
 }

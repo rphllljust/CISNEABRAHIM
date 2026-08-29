@@ -1351,3 +1351,66 @@ NOTES:
 - [x] Prompt 21 não executado
 
 ---
+
+```text
+PROMPT: 21
+TITLE: Hardening adversarial da autenticação
+STARTED_AT: 2026-08-29T01:00:00-04:00
+FINISHED_AT: 2026-08-29T01:10:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED:
+  apps/api/src/auth/dto/body-validator.ts
+  apps/api/src/auth/services/session-validation.service.ts
+  apps/api/src/auth/services/token.service.adversarial.spec.ts
+  apps/api/src/auth/auth.adversarial.integration.spec.ts
+  apps/api/src/infrastructure/http/security-headers.interceptor.ts
+  docs/implementation/21-authentication-hardening.md
+FILES_CHANGED:
+  apps/api/src/auth/services/auth.service.ts
+  apps/api/src/auth/services/token.service.ts
+  apps/api/src/auth/guards/jwt-auth.guard.ts
+  apps/api/src/auth/repositories/identity-auth.repository.ts
+  apps/api/src/auth/dto/login.dto.ts
+  apps/api/src/auth/dto/refresh.dto.ts
+  apps/api/src/auth/auth.module.ts
+  apps/api/src/auth/auth.integration.spec.ts
+  apps/api/src/auth/auth.e2e.spec.ts
+  apps/api/src/auth/dto/auth.dto.spec.ts
+  apps/api/src/auth/config/auth.config.ts
+  apps/api/src/auth/test/auth-test-env.ts
+  apps/api/src/main.ts
+  apps/api/vitest.integration.config.ts
+  .env.example
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS_WITH_RESTRICTIONS
+VULNERABILITIES_FIXED: 6
+CRITICAL_KNOWN: 0
+ADVERSARIAL_TESTS: PASS
+REGRESSION: NONE
+DEPENDENCY_AUDIT: 0 known (prod)
+DOC_FILES_CREATED: 1
+LINT: PASS
+TYPECHECK: PASS
+TEST: PASS
+INTEGRATION: PASS
+E2E: PASS
+BUILD: PASS
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  JWT guard valida sessão+identidade no PG; refresh com FOR UPDATE.
+  Login anti-enumeração para conta desativada.
+  Riscos residuais: rate limit in-memory, sem limit refresh.
+  Prompt 22 não executado.
+```
+
+## Quality gate Prompt 21 (evidência)
+
+- [x] Revisão adversarial documentada (hash, rotação, revogação, enumeração, etc.)
+- [x] Falhas reais corrigidas sem remover asserts
+- [x] Testes adversariais unitários, integração e E2E — PASS
+- [x] 0 vulnerabilidade crítica conhecida; `pnpm audit --prod` limpo
+- [x] Sem regressão nos testes Prompt 20
+- [x] docs/implementation/21-authentication-hardening.md (único doc novo)
+- [x] Prompt 22 não executado
+
+---

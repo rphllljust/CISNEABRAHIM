@@ -7,9 +7,11 @@ import { AUTH_ERROR_CODES } from '../errors/auth-error-codes';
 import { AuthHttpException } from '../errors/auth-http.exception';
 import type { LoginInput } from '../dto/login.dto';
 import type { RefreshInput } from '../dto/refresh.dto';
+import type { RefreshTokenLockedRow } from '../repositories/identity-auth.repository';
 import { IdentityAuthRepository } from '../repositories/identity-auth.repository';
 import { DatabaseService } from '../../infrastructure/database/database.service';
 import { LoginRateLimiterService } from './login-rate-limiter.service';
+import { SessionValidationService } from './session-validation.service';
 import { TokenService } from './token.service';
 import {
   toAuthTokenResponse,
@@ -26,6 +28,7 @@ export class AuthService {
     private readonly repository: IdentityAuthRepository,
     private readonly tokenService: TokenService,
     private readonly loginRateLimiter: LoginRateLimiterService,
+    private readonly sessionValidation: SessionValidationService,
   ) {}
 
   async login(input: LoginInput, clientKey: string): Promise<AuthTokenResponseV1> {
@@ -50,9 +53,9 @@ export class AuthService {
 
     if (credential.identity_status !== 'active') {
       throw new AuthHttpException(
-        HttpStatus.FORBIDDEN,
-        AUTH_ERROR_CODES.ACCOUNT_DISABLED,
-        'Account is not active.',
+        HttpStatus.UNAUTHORIZED,
+        AUTH_ERROR_CODES.INVALID_CREDENTIALS,
+        'Invalid credentials.',
       );
     }
 
@@ -70,75 +73,52 @@ export class AuthService {
 
   async refresh(input: RefreshInput): Promise<AuthTokenResponseV1> {
     const tokenHash = hashOpaqueToken(input.refreshToken);
-    const stored = await this.repository.findRefreshTokenByHash(tokenHash);
+    const pool = this.getPool();
+    const client = await pool.connect();
+    let committed = false;
 
-    if (!stored) {
-      throw new AuthHttpException(
-        HttpStatus.UNAUTHORIZED,
-        AUTH_ERROR_CODES.UNAUTHORIZED,
-        'Invalid refresh token.',
-      );
-    }
+    try {
+      await client.query('BEGIN');
+      const stored = await this.repository.findRefreshTokenByHashForUpdate(client, tokenHash);
 
-    if (stored.revoked_at && stored.replaced_by_token_id) {
-      const pool = this.getPool();
-      const client = await pool.connect();
-      try {
-        await client.query('BEGIN');
+      if (!stored) {
+        throw new AuthHttpException(
+          HttpStatus.UNAUTHORIZED,
+          AUTH_ERROR_CODES.UNAUTHORIZED,
+          'Invalid refresh token.',
+        );
+      }
+
+      if (stored.revoked_at && stored.replaced_by_token_id) {
         await this.repository.revokeFamily(client, stored.family_id);
         await this.repository.revokeSession(client, stored.session_id);
         await client.query('COMMIT');
-      } catch (error) {
-        await client.query('ROLLBACK');
-        throw error;
-      } finally {
-        client.release();
+        committed = true;
+        throw new AuthHttpException(
+          HttpStatus.UNAUTHORIZED,
+          AUTH_ERROR_CODES.REFRESH_REUSED,
+          'Refresh token reuse detected.',
+        );
       }
 
-      throw new AuthHttpException(
-        HttpStatus.UNAUTHORIZED,
-        AUTH_ERROR_CODES.REFRESH_REUSED,
-        'Refresh token reuse detected.',
-      );
-    }
+      this.assertRefreshTokenUsable(stored);
 
-    if (stored.revoked_at) {
-      throw new AuthHttpException(
-        HttpStatus.UNAUTHORIZED,
-        AUTH_ERROR_CODES.SESSION_REVOKED,
-        'Session has been revoked.',
-      );
-    }
+      const session = await this.repository.getSessionByIdForUpdate(client, stored.session_id);
+      if (!session || session.status !== 'active') {
+        throw new AuthHttpException(
+          HttpStatus.UNAUTHORIZED,
+          AUTH_ERROR_CODES.SESSION_REVOKED,
+          'Session has been revoked.',
+        );
+      }
 
-    if (new Date(stored.expires_at).getTime() <= Date.now()) {
-      throw new AuthHttpException(
-        HttpStatus.UNAUTHORIZED,
-        AUTH_ERROR_CODES.SESSION_EXPIRED,
-        'Refresh token expired.',
-      );
-    }
-
-    const session = await this.repository.getSessionById(stored.session_id);
-    if (!session || session.status !== 'active') {
-      throw new AuthHttpException(
-        HttpStatus.UNAUTHORIZED,
-        AUTH_ERROR_CODES.SESSION_REVOKED,
-        'Session has been revoked.',
-      );
-    }
-
-    if (new Date(session.expires_at).getTime() <= Date.now()) {
-      throw new AuthHttpException(
-        HttpStatus.UNAUTHORIZED,
-        AUTH_ERROR_CODES.SESSION_EXPIRED,
-        'Session expired.',
-      );
-    }
-
-    const pool = this.getPool();
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
+      if (new Date(session.expires_at).getTime() <= Date.now()) {
+        throw new AuthHttpException(
+          HttpStatus.UNAUTHORIZED,
+          AUTH_ERROR_CODES.SESSION_EXPIRED,
+          'Session expired.',
+        );
+      }
 
       const newRefreshPlain = generateOpaqueToken();
       const newRefreshHash = hashOpaqueToken(newRefreshPlain);
@@ -153,8 +133,21 @@ export class AuthService {
         refreshExpiresAt,
       );
 
-      await this.repository.markRefreshTokenRotated(client, stored.id, newTokenId);
+      const rotated = await this.repository.markRefreshTokenRotated(
+        client,
+        stored.id,
+        newTokenId,
+      );
+      if (!rotated) {
+        throw new AuthHttpException(
+          HttpStatus.UNAUTHORIZED,
+          AUTH_ERROR_CODES.SESSION_REVOKED,
+          'Session has been revoked.',
+        );
+      }
+
       await client.query('COMMIT');
+      committed = true;
 
       const access = this.tokenService.issueAccessToken(stored.identity_id, stored.session_id);
 
@@ -166,7 +159,9 @@ export class AuthService {
         sessionExpiresAt: session.expires_at,
       });
     } catch (error) {
-      await client.query('ROLLBACK');
+      if (!committed) {
+        await client.query('ROLLBACK');
+      }
       throw error;
     } finally {
       client.release();
@@ -178,8 +173,8 @@ export class AuthService {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
-      const session = await this.repository.getSessionById(sessionId);
-      if (session) {
+      const session = await this.repository.getSessionByIdForUpdate(client, sessionId);
+      if (session && session.status === 'active') {
         await this.repository.revokeSession(client, sessionId);
         const familyResult = await client.query<{ id: string }>(
           `SELECT id FROM identity.refresh_token_families WHERE session_id = $1`,
@@ -207,20 +202,13 @@ export class AuthService {
   }
 
   async currentSession(identityId: string, sessionId: string): Promise<CurrentSessionResponseV1> {
+    await this.sessionValidation.assertActiveSession(identityId, sessionId);
     const session = await this.repository.getSessionById(sessionId);
-    if (!session || session.identity_id !== identityId || session.status !== 'active') {
+    if (!session) {
       throw new AuthHttpException(
         HttpStatus.UNAUTHORIZED,
         AUTH_ERROR_CODES.UNAUTHORIZED,
         'Session is not valid.',
-      );
-    }
-
-    if (new Date(session.expires_at).getTime() <= Date.now()) {
-      throw new AuthHttpException(
-        HttpStatus.UNAUTHORIZED,
-        AUTH_ERROR_CODES.SESSION_EXPIRED,
-        'Session expired.',
       );
     }
 
@@ -229,6 +217,40 @@ export class AuthService {
       sessionId: session.id,
       sessionExpiresAt: session.expires_at,
     });
+  }
+
+  private assertRefreshTokenUsable(stored: RefreshTokenLockedRow): void {
+    if (stored.revoked_at) {
+      throw new AuthHttpException(
+        HttpStatus.UNAUTHORIZED,
+        AUTH_ERROR_CODES.SESSION_REVOKED,
+        'Session has been revoked.',
+      );
+    }
+
+    if (stored.family_revoked_at) {
+      throw new AuthHttpException(
+        HttpStatus.UNAUTHORIZED,
+        AUTH_ERROR_CODES.SESSION_REVOKED,
+        'Session has been revoked.',
+      );
+    }
+
+    if (stored.identity_status !== 'active') {
+      throw new AuthHttpException(
+        HttpStatus.FORBIDDEN,
+        AUTH_ERROR_CODES.ACCOUNT_DISABLED,
+        'Account is not active.',
+      );
+    }
+
+    if (new Date(stored.expires_at).getTime() <= Date.now()) {
+      throw new AuthHttpException(
+        HttpStatus.UNAUTHORIZED,
+        AUTH_ERROR_CODES.SESSION_EXPIRED,
+        'Refresh token expired.',
+      );
+    }
   }
 
   private async issueSessionTokens(identityId: string): Promise<AuthTokenResponseV1> {

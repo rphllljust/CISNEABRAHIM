@@ -6,6 +6,7 @@ import { AuthController } from './auth.controller';
 import { IdentityAuthRepository } from './repositories/identity-auth.repository';
 import { AuthService } from './services/auth.service';
 import { LoginRateLimiterService } from './services/login-rate-limiter.service';
+import { SessionValidationService } from './services/session-validation.service';
 import { TokenService } from './services/token.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
@@ -20,6 +21,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
     TokenService,
     LoginRateLimiterService,
     IdentityAuthRepository,
+    SessionValidationService,
     AuthService,
     JwtAuthGuard,
   ],

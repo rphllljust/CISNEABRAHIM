@@ -1,6 +1,7 @@
 import { AUTH_ERROR_CODES } from '../errors/auth-error-codes';
 import { AuthHttpException } from '../errors/auth-http.exception';
 import { normalizeLoginIdentifier } from '../crypto/token-crypto';
+import { AUTH_LIMITS, parseLoginBody } from './body-validator';
 
 export type LoginInput = {
   login: string;
@@ -8,11 +9,7 @@ export type LoginInput = {
 };
 
 export function parseLoginInput(body: unknown): LoginInput {
-  if (!body || typeof body !== 'object') {
-    throw new AuthHttpException(400, AUTH_ERROR_CODES.VALIDATION_FAILED, 'Invalid request body.');
-  }
-
-  const record = body as Record<string, unknown>;
+  const record = parseLoginBody(body);
   const login = record['login'];
   const password = record['password'];
 
@@ -20,7 +17,15 @@ export function parseLoginInput(body: unknown): LoginInput {
     throw new AuthHttpException(400, AUTH_ERROR_CODES.VALIDATION_FAILED, 'Invalid login.');
   }
 
+  if (login.length > AUTH_LIMITS.maxLoginLength) {
+    throw new AuthHttpException(400, AUTH_ERROR_CODES.VALIDATION_FAILED, 'Invalid login.');
+  }
+
   if (typeof password !== 'string' || password.length < 1) {
+    throw new AuthHttpException(400, AUTH_ERROR_CODES.VALIDATION_FAILED, 'Invalid password.');
+  }
+
+  if (password.length > AUTH_LIMITS.maxPasswordLength) {
     throw new AuthHttpException(400, AUTH_ERROR_CODES.VALIDATION_FAILED, 'Invalid password.');
   }
 

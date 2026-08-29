@@ -4,6 +4,7 @@ export type AuthConfig = {
   jwtAudience: string;
   accessTokenTtlSeconds: number;
   refreshTokenTtlSeconds: number;
+  jwtClockSkewSeconds: number;
   corsOrigin: string;
   loginRateLimitPerMinute: number;
 };
@@ -29,6 +30,7 @@ export function loadAuthConfig(): AuthConfig {
     jwtAudience: process.env['JWT_AUDIENCE'] ?? 'cisne-clients',
     accessTokenTtlSeconds: readNumber('JWT_ACCESS_TTL_SECONDS', 900),
     refreshTokenTtlSeconds: readNumber('JWT_REFRESH_TTL_SECONDS', 43_200),
+    jwtClockSkewSeconds: readNumber('JWT_CLOCK_SKEW_SECONDS', 30),
     corsOrigin: process.env['CORS_ORIGIN'] ?? 'http://localhost:5173',
     loginRateLimitPerMinute: readNumber('AUTH_LOGIN_RATE_LIMIT_PER_MINUTE', 5),
   };

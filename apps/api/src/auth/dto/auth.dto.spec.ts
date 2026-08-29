@@ -48,4 +48,14 @@ describe('parseRefreshInput', () => {
     expect(() => parseRefreshInput({ refreshToken: 'short' })).toThrow(AuthHttpException);
     expect(() => parseRefreshInput({})).toThrow(AuthHttpException);
   });
+
+  it('rejects unknown fields and oversized payloads', () => {
+    expect(() =>
+      parseLoginInput({ login: 'user@example.com', password: 'secret', redirect: 'http://evil' }),
+    ).toThrow(AuthHttpException);
+    expect(() => parseLoginInput({ login: 'a'.repeat(400), password: 'secret' })).toThrow(
+      AuthHttpException,
+    );
+    expect(() => parseRefreshInput({ refreshToken: 'a'.repeat(600) })).toThrow(AuthHttpException);
+  });
 });

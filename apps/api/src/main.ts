@@ -7,6 +7,7 @@ import { AppModule } from './app.module';
 import { loadAuthConfig } from './auth/config/auth.config';
 import { AuthExceptionFilter } from './infrastructure/http/auth-exception.filter';
 import { CorrelationIdInterceptor } from './infrastructure/http/correlation-id.interceptor';
+import { SecurityHeadersInterceptor } from './infrastructure/http/security-headers.interceptor';
 
 config({ path: resolve(__dirname, '../../../.env') });
 
@@ -15,7 +16,10 @@ async function bootstrap(): Promise<void> {
   const port = Number(process.env['PORT'] ?? 3000);
   const authConfig = loadAuthConfig();
 
-  const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter());
+  const app = await NestFactory.create<NestFastifyApplication>(
+    AppModule,
+    new FastifyAdapter({ bodyLimit: 8_192 }),
+  );
 
   app.setGlobalPrefix('api/v1');
   app.enableCors({
@@ -25,7 +29,7 @@ async function bootstrap(): Promise<void> {
     allowedHeaders: ['Authorization', 'Content-Type', 'X-Correlation-Id'],
   });
   app.useGlobalFilters(new AuthExceptionFilter());
-  app.useGlobalInterceptors(new CorrelationIdInterceptor());
+  app.useGlobalInterceptors(new CorrelationIdInterceptor(), new SecurityHeadersInterceptor());
 
   await app.listen({ port, host });
 }

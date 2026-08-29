@@ -27,6 +27,11 @@ export type RefreshTokenRow = {
   replaced_by_token_id: string | null;
 };
 
+export type RefreshTokenLockedRow = RefreshTokenRow & {
+  family_revoked_at: string | null;
+  identity_status: 'active' | 'disabled' | 'locked';
+};
+
 @Injectable()
 export class IdentityAuthRepository {
   constructor(private readonly databaseService: DatabaseService) {}
@@ -127,6 +132,55 @@ export class IdentityAuthRepository {
     return result.rows[0] ?? null;
   }
 
+  async getIdentityStatus(
+    identityId: string,
+  ): Promise<'active' | 'disabled' | 'locked' | null> {
+    const result = await this.pool().query<{ status: 'active' | 'disabled' | 'locked' }>(
+      `SELECT status FROM identity.identities WHERE id = $1`,
+      [identityId],
+    );
+    return result.rows[0]?.status ?? null;
+  }
+
+  async findRefreshTokenByHashForUpdate(
+    client: PoolClient,
+    tokenHash: string,
+  ): Promise<RefreshTokenLockedRow | null> {
+    const result = await client.query<RefreshTokenLockedRow>(
+      `SELECT rt.id,
+              rt.family_id,
+              rtf.identity_id,
+              rtf.session_id,
+              rt.token_hash,
+              rt.expires_at,
+              rt.revoked_at,
+              rt.replaced_by_token_id,
+              rtf.revoked_at AS family_revoked_at,
+              i.status AS identity_status
+       FROM identity.refresh_tokens rt
+       INNER JOIN identity.refresh_token_families rtf ON rtf.id = rt.family_id
+       INNER JOIN identity.identities i ON i.id = rtf.identity_id
+       WHERE rt.token_hash = $1
+       FOR UPDATE OF rt`,
+      [tokenHash],
+    );
+    return result.rows[0] ?? null;
+  }
+
+  async getSessionByIdForUpdate(
+    client: PoolClient,
+    sessionId: string,
+  ): Promise<SessionRow | null> {
+    const result = await client.query<SessionRow>(
+      `SELECT id, identity_id, status, expires_at, revoked_at
+       FROM identity.sessions
+       WHERE id = $1
+       FOR UPDATE`,
+      [sessionId],
+    );
+    return result.rows[0] ?? null;
+  }
+
   async getSessionById(sessionId: string): Promise<SessionRow | null> {
     const result = await this.pool().query<SessionRow>(
       `SELECT id, identity_id, status, expires_at, revoked_at
@@ -166,13 +220,15 @@ export class IdentityAuthRepository {
     client: Pool | PoolClient,
     tokenId: string,
     replacedByTokenId: string,
-  ): Promise<void> {
-    await client.query(
+  ): Promise<boolean> {
+    const result = await client.query<{ id: string }>(
       `UPDATE identity.refresh_tokens
        SET revoked_at = NOW(), replaced_by_token_id = $2
-       WHERE id = $1`,
+       WHERE id = $1 AND revoked_at IS NULL
+       RETURNING id`,
       [tokenId, replacedByTokenId],
     );
+    return (result.rowCount ?? 0) > 0;
   }
 
   async revokeAllSessionsForIdentity(identityId: string): Promise<void> {

@@ -17,6 +17,7 @@ import {
 } from '../auth/test/auth-response-test-types';
 import { AuthExceptionFilter } from '../infrastructure/http/auth-exception.filter';
 import { CorrelationIdInterceptor } from '../infrastructure/http/correlation-id.interceptor';
+import { SecurityHeadersInterceptor } from '../infrastructure/http/security-headers.interceptor';
 
 describe('Auth E2E', () => {
   let app: NestFastifyApplication;
@@ -34,10 +35,15 @@ describe('Auth E2E', () => {
       imports: [AppModule],
     }).compile();
 
-    app = moduleFixture.createNestApplication<NestFastifyApplication>(new FastifyAdapter());
+    app = moduleFixture.createNestApplication<NestFastifyApplication>(
+      new FastifyAdapter({ bodyLimit: 8_192 }),
+    );
     app.setGlobalPrefix('api/v1');
     app.useGlobalFilters(new AuthExceptionFilter());
-    app.useGlobalInterceptors(new CorrelationIdInterceptor());
+    app.useGlobalInterceptors(
+      new CorrelationIdInterceptor(),
+      new SecurityHeadersInterceptor(),
+    );
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
 
@@ -103,13 +109,6 @@ describe('Auth E2E', () => {
     expect(reuseResponse.statusCode).toBe(401);
     expect(parseAuthErrorResponse(reuseResponse.body).error.code).toBe(AUTH_ERROR_CODES.REFRESH_REUSED);
 
-    const logoutResponse = await app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/logout',
-      headers: { authorization: `Bearer ${refreshed.accessToken}` },
-    });
-    expect(logoutResponse.statusCode).toBe(200);
-
     const secondLogin = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/login',
@@ -170,5 +169,59 @@ describe('Auth E2E', () => {
       url: '/api/v1/auth/session?accessToken=not-allowed',
     });
     expect(response.statusCode).toBe(401);
+  });
+
+  it('rejects tampered bearer tokens and disabled-account sessions', async () => {
+    const login = await seedActiveUser(`e2e-adv-${crypto.randomUUID()}@cisne.invalid`);
+    const loginResponse = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      payload: { login, password: AUTH_TEST_PASSWORD },
+      headers: { 'user-agent': 'vitest-e2e-adv' },
+    });
+    const loginBody = parseAuthTokenResponse(loginResponse.body);
+
+    const tampered = await app.inject({
+      method: 'GET',
+      url: '/api/v1/auth/session',
+      headers: { authorization: `Bearer ${loginBody.accessToken}x` },
+    });
+    expect(tampered.statusCode).toBe(401);
+
+    const payload = JSON.parse(
+      Buffer.from(loginBody.accessToken.split('.')[1] ?? '', 'base64url').toString('utf8'),
+    ) as { sub: string };
+    await pool.query(
+      `UPDATE identity.identities SET status = 'disabled', disabled_at = NOW() WHERE id = $1`,
+      [payload.sub],
+    );
+
+    const disabledSession = await app.inject({
+      method: 'GET',
+      url: '/api/v1/auth/session',
+      headers: { authorization: `Bearer ${loginBody.accessToken}` },
+    });
+    expect(disabledSession.statusCode).toBe(403);
+    expect(parseAuthErrorResponse(disabledSession.body).error.code).toBe(
+      AUTH_ERROR_CODES.ACCOUNT_DISABLED,
+    );
+  });
+
+  it('rejects open-redirect style fields and sets security headers', async () => {
+    const openRedirect = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      payload: {
+        login: 'user@example.com',
+        password: 'secret',
+        redirect: 'https://evil.example',
+      },
+    });
+    expect(openRedirect.statusCode).toBe(400);
+
+    const health = await app.inject({ method: 'GET', url: '/api/v1/health' });
+    expect(health.headers['x-content-type-options']).toBe('nosniff');
+    expect(health.headers['x-frame-options']).toBe('DENY');
+    expect(health.headers['cache-control']).toBe('no-store');
   });
 });

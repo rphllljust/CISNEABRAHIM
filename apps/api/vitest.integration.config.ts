@@ -13,5 +13,7 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['src/**/*.integration.spec.ts'],
+    fileParallelism: false,
+    sequence: { concurrent: false },
   },
 });

@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import { AUTH_CONFIG } from '../auth.constants';
 import type { AuthConfig } from '../config/auth.config';
+import { AUTH_LIMITS } from '../dto/body-validator';
 
 export type AccessTokenClaims = {
   sub: string;
@@ -10,15 +11,18 @@ export type AccessTokenClaims = {
 };
 
 type JwtHeader = {
-  alg: 'HS256';
-  typ: 'JWT';
+  alg: string;
+  typ?: string;
 };
 
-type JwtPayload = AccessTokenClaims & {
-  iss: string;
-  aud: string;
-  iat: number;
-  exp: number;
+type JwtPayload = {
+  sub?: unknown;
+  sid?: unknown;
+  jti?: unknown;
+  iss?: unknown;
+  aud?: unknown;
+  iat?: unknown;
+  exp?: unknown;
 };
 
 function base64UrlEncode(value: string): string {
@@ -43,6 +47,13 @@ function verifyHs256(signingInput: string, signature: string, secret: string): b
   return timingSafeEqual(left, right);
 }
 
+function requireStringClaim(value: unknown, name: string): string {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw new Error(`missing claim ${name}`);
+  }
+  return value;
+}
+
 @Injectable()
 export class TokenService {
   constructor(@Inject(AUTH_CONFIG) private readonly config: AuthConfig) {}
@@ -50,7 +61,7 @@ export class TokenService {
   issueAccessToken(identityId: string, sessionId: string): { token: string; expiresIn: number } {
     const now = Math.floor(Date.now() / 1000);
     const expiresIn = this.config.accessTokenTtlSeconds;
-    const payload: JwtPayload = {
+    const payload = {
       sub: identityId,
       sid: sessionId,
       jti: randomUUID(),
@@ -60,7 +71,7 @@ export class TokenService {
       exp: now + expiresIn,
     };
 
-    const header: JwtHeader = { alg: 'HS256', typ: 'JWT' };
+    const header = { alg: 'HS256', typ: 'JWT' };
     const encodedHeader = base64UrlEncode(JSON.stringify(header));
     const encodedPayload = base64UrlEncode(JSON.stringify(payload));
     const signingInput = `${encodedHeader}.${encodedPayload}`;
@@ -73,6 +84,10 @@ export class TokenService {
   }
 
   verifyAccessToken(token: string): AccessTokenClaims {
+    if (token.length > AUTH_LIMITS.maxJwtLength) {
+      throw new Error('token too large');
+    }
+
     const parts = token.split('.');
     if (parts.length !== 3) {
       throw new Error('invalid token format');
@@ -83,6 +98,17 @@ export class TokenService {
       throw new Error('invalid token format');
     }
 
+    let header: JwtHeader;
+    try {
+      header = JSON.parse(base64UrlDecode(encodedHeader)) as JwtHeader;
+    } catch {
+      throw new Error('invalid token header');
+    }
+
+    if (header.alg !== 'HS256') {
+      throw new Error('invalid algorithm');
+    }
+
     const signingInput = `${encodedHeader}.${encodedPayload}`;
     const valid = verifyHs256(signingInput, signature, this.config.jwtSecret);
 
@@ -90,21 +116,40 @@ export class TokenService {
       throw new Error('invalid signature');
     }
 
-    const payload = JSON.parse(base64UrlDecode(encodedPayload)) as JwtPayload;
-    const now = Math.floor(Date.now() / 1000);
+    let payload: JwtPayload;
+    try {
+      payload = JSON.parse(base64UrlDecode(encodedPayload)) as JwtPayload;
+    } catch {
+      throw new Error('invalid token payload');
+    }
 
-    if (payload.iss !== this.config.jwtIssuer || payload.aud !== this.config.jwtAudience) {
+    const now = Math.floor(Date.now() / 1000);
+    const skew = this.config.jwtClockSkewSeconds;
+
+    const iss = payload.iss;
+    const aud = payload.aud;
+    if (iss !== this.config.jwtIssuer || aud !== this.config.jwtAudience) {
       throw new Error('invalid claims');
     }
 
-    if (payload.exp <= now) {
+    const iat = payload.iat;
+    const exp = payload.exp;
+    if (typeof iat !== 'number' || typeof exp !== 'number') {
+      throw new Error('invalid time claims');
+    }
+
+    if (iat > now + skew) {
+      throw new Error('token not yet valid');
+    }
+
+    if (exp <= now - skew) {
       throw new Error('token expired');
     }
 
     return {
-      sub: payload.sub,
-      sid: payload.sid,
-      jti: payload.jti,
+      sub: requireStringClaim(payload.sub, 'sub'),
+      sid: requireStringClaim(payload.sid, 'sid'),
+      jti: requireStringClaim(payload.jti, 'jti'),
     };
   }
 }

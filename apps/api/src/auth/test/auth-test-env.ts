@@ -10,6 +10,7 @@ export function applyAuthTestEnv(databaseUrl: string): void {
   process.env['JWT_ACCESS_TTL_SECONDS'] = '900';
   process.env['JWT_REFRESH_TTL_SECONDS'] = '3600';
   process.env['AUTH_LOGIN_RATE_LIMIT_PER_MINUTE'] = '5';
+  process.env['JWT_CLOCK_SKEW_SECONDS'] = '30';
   process.env['CORS_ORIGIN'] = 'http://localhost:5173';
 }
 
