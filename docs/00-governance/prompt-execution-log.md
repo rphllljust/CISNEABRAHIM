@@ -593,6 +593,47 @@ NOTES:
 - [x] 0 termos CONFIRMED
 - [x] 0 bounded contexts / código / scripts
 - [x] rastreabilidade atualizada
-- [x] Prompt 05 não executado
+- [x] Prompt 05 não executado (no encerramento Prompt 04 revisado)
+
+---
+
+```text
+PROMPT: 05
+TITLE: Domínios, subdomínios e bounded contexts candidatos
+STARTED_AT: 2026-08-29T00:10:00-04:00
+FINISHED_AT: 2026-08-29T00:45:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED:
+  docs/06-domain-boundaries/ (23 artefatos — ver README.md)
+FILES_CHANGED:
+  docs/01-foundation/requirements-traceability.md
+  docs/00-governance/prompt-execution-log.md
+  docs/README.md
+QUALITY_GATE: PASS_WITH_RESTRICTIONS
+SUBDOMAIN_COUNT: 12
+BC_CAND_COUNT: 18
+DBND_COUNT: 12
+MICROSERVICES: 0
+CODE_CREATED: NO
+MODULAR_MONOLITH: CANDIDATE_NOT_DECIDED
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  PROBLEM_SPACE vs SOLUTION_SPACE separados.
+  27 CAP mapeadas. 8 fluxos transversais. 0 SHARED_KERNEL aprovado.
+  SoT pagamento/PO/ERP pendente. Prompt 06 não executado.
+```
+
+## Quality gate Prompt 05 (evidência)
+
+- [x] pasta `06-domain-boundaries/` com 23 artefatos não vazios
+- [x] 12 SUBD com classificação candidata
+- [x] 18 BC-CAND com ownership documentado
+- [x] problema ≠ solução documentado
+- [x] sem divisão por CRUD/tela
+- [x] fluxos transversais WF-001..008
+- [x] modular monolith avaliado sem decisão final
+- [x] 0 microserviços, código, aggregates, máquinas de estado
+- [x] rastreabilidade atualizada
+- [x] Prompt 06 não executado
 
 ---
