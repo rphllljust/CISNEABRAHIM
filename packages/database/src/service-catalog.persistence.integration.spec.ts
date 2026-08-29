@@ -11,6 +11,7 @@ import {
 } from './test-builders/catalog-builders';
 
 const CATALOG_TABLES = [
+  'physical_resource_types',
   'service_allowed_units',
   'service_categories',
   'service_definition_versions',
@@ -265,8 +266,8 @@ describe('Service catalog persistence migration', () => {
 
     await pool.query(
       `INSERT INTO cat.service_resource_requirements (
-         id, service_definition_version_id, resource_kind, requirement_level, min_quantity, sort_order
-       ) VALUES ($1, $2, 'VEHICLE'::cat.resource_kind, 'REQUIRED'::cat.requirement_level, 1, 0)`,
+         id, service_definition_version_id, physical_resource_type_code, requirement_level, min_quantity, sort_order
+       ) VALUES ($1, $2, 'WATER_TRUCK', 'REQUIRED'::cat.requirement_level, 1, 0)`,
       [randomUUID(), v1.versionId],
     );
 
@@ -315,6 +316,28 @@ describe('Service catalog persistence migration', () => {
         `INSERT INTO cat.service_allowed_units (
            id, service_definition_version_id, unit_code, is_default, sort_order
          ) VALUES ($1, $2, 'UNKNOWN_UNIT', true, 0)`,
+        [randomUUID(), v1.versionId],
+      ),
+    ).rejects.toMatchObject({ code: '23503' });
+  });
+
+  it('rejects service_resource_requirements with unknown physical_resource_type_code', async () => {
+    await truncateCatalogTables(pool);
+    const built = await insertCatalogDefinition(pool);
+    const v1 = await insertCatalogVersion(pool, {
+      definitionId: built.definitionId,
+      categoryId: built.categoryId,
+      actorIdentityId: built.actorIdentityId,
+      version: 1,
+      status: 'DRAFT',
+      publish: false,
+    });
+
+    await expect(
+      pool.query(
+        `INSERT INTO cat.service_resource_requirements (
+           id, service_definition_version_id, physical_resource_type_code, requirement_level, min_quantity, sort_order
+         ) VALUES ($1, $2, 'UNKNOWN_TYPE', 'REQUIRED'::cat.requirement_level, 1, 0)`,
         [randomUUID(), v1.versionId],
       ),
     ).rejects.toMatchObject({ code: '23503' });

@@ -2385,3 +2385,34 @@ NOTES:
 - [x] Prompt 37 não executado
 
 ---
+
+## Prompt 37 — Catálogo de tipos de recursos físicos
+
+| Campo | Valor |
+| ----- | ----- |
+| ID | 37 |
+| Título | Catálogo de tipos de recursos físicos |
+| Status | PASS |
+| Commit | feat(resources): implement physical resource type catalog |
+| Executado em | 2026-08-29 |
+
+```
+Resumo:
+  cat.physical_resource_types com classificação (VEHICLE/MACHINE/EQUIPMENT/CONSUMABLE/MATERIAL),
+  seed baseline, API resources/physical-resource-types, requirements em ServiceDefinition
+  (REQUIRED/OPTIONAL/CONDITIONAL + minQuantity), histórico imutável em versões publicadas.
+  Prompt 38 não executado.
+```
+
+## Quality gate Prompt 37 (evidência)
+
+- [x] Tabela `cat.physical_resource_types` com code único, classification, status, version
+- [x] Seed idempotente dos 17 tipos físicos iniciais (sem pessoas/mão de obra)
+- [x] FK `physical_resource_type_code` em `service_resource_requirements`
+- [x] Níveis REQUIRED, OPTIONAL, CONDITIONAL com minQuantity
+- [x] API `/api/v1/resources/physical-resource-types` com authz, audit e optimistic locking
+- [x] Service catalog aceita `resourceRequirements`; histórico preservado após inativação de tipo
+- [x] lint, typecheck, test, test:integration, test:e2e, gate:database — PASS
+- [x] Prompt 38 não executado
+
+---

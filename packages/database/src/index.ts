@@ -14,3 +14,7 @@ export {
   BASELINE_UNITS_OF_MEASURE,
   ensureUnitsOfMeasureBaseline,
 } from './catalog/units-of-measure-baseline';
+export {
+  BASELINE_PHYSICAL_RESOURCE_TYPES,
+  ensurePhysicalResourceTypesBaseline,
+} from './catalog/physical-resource-types-baseline';

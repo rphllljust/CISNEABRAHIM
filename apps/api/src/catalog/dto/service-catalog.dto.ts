@@ -6,9 +6,11 @@ import {
   assertArchetype,
   assertMeasurementMode,
   assertNonEmptyName,
+  assertResourceRequirements,
   assertServiceCode,
   assertUuid,
   type AllowedUnitInput,
+  type ResourceRequirementInput,
 } from '../domain/service-catalog.validation';
 import { LINEAGE_STATUSES, type LineageStatus } from '../domain/service-catalog-status';
 
@@ -89,6 +91,50 @@ function parseAllowedUnits(body: Record<string, unknown>): AllowedUnitInput[] {
   });
 }
 
+function parseResourceRequirements(
+  body: Record<string, unknown>,
+  required = false,
+): ResourceRequirementInput[] {
+  const raw = body['resourceRequirements'];
+  if (raw === undefined) {
+    if (required) {
+      throw new CatalogHttpException(
+        HttpStatus.BAD_REQUEST,
+        CATALOG_ERROR_CODES.VALIDATION_FAILED,
+        'Invalid request body.',
+      );
+    }
+    return [];
+  }
+  if (!Array.isArray(raw)) {
+    throw new CatalogHttpException(
+      HttpStatus.BAD_REQUEST,
+      CATALOG_ERROR_CODES.VALIDATION_FAILED,
+      'Invalid request body.',
+    );
+  }
+  return raw.map((item) => {
+    if (typeof item !== 'object' || item === null) {
+      throw new CatalogHttpException(
+        HttpStatus.BAD_REQUEST,
+        CATALOG_ERROR_CODES.VALIDATION_FAILED,
+        'Invalid request body.',
+      );
+    }
+    const record = item as Record<string, unknown>;
+    return {
+      resourceTypeCode: parseRequiredString(record, 'resourceTypeCode'),
+      requirementLevel: parseRequiredString(record, 'requirementLevel') as ResourceRequirementInput['requirementLevel'],
+      minQuantity:
+        record['minQuantity'] === undefined
+          ? undefined
+          : parsePositiveInt(record['minQuantity'], 'minQuantity'),
+      sortOrder:
+        record['sortOrder'] === undefined ? undefined : parsePositiveInt(record['sortOrder'], 'sortOrder'),
+    };
+  });
+}
+
 export type CreateServiceDefinitionInput = {
   code: string;
   name: string;
@@ -98,11 +144,13 @@ export type CreateServiceDefinitionInput = {
   description?: string;
   defaultUnitCode?: string;
   allowedUnits: AllowedUnitInput[];
+  resourceRequirements?: ResourceRequirementInput[];
 };
 
 export function parseCreateServiceDefinitionInput(body: unknown): CreateServiceDefinitionInput {
   const record = assertObject(body);
   const allowedUnits = parseAllowedUnits(record);
+  const resourceRequirements = parseResourceRequirements(record);
   return {
     code: assertServiceCode(parseRequiredString(record, 'code')),
     name: assertNonEmptyName(parseRequiredString(record, 'name')),
@@ -112,6 +160,7 @@ export function parseCreateServiceDefinitionInput(body: unknown): CreateServiceD
     description: parseOptionalString(record, 'description'),
     defaultUnitCode: parseOptionalString(record, 'defaultUnitCode'),
     allowedUnits: assertAllowedUnits(allowedUnits),
+    resourceRequirements: assertResourceRequirements(resourceRequirements),
   };
 }
 
@@ -123,6 +172,7 @@ export type CreateServiceDefinitionVersionInput = {
   description?: string;
   defaultUnitCode?: string;
   allowedUnits: AllowedUnitInput[];
+  resourceRequirements: ResourceRequirementInput[];
   sourceVersion?: number;
 };
 
@@ -131,6 +181,7 @@ export function parseCreateServiceDefinitionVersionInput(
 ): CreateServiceDefinitionVersionInput {
   const record = assertObject(body);
   const allowedUnits = parseAllowedUnits(record);
+  const resourceRequirements = parseResourceRequirements(record, true);
   const sourceVersionRaw = record['sourceVersion'];
   return {
     name: assertNonEmptyName(parseRequiredString(record, 'name')),
@@ -140,6 +191,7 @@ export function parseCreateServiceDefinitionVersionInput(
     description: parseOptionalString(record, 'description'),
     defaultUnitCode: parseOptionalString(record, 'defaultUnitCode'),
     allowedUnits: assertAllowedUnits(allowedUnits),
+    resourceRequirements: assertResourceRequirements(resourceRequirements),
     sourceVersion:
       sourceVersionRaw === undefined ? undefined : parsePositiveInt(sourceVersionRaw, 'sourceVersion'),
   };
@@ -154,6 +206,7 @@ export type UpdateDraftServiceDefinitionInput = {
   description?: string | null;
   defaultUnitCode?: string | null;
   allowedUnits: AllowedUnitInput[];
+  resourceRequirements?: ResourceRequirementInput[];
 };
 
 export function parseUpdateDraftServiceDefinitionInput(
@@ -161,6 +214,7 @@ export function parseUpdateDraftServiceDefinitionInput(
 ): UpdateDraftServiceDefinitionInput {
   const record = assertObject(body);
   const allowedUnits = parseAllowedUnits(record);
+  const resourceRequirements = parseResourceRequirements(record, true);
   const description = record['description'];
   const defaultUnitCode = record['defaultUnitCode'];
   return {
@@ -178,6 +232,7 @@ export function parseUpdateDraftServiceDefinitionInput(
           ? null
           : parseRequiredString(record, 'defaultUnitCode'),
     allowedUnits: assertAllowedUnits(allowedUnits),
+    resourceRequirements: assertResourceRequirements(resourceRequirements),
   };
 }
 

@@ -1,4 +1,5 @@
 import {
+  ensurePhysicalResourceTypesBaseline,
   ensureUnitsOfMeasureBaseline,
   hashPassword,
   insertCatalogCategory,
@@ -24,6 +25,15 @@ import { CatalogHttpException } from './errors/catalog-http.exception';
 import { ServiceCatalogAccessService } from './services/service-catalog-access.service';
 
 const SAMPLE_UNITS = [{ unitCode: 'DAY', isDefault: true, sortOrder: 0 }];
+const SAMPLE_RESOURCE_REQUIREMENTS = [
+  {
+    resourceTypeCode: 'WATER_TRUCK',
+    requirementLevel: 'REQUIRED' as const,
+    minQuantity: 1,
+    sortOrder: 0,
+  },
+];
+const EMPTY_RESOURCE_REQUIREMENTS: [] = [];
 
 async function grantCatalogAdmin(
   pool: Pool,
@@ -74,6 +84,7 @@ describe('Service catalog PostgreSQL integration', () => {
     await truncateCatalogTables(pool);
     await truncateIdentityAndAuthorizationTables(pool);
     await ensureUnitsOfMeasureBaseline(pool);
+    await ensurePhysicalResourceTypesBaseline(pool);
   });
 
   afterAll(async () => {
@@ -120,6 +131,7 @@ describe('Service catalog PostgreSQL integration', () => {
       archetype: 'RENTAL',
       measurementMode: 'BY_PERIOD',
       allowedUnits: SAMPLE_UNITS,
+      resourceRequirements: EMPTY_RESOURCE_REQUIREMENTS,
     });
     expect(updated.name).toBe('Locação Caminhão Pipa — Rascunho');
 
@@ -185,6 +197,7 @@ describe('Service catalog PostgreSQL integration', () => {
         archetype: 'RENTAL',
         measurementMode: 'BY_PERIOD',
         allowedUnits: SAMPLE_UNITS,
+        resourceRequirements: EMPTY_RESOURCE_REQUIREMENTS,
       }),
     ).rejects.toMatchObject({ code: CATALOG_ERROR_CODES.INVALID_STATE });
   });
@@ -203,6 +216,7 @@ describe('Service catalog PostgreSQL integration', () => {
       archetype: 'RENTAL',
       measurementMode: 'BY_PERIOD',
       allowedUnits: SAMPLE_UNITS,
+      resourceRequirements: EMPTY_RESOURCE_REQUIREMENTS,
       sourceVersion: 1,
     });
     expect(version2.version).toBe(2);
@@ -242,6 +256,7 @@ describe('Service catalog PostgreSQL integration', () => {
       archetype: 'RENTAL',
       measurementMode: 'BY_PERIOD',
       allowedUnits: SAMPLE_UNITS,
+      resourceRequirements: EMPTY_RESOURCE_REQUIREMENTS,
     });
 
     await expect(
@@ -252,6 +267,7 @@ describe('Service catalog PostgreSQL integration', () => {
         archetype: 'RENTAL',
         measurementMode: 'BY_PERIOD',
         allowedUnits: SAMPLE_UNITS,
+        resourceRequirements: EMPTY_RESOURCE_REQUIREMENTS,
       }),
     ).rejects.toMatchObject({ code: CATALOG_ERROR_CODES.VERSION_CONFLICT });
   });
@@ -359,5 +375,110 @@ describe('Service catalog PostgreSQL integration', () => {
 
     await expect(catalogAccess.create(actor, createPayload(categoryId, 'NEW_AFTER_INACTIVE'))).rejects
       .toMatchObject({ code: CATALOG_ERROR_CODES.INACTIVE_UNIT });
+  });
+
+  it('associates physical resource type requirements on service definitions', async () => {
+    const { identityId, categoryId } = await seedActor();
+    const actor = { identityId, sessionId: 'sid' };
+
+    const created = await catalogAccess.create(actor, {
+      ...createPayload(categoryId),
+      resourceRequirements: SAMPLE_RESOURCE_REQUIREMENTS,
+    });
+    expect(created.resourceRequirements).toEqual([
+      {
+        resourceTypeCode: 'WATER_TRUCK',
+        requirementLevel: 'REQUIRED',
+        minQuantity: 1,
+        sortOrder: 0,
+      },
+    ]);
+  });
+
+  it('rejects unknown resource type codes on service definition create', async () => {
+    const { identityId, categoryId } = await seedActor();
+    const actor = { identityId, sessionId: 'sid' };
+
+    await expect(
+      catalogAccess.create(actor, {
+        ...createPayload(categoryId),
+        resourceRequirements: [
+          {
+            resourceTypeCode: 'NOT_A_TYPE',
+            requirementLevel: 'REQUIRED',
+            minQuantity: 1,
+          },
+        ],
+      }),
+    ).rejects.toMatchObject({ code: CATALOG_ERROR_CODES.INVALID_RESOURCE_TYPE });
+  });
+
+  it('keeps historical published versions valid when a resource type is later deactivated', async () => {
+    const { identityId, categoryId } = await seedActor();
+    const actor = { identityId, sessionId: 'sid' };
+
+    const created = await catalogAccess.create(actor, {
+      ...createPayload(categoryId),
+      resourceRequirements: SAMPLE_RESOURCE_REQUIREMENTS,
+    });
+    const definition = await catalogAccess.getDefinition(actor, created.serviceDefinitionId);
+    await catalogAccess.publishVersion(actor, created.serviceDefinitionId, 1, definition.version);
+
+    const waterTruck = await pool.query<{ id: string; version: number }>(
+      `SELECT id, version FROM cat.physical_resource_types WHERE code = 'WATER_TRUCK'`,
+    );
+    const typeRow = waterTruck.rows[0];
+    expect(typeRow).toBeDefined();
+
+    await pool.query(
+      `UPDATE cat.physical_resource_types
+       SET status = 'INACTIVE', version = version + 1, deactivated_at = now()
+       WHERE id = $1`,
+      [typeRow!.id],
+    );
+
+    const historical = await catalogAccess.getVersion(actor, created.serviceDefinitionId, 1);
+    expect(historical.status).toBe('PUBLISHED');
+    expect(
+      historical.resourceRequirements.some((requirement) => requirement.resourceTypeCode === 'WATER_TRUCK'),
+    ).toBe(true);
+
+    await expect(
+      catalogAccess.create(actor, {
+        ...createPayload(categoryId, 'NEW_AFTER_INACTIVE_TYPE'),
+        resourceRequirements: SAMPLE_RESOURCE_REQUIREMENTS,
+      }),
+    ).rejects.toMatchObject({ code: CATALOG_ERROR_CODES.INACTIVE_RESOURCE_TYPE });
+  });
+
+  it('copies resource requirements when creating a draft version from source', async () => {
+    const { identityId, categoryId } = await seedActor();
+    const actor = { identityId, sessionId: 'sid' };
+
+    const created = await catalogAccess.create(actor, {
+      ...createPayload(categoryId),
+      resourceRequirements: SAMPLE_RESOURCE_REQUIREMENTS,
+    });
+    const definition = await catalogAccess.getDefinition(actor, created.serviceDefinitionId);
+    await catalogAccess.publishVersion(actor, created.serviceDefinitionId, 1, definition.version);
+
+    const version2 = await catalogAccess.createVersion(actor, created.serviceDefinitionId, {
+      name: 'Locação Caminhão Pipa v2',
+      categoryId,
+      archetype: 'RENTAL',
+      measurementMode: 'BY_PERIOD',
+      allowedUnits: SAMPLE_UNITS,
+      resourceRequirements: EMPTY_RESOURCE_REQUIREMENTS,
+      sourceVersion: 1,
+    });
+
+    expect(version2.resourceRequirements).toEqual([
+      {
+        resourceTypeCode: 'WATER_TRUCK',
+        requirementLevel: 'REQUIRED',
+        minQuantity: 1,
+        sortOrder: 0,
+      },
+    ]);
   });
 });

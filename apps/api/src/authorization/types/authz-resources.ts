@@ -9,6 +9,7 @@ export const AUTHZ_RESOURCE_TYPES = {
   Client: 'client:client',
   CatalogService: 'catalog:service',
   CatalogUnit: 'catalog:unit',
+  ResourcesResourceType: 'resources:resource-type',
 } as const;
 
 export type AuthzResourceType = (typeof AUTHZ_RESOURCE_TYPES)[keyof typeof AUTHZ_RESOURCE_TYPES];

@@ -2,9 +2,10 @@ import { Injectable } from '@nestjs/common';
 import type { Pool, PoolClient } from 'pg';
 import { DatabaseService } from '../../infrastructure/database/database.service';
 import type { LineageStatus } from '../domain/service-catalog-status';
-import type { AllowedUnitInput } from '../domain/service-catalog.validation';
+import type { AllowedUnitInput, ResourceRequirementInput } from '../domain/service-catalog.validation';
 import type {
   AllowedUnitRow,
+  ResourceRequirementRow,
   ServiceDefinitionRow,
   ServiceDefinitionSummary,
   ServiceDefinitionVersionDetail,
@@ -20,6 +21,7 @@ export type CreateDefinitionWithDraftInput = {
   description?: string;
   defaultUnitCode?: string;
   allowedUnits: AllowedUnitInput[];
+  resourceRequirements: ResourceRequirementInput[];
   actorIdentityId: string;
 };
 
@@ -32,6 +34,7 @@ export type CreateDraftVersionInput = {
   description?: string;
   defaultUnitCode?: string;
   allowedUnits: AllowedUnitInput[];
+  resourceRequirements: ResourceRequirementInput[];
   sourceVersion?: number;
   actorIdentityId: string;
 };
@@ -47,6 +50,7 @@ export type UpdateDraftVersionInput = {
   description?: string | null;
   defaultUnitCode?: string | null;
   allowedUnits: AllowedUnitInput[];
+  resourceRequirements: ResourceRequirementInput[];
   actorIdentityId: string;
 };
 
@@ -164,7 +168,14 @@ export class ServiceCatalogRepository {
        ORDER BY sort_order ASC, unit_code ASC`,
       [row.id],
     );
-    return { ...row, allowed_units: units.rows };
+    const resourceRequirements = await this.pool().query<ResourceRequirementRow>(
+      `SELECT physical_resource_type_code, requirement_level, min_quantity, sort_order
+       FROM cat.service_resource_requirements
+       WHERE service_definition_version_id = $1
+       ORDER BY sort_order ASC, physical_resource_type_code ASC`,
+      [row.id],
+    );
+    return { ...row, allowed_units: units.rows, resource_requirements: resourceRequirements.rows };
   }
 
   async listVersions(definitionId: string): Promise<ServiceDefinitionVersionRow[]> {
@@ -241,6 +252,7 @@ export class ServiceCatalogRepository {
       }
 
       await this.replaceAllowedUnits(client, versionId, input.allowedUnits);
+      await this.replaceResourceRequirements(client, versionId, input.resourceRequirements);
       await client.query('COMMIT');
 
       const detail = await this.findVersionDetail(defRow.id, 1);
@@ -308,6 +320,15 @@ export class ServiceCatalogRepository {
                   isDefault: unit.is_default,
                   sortOrder: unit.sort_order,
                 })),
+          resourceRequirements:
+            input.resourceRequirements.length > 0
+              ? input.resourceRequirements
+              : source.resource_requirements.map((requirement) => ({
+                  resourceTypeCode: requirement.physical_resource_type_code,
+                  requirementLevel: requirement.requirement_level,
+                  minQuantity: requirement.min_quantity,
+                  sortOrder: requirement.sort_order,
+                })),
         };
       }
 
@@ -344,6 +365,7 @@ export class ServiceCatalogRepository {
       }
 
       await this.replaceAllowedUnits(client, versionId, payload.allowedUnits);
+      await this.replaceResourceRequirements(client, versionId, payload.resourceRequirements);
       await client.query(
         `UPDATE cat.service_definitions
          SET updated_at = now(), updated_by_identity_id = $2, version = version + 1
@@ -438,6 +460,7 @@ export class ServiceCatalogRepository {
       );
 
       await this.replaceAllowedUnits(client, currentRow.id, input.allowedUnits);
+      await this.replaceResourceRequirements(client, currentRow.id, input.resourceRequirements);
 
       const lineageUpdated = await client.query(
         `UPDATE cat.service_definitions
@@ -671,6 +694,35 @@ export class ServiceCatalogRepository {
            service_definition_version_id, unit_code, is_default, sort_order
          ) VALUES ($1, $2, $3, $4)`,
         [versionId, unit.unitCode, unit.isDefault ?? false, unit.sortOrder ?? 0],
+      );
+    }
+  }
+
+  private async replaceResourceRequirements(
+    client: PoolClient,
+    versionId: string,
+    requirements: ResourceRequirementInput[],
+  ): Promise<void> {
+    await client.query(
+      `DELETE FROM cat.service_resource_requirements WHERE service_definition_version_id = $1`,
+      [versionId],
+    );
+    for (const requirement of requirements) {
+      await client.query(
+        `INSERT INTO cat.service_resource_requirements (
+           service_definition_version_id,
+           physical_resource_type_code,
+           requirement_level,
+           min_quantity,
+           sort_order
+         ) VALUES ($1, $2, $3::cat.requirement_level, $4, $5)`,
+        [
+          versionId,
+          requirement.resourceTypeCode,
+          requirement.requirementLevel,
+          requirement.minQuantity ?? 1,
+          requirement.sortOrder ?? 0,
+        ],
       );
     }
   }

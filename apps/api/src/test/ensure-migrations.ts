@@ -98,6 +98,11 @@ export default async function ensureMigrations(): Promise<void> {
     if (!hasUnits) {
       await applySqlFile(pool, '0009_units_of_measure.sql');
     }
+
+    const hasPhysicalResourceTypes = await tableExists(pool, 'cat.physical_resource_types');
+    if (!hasPhysicalResourceTypes) {
+      await applySqlFile(pool, '0010_physical_resource_types.sql');
+    }
   } finally {
     await pool.end();
   }

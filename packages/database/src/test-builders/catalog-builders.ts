@@ -3,6 +3,7 @@ import type { Pool, PoolClient } from 'pg';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { ensureUnitsOfMeasureBaseline } from '../catalog/units-of-measure-baseline';
+import { ensurePhysicalResourceTypesBaseline } from '../catalog/physical-resource-types-baseline';
 import { insertIdentity } from './identity-builders';
 
 type DbClient = Pool | PoolClient;
@@ -12,6 +13,7 @@ export async function applyServiceCatalogMigration(client: DbClient): Promise<vo
     '0007_service_catalog_baseline.sql',
     '0008_service_definitions_lineage_version.sql',
     '0009_units_of_measure.sql',
+    '0010_physical_resource_types.sql',
   ]) {
     const migrationPath = resolve(__dirname, '../../migrations', file);
     const sql = readFileSync(migrationPath, 'utf8');
@@ -25,7 +27,12 @@ export async function applyServiceCatalogMigration(client: DbClient): Promise<vo
         await client.query(statement);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        if (message.includes('already exists') || message.includes('duplicate_object')) {
+        if (
+          message.includes('already exists') ||
+          message.includes('duplicate_object') ||
+          message.includes('duplicate key') ||
+          message.includes('does not exist')
+        ) {
           continue;
         }
         throw error;
@@ -48,9 +55,11 @@ export async function truncateCatalogTables(client: DbClient): Promise<void> {
     RESTART IDENTITY CASCADE
   `);
   await ensureUnitsOfMeasureBaseline(client);
+  await ensurePhysicalResourceTypesBaseline(client);
 }
 
 export { ensureUnitsOfMeasureBaseline } from '../catalog/units-of-measure-baseline';
+export { ensurePhysicalResourceTypesBaseline } from '../catalog/physical-resource-types-baseline';
 
 export type BuiltCatalogCategory = {
   categoryId: string;

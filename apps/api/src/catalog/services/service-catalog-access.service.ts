@@ -26,6 +26,7 @@ import { CATALOG_ERROR_CODES } from '../errors/catalog-error-codes';
 import { CatalogHttpException } from '../errors/catalog-http.exception';
 import { ServiceCatalogRepository } from '../repositories/service-catalog.repository';
 import { UnitsOfMeasureRepository } from '../repositories/units-of-measure.repository';
+import { PhysicalResourceTypesRepository } from '../../resources/repositories/physical-resource-types.repository';
 import {
   toServiceDefinitionResponse,
   toServiceDefinitionVersionResponse,
@@ -38,6 +39,7 @@ export class ServiceCatalogAccessService {
   constructor(
     private readonly repository: ServiceCatalogRepository,
     private readonly unitsRepository: UnitsOfMeasureRepository,
+    private readonly resourceTypesRepository: PhysicalResourceTypesRepository,
     private readonly authorizationRepository: AuthorizationRepository,
     private readonly policyDecisionPoint: PolicyDecisionPointService,
     private readonly securityAudit: SecurityAuditService,
@@ -60,10 +62,14 @@ export class ServiceCatalogAccessService {
       input.allowedUnits.map((unit) => unit.unitCode),
       input.defaultUnitCode,
     );
+    await this.assertActiveResourceTypeReferences(
+      (input.resourceRequirements ?? []).map((requirement) => requirement.resourceTypeCode),
+    );
 
     try {
       const created = await this.repository.createDefinitionWithDraft({
         ...input,
+        resourceRequirements: input.resourceRequirements ?? [],
         actorIdentityId: actor.identityId,
       });
 
@@ -158,10 +164,14 @@ export class ServiceCatalogAccessService {
       input.allowedUnits.map((unit) => unit.unitCode),
       input.defaultUnitCode,
     );
+    await this.assertActiveResourceTypeReferences(
+      (input.resourceRequirements ?? []).map((requirement) => requirement.resourceTypeCode),
+    );
 
     const created = await this.repository.createDraftVersion({
       definitionId,
       ...input,
+      resourceRequirements: input.resourceRequirements ?? [],
       actorIdentityId: actor.identityId,
     });
 
@@ -248,6 +258,9 @@ export class ServiceCatalogAccessService {
       input.allowedUnits.map((unit) => unit.unitCode),
       input.defaultUnitCode ?? undefined,
     );
+    await this.assertActiveResourceTypeReferences(
+      (input.resourceRequirements ?? []).map((requirement) => requirement.resourceTypeCode),
+    );
 
     const updated = await this.repository.updateDraftVersion({
       definitionId,
@@ -260,6 +273,7 @@ export class ServiceCatalogAccessService {
       description: input.description,
       defaultUnitCode: input.defaultUnitCode,
       allowedUnits: input.allowedUnits,
+      resourceRequirements: input.resourceRequirements ?? [],
       actorIdentityId: actor.identityId,
     });
 
@@ -314,6 +328,9 @@ export class ServiceCatalogAccessService {
     await this.assertActiveUnitReferences(
       draft.allowed_units.map((unit) => unit.unit_code),
       draft.default_unit_code,
+    );
+    await this.assertActiveResourceTypeReferences(
+      draft.resource_requirements.map((requirement) => requirement.physical_resource_type_code),
     );
 
     const result = await this.repository.publishVersion(
@@ -549,6 +566,24 @@ export class ServiceCatalogAccessService {
         HttpStatus.CONFLICT,
         CATALOG_ERROR_CODES.INACTIVE_UNIT,
         'One or more unit codes are inactive.',
+      );
+    }
+  }
+
+  private async assertActiveResourceTypeReferences(typeCodes: string[]): Promise<void> {
+    const validation = await this.resourceTypesRepository.validateTypeReferences(typeCodes, true);
+    if (validation === 'INVALID_TYPE') {
+      throw new CatalogHttpException(
+        HttpStatus.BAD_REQUEST,
+        CATALOG_ERROR_CODES.INVALID_RESOURCE_TYPE,
+        'One or more resource type codes are not registered in the catalog.',
+      );
+    }
+    if (validation === 'INACTIVE_TYPE') {
+      throw new CatalogHttpException(
+        HttpStatus.CONFLICT,
+        CATALOG_ERROR_CODES.INACTIVE_RESOURCE_TYPE,
+        'One or more resource type codes are inactive.',
       );
     }
   }

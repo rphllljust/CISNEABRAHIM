@@ -3,6 +3,7 @@ import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
 import { AuthorizationModule } from '../authorization/authorization.module';
 import { DatabaseModule } from '../infrastructure/database/database.module';
+import { ResourcesModule } from '../resources/resources.module';
 import { ServiceDefinitionsController } from './controllers/service-definitions.controller';
 import { UnitsOfMeasureController } from './controllers/units-of-measure.controller';
 import { ServiceCatalogRepository } from './repositories/service-catalog.repository';
@@ -11,7 +12,7 @@ import { ServiceCatalogAccessService } from './services/service-catalog-access.s
 import { UnitsOfMeasureAccessService } from './services/units-of-measure-access.service';
 
 @Module({
-  imports: [DatabaseModule, AuthModule, AuthorizationModule, AuditModule],
+  imports: [DatabaseModule, AuthModule, AuthorizationModule, AuditModule, ResourcesModule],
   controllers: [ServiceDefinitionsController, UnitsOfMeasureController],
   providers: [
     ServiceCatalogRepository,

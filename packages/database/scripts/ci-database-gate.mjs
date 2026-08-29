@@ -28,6 +28,7 @@ const MIGRATION_FILES = [
   '0007_service_catalog_baseline.sql',
   '0008_service_definitions_lineage_version.sql',
   '0009_units_of_measure.sql',
+  '0010_physical_resource_types.sql',
 ];
 
 const INCREMENTAL_BASELINE_FILES = MIGRATION_FILES.slice(0, -1);
@@ -50,6 +51,7 @@ const EXPECTED_TABLES = [
   'cat.service_resource_requirements',
   'cat.service_evidence_requirements',
   'cat.units_of_measure',
+  'cat.physical_resource_types',
 ];
 
 function adminConnectionString() {
@@ -261,6 +263,24 @@ async function assertPreDeltaState(connectionString, deltaFile) {
       ]);
       if (units.rows[0]?.regclass) {
         throw new Error('Incremental baseline incorrectly contains cat.units_of_measure before 0009');
+      }
+      return;
+    }
+
+    if (deltaFile === '0010_physical_resource_types.sql') {
+      const units = await client.query('SELECT to_regclass($1) AS regclass', [
+        'cat.units_of_measure',
+      ]);
+      if (!units.rows[0]?.regclass) {
+        throw new Error('Expected cat.units_of_measure before 0010 delta');
+      }
+      const resourceTypes = await client.query('SELECT to_regclass($1) AS regclass', [
+        'cat.physical_resource_types',
+      ]);
+      if (resourceTypes.rows[0]?.regclass) {
+        throw new Error(
+          'Incremental baseline incorrectly contains cat.physical_resource_types before 0010',
+        );
       }
       return;
     }

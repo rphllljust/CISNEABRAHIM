@@ -96,7 +96,24 @@ export const evidenceKindEnum = catSchema.enum('evidence_kind', [
   'OTHER',
 ]);
 
-export const requirementLevelEnum = catSchema.enum('requirement_level', ['REQUIRED', 'OPTIONAL']);
+export const requirementLevelEnum = catSchema.enum('requirement_level', [
+  'REQUIRED',
+  'OPTIONAL',
+  'CONDITIONAL',
+]);
+
+export const physicalResourceClassificationEnum = catSchema.enum('physical_resource_classification', [
+  'VEHICLE',
+  'MACHINE',
+  'EQUIPMENT',
+  'CONSUMABLE',
+  'MATERIAL',
+]);
+
+export const physicalResourceTypeStatusEnum = catSchema.enum('physical_resource_type_status', [
+  'ACTIVE',
+  'INACTIVE',
+]);
 
 export const serviceCategories = catSchema.table(
   'service_categories',
@@ -355,6 +372,45 @@ export const servicePricingModels = catSchema.table(
   ],
 );
 
+export const physicalResourceTypes = catSchema.table(
+  'physical_resource_types',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    code: text('code').notNull(),
+    name: text('name').notNull(),
+    classification: physicalResourceClassificationEnum('classification').notNull(),
+    status: physicalResourceTypeStatusEnum('status').notNull().default('ACTIVE'),
+    version: integer('version').notNull().default(1),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    deactivatedAt: timestamp('deactivated_at', { withTimezone: true }),
+    deactivatedByIdentityId: uuid('deactivated_by_identity_id').references(() => identities.id, {
+      onDelete: 'restrict',
+      onUpdate: 'cascade',
+    }),
+    createdByIdentityId: uuid('created_by_identity_id').references(() => identities.id, {
+      onDelete: 'restrict',
+      onUpdate: 'cascade',
+    }),
+    updatedByIdentityId: uuid('updated_by_identity_id').references(() => identities.id, {
+      onDelete: 'restrict',
+      onUpdate: 'cascade',
+    }),
+  },
+  (table) => [
+    check('physical_resource_types_code_not_empty_chk', sql`length(trim(${table.code})) > 0`),
+    check(
+      'physical_resource_types_code_format_chk',
+      sql`${table.code} ~ '^[A-Z0-9][A-Z0-9_]{0,63}$'`,
+    ),
+    check('physical_resource_types_name_not_empty_chk', sql`length(trim(${table.name})) > 0`),
+    check('physical_resource_types_version_positive_chk', sql`${table.version} >= 1`),
+    uniqueIndex('physical_resource_types_code_uidx').on(table.code),
+    index('physical_resource_types_status_idx').on(table.status),
+    index('physical_resource_types_classification_idx').on(table.classification),
+  ],
+);
+
 export const serviceResourceRequirements = catSchema.table(
   'service_resource_requirements',
   {
@@ -362,7 +418,7 @@ export const serviceResourceRequirements = catSchema.table(
     serviceDefinitionVersionId: uuid('service_definition_version_id')
       .notNull()
       .references(() => serviceDefinitionVersions.id, { onDelete: 'restrict', onUpdate: 'cascade' }),
-    resourceKind: resourceKindEnum('resource_kind').notNull(),
+    physicalResourceTypeCode: text('physical_resource_type_code').notNull(),
     requirementLevel: requirementLevelEnum('requirement_level').notNull(),
     minQuantity: integer('min_quantity').notNull().default(1),
     configSchemaVersion: smallint('config_schema_version').notNull().default(1),
@@ -375,10 +431,9 @@ export const serviceResourceRequirements = catSchema.table(
   (table) => [
     check('service_resource_requirements_min_quantity_chk', sql`${table.minQuantity} >= 1`),
     check('service_resource_requirements_sort_order_non_negative_chk', sql`${table.sortOrder} >= 0`),
-    uniqueIndex('service_resource_requirements_version_kind_level_uidx').on(
+    uniqueIndex('service_resource_requirements_version_type_uidx').on(
       table.serviceDefinitionVersionId,
-      table.resourceKind,
-      table.requirementLevel,
+      table.physicalResourceTypeCode,
     ),
     index('service_resource_requirements_version_id_idx').on(table.serviceDefinitionVersionId),
   ],

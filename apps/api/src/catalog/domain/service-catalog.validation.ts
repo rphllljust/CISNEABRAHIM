@@ -1,6 +1,10 @@
 import type { MeasurementMode, OperationalArchetype } from './service-catalog-status';
 import { MEASUREMENT_MODES, OPERATIONAL_ARCHETYPES } from './service-catalog-status';
 import { isValidUnitCodeFormat, normalizeUnitCode } from './unit-of-measure';
+import {
+  isValidPhysicalResourceTypeCodeFormat,
+  normalizePhysicalResourceTypeCode,
+} from '../../resources/domain/physical-resource-type';
 
 export class CatalogValidationError extends Error {
   constructor(readonly code: string) {
@@ -73,6 +77,49 @@ export function assertAllowedUnits(units: AllowedUnitInput[]): AllowedUnitInput[
   const defaultCount = normalized.filter((unit) => unit.isDefault).length;
   if (defaultCount > 1) {
     throw new CatalogValidationError('MULTIPLE_DEFAULT_UNITS');
+  }
+  return normalized;
+}
+
+export const REQUIREMENT_LEVELS = ['REQUIRED', 'OPTIONAL', 'CONDITIONAL'] as const;
+export type RequirementLevel = (typeof REQUIREMENT_LEVELS)[number];
+
+export type ResourceRequirementInput = {
+  resourceTypeCode: string;
+  requirementLevel: RequirementLevel;
+  minQuantity?: number;
+  sortOrder?: number;
+};
+
+export function assertResourceRequirements(
+  requirements: ResourceRequirementInput[],
+): ResourceRequirementInput[] {
+  const normalized = requirements.map((requirement, index) => {
+    const resourceTypeCode = normalizePhysicalResourceTypeCode(requirement.resourceTypeCode);
+    if (!isValidPhysicalResourceTypeCodeFormat(resourceTypeCode)) {
+      throw new CatalogValidationError('INVALID_RESOURCE_TYPE_CODE');
+    }
+    if (!(REQUIREMENT_LEVELS as readonly string[]).includes(requirement.requirementLevel)) {
+      throw new CatalogValidationError('INVALID_REQUIREMENT_LEVEL');
+    }
+    const minQuantity = requirement.minQuantity ?? 1;
+    if (!Number.isInteger(minQuantity) || minQuantity < 1) {
+      throw new CatalogValidationError('INVALID_MIN_QUANTITY');
+    }
+    return {
+      resourceTypeCode,
+      requirementLevel: requirement.requirementLevel,
+      minQuantity,
+      sortOrder: requirement.sortOrder ?? index,
+    };
+  });
+
+  const codes = new Set<string>();
+  for (const requirement of normalized) {
+    if (codes.has(requirement.resourceTypeCode)) {
+      throw new CatalogValidationError('DUPLICATE_RESOURCE_TYPE');
+    }
+    codes.add(requirement.resourceTypeCode);
   }
   return normalized;
 }

@@ -30,6 +30,12 @@ export const AUTHZ_ACTIONS = {
   CatalogUnitUpdate: 'catalog:unit:update',
   CatalogUnitDeactivate: 'catalog:unit:deactivate',
   CatalogUnitActivate: 'catalog:unit:activate',
+  ResourcesResourceTypeCreate: 'resources:resource-type:create',
+  ResourcesResourceTypeRead: 'resources:resource-type:read',
+  ResourcesResourceTypeList: 'resources:resource-type:list',
+  ResourcesResourceTypeUpdate: 'resources:resource-type:update',
+  ResourcesResourceTypeDeactivate: 'resources:resource-type:deactivate',
+  ResourcesResourceTypeActivate: 'resources:resource-type:activate',
 } as const;
 
 export type AuthzAction = (typeof AUTHZ_ACTIONS)[keyof typeof AUTHZ_ACTIONS];
