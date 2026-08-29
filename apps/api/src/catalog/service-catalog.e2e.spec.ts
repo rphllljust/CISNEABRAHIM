@@ -130,7 +130,9 @@ describe('Service catalog E2E', () => {
         categoryId,
         archetype: 'RENTAL',
         measurementMode: 'BY_PERIOD',
+        measurementBasis: 'TIME',
         allowedUnits: [{ unitCode: 'DAY', isDefault: true }],
+        pricingModels: [{ modelCode: 'DAILY', salePrice: '1200.00' }],
       },
     });
     expect(createResponse.statusCode).toBe(201);

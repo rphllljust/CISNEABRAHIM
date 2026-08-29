@@ -30,6 +30,7 @@ const MIGRATION_FILES = [
   '0009_units_of_measure.sql',
   '0010_physical_resource_types.sql',
   '0011_operational_labor_types.sql',
+  '0012_commercial_pricing_measurement.sql',
 ];
 
 const INCREMENTAL_BASELINE_FILES = MIGRATION_FILES.slice(0, -1);
@@ -301,6 +302,29 @@ async function assertPreDeltaState(connectionString, deltaFile) {
       if (laborTypes.rows[0]?.regclass) {
         throw new Error(
           'Incremental baseline incorrectly contains cat.operational_labor_types before 0011',
+        );
+      }
+      return;
+    }
+
+    if (deltaFile === '0012_commercial_pricing_measurement.sql') {
+      const laborTypes = await client.query('SELECT to_regclass($1) AS regclass', [
+        'cat.operational_labor_types',
+      ]);
+      if (!laborTypes.rows[0]?.regclass) {
+        throw new Error('Expected cat.operational_labor_types before 0012 delta');
+      }
+      const measurementBasis = await client.query(
+        `SELECT 1
+         FROM information_schema.columns
+         WHERE table_schema = 'cat'
+           AND table_name = 'service_definition_versions'
+           AND column_name = 'measurement_basis'
+         LIMIT 1`,
+      );
+      if ((measurementBasis.rowCount ?? 0) > 0) {
+        throw new Error(
+          'Incremental baseline incorrectly contains measurement_basis before 0012',
         );
       }
       return;

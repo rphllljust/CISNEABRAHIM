@@ -26,6 +26,13 @@ import { CatalogHttpException } from './errors/catalog-http.exception';
 import { ServiceCatalogAccessService } from './services/service-catalog-access.service';
 
 const SAMPLE_UNITS = [{ unitCode: 'DAY', isDefault: true, sortOrder: 0 }];
+const SAMPLE_PRICING_MODELS = [
+  {
+    modelCode: 'DAILY',
+    salePrice: '1200.00',
+    internalCost: '900.00',
+  },
+];
 const SAMPLE_RESOURCE_REQUIREMENTS = [
   {
     resourceTypeCode: 'WATER_TRUCK',
@@ -118,7 +125,38 @@ describe('Service catalog PostgreSQL integration', () => {
       categoryId,
       archetype: 'RENTAL',
       measurementMode: 'BY_PERIOD',
+      measurementBasis: 'TIME',
       allowedUnits: SAMPLE_UNITS,
+      pricingModels: SAMPLE_PRICING_MODELS,
+    };
+  }
+
+  function draftUpdateBase(categoryId: string, lineageVersion: number) {
+    return {
+      lineageVersion,
+      name: 'Locação Caminhão Pipa — Rascunho',
+      categoryId,
+      archetype: 'RENTAL',
+      measurementMode: 'BY_PERIOD',
+      measurementBasis: 'TIME',
+      allowedUnits: SAMPLE_UNITS,
+      resourceRequirements: EMPTY_RESOURCE_REQUIREMENTS,
+      laborRequirements: EMPTY_LABOR_REQUIREMENTS,
+      pricingModels: SAMPLE_PRICING_MODELS,
+    };
+  }
+
+  function versionCreateBase(categoryId: string) {
+    return {
+      name: 'Locação Caminhão Pipa v2',
+      categoryId,
+      archetype: 'RENTAL',
+      measurementMode: 'BY_PERIOD',
+      measurementBasis: 'TIME',
+      allowedUnits: SAMPLE_UNITS,
+      resourceRequirements: EMPTY_RESOURCE_REQUIREMENTS,
+      laborRequirements: EMPTY_LABOR_REQUIREMENTS,
+      pricingModels: SAMPLE_PRICING_MODELS,
     };
   }
 
@@ -135,16 +173,7 @@ describe('Service catalog PostgreSQL integration', () => {
     expect(definition.code).toBe('LOCACAO_CAMINHAO_PIPA');
     expect(definition.version).toBe(1);
 
-    const updated = await catalogAccess.updateDraft(actor, created.serviceDefinitionId, 1, {
-      lineageVersion: definition.version,
-      name: 'Locação Caminhão Pipa — Rascunho',
-      categoryId,
-      archetype: 'RENTAL',
-      measurementMode: 'BY_PERIOD',
-      allowedUnits: SAMPLE_UNITS,
-      resourceRequirements: EMPTY_RESOURCE_REQUIREMENTS,
-      laborRequirements: EMPTY_LABOR_REQUIREMENTS,
-    });
+    const updated = await catalogAccess.updateDraft(actor, created.serviceDefinitionId, 1, draftUpdateBase(categoryId, definition.version));
     expect(updated.name).toBe('Locação Caminhão Pipa — Rascunho');
 
     const definitionAfterUpdate = await catalogAccess.getDefinition(actor, created.serviceDefinitionId);
@@ -203,14 +232,8 @@ describe('Service catalog PostgreSQL integration', () => {
 
     await expect(
       catalogAccess.updateDraft(actor, created.serviceDefinitionId, 1, {
-        lineageVersion: definition.version + 1,
+        ...draftUpdateBase(categoryId, definition.version + 1),
         name: 'Tentativa inválida',
-        categoryId,
-        archetype: 'RENTAL',
-        measurementMode: 'BY_PERIOD',
-        allowedUnits: SAMPLE_UNITS,
-        resourceRequirements: EMPTY_RESOURCE_REQUIREMENTS,
-      laborRequirements: EMPTY_LABOR_REQUIREMENTS,
       }),
     ).rejects.toMatchObject({ code: CATALOG_ERROR_CODES.INVALID_STATE });
   });
@@ -224,13 +247,7 @@ describe('Service catalog PostgreSQL integration', () => {
     await catalogAccess.publishVersion(actor, created.serviceDefinitionId, 1, definition.version);
 
     const version2 = await catalogAccess.createVersion(actor, created.serviceDefinitionId, {
-      name: 'Locação Caminhão Pipa v2',
-      categoryId,
-      archetype: 'RENTAL',
-      measurementMode: 'BY_PERIOD',
-      allowedUnits: SAMPLE_UNITS,
-      resourceRequirements: EMPTY_RESOURCE_REQUIREMENTS,
-      laborRequirements: EMPTY_LABOR_REQUIREMENTS,
+      ...versionCreateBase(categoryId),
       sourceVersion: 1,
     });
     expect(version2.version).toBe(2);
@@ -264,26 +281,14 @@ describe('Service catalog PostgreSQL integration', () => {
     const definition = await catalogAccess.getDefinition(actor, created.serviceDefinitionId);
 
     await catalogAccess.updateDraft(actor, created.serviceDefinitionId, 1, {
-      lineageVersion: definition.version,
+      ...draftUpdateBase(categoryId, definition.version),
       name: 'Primeira alteração',
-      categoryId,
-      archetype: 'RENTAL',
-      measurementMode: 'BY_PERIOD',
-      allowedUnits: SAMPLE_UNITS,
-      resourceRequirements: EMPTY_RESOURCE_REQUIREMENTS,
-      laborRequirements: EMPTY_LABOR_REQUIREMENTS,
     });
 
     await expect(
       catalogAccess.updateDraft(actor, created.serviceDefinitionId, 1, {
-        lineageVersion: definition.version,
+        ...draftUpdateBase(categoryId, definition.version),
         name: 'Alteração obsoleta',
-        categoryId,
-        archetype: 'RENTAL',
-        measurementMode: 'BY_PERIOD',
-        allowedUnits: SAMPLE_UNITS,
-        resourceRequirements: EMPTY_RESOURCE_REQUIREMENTS,
-      laborRequirements: EMPTY_LABOR_REQUIREMENTS,
       }),
     ).rejects.toMatchObject({ code: CATALOG_ERROR_CODES.VERSION_CONFLICT });
   });
@@ -479,13 +484,7 @@ describe('Service catalog PostgreSQL integration', () => {
     await catalogAccess.publishVersion(actor, created.serviceDefinitionId, 1, definition.version);
 
     const version2 = await catalogAccess.createVersion(actor, created.serviceDefinitionId, {
-      name: 'Locação Caminhão Pipa v2',
-      categoryId,
-      archetype: 'RENTAL',
-      measurementMode: 'BY_PERIOD',
-      allowedUnits: SAMPLE_UNITS,
-      resourceRequirements: EMPTY_RESOURCE_REQUIREMENTS,
-      laborRequirements: EMPTY_LABOR_REQUIREMENTS,
+      ...versionCreateBase(categoryId),
       sourceVersion: 1,
     });
 
@@ -573,5 +572,104 @@ describe('Service catalog PostgreSQL integration', () => {
          AND tablename ~* '(employee|assignment|payroll|personnel)'`,
     );
     expect(tables.rows).toEqual([]);
+  });
+
+  it('persists global commercial price separate from internal cost', async () => {
+    const { identityId, categoryId } = await seedActor();
+    const actor = { identityId, sessionId: 'sid' };
+
+    const created = await catalogAccess.create(actor, {
+      ...createPayload(categoryId, 'OBRA_ESPECIAL_GLOBAL'),
+      measurementMode: 'BY_EVENT',
+      measurementBasis: 'GLOBAL_COMPLETION',
+      allowedUnits: [{ unitCode: 'SERVICE', isDefault: true, sortOrder: 0 }],
+      pricingModels: [
+        {
+          modelCode: 'GLOBAL_PRICE',
+          salePrice: '96000.00',
+          internalCost: '85000.00',
+        },
+      ],
+    });
+
+    expect(created.pricingModels).toEqual([
+      expect.objectContaining({
+        modelCode: 'GLOBAL_PRICE',
+        salePrice: '96000',
+        internalCost: '85000',
+        currencyCode: 'BRL',
+      }),
+    ]);
+    expect(created.pricingModels[0]?.salePrice).not.toBe(created.pricingModels[0]?.internalCost);
+  });
+
+  it('persists negotiated PO unit price', async () => {
+    const { identityId, categoryId } = await seedActor();
+    const actor = { identityId, sessionId: 'sid' };
+
+    const created = await catalogAccess.create(actor, {
+      ...createPayload(categoryId, 'SERVICO_PO_NEGOCIADO'),
+      measurementMode: 'BY_QUANTITY',
+      measurementBasis: 'UNIT',
+      allowedUnits: [{ unitCode: 'UA', isDefault: true, sortOrder: 0 }],
+      pricingModels: [
+        {
+          modelCode: 'NEGOTIATED_PO_PRICE',
+          unitCode: 'UA',
+          salePrice: '9351.00',
+        },
+      ],
+    });
+
+    expect(created.pricingModels[0]).toMatchObject({
+      modelCode: 'NEGOTIATED_PO_PRICE',
+      unitCode: 'UA',
+      salePrice: '9351',
+    });
+  });
+
+  it('rejects incompatible pricing unit with allowed units', async () => {
+    const { identityId, categoryId } = await seedActor();
+    const actor = { identityId, sessionId: 'sid' };
+
+    await expect(
+      catalogAccess.create(actor, {
+        ...createPayload(categoryId, 'TRANSPORTE_KM_INVALIDO'),
+        measurementMode: 'BY_QUANTITY',
+        measurementBasis: 'DISTANCE',
+        allowedUnits: [{ unitCode: 'DAY', isDefault: true, sortOrder: 0 }],
+        pricingModels: [{ modelCode: 'PER_KM' }],
+      }),
+    ).rejects.toMatchObject({ code: CATALOG_ERROR_CODES.PRICING_UNIT_NOT_ALLOWED });
+  });
+
+  it('preserves pricing models when versioning from published source', async () => {
+    const { identityId, categoryId } = await seedActor();
+    const actor = { identityId, sessionId: 'sid' };
+
+    const created = await catalogAccess.create(actor, {
+      ...createPayload(categoryId, 'VERSION_PRICING_COPY'),
+      pricingModels: [{ modelCode: 'UNIT_PRICE', unitCode: 'UN', salePrice: '100.00' }],
+      allowedUnits: [{ unitCode: 'UN', isDefault: true, sortOrder: 0 }],
+      measurementMode: 'BY_QUANTITY',
+      measurementBasis: 'UNIT',
+    });
+    const definition = await catalogAccess.getDefinition(actor, created.serviceDefinitionId);
+    await catalogAccess.publishVersion(actor, created.serviceDefinitionId, 1, definition.version);
+
+    const version2 = await catalogAccess.createVersion(actor, created.serviceDefinitionId, {
+      ...versionCreateBase(categoryId),
+      allowedUnits: [{ unitCode: 'UN', isDefault: true, sortOrder: 0 }],
+      measurementMode: 'BY_QUANTITY',
+      measurementBasis: 'UNIT',
+      pricingModels: [],
+      sourceVersion: 1,
+    });
+
+    expect(version2.pricingModels[0]).toMatchObject({
+      modelCode: 'UNIT_PRICE',
+      unitCode: 'UN',
+      salePrice: '100',
+    });
   });
 });

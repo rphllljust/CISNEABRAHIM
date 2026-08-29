@@ -33,6 +33,8 @@ export type CatalogCommercialConfigV1 = {
 /** pricing model config — schema_version 1 (opcional por linha) */
 export type CatalogPricingModelConfigV1 = {
   schemaVersion: 1;
+  /** Vocabulário comercial canônico (Prompt 39) — distinto do código persistido no enum SQL. */
+  commercialCode?: string;
   unitCode?: string;
   minimumQuantity?: number;
   tierRules?: Array<{ upToQuantity: number; unitCode: string }>;

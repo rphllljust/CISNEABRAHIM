@@ -9,6 +9,14 @@ import {
   isValidLaborTypeCodeFormat,
   normalizeLaborTypeCode,
 } from '../../resources/domain/operational-labor-type';
+import {
+  assertCommercialConfiguration,
+  assertMeasurementBasis,
+  assertPricingModels,
+  CommercialValidationError,
+  type NormalizedPricingModelInput,
+  type PricingModelInput,
+} from '../../commercial/domain/commercial-compatibility';
 
 export class CatalogValidationError extends Error {
   constructor(readonly code: string) {
@@ -164,4 +172,31 @@ export function assertLaborRequirements(requirements: LaborRequirementInput[]): 
     codes.add(requirement.laborTypeCode);
   }
   return normalized;
+}
+
+export type { PricingModelInput, NormalizedPricingModelInput };
+export { assertPricingModels, assertMeasurementBasis };
+
+export function assertCommercialCatalogInput(input: {
+  measurementBasis: string;
+  measurementMode: MeasurementMode;
+  allowedUnits: AllowedUnitInput[];
+  pricingModels: PricingModelInput[];
+}): {
+  measurementBasis: ReturnType<typeof assertMeasurementBasis>;
+  pricingModels: NormalizedPricingModelInput[];
+} {
+  try {
+    return assertCommercialConfiguration({
+      measurementBasis: input.measurementBasis,
+      measurementMode: input.measurementMode,
+      allowedUnitCodes: input.allowedUnits.map((unit) => unit.unitCode),
+      pricingModels: input.pricingModels,
+    });
+  } catch (error) {
+    if (error instanceof CommercialValidationError) {
+      throw new CatalogValidationError(error.code);
+    }
+    throw error;
+  }
 }

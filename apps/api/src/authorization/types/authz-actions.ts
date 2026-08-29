@@ -42,6 +42,7 @@ export const AUTHZ_ACTIONS = {
   ResourcesLaborTypeUpdate: 'resources:labor-type:update',
   ResourcesLaborTypeDeactivate: 'resources:labor-type:deactivate',
   ResourcesLaborTypeActivate: 'resources:labor-type:activate',
+  CommercialPolicyRead: 'commercial:policy:read',
 } as const;
 
 export type AuthzAction = (typeof AUTHZ_ACTIONS)[keyof typeof AUTHZ_ACTIONS];

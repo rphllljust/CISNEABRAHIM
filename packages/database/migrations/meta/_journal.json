@@ -85,6 +85,13 @@
       "when": 1787986400000,
       "tag": "0011_operational_labor_types",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1787986500000,
+      "tag": "0012_commercial_pricing_measurement",
+      "breakpoints": true
     }
   ]
 }

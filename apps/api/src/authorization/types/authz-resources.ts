@@ -11,6 +11,7 @@ export const AUTHZ_RESOURCE_TYPES = {
   CatalogUnit: 'catalog:unit',
   ResourcesResourceType: 'resources:resource-type',
   ResourcesLaborType: 'resources:labor-type',
+  CommercialPolicy: 'commercial:policy',
 } as const;
 
 export type AuthzResourceType = (typeof AUTHZ_RESOURCE_TYPES)[keyof typeof AUTHZ_RESOURCE_TYPES];

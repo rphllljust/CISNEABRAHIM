@@ -1,10 +1,12 @@
 import { sql } from 'drizzle-orm';
 import {
   boolean,
+  char,
   check,
   index,
   integer,
   jsonb,
+  numeric,
   pgSchema,
   smallint,
   text,
@@ -68,6 +70,16 @@ export const measurementModeEnum = catSchema.enum('measurement_mode', [
   'BY_QUANTITY',
   'BY_EVENT',
   'CHECKLIST',
+]);
+
+export const measurementBasisEnum = catSchema.enum('measurement_basis', [
+  'UNIT',
+  'TIME',
+  'DISTANCE',
+  'VOLUME',
+  'WEIGHT',
+  'TRIP',
+  'GLOBAL_COMPLETION',
 ]);
 
 export const pricingModelCodeEnum = catSchema.enum('pricing_model_code', [
@@ -208,6 +220,7 @@ export const serviceDefinitionVersions = catSchema.table(
     description: text('description'),
     defaultUnitCode: text('default_unit_code'),
     measurementMode: measurementModeEnum('measurement_mode').notNull(),
+    measurementBasis: measurementBasisEnum('measurement_basis').notNull().default('UNIT'),
     measurementConfigSchemaVersion: smallint('measurement_config_schema_version')
       .notNull()
       .default(1),
@@ -356,6 +369,9 @@ export const servicePricingModels = catSchema.table(
     pricingModelCode: pricingModelCodeEnum('pricing_model_code').notNull(),
     configSchemaVersion: smallint('config_schema_version').notNull().default(1),
     config: jsonb('config').$type<CatalogPricingModelConfigV1 | null>(),
+    salePriceAmount: numeric('sale_price_amount', { precision: 18, scale: 4 }),
+    internalCostAmount: numeric('internal_cost_amount', { precision: 18, scale: 4 }),
+    currencyCode: char('currency_code', { length: 3 }).notNull().default('BRL'),
     sortOrder: integer('sort_order').notNull().default(0),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .notNull()
@@ -364,6 +380,18 @@ export const servicePricingModels = catSchema.table(
   (table) => [
     check('service_pricing_models_sort_order_non_negative_chk', sql`${table.sortOrder} >= 0`),
     check('service_pricing_models_config_schema_chk', sql`${table.configSchemaVersion} >= 1`),
+    check(
+      'service_pricing_models_sale_price_non_negative_chk',
+      sql`${table.salePriceAmount} IS NULL OR ${table.salePriceAmount} >= 0`,
+    ),
+    check(
+      'service_pricing_models_internal_cost_non_negative_chk',
+      sql`${table.internalCostAmount} IS NULL OR ${table.internalCostAmount} >= 0`,
+    ),
+    check(
+      'service_pricing_models_currency_code_format_chk',
+      sql`${table.currencyCode} ~ '^[A-Z]{3}$'`,
+    ),
     uniqueIndex('service_pricing_models_version_model_uidx').on(
       table.serviceDefinitionVersionId,
       table.pricingModelCode,

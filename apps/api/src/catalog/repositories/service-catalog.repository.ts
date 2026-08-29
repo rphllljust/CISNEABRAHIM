@@ -2,10 +2,13 @@ import { Injectable } from '@nestjs/common';
 import type { Pool, PoolClient } from 'pg';
 import { DatabaseService } from '../../infrastructure/database/database.service';
 import type { LineageStatus } from '../domain/service-catalog-status';
-import type { AllowedUnitInput, LaborRequirementInput, ResourceRequirementInput } from '../domain/service-catalog.validation';
+import type { AllowedUnitInput, LaborRequirementInput, NormalizedPricingModelInput, ResourceRequirementInput } from '../domain/service-catalog.validation';
+import { toPersistedPricingModel, normalizePricingModelInput } from '../../commercial/domain/commercial-compatibility';
+import { commercialCodeFromPersisted, isCommercialPricingModelCode } from '../../commercial/domain/pricing-model';
 import type {
   AllowedUnitRow,
   LaborRequirementRow,
+  PricingModelRow,
   ResourceRequirementRow,
   ServiceDefinitionRow,
   ServiceDefinitionSummary,
@@ -19,11 +22,13 @@ export type CreateDefinitionWithDraftInput = {
   categoryId: string;
   archetype: string;
   measurementMode: string;
+  measurementBasis: string;
   description?: string;
   defaultUnitCode?: string;
   allowedUnits: AllowedUnitInput[];
   resourceRequirements: ResourceRequirementInput[];
   laborRequirements: LaborRequirementInput[];
+  pricingModels: NormalizedPricingModelInput[];
   actorIdentityId: string;
 };
 
@@ -33,11 +38,13 @@ export type CreateDraftVersionInput = {
   categoryId: string;
   archetype: string;
   measurementMode: string;
+  measurementBasis: string;
   description?: string;
   defaultUnitCode?: string;
   allowedUnits: AllowedUnitInput[];
   resourceRequirements: ResourceRequirementInput[];
   laborRequirements: LaborRequirementInput[];
+  pricingModels: NormalizedPricingModelInput[];
   sourceVersion?: number;
   actorIdentityId: string;
 };
@@ -50,11 +57,13 @@ export type UpdateDraftVersionInput = {
   categoryId: string;
   archetype: string;
   measurementMode: string;
+  measurementBasis: string;
   description?: string | null;
   defaultUnitCode?: string | null;
   allowedUnits: AllowedUnitInput[];
   resourceRequirements: ResourceRequirementInput[];
   laborRequirements: LaborRequirementInput[];
+  pricingModels: NormalizedPricingModelInput[];
   actorIdentityId: string;
 };
 
@@ -151,6 +160,7 @@ export class ServiceCatalogRepository {
               v.description,
               v.default_unit_code,
               v.measurement_mode,
+              v.measurement_basis,
               v.published_at,
               v.created_at,
               v.updated_at,
@@ -186,11 +196,24 @@ export class ServiceCatalogRepository {
        ORDER BY sort_order ASC, labor_type_code ASC`,
       [row.id],
     );
+    const pricingModels = await this.pool().query<PricingModelRow>(
+      `SELECT pricing_model_code,
+              config,
+              sale_price_amount::text AS sale_price_amount,
+              internal_cost_amount::text AS internal_cost_amount,
+              currency_code,
+              sort_order
+       FROM cat.service_pricing_models
+       WHERE service_definition_version_id = $1
+       ORDER BY sort_order ASC, pricing_model_code ASC`,
+      [row.id],
+    );
     return {
       ...row,
       allowed_units: units.rows,
       resource_requirements: resourceRequirements.rows,
       labor_requirements: laborRequirements.rows,
+      pricing_models: pricingModels.rows,
     };
   }
 
@@ -247,9 +270,10 @@ export class ServiceCatalogRepository {
            description,
            default_unit_code,
            measurement_mode,
+           measurement_basis,
            created_by_identity_id,
            updated_by_identity_id
-         ) VALUES ($1, 1, 'DRAFT', $2, $3, $4, $5, $6, $7, $8, $8)
+         ) VALUES ($1, 1, 'DRAFT', $2, $3, $4, $5, $6, $7, $8, $9, $9)
          RETURNING id`,
         [
           defRow.id,
@@ -259,6 +283,7 @@ export class ServiceCatalogRepository {
           input.description ?? null,
           input.defaultUnitCode ?? null,
           input.measurementMode,
+          input.measurementBasis,
           input.actorIdentityId,
         ],
       );
@@ -270,6 +295,7 @@ export class ServiceCatalogRepository {
       await this.replaceAllowedUnits(client, versionId, input.allowedUnits);
       await this.replaceResourceRequirements(client, versionId, input.resourceRequirements);
       await this.replaceLaborRequirements(client, versionId, input.laborRequirements);
+      await this.replacePricingModels(client, versionId, input.pricingModels);
       await client.query('COMMIT');
 
       const detail = await this.findVersionDetail(defRow.id, 1);
@@ -327,6 +353,7 @@ export class ServiceCatalogRepository {
           categoryId: input.categoryId || source.category_id,
           archetype: input.archetype || source.archetype,
           measurementMode: input.measurementMode || source.measurement_mode,
+          measurementBasis: input.measurementBasis || source.measurement_basis,
           description: input.description ?? source.description ?? undefined,
           defaultUnitCode: input.defaultUnitCode ?? source.default_unit_code ?? undefined,
           allowedUnits:
@@ -355,6 +382,32 @@ export class ServiceCatalogRepository {
                   minQuantity: requirement.min_quantity,
                   sortOrder: requirement.sort_order,
                 })),
+          pricingModels:
+            input.pricingModels.length > 0
+              ? input.pricingModels
+              : source.pricing_models.map((model, index) => {
+                  const unitCode = model.config?.unitCode ?? null;
+                  const commercialCode =
+                    model.config?.commercialCode ??
+                    commercialCodeFromPersisted(
+                      model.pricing_model_code as Parameters<typeof commercialCodeFromPersisted>[0],
+                      unitCode,
+                    ) ??
+                    model.pricing_model_code;
+                  return normalizePricingModelInput(
+                    {
+                      modelCode: isCommercialPricingModelCode(commercialCode)
+                        ? commercialCode
+                        : 'UNIT_PRICE',
+                      unitCode,
+                      salePrice: model.sale_price_amount,
+                      internalCost: model.internal_cost_amount,
+                      currencyCode: model.currency_code.trim(),
+                      sortOrder: model.sort_order,
+                    },
+                    index,
+                  );
+                }),
         };
       }
 
@@ -369,9 +422,10 @@ export class ServiceCatalogRepository {
            description,
            default_unit_code,
            measurement_mode,
+           measurement_basis,
            created_by_identity_id,
            updated_by_identity_id
-         ) VALUES ($1, $2, 'DRAFT', $3, $4, $5, $6, $7, $8, $9, $9)
+         ) VALUES ($1, $2, 'DRAFT', $3, $4, $5, $6, $7, $8, $9, $10, $10)
          RETURNING id`,
         [
           input.definitionId,
@@ -382,6 +436,7 @@ export class ServiceCatalogRepository {
           payload.description ?? null,
           payload.defaultUnitCode ?? null,
           payload.measurementMode,
+          payload.measurementBasis,
           input.actorIdentityId,
         ],
       );
@@ -393,6 +448,7 @@ export class ServiceCatalogRepository {
       await this.replaceAllowedUnits(client, versionId, payload.allowedUnits);
       await this.replaceResourceRequirements(client, versionId, payload.resourceRequirements);
       await this.replaceLaborRequirements(client, versionId, payload.laborRequirements);
+      await this.replacePricingModels(client, versionId, payload.pricingModels);
       await client.query(
         `UPDATE cat.service_definitions
          SET updated_at = now(), updated_by_identity_id = $2, version = version + 1
@@ -466,11 +522,12 @@ export class ServiceCatalogRepository {
              description = $6,
              default_unit_code = $7,
              measurement_mode = $8,
+             measurement_basis = $9,
              updated_at = now(),
-             updated_by_identity_id = $9
+             updated_by_identity_id = $10
          WHERE id = $2
            AND service_definition_id = $1
-           AND version = $10
+           AND version = $11
            AND status = 'DRAFT'`,
         [
           input.definitionId,
@@ -481,6 +538,7 @@ export class ServiceCatalogRepository {
           input.description ?? null,
           input.defaultUnitCode ?? null,
           input.measurementMode,
+          input.measurementBasis,
           input.actorIdentityId,
           input.versionNumber,
         ],
@@ -489,6 +547,7 @@ export class ServiceCatalogRepository {
       await this.replaceAllowedUnits(client, currentRow.id, input.allowedUnits);
       await this.replaceResourceRequirements(client, currentRow.id, input.resourceRequirements);
       await this.replaceLaborRequirements(client, currentRow.id, input.laborRequirements);
+      await this.replacePricingModels(client, currentRow.id, input.pricingModels);
 
       const lineageUpdated = await client.query(
         `UPDATE cat.service_definitions
@@ -779,6 +838,39 @@ export class ServiceCatalogRepository {
           requirement.requirementLevel,
           requirement.minQuantity ?? 1,
           requirement.sortOrder ?? 0,
+        ],
+      );
+    }
+  }
+
+  private async replacePricingModels(
+    client: PoolClient,
+    versionId: string,
+    models: NormalizedPricingModelInput[],
+  ): Promise<void> {
+    await client.query(`DELETE FROM cat.service_pricing_models WHERE service_definition_version_id = $1`, [
+      versionId,
+    ]);
+    for (const model of models) {
+      const persisted = toPersistedPricingModel(model);
+      await client.query(
+        `INSERT INTO cat.service_pricing_models (
+           service_definition_version_id,
+           pricing_model_code,
+           config,
+           sale_price_amount,
+           internal_cost_amount,
+           currency_code,
+           sort_order
+         ) VALUES ($1, $2::cat.pricing_model_code, $3::jsonb, $4, $5, $6, $7)`,
+        [
+          versionId,
+          persisted.persistedCode,
+          JSON.stringify(persisted.config),
+          persisted.salePrice,
+          persisted.internalCost,
+          persisted.currencyCode,
+          persisted.sortOrder,
         ],
       );
     }

@@ -108,6 +108,11 @@ export default async function ensureMigrations(): Promise<void> {
     if (!hasLaborTypes) {
       await applySqlFile(pool, '0011_operational_labor_types.sql');
     }
+
+    const hasMeasurementBasis = await columnExists(pool, 'cat', 'service_definition_versions', 'measurement_basis');
+    if (!hasMeasurementBasis) {
+      await applySqlFile(pool, '0012_commercial_pricing_measurement.sql');
+    }
   } finally {
     await pool.end();
   }

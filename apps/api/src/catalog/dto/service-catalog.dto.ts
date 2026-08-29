@@ -8,13 +8,18 @@ import {
   assertNonEmptyName,
   assertLaborRequirements,
   assertResourceRequirements,
+  assertCommercialCatalogInput,
   assertServiceCode,
   assertUuid,
+  CatalogValidationError,
   type AllowedUnitInput,
   type LaborRequirementInput,
+  type PricingModelInput,
+  type NormalizedPricingModelInput,
   type ResourceRequirementInput,
 } from '../domain/service-catalog.validation';
 import { LINEAGE_STATUSES, type LineageStatus } from '../domain/service-catalog-status';
+import type { MeasurementMode } from '../domain/service-catalog-status';
 
 function assertObject(value: unknown): Record<string, unknown> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
@@ -181,17 +186,116 @@ function parseLaborRequirements(
   });
 }
 
+function raiseCatalogValidation(error: CatalogValidationError): never {
+  const code =
+    CATALOG_ERROR_CODES[error.code as keyof typeof CATALOG_ERROR_CODES] ??
+    CATALOG_ERROR_CODES.VALIDATION_FAILED;
+  throw new CatalogHttpException(HttpStatus.BAD_REQUEST, code, 'Invalid request body.');
+}
+
+function parsePricingModels(body: Record<string, unknown>, required = false): PricingModelInput[] {
+  const raw = body['pricingModels'];
+  if (raw === undefined) {
+    if (required) {
+      throw new CatalogHttpException(
+        HttpStatus.BAD_REQUEST,
+        CATALOG_ERROR_CODES.VALIDATION_FAILED,
+        'Invalid request body.',
+      );
+    }
+    return [];
+  }
+  if (!Array.isArray(raw)) {
+    throw new CatalogHttpException(
+      HttpStatus.BAD_REQUEST,
+      CATALOG_ERROR_CODES.VALIDATION_FAILED,
+      'Invalid request body.',
+    );
+  }
+  return raw.map((item) => {
+    if (typeof item !== 'object' || item === null) {
+      throw new CatalogHttpException(
+        HttpStatus.BAD_REQUEST,
+        CATALOG_ERROR_CODES.VALIDATION_FAILED,
+        'Invalid request body.',
+      );
+    }
+    const record = item as Record<string, unknown>;
+    const salePrice = record['salePrice'];
+    const internalCost = record['internalCost'];
+    return {
+      modelCode: parseRequiredString(record, 'modelCode'),
+      unitCode: parseOptionalString(record, 'unitCode'),
+      salePrice:
+        salePrice === undefined || salePrice === null
+          ? undefined
+          : typeof salePrice === 'number'
+            ? (() => {
+                throw new CatalogHttpException(
+                  HttpStatus.BAD_REQUEST,
+                  CATALOG_ERROR_CODES.INVALID_MONEY_AMOUNT,
+                  'Invalid request body.',
+                );
+              })()
+            : parseRequiredString(record, 'salePrice'),
+      internalCost:
+        internalCost === undefined || internalCost === null
+          ? undefined
+          : typeof internalCost === 'number'
+            ? (() => {
+                throw new CatalogHttpException(
+                  HttpStatus.BAD_REQUEST,
+                  CATALOG_ERROR_CODES.INVALID_MONEY_AMOUNT,
+                  'Invalid request body.',
+                );
+              })()
+            : parseRequiredString(record, 'internalCost'),
+      currencyCode: parseOptionalString(record, 'currencyCode'),
+      sortOrder:
+        record['sortOrder'] === undefined ? undefined : parsePositiveInt(record['sortOrder'], 'sortOrder'),
+    };
+  });
+}
+
+function parseMeasurementBasis(body: Record<string, unknown>): string {
+  return parseRequiredString(body, 'measurementBasis').trim().toUpperCase();
+}
+
+function validateCommercialFields(
+  measurementBasis: string,
+  measurementMode: MeasurementMode,
+  allowedUnits: AllowedUnitInput[],
+  pricingModels: PricingModelInput[],
+): NormalizedPricingModelInput[] {
+  try {
+    const result = assertCommercialCatalogInput({
+      measurementBasis,
+      measurementMode,
+      allowedUnits,
+      pricingModels,
+    });
+    return result.pricingModels;
+  } catch (error) {
+    if (error instanceof CatalogValidationError) {
+      raiseCatalogValidation(error);
+    }
+    throw error;
+  }
+}
+
 export type CreateServiceDefinitionInput = {
   code: string;
   name: string;
   categoryId: string;
   archetype: string;
   measurementMode: string;
+  measurementBasis: string;
   description?: string;
   defaultUnitCode?: string;
   allowedUnits: AllowedUnitInput[];
   resourceRequirements?: ResourceRequirementInput[];
   laborRequirements?: LaborRequirementInput[];
+  pricingModels: PricingModelInput[];
 };
 
 export function parseCreateServiceDefinitionInput(body: unknown): CreateServiceDefinitionInput {
@@ -199,17 +303,27 @@ export function parseCreateServiceDefinitionInput(body: unknown): CreateServiceD
   const allowedUnits = parseAllowedUnits(record);
   const resourceRequirements = parseResourceRequirements(record);
   const laborRequirements = parseLaborRequirements(record);
+  const measurementMode = assertMeasurementMode(parseRequiredString(record, 'measurementMode'));
+  const measurementBasis = parseMeasurementBasis(record);
+  const pricingModels = validateCommercialFields(
+    measurementBasis,
+    measurementMode,
+    assertAllowedUnits(allowedUnits),
+    parsePricingModels(record, true),
+  );
   return {
     code: assertServiceCode(parseRequiredString(record, 'code')),
     name: assertNonEmptyName(parseRequiredString(record, 'name')),
     categoryId: assertUuid(parseRequiredString(record, 'categoryId'), 'INVALID_CATEGORY_ID'),
     archetype: assertArchetype(parseRequiredString(record, 'archetype')),
-    measurementMode: assertMeasurementMode(parseRequiredString(record, 'measurementMode')),
+    measurementMode,
+    measurementBasis,
     description: parseOptionalString(record, 'description'),
     defaultUnitCode: parseOptionalString(record, 'defaultUnitCode'),
     allowedUnits: assertAllowedUnits(allowedUnits),
     resourceRequirements: assertResourceRequirements(resourceRequirements),
     laborRequirements: assertLaborRequirements(laborRequirements),
+    pricingModels,
   };
 }
 
@@ -218,11 +332,13 @@ export type CreateServiceDefinitionVersionInput = {
   categoryId: string;
   archetype: string;
   measurementMode: string;
+  measurementBasis: string;
   description?: string;
   defaultUnitCode?: string;
   allowedUnits: AllowedUnitInput[];
   resourceRequirements: ResourceRequirementInput[];
   laborRequirements: LaborRequirementInput[];
+  pricingModels: PricingModelInput[];
   sourceVersion?: number;
 };
 
@@ -233,17 +349,27 @@ export function parseCreateServiceDefinitionVersionInput(
   const allowedUnits = parseAllowedUnits(record);
   const resourceRequirements = parseResourceRequirements(record, true);
   const laborRequirements = parseLaborRequirements(record, true);
+  const measurementMode = assertMeasurementMode(parseRequiredString(record, 'measurementMode'));
+  const measurementBasis = parseMeasurementBasis(record);
+  const pricingModels = validateCommercialFields(
+    measurementBasis,
+    measurementMode,
+    assertAllowedUnits(allowedUnits),
+    parsePricingModels(record, true),
+  );
   const sourceVersionRaw = record['sourceVersion'];
   return {
     name: assertNonEmptyName(parseRequiredString(record, 'name')),
     categoryId: assertUuid(parseRequiredString(record, 'categoryId'), 'INVALID_CATEGORY_ID'),
     archetype: assertArchetype(parseRequiredString(record, 'archetype')),
-    measurementMode: assertMeasurementMode(parseRequiredString(record, 'measurementMode')),
+    measurementMode,
+    measurementBasis,
     description: parseOptionalString(record, 'description'),
     defaultUnitCode: parseOptionalString(record, 'defaultUnitCode'),
     allowedUnits: assertAllowedUnits(allowedUnits),
     resourceRequirements: assertResourceRequirements(resourceRequirements),
     laborRequirements: assertLaborRequirements(laborRequirements),
+    pricingModels,
     sourceVersion:
       sourceVersionRaw === undefined ? undefined : parsePositiveInt(sourceVersionRaw, 'sourceVersion'),
   };
@@ -255,11 +381,13 @@ export type UpdateDraftServiceDefinitionInput = {
   categoryId: string;
   archetype: string;
   measurementMode: string;
+  measurementBasis: string;
   description?: string | null;
   defaultUnitCode?: string | null;
   allowedUnits: AllowedUnitInput[];
   resourceRequirements?: ResourceRequirementInput[];
   laborRequirements?: LaborRequirementInput[];
+  pricingModels: PricingModelInput[];
 };
 
 export function parseUpdateDraftServiceDefinitionInput(
@@ -269,6 +397,14 @@ export function parseUpdateDraftServiceDefinitionInput(
   const allowedUnits = parseAllowedUnits(record);
   const resourceRequirements = parseResourceRequirements(record, true);
   const laborRequirements = parseLaborRequirements(record, true);
+  const measurementMode = assertMeasurementMode(parseRequiredString(record, 'measurementMode'));
+  const measurementBasis = parseMeasurementBasis(record);
+  const pricingModels = validateCommercialFields(
+    measurementBasis,
+    measurementMode,
+    assertAllowedUnits(allowedUnits),
+    parsePricingModels(record, true),
+  );
   const description = record['description'];
   const defaultUnitCode = record['defaultUnitCode'];
   return {
@@ -276,7 +412,8 @@ export function parseUpdateDraftServiceDefinitionInput(
     name: assertNonEmptyName(parseRequiredString(record, 'name')),
     categoryId: assertUuid(parseRequiredString(record, 'categoryId'), 'INVALID_CATEGORY_ID'),
     archetype: assertArchetype(parseRequiredString(record, 'archetype')),
-    measurementMode: assertMeasurementMode(parseRequiredString(record, 'measurementMode')),
+    measurementMode,
+    measurementBasis,
     description:
       description === undefined ? undefined : description === null ? null : parseRequiredString(record, 'description'),
     defaultUnitCode:
@@ -288,6 +425,7 @@ export function parseUpdateDraftServiceDefinitionInput(
     allowedUnits: assertAllowedUnits(allowedUnits),
     resourceRequirements: assertResourceRequirements(resourceRequirements),
     laborRequirements: assertLaborRequirements(laborRequirements),
+    pricingModels,
   };
 }
 

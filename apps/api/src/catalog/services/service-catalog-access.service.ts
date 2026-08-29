@@ -14,8 +14,8 @@ import { AUTHZ_RESOURCE_TYPES } from '../../authorization/types/authz-resources'
 import { AUTHZ_SCOPES } from '../../authorization/types/authz-scopes';
 import type { IdentityAuthzContext } from '../../authorization/types/authz-decision';
 import { LINEAGE_STATUSES } from '../domain/service-catalog-status';
-import { CatalogValidationError } from '../domain/service-catalog.validation';
-import { assertUuid } from '../domain/service-catalog.validation';
+import type { MeasurementMode } from '../domain/service-catalog-status';
+import { CatalogValidationError, assertCommercialCatalogInput, assertUuid } from '../domain/service-catalog.validation';
 import { normalizeUnitCode } from '../domain/unit-of-measure';
 import type {
   CreateServiceDefinitionInput,
@@ -70,10 +70,12 @@ export class ServiceCatalogAccessService {
     await this.assertActiveLaborTypeReferences(
       (input.laborRequirements ?? []).map((requirement) => requirement.laborTypeCode),
     );
+    const commercial = this.resolveCommercialInput(input);
 
     try {
       const created = await this.repository.createDefinitionWithDraft({
         ...input,
+        ...commercial,
         resourceRequirements: input.resourceRequirements ?? [],
         laborRequirements: input.laborRequirements ?? [],
         actorIdentityId: actor.identityId,
@@ -176,10 +178,16 @@ export class ServiceCatalogAccessService {
     await this.assertActiveLaborTypeReferences(
       (input.laborRequirements ?? []).map((requirement) => requirement.laborTypeCode),
     );
+    const commercial =
+      input.pricingModels.length === 0 && input.sourceVersion !== undefined
+        ? { measurementBasis: input.measurementBasis, pricingModels: [] as const }
+        : this.resolveCommercialInput(input);
 
     const created = await this.repository.createDraftVersion({
       definitionId,
       ...input,
+      measurementBasis: commercial.measurementBasis,
+      pricingModels: [...commercial.pricingModels],
       resourceRequirements: input.resourceRequirements ?? [],
       laborRequirements: input.laborRequirements ?? [],
       actorIdentityId: actor.identityId,
@@ -274,6 +282,7 @@ export class ServiceCatalogAccessService {
     await this.assertActiveLaborTypeReferences(
       (input.laborRequirements ?? []).map((requirement) => requirement.laborTypeCode),
     );
+    const commercial = this.resolveCommercialInput(input);
 
     const updated = await this.repository.updateDraftVersion({
       definitionId,
@@ -283,11 +292,13 @@ export class ServiceCatalogAccessService {
       categoryId: input.categoryId,
       archetype: input.archetype,
       measurementMode: input.measurementMode,
+      measurementBasis: commercial.measurementBasis,
       description: input.description,
       defaultUnitCode: input.defaultUnitCode,
       allowedUnits: input.allowedUnits,
       resourceRequirements: input.resourceRequirements ?? [],
       laborRequirements: input.laborRequirements ?? [],
+      pricingModels: commercial.pricingModels,
       actorIdentityId: actor.identityId,
     });
 
@@ -620,6 +631,47 @@ export class ServiceCatalogAccessService {
         CATALOG_ERROR_CODES.INACTIVE_LABOR_TYPE,
         'One or more labor type codes are inactive.',
       );
+    }
+  }
+
+  private resolveCommercialInput(input: {
+    measurementBasis: string;
+    measurementMode: string;
+    allowedUnits: Array<{ unitCode: string }>;
+    pricingModels: Array<{
+      modelCode: string;
+      unitCode?: string | null;
+      salePrice?: string | null;
+      internalCost?: string | null;
+      currencyCode?: string;
+      sortOrder?: number;
+    }>;
+  }) {
+    try {
+      return assertCommercialCatalogInput({
+        measurementBasis: input.measurementBasis,
+        measurementMode: input.measurementMode as MeasurementMode,
+        allowedUnits: input.allowedUnits.map((unit, index) => ({
+          unitCode: unit.unitCode,
+          sortOrder: index,
+        })),
+        pricingModels: input.pricingModels.map((model) => ({
+          modelCode: model.modelCode,
+          unitCode: model.unitCode ?? undefined,
+          salePrice: model.salePrice ?? undefined,
+          internalCost: model.internalCost ?? undefined,
+          currencyCode: model.currencyCode,
+          sortOrder: model.sortOrder,
+        })),
+      });
+    } catch (error) {
+      if (error instanceof CatalogValidationError) {
+        const code =
+          CATALOG_ERROR_CODES[error.code as keyof typeof CATALOG_ERROR_CODES] ??
+          CATALOG_ERROR_CODES.VALIDATION_FAILED;
+        throw new CatalogHttpException(HttpStatus.BAD_REQUEST, code, 'Invalid request body.');
+      }
+      throw error;
     }
   }
 }

@@ -2446,3 +2446,34 @@ Resumo:
 - [x] Prompt 39 não executado
 
 ---
+
+## Prompt 39 — Modelos comerciais, precificação e medição
+
+| Campo | Valor |
+| ----- | ----- |
+| ID | 39 |
+| Título | Modelos comerciais, precificação e medição |
+| Status | PASS |
+| Commit | feat(commercial): implement pricing and measurement models |
+| Executado em | 2026-08-29 |
+
+```
+Resumo:
+  Módulo commercial com vocabulário de pricing/measurement,
+  numeric(18,4) para salePrice/internalCost, measurement_basis,
+  pricingModels no service catalog. Sem tributação nem Measurement agregado.
+  Prompt 40 não executado.
+```
+
+## Quality gate Prompt 39 (evidência)
+
+- [x] Vocabulário comercial mapeado para enums SQL existentes
+- [x] `measurement_basis` + policies de compatibilidade UoM/modo
+- [x] `sale_price_amount` / `internal_cost_amount` numeric — sem float
+- [x] API `/commercial/pricing-models` e `/commercial/measurement-models`
+- [x] Service catalog integra `pricingModels` e `measurementBasis`
+- [x] Exemplos global price e PO negociado cobertos em testes
+- [x] lint, typecheck, test, test:integration, test:e2e, gate:database — PASS
+- [x] Prompt 40 não executado
+
+---

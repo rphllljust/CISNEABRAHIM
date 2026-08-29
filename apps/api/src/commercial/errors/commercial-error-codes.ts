@@ -1,0 +1,6 @@
+export const COMMERCIAL_ERROR_CODES = {
+  VALIDATION_FAILED: 'COMMERCIAL_VALIDATION_FAILED',
+  DENIED: 'COMMERCIAL_DENIED',
+} as const;
+
+export type CommercialErrorCode = (typeof COMMERCIAL_ERROR_CODES)[keyof typeof COMMERCIAL_ERROR_CODES];

@@ -1,3 +1,6 @@
+import type { PersistedPricingModelCode } from '../../commercial/domain/pricing-model';
+import { commercialCodeFromPersisted } from '../../commercial/domain/pricing-model';
+import { formatMoneyAmountForApi } from '../../commercial/domain/money';
 import type { LineageStatus, VersionApiStatus, VersionDbStatus } from '../domain/service-catalog-status';
 import { toVersionApiStatus } from '../domain/service-catalog-status';
 
@@ -23,6 +26,7 @@ export type ServiceDefinitionVersionRow = {
   description: string | null;
   default_unit_code: string | null;
   measurement_mode: string;
+  measurement_basis: string;
   published_at: string | null;
   created_at: string;
   updated_at: string;
@@ -48,6 +52,15 @@ export type LaborRequirementRow = {
   sort_order: number;
 };
 
+export type PricingModelRow = {
+  pricing_model_code: string;
+  config: { commercialCode?: string; unitCode?: string; schemaVersion?: number } | null;
+  sale_price_amount: string | null;
+  internal_cost_amount: string | null;
+  currency_code: string;
+  sort_order: number;
+};
+
 export type ServiceDefinitionSummary = ServiceDefinitionRow & {
   latest_published_version: number | null;
   current_draft_version: number | null;
@@ -58,6 +71,7 @@ export type ServiceDefinitionVersionDetail = ServiceDefinitionVersionRow & {
   allowed_units: AllowedUnitRow[];
   resource_requirements: ResourceRequirementRow[];
   labor_requirements: LaborRequirementRow[];
+  pricing_models: PricingModelRow[];
 };
 
 export type ServiceDefinitionResponse = {
@@ -85,6 +99,7 @@ export type ServiceDefinitionVersionResponse = {
   description: string | null;
   defaultUnitCode: string | null;
   measurementMode: string;
+  measurementBasis: string;
   allowedUnits: Array<{ unitCode: string; isDefault: boolean; sortOrder: number }>;
   resourceRequirements: Array<{
     resourceTypeCode: string;
@@ -96,6 +111,14 @@ export type ServiceDefinitionVersionResponse = {
     laborTypeCode: string;
     requirementLevel: 'REQUIRED' | 'OPTIONAL' | 'CONDITIONAL';
     minQuantity: number;
+    sortOrder: number;
+  }>;
+  pricingModels: Array<{
+    modelCode: string;
+    unitCode: string | null;
+    salePrice: string | null;
+    internalCost: string | null;
+    currencyCode: string;
     sortOrder: number;
   }>;
   publishedAt: string | null;
@@ -133,6 +156,7 @@ export function toServiceDefinitionVersionResponse(
     description: row.description,
     defaultUnitCode: row.default_unit_code,
     measurementMode: row.measurement_mode,
+    measurementBasis: row.measurement_basis,
     allowedUnits: row.allowed_units.map((unit) => ({
       unitCode: unit.unit_code,
       isDefault: unit.is_default,
@@ -150,6 +174,20 @@ export function toServiceDefinitionVersionResponse(
       minQuantity: requirement.min_quantity,
       sortOrder: requirement.sort_order,
     })),
+    pricingModels: row.pricing_models.map((model) => {
+      const unitCode = model.config?.unitCode ?? null;
+      const commercialCode =
+        model.config?.commercialCode ??
+        commercialCodeFromPersisted(model.pricing_model_code as PersistedPricingModelCode, unitCode);
+      return {
+        modelCode: commercialCode ?? model.pricing_model_code,
+        unitCode,
+        salePrice: formatMoneyAmountForApi(model.sale_price_amount),
+        internalCost: formatMoneyAmountForApi(model.internal_cost_amount),
+        currencyCode: model.currency_code.trim(),
+        sortOrder: model.sort_order,
+      };
+    }),
     publishedAt: row.published_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
