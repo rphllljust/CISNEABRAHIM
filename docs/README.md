@@ -11,7 +11,8 @@
 5. `03-requirements/` contém requisitos funcionais e casos de uso do Prompt 02.
 6. `04-quality-attributes/` contém requisitos não funcionais do Prompt 03.
 7. `05-ubiquitous-language/` contém glossário e linguagem ubíqua do Prompt 04.
-8. `templates/` define a forma dos registros futuros.
+8. `06-domain-boundaries/` contém subdomínios e bounded contexts candidatos do Prompt 05.
+9. `templates/` define a forma dos registros futuros.
 
 Agentes devem seguir [`../AGENTS.md`](../AGENTS.md) e o protocolo em [`00-governance/execution-protocol.md`](00-governance/execution-protocol.md).
 
@@ -94,6 +95,19 @@ Glossário e linguagem ubíqua (Prompt 04). Índice: [05-ubiquitous-language/REA
 | [state-event-command-semantics.md](05-ubiquitous-language/state-event-command-semantics.md) | Estado, evento, comando |
 | [language-consistency-audit.md](05-ubiquitous-language/language-consistency-audit.md) | Auditoria terminológica |
 | [prompt-04-completeness-report.md](05-ubiquitous-language/prompt-04-completeness-report.md) | Relatório de completude |
+
+## 06-domain-boundaries
+
+Subdomínios e bounded contexts candidatos (Prompt 05). Índice: [06-domain-boundaries/README.md](06-domain-boundaries/README.md).
+
+| Arquivo | Conteúdo |
+| --- | --- |
+| [subdomain-classification.md](06-domain-boundaries/subdomain-classification.md) | 12 subdomínios SUBD-001..012 |
+| [bounded-context-candidates.md](06-domain-boundaries/bounded-context-candidates.md) | 18 BC-CAND-001..018 |
+| [context-map.md](06-domain-boundaries/context-map.md) | Mapa de contextos |
+| [cross-context-workflows.md](06-domain-boundaries/cross-context-workflows.md) | Fluxos transversais |
+| [modular-monolith-assessment.md](06-domain-boundaries/modular-monolith-assessment.md) | Avaliação modular monolith |
+| [prompt-05-completeness-report.md](06-domain-boundaries/prompt-05-completeness-report.md) | Relatório de completude |
 
 ## inputs
 

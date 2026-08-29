@@ -4,7 +4,7 @@
 | --- | --- |
 | Document ID | RTM-001 |
 | Policy | [`../00-governance/traceability-policy.md`](../00-governance/traceability-policy.md) |
-| Last updated | 2026-08-28 (Prompt 04) |
+| Last updated | 2026-08-28 (Prompt 05) |
 | Rule | Colunas inaplicáveis = `TBD`. Proibido inventar para completar. |
 
 Cadeia:
@@ -106,3 +106,27 @@ Matriz completa: [`../04-quality-attributes/nfr-risk-traceability.md`](../04-qua
 | Auditoria | [`../05-ubiquitous-language/language-consistency-audit.md`](../05-ubiquitous-language/language-consistency-audit.md) |
 
 Cadeia estendida: `SOURCE → EVIDENCE → TERM → BR → FR → NFR → UC → DDP → FUTURE TEST (TBD)`.
+
+## Resumo Prompt 05
+
+| Métrica | Valor |
+| --- | --- |
+| Subdomínios (SUBD) | 12 (SUBD-001..SUBD-012) |
+| Bounded contexts candidatos (BC-CAND) | 18 (BC-CAND-001..018) |
+| CORE_CANDIDATE (subdomínio) | 4 |
+| Capacidades mapeadas | 27/27 |
+| Decisões fronteira (DBND) | 12 |
+| Microserviços / implementação | **0** |
+| Índice | [`../06-domain-boundaries/README.md`](../06-domain-boundaries/README.md) |
+| Relatório | [`../06-domain-boundaries/prompt-05-completeness-report.md`](../06-domain-boundaries/prompt-05-completeness-report.md) |
+
+Cadeia Prompt 05:
+
+```text
+CAPABILITY → SUBDOMAIN → BOUNDED CONTEXT CANDIDATE
+BR / FR / UC → CONTEXT OWNER
+DATA → AUTHORITATIVE CONTEXT
+COMMAND / EVENT → CONTEXT OWNER
+```
+
+Matriz CAP→BC: [`../06-domain-boundaries/capability-to-context-matrix.md`](../06-domain-boundaries/capability-to-context-matrix.md).
