@@ -3,7 +3,8 @@
 | Campo | Valor |
 | --- | --- |
 | Document ID | DDP-REG-001 |
-| Status of answers | **NONE** — perguntas abertas; respostas não autorizadas neste Prompt 00 |
+| Last updated | 2026-08-28 (Prompt 01) |
+| Status of answers | **NONE** — perguntas abertas; respostas não autorizadas |
 
 Status típicos: `OPEN`, `BLOCKING`, `ANSWERED`, `SUPERSEDED`. Todas as entradas abaixo estão `OPEN` e `BLOCKING` para implementação do tema.
 
@@ -131,6 +132,96 @@ Para cada conceito crítico (OS, saldo de PO, medição, fatura, pagamento, cada
 
 **Status:** `OPEN` · **Bloqueia integrações e persistência definitiva:** sim
 
+## DDP-021 — Canal WhatsApp
+
+WhatsApp continuará sendo canal oficial de solicitação? O sistema substituirá ou apenas registrará conversas? Qual o Source of Truth da mensagem?
+
+**Status:** `OPEN` · **Fonte:** SRC-001 EV-027, EV-032, EV-033 · **Risco:** RISK-018
+
+## DDP-022 — Criar vs liberar OS (mesma pessoa)
+
+A mesma pessoa pode criar rascunho e liberar OS? Existe segregação maker-checker obrigatória?
+
+**Status:** `OPEN` · **Bloqueia:** autorização de OS · **Fonte:** EV-043 · **Risco:** RISK-022
+
+## DDP-023 — Modo de emissão fiscal
+
+O Sistema Cisne emitirá documento fiscal oficial, registrará documento externo, integrará ERP/fiscal/municipal ou apenas fatura/recibo não fiscal?
+
+**Status:** `OPEN` · **Bloqueia:** módulo fiscal · **Fonte:** EV-064, EV-065 · **Risco:** RISK-012
+
+## DDP-024 — Faixas de aging
+
+Quais faixas de tempo definem solicitação/OS/medição/nota/pagamento “parados”? Valores atuais: nenhum confirmado — **proibido inventar** (EV-076).
+
+**Status:** `OPEN` · **Fonte:** EV-074–EV-076
+
+## DDP-025 — PWA
+
+Existe exigência de Progressive Web App ou experiência mobile instalável?
+
+**Status:** `OPEN` · **Fonte:** SRC-001 §22
+
+## DDP-026 — Escopo do primeiro release
+
+Quais verticais (locação citada como prioridade candidata em §21) entram no primeiro release? Confirmação formal da direção necessária.
+
+**Status:** `OPEN` · **Bloqueia:** escopo de produto · **Fonte:** EV-003, EV-080–EV-082 · **Risco:** RISK-021
+
+## DDP-027 — Chassi — exibição vs armazenamento
+
+Como tratar chassi e dados sensíveis de veículo (máscara em tela vs armazenamento completo)?
+
+**Status:** `OPEN` · **Fonte:** EV-052
+
+## DDP-028 — Quem pode solicitar serviço
+
+Quem pode solicitar? Solicitante interno ou externo? Lista de perfis?
+
+**Status:** `OPEN` · **Fonte:** EV-029
+
+## DDP-029 — Prontidão para liberação da OS
+
+Quais condições tornam a OS pronta para liberação (crédito, PO, agenda, frota)?
+
+**Status:** `OPEN` · **Bloqueia:** liberação · **Fonte:** EV-044
+
+## DDP-030 — Visibilidade e alteração de custo, margem e preço
+
+Quem visualiza custo e margem? Quem altera preço? Unidades de cobrança de mão de obra?
+
+**Status:** `OPEN` · **Fonte:** EV-057, EV-060
+
+## DDP-031 — Modelo de preço
+
+Preço global, por item ou híbrido? Descontos e adicionais?
+
+**Status:** `OPEN` · **Fonte:** EV-061
+
+## DDP-032 — Estados de responsabilidade e handoff
+
+Classificação de ASSIGNED, VIEWED, etc. como evento, estado ou auditoria. OS concluída pode receber novos itens?
+
+**Status:** `OPEN` · **Fonte:** EV-083–EV-061, SRC-001 §6
+
+## DDP-033 — Documentos críticos e controle
+
+Quais tipos de documentos são críticos? Quem controla substituição e aprovação (gestão — nomes TBD)?
+
+**Status:** `OPEN` · **Fonte:** EV-080, EV-081
+
+## DDP-034 — Campos obrigatórios de equipamento/veículo
+
+Placa, prefixo, chassi, RENAVAM, quilometragem, horímetro — quais são obrigatórios por tipo de serviço?
+
+**Status:** `OPEN` · **Fonte:** EV-052
+
+## DDP-035 — Composição da OS por tipo de serviço
+
+Quais campos da OS são obrigatórios para cada tipo de serviço?
+
+**Status:** `OPEN` · **Fonte:** EV-047, EV-048
+
 ## Próximo ID
 
-`DDP-021`.
+`DDP-036`.

@@ -6,8 +6,9 @@
 
 1. Governança (`00-governance/`) define como o trabalho é feito.
 2. Fundação (`01-foundation/`) registra o que se sabe, o que falta e o que está pendente.
-3. `inputs/` recebe fontes empresariais futuras. Não contém fontes nesta fase.
-4. `templates/` define a forma dos registros futuros.
+3. `inputs/` recebe fontes empresariais. SRC-001 disponível desde Prompt 00.1; analisado no Prompt 01.
+4. `02-source-analysis/` contém decomposição atômica e análises do Prompt 01.
+5. `templates/` define a forma dos registros futuros.
 
 Agentes devem seguir [`../AGENTS.md`](../AGENTS.md) e o protocolo em [`00-governance/execution-protocol.md`](00-governance/execution-protocol.md).
 
@@ -40,6 +41,16 @@ Agentes devem seguir [`../AGENTS.md`](../AGENTS.md) e o protocolo em [`00-govern
 | [source-conflicts.md](01-foundation/source-conflicts.md) | Conflitos de fonte |
 | [risk-register.md](01-foundation/risk-register.md) | Registro de riscos |
 | [requirements-traceability.md](01-foundation/requirements-traceability.md) | Matriz de rastreabilidade |
+
+## 02-source-analysis
+
+Análise atômica e temática das fontes (Prompt 01). Índice: [02-source-analysis/README.md](02-source-analysis/README.md).
+
+| Arquivo | Conteúdo |
+| --- | --- |
+| [atomic-evidence-register.md](02-source-analysis/atomic-evidence-register.md) | 84 evidências EV-001–EV-084 |
+| [source-assessment.md](02-source-analysis/source-assessment.md) | Avaliação SRC-000 e SRC-001 |
+| [prompt-01-completeness-report.md](02-source-analysis/prompt-01-completeness-report.md) | Relatório de completude |
 
 ## inputs
 

@@ -168,6 +168,72 @@ Impacto qualitativo preliminar (`HIGH`/`MEDIUM`/`LOW`) é julgamento de engenhar
 | Status | `OPEN` |
 | Nearby controls | inputs/ README (não executar binários); implementação futura TBD |
 
+## RISK-017 — Over-trust em fonte reconstruída
+
+| Campo | Valor |
+| --- | --- |
+| Title | Promover afirmações de SRC-001 a regras CONFIRMED sem validação cruzada |
+| Probability | `UNKNOWN` |
+| Impact | HIGH |
+| Status | `OPEN` |
+| Source | SRC-001 EV-084 |
+| Nearby controls | status CANDIDATE; source-gaps-and-requests |
+
+## RISK-018 — WhatsApp como Source of Truth
+
+| Campo | Valor |
+| --- | --- |
+| Title | Tratar conversa de WhatsApp como registro autoritativo de solicitação ou OS |
+| Probability | `UNKNOWN` |
+| Impact | HIGH |
+| Status | `OPEN` |
+| Source | SRC-001 EV-027, EV-033 |
+| Nearby controls | DDP-021, DDP-033 |
+
+## RISK-019 — Conflação de quantidades
+
+| Campo | Valor |
+| --- | --- |
+| Title | Usar propriedade única `quantity` para fases ITEM_PLANNED…ITEM_PAID |
+| Probability | `UNKNOWN` |
+| Impact | HIGH |
+| Status | `OPEN` |
+| Source | SRC-001 EV-065 |
+| Nearby controls | BR-010; quantity-semantics.md |
+
+## RISK-020 — Margem e custo expostos indevidamente
+
+| Campo | Valor |
+| --- | --- |
+| Title | Exibir custo interno ou margem a atores não autorizados |
+| Probability | `UNKNOWN` |
+| Impact | HIGH |
+| Status | `OPEN` |
+| Source | SRC-001 EV-060 |
+| Nearby controls | DDP-030, DDP-015 |
+
+## RISK-021 — Escopo de locação antecipado
+
+| Campo | Valor |
+| --- | --- |
+| Title | Implementar vertical de locação como escopo confirmado só por prioridade candidata |
+| Probability | `UNKNOWN` |
+| Impact | HIGH |
+| Status | `OPEN` |
+| Source | SRC-001 EV-080, EV-082 |
+| Nearby controls | BR-020, DDP-026, scope-register |
+
+## RISK-022 — Confusão rascunho/liberação
+
+| Campo | Valor |
+| --- | --- |
+| Title | Mesma pessoa ou fluxo confunde rascunho com OS liberada ou solicitação com autorização |
+| Probability | `UNKNOWN` |
+| Impact | HIGH |
+| Status | `OPEN` |
+| Source | SRC-001 EV-041, EV-042, EV-043 |
+| Nearby controls | BR-007, BR-025, DDP-022 |
+
 ## Próximo ID
 
-`RISK-017`.
+`RISK-023`.

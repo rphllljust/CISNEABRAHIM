@@ -3,8 +3,8 @@
 | Campo | Valor |
 | --- | --- |
 | Document ID | SCOPE-001 |
-| Source | SRC-000 |
-| Last updated | 2026-08-28 |
+| Source | SRC-000; **atualizado** SRC-001 (Prompt 01) |
+| Last updated | 2026-08-28 (Prompt 01) |
 
 Separação rigorosa. Não declarar MVP funcional.
 
@@ -33,15 +33,17 @@ Essa restrição de fase não equivale a `OUT_OF_SCOPE_CONFIRMED` de produto.
 
 ## FUTURE_SCOPE_CANDIDATE
 
-Candidatos derivados apenas do contexto preliminar (SRC-000). Não priorizados. Não são release.
+Candidatos derivados do contexto preliminar (SRC-000, detalhado SRC-001). Não priorizados como release confirmado, exceto nota abaixo.
 
 - Representação comercial
 - Serviços logísticos
 - Transportes (cargas e passageiros por fretamento; âmbitos geográficos citados)
-- Locações (automóveis; máquinas/equipamentos comerciais, industriais; construção sem operador)
+- Locações (automóveis; máquinas/equipamentos comerciais, industriais; construção sem operador) — **prioridade econômica candidata** (SRC-001 §21, EV-080); **não** é `IN_SCOPE_CONFIRMED`
 - Gestão de serviços com veículos, equipamentos e mão de obra
 - Solicitações e Ordens de Serviço
 - Encadeamento documental/financeiro citado (proposta, pedido, PO, OS, execução, medição, faturamento, pagamento) **se** vier a ser confirmado
+
+**Nota Prompt 01:** A vertical de locação aparece como `FUTURE_SCOPE_CANDIDATE` com **prioridade candidata** informada pelo patrocinador. Confirmação da direção necessária (DDP-026). Não mover para `IN_SCOPE_CONFIRMED` sem fonte e decisão.
 
 ## UNDECIDED_SCOPE
 

@@ -122,3 +122,82 @@ NOTES:
 - [x] nenhuma dependência instalada
 - [x] Prompt 01 não executado
 
+---
+
+```text
+PROMPT: 01
+TITLE: Análise atômica das fontes e descoberta empresarial
+STARTED_AT: 2026-08-28T21:04:41-04:00
+FINISHED_AT: 2026-08-28T21:10:33-04:00
+STATUS: PASS
+FILES_CREATED:
+  docs/02-source-analysis/README.md
+  docs/02-source-analysis/source-assessment.md
+  docs/02-source-analysis/atomic-evidence-register.md
+  docs/02-source-analysis/as-is-process.md
+  docs/02-source-analysis/to-be-evidence.md
+  docs/02-source-analysis/rules-by-domain.md
+  docs/02-source-analysis/service-request-analysis.md
+  docs/02-source-analysis/service-order-analysis.md
+  docs/02-source-analysis/commercial-chain-analysis.md
+  docs/02-source-analysis/resources-and-billing-analysis.md
+  docs/02-source-analysis/quantity-semantics.md
+  docs/02-source-analysis/labor-analysis.md
+  docs/02-source-analysis/equipment-and-vehicle-analysis.md
+  docs/02-source-analysis/document-and-notification-analysis.md
+  docs/02-source-analysis/responsibility-and-aging-analysis.md
+  docs/02-source-analysis/segregation-of-duties-analysis.md
+  docs/02-source-analysis/exception-candidates.md
+  docs/02-source-analysis/invariant-candidates.md
+  docs/02-source-analysis/command-candidates.md
+  docs/02-source-analysis/domain-event-candidates.md
+  docs/02-source-analysis/non-domain-data.md
+  docs/02-source-analysis/provenance-matrix.md
+  docs/02-source-analysis/domain-evidence-map.md
+  docs/02-source-analysis/ambiguous-terms.md
+  docs/02-source-analysis/rule-normalization-report.md
+  docs/02-source-analysis/source-gaps-and-requests.md
+  docs/02-source-analysis/coverage-audit.md
+  docs/02-source-analysis/prompt-01-completeness-report.md
+FILES_CHANGED:
+  docs/01-foundation/source-registry.md
+  docs/01-foundation/business-context.md
+  docs/01-foundation/scope-register.md
+  docs/01-foundation/stakeholders-register.md
+  docs/01-foundation/business-rules-register.md
+  docs/01-foundation/domain-decisions-pending.md
+  docs/01-foundation/risk-register.md
+  docs/01-foundation/requirements-traceability.md
+  docs/01-foundation/source-conflicts.md
+  docs/00-governance/prompt-execution-log.md
+  docs/README.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: NO
+EVIDENCE_COUNT: 84
+BR_ADDED: BR-004..BR-025 (22)
+BR_UPDATED: BR-001..BR-003
+DDP_ADDED: DDP-021..DDP-035 (15)
+RISK_ADDED: RISK-017..RISK-022 (6)
+CONFIRMED_RULES: 0
+SOURCE_CONFLICTS: 0
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Fontes: SRC-000 (governança), SRC-001 (SPONSOR_CONTEXT_RECONSTRUCTED, LEVEL_3).
+  Análise atômica SRC-001 COMPLETE. 0 regras CONFIRMED.
+  Locação registrada como FUTURE_SCOPE_CANDIDATE com prioridade candidata (§21).
+  Prompt 02 não executado.
+```
+
+## Quality gate Prompt 01 (evidência)
+
+- [x] pasta `02-source-analysis/` com 28 artefatos não vazios
+- [x] 70–90 evidências atômicas de SRC-001 (84)
+- [x] SRC-001 marcado analisado no source-registry
+- [x] BR-004..BR-025 adicionadas como CANDIDATE/PENDING_VALIDATION
+- [x] BR-001..BR-003 atualizadas com referências EV
+- [x] DDP-021..DDP-035 adicionados (OPEN)
+- [x] RISK-017..RISK-022 adicionados (OPEN)
+- [x] 0 regras CONFIRMED
+- [x] 0 conflitos de fonte fabricados
+- [x] nenhum código funcional, package.json, DB
+- [x] Prompt 02 não executado

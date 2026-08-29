@@ -3,7 +3,8 @@
 | Campo | Valor |
 | --- | --- |
 | Document ID | STK-001 |
-| Source | SRC-000 |
+| Source | SRC-000; contexto operacional preliminar SRC-001 (EV-037, EV-038, EV-080) |
+| Last updated | 2026-08-28 (Prompt 01) |
 
 ## Instruções
 
@@ -21,7 +22,7 @@
 | Named person | **Não formalizado** |
 | Authority | Desconhecida |
 | Status | `UNCONFIRMED` |
-| Notes | Carta do projeto declara owner ainda não formalizado. |
+| Notes | Carta do projeto declara owner ainda não formalizado. SRC-001 cita "direção" e "gestão" sem nomes (EV-010, EV-080). |
 
 ### STK-002 — Responsável pela sequência de prompts / inicialização do repositório
 
@@ -40,7 +41,7 @@
 | Role | Operação |
 | Named person / área | `NOT_PROVIDED` |
 | Status | `UNCONFIRMED` |
-| Notes | Necessário após fontes. |
+| Notes | Necessário após fontes. SRC-001 menciona executor (EV-037) e usuários operacionais sem identificação nominal. |
 
 ### STK-004 — Funções financeiras / faturamento / pagamento
 

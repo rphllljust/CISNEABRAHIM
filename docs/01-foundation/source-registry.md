@@ -3,7 +3,7 @@
 | Campo | Valor |
 | --- | --- |
 | Document ID | SRC-REG-001 |
-| Last updated | 2026-08-28 (Prompt 00.1: SRC-001) |
+| Last updated | 2026-08-28 (Prompt 01: análise atômica SRC-001) |
 
 ## Como preencher
 
@@ -48,8 +48,9 @@
 | Integrity | Arquivo criado neste repositório no Prompt 00.1; consolidação reconstruída, não original primário |
 | Personal / sensitive data | Não identificado neste consolidado |
 | Affected domains (candidatos de cobertura desta fonte; não são módulos confirmados) | Atividades empresariais citadas; solicitação de serviço; abertura e liberação de OS; conteúdo operacional da OS; equipamentos, veículos e máquinas; mão de obra; custo interno vs preço comercial; origem de cobrança e fases de item; cadeia comercial (proposta, pedido, PO, contrato, OS, execução, medição, faturamento, pagamento); documentos e versões; responsabilidade e handoff; gargalos e aging; integrações candidatas; preocupações de segurança; prioridade candidata (locação); decisões bloqueantes listadas na fonte |
-| Atomic analysis | **NOT STARTED** (reservada ao Prompt 01) |
-| Notes | Fonte de contexto reconstruído. Nenhuma afirmação deste artefato deve ser promovida a regra `CONFIRMED` só por constar no arquivo. Prompt 01 deve decompor evidências; este Prompt 00.1 apenas registra. |
+| Atomic analysis | **COMPLETE** (Prompt 01 — 84 evidências EV-001–EV-084 em [`../02-source-analysis/atomic-evidence-register.md`](../02-source-analysis/atomic-evidence-register.md)) |
+| Analyzed in prompt | **01** (2026-08-28) |
+| Notes | Fonte de contexto reconstruído. Nenhuma afirmação promovida a `CONFIRMED` no Prompt 01. Permanece `PENDING_BUSINESS_VALIDATION`. |
 
 ## Fontes ainda não fornecidas
 
