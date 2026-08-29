@@ -1,9 +1,4 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  HttpStatus,
-  Injectable,
-} from '@nestjs/common';
+import { CanActivate, ExecutionContext, HttpStatus, Injectable } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 import { AUTH_ERROR_CODES } from '../errors/auth-error-codes';
 import { AuthHttpException } from '../errors/auth-http.exception';

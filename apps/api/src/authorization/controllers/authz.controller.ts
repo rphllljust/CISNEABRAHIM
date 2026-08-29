@@ -23,10 +23,7 @@ export class AuthzGrantsController {
   })
   async createGrant(@CurrentAuth() auth: AccessTokenClaims, @Req() request: FastifyRequest) {
     const input = parseCreateGrantInput(request.body);
-    return this.grantAdminService.createGrant(
-      { identityId: auth.sub, sessionId: auth.sid },
-      input,
-    );
+    return this.grantAdminService.createGrant({ identityId: auth.sub, sessionId: auth.sid }, input);
   }
 
   @Post('grants/:grantId/revoke')
@@ -36,10 +33,7 @@ export class AuthzGrantsController {
     action: AUTHZ_ACTIONS.GrantRevoke,
     resourceType: AUTHZ_RESOURCE_TYPES.Grant,
   })
-  async revokeGrant(
-    @CurrentAuth() auth: AccessTokenClaims,
-    @Param('grantId') grantId: string,
-  ) {
+  async revokeGrant(@CurrentAuth() auth: AccessTokenClaims, @Param('grantId') grantId: string) {
     return this.grantAdminService.revokeGrant(
       { identityId: auth.sub, sessionId: auth.sid },
       grantId,

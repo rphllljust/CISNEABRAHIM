@@ -1,7 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import {
-  SECURITY_AUDIT_CLASSIFICATIONS,
-} from '../types/security-audit.types';
+import { SECURITY_AUDIT_CLASSIFICATIONS } from '../types/security-audit.types';
 import type { RecordSecurityAuditInput } from '../types/security-audit.types';
 import {
   SecurityAuditPersistenceError,

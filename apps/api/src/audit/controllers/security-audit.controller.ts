@@ -18,7 +18,9 @@ export class SecurityAuditController {
   })
   async listSecurityEvents(@Query('limit') limit?: string) {
     const parsedLimit = limit ? Number.parseInt(limit, 10) : 50;
-    const events = await this.repository.listRecent(Number.isFinite(parsedLimit) ? parsedLimit : 50);
+    const events = await this.repository.listRecent(
+      Number.isFinite(parsedLimit) ? parsedLimit : 50,
+    );
     return { events };
   }
 }

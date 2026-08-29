@@ -24,9 +24,7 @@ function buildJwt(
   const encodedHeader = Buffer.from(JSON.stringify(header)).toString('base64url');
   const encodedPayload = Buffer.from(JSON.stringify(payload)).toString('base64url');
   const signingInput = `${encodedHeader}.${encodedPayload}`;
-  const signature = createHmac('sha256', secret)
-    .update(signingInput)
-    .digest('base64url');
+  const signature = createHmac('sha256', secret).update(signingInput).digest('base64url');
   return `${signingInput}.${signature}`;
 }
 

@@ -6,7 +6,10 @@ import {
   SECURITY_AUDIT_OUTCOMES,
   SECURITY_AUDIT_RESOURCE_TYPES,
 } from '../types/security-audit.types';
-import { SecurityAuditPersistenceError, SecurityAuditRepository } from '../repositories/security-audit.repository';
+import {
+  SecurityAuditPersistenceError,
+  SecurityAuditRepository,
+} from '../repositories/security-audit.repository';
 
 describe('SecurityAuditService', () => {
   const baseInput = {

@@ -16,7 +16,12 @@ import { ScopedRecordAccessService } from './services/scoped-record-access.servi
 
 @Module({
   imports: [DatabaseModule, AuthModule, AuditModule],
-  controllers: [AuthzProbeController, AuthzGrantsController, ScopedRecordController, SecurityAuditController],
+  controllers: [
+    AuthzProbeController,
+    AuthzGrantsController,
+    ScopedRecordController,
+    SecurityAuditController,
+  ],
   providers: [
     AuthorizationRepository,
     ScopeContextRepository,

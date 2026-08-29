@@ -10,9 +10,7 @@ type AppNavProps = {
 export function AppNav({ mobileOpen, onNavigate }: AppNavProps) {
   const { loading, access } = useNavAccess();
 
-  const visibleItems = SHELL_NAV_ITEMS.filter((item) =>
-    isNavItemVisible(item.id, access, loading),
-  );
+  const visibleItems = SHELL_NAV_ITEMS.filter((item) => isNavItemVisible(item.id, access, loading));
 
   return (
     <nav

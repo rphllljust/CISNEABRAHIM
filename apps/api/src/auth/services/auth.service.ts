@@ -209,11 +209,7 @@ export class AuthService {
         refreshExpiresAt,
       );
 
-      const rotated = await this.repository.markRefreshTokenRotated(
-        client,
-        stored.id,
-        newTokenId,
-      );
+      const rotated = await this.repository.markRefreshTokenRotated(client, stored.id, newTokenId);
       if (!rotated) {
         throw new AuthHttpException(
           HttpStatus.UNAUTHORIZED,

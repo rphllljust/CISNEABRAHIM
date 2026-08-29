@@ -50,10 +50,7 @@ describe('Contextual scope E2E isolation', () => {
     );
     app.setGlobalPrefix('api/v1');
     app.useGlobalFilters(new AuthExceptionFilter(), new AuthzExceptionFilter());
-    app.useGlobalInterceptors(
-      new CorrelationIdInterceptor(),
-      new SecurityHeadersInterceptor(),
-    );
+    app.useGlobalInterceptors(new CorrelationIdInterceptor(), new SecurityHeadersInterceptor());
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
     pool = new Pool({ connectionString: testDatabaseUrl });

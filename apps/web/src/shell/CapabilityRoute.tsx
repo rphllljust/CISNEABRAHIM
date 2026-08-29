@@ -58,7 +58,13 @@ export function CapabilityRoute({ children }: CapabilityRouteProps) {
   }
 
   if (state === 'session_expired') {
-    return <Navigate to="/login" replace state={{ reason: 'session_expired', from: location.pathname }} />;
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{ reason: 'session_expired', from: location.pathname }}
+      />
+    );
   }
 
   if (state === 'denied') {

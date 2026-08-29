@@ -132,9 +132,7 @@ export class IdentityAuthRepository {
     return result.rows[0] ?? null;
   }
 
-  async getIdentityStatus(
-    identityId: string,
-  ): Promise<'active' | 'disabled' | 'locked' | null> {
+  async getIdentityStatus(identityId: string): Promise<'active' | 'disabled' | 'locked' | null> {
     const result = await this.pool().query<{ status: 'active' | 'disabled' | 'locked' }>(
       `SELECT status FROM identity.identities WHERE id = $1`,
       [identityId],
@@ -167,10 +165,7 @@ export class IdentityAuthRepository {
     return result.rows[0] ?? null;
   }
 
-  async getSessionByIdForUpdate(
-    client: PoolClient,
-    sessionId: string,
-  ): Promise<SessionRow | null> {
+  async getSessionByIdForUpdate(client: PoolClient, sessionId: string): Promise<SessionRow | null> {
     const result = await client.query<SessionRow>(
       `SELECT id, identity_id, status, expires_at, revoked_at
        FROM identity.sessions

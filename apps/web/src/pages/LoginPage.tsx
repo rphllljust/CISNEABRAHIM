@@ -24,9 +24,7 @@ export function LoginPage() {
   const locationState = (location.state as LocationState | null) ?? {};
   const redirectTo = sanitizeRedirectPath(locationState.from);
   const sessionExpiredNotice =
-    locationState.reason === 'session_expired'
-      ? 'Your session has expired. Sign in again.'
-      : null;
+    locationState.reason === 'session_expired' ? 'Your session has expired. Sign in again.' : null;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -64,7 +62,11 @@ export function LoginPage() {
           {sessionExpiredNotice}
         </p>
       ) : null}
-      <form onSubmit={(event) => void handleSubmit(event)} noValidate aria-describedby={errorMessage ? errorId : undefined}>
+      <form
+        onSubmit={(event) => void handleSubmit(event)}
+        noValidate
+        aria-describedby={errorMessage ? errorId : undefined}
+      >
         <div className="form-field">
           <label htmlFor={loginId}>Login</label>
           <input

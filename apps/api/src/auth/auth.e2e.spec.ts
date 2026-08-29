@@ -1,4 +1,8 @@
-import { hashPassword, insertIdentity, truncateIdentityAndAuthorizationTables } from '@cisne/database';
+import {
+  hashPassword,
+  insertIdentity,
+  truncateIdentityAndAuthorizationTables,
+} from '@cisne/database';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Pool } from 'pg';
@@ -40,10 +44,7 @@ describe('Auth E2E', () => {
     );
     app.setGlobalPrefix('api/v1');
     app.useGlobalFilters(new AuthExceptionFilter());
-    app.useGlobalInterceptors(
-      new CorrelationIdInterceptor(),
-      new SecurityHeadersInterceptor(),
-    );
+    app.useGlobalInterceptors(new CorrelationIdInterceptor(), new SecurityHeadersInterceptor());
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
 
@@ -107,7 +108,9 @@ describe('Auth E2E', () => {
       payload: { refreshToken: loginBody.refreshToken },
     });
     expect(reuseResponse.statusCode).toBe(401);
-    expect(parseAuthErrorResponse(reuseResponse.body).error.code).toBe(AUTH_ERROR_CODES.REFRESH_REUSED);
+    expect(parseAuthErrorResponse(reuseResponse.body).error.code).toBe(
+      AUTH_ERROR_CODES.REFRESH_REUSED,
+    );
 
     const secondLogin = await app.inject({
       method: 'POST',

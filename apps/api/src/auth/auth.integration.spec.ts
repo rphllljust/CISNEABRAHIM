@@ -1,4 +1,8 @@
-import { hashPassword, insertIdentity, truncateIdentityAndAuthorizationTables } from '@cisne/database';
+import {
+  hashPassword,
+  insertIdentity,
+  truncateIdentityAndAuthorizationTables,
+} from '@cisne/database';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Pool } from 'pg';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -7,11 +11,7 @@ import { AUTH_ERROR_CODES } from './errors/auth-error-codes';
 import { AuthHttpException } from './errors/auth-http.exception';
 import { normalizeLoginIdentifier, hashOpaqueToken } from './crypto/token-crypto';
 import { AuthService } from './services/auth.service';
-import {
-  applyAuthTestEnv,
-  assertNoSensitiveLeak,
-  AUTH_TEST_PASSWORD,
-} from './test/auth-test-env';
+import { applyAuthTestEnv, assertNoSensitiveLeak, AUTH_TEST_PASSWORD } from './test/auth-test-env';
 
 describe('Auth PostgreSQL integration', () => {
   let pool: Pool;
@@ -83,7 +83,10 @@ describe('Auth PostgreSQL integration', () => {
     const key = clientKey('invalid-creds');
 
     await expect(
-      authService.login({ login: `ghost-${crypto.randomUUID()}@cisne.invalid`, password: AUTH_TEST_PASSWORD }, { clientKey: key }),
+      authService.login(
+        { login: `ghost-${crypto.randomUUID()}@cisne.invalid`, password: AUTH_TEST_PASSWORD },
+        { clientKey: key },
+      ),
     ).rejects.toMatchObject({
       response: { error: { code: AUTH_ERROR_CODES.INVALID_CREDENTIALS } },
     });
@@ -113,7 +116,10 @@ describe('Auth PostgreSQL integration', () => {
     );
 
     await expect(
-      authService.login({ login, password: AUTH_TEST_PASSWORD }, { clientKey: clientKey('disabled') }),
+      authService.login(
+        { login, password: AUTH_TEST_PASSWORD },
+        { clientKey: clientKey('disabled') },
+      ),
     ).rejects.toMatchObject({
       response: { error: { code: AUTH_ERROR_CODES.INVALID_CREDENTIALS } },
     });
@@ -129,17 +135,15 @@ describe('Auth PostgreSQL integration', () => {
     const rotated = await authService.refresh({ refreshToken: first.refreshToken });
     expect(rotated.refreshToken).not.toBe(first.refreshToken);
 
-    await expect(
-      authService.refresh({ refreshToken: first.refreshToken }),
-    ).rejects.toMatchObject({
+    await expect(authService.refresh({ refreshToken: first.refreshToken })).rejects.toMatchObject({
       response: { error: { code: AUTH_ERROR_CODES.REFRESH_REUSED } },
     });
 
-    await expect(
-      authService.refresh({ refreshToken: rotated.refreshToken }),
-    ).rejects.toMatchObject({
-      response: { error: { code: AUTH_ERROR_CODES.SESSION_REVOKED } },
-    });
+    await expect(authService.refresh({ refreshToken: rotated.refreshToken })).rejects.toMatchObject(
+      {
+        response: { error: { code: AUTH_ERROR_CODES.SESSION_REVOKED } },
+      },
+    );
   });
 
   it('rejects expired and revoked refresh tokens', async () => {
@@ -157,9 +161,7 @@ describe('Auth PostgreSQL integration', () => {
       [hashOpaqueToken(issued.refreshToken)],
     );
 
-    await expect(
-      authService.refresh({ refreshToken: issued.refreshToken }),
-    ).rejects.toMatchObject({
+    await expect(authService.refresh({ refreshToken: issued.refreshToken })).rejects.toMatchObject({
       response: { error: { code: AUTH_ERROR_CODES.SESSION_EXPIRED } },
     });
 
@@ -168,16 +170,13 @@ describe('Auth PostgreSQL integration', () => {
       { login: login2, password: AUTH_TEST_PASSWORD },
       { clientKey: clientKey('revoked') },
     );
-    await authService.logout(
-      session.session.id,
-      identityIdFromAccessToken(session.accessToken),
-    );
+    await authService.logout(session.session.id, identityIdFromAccessToken(session.accessToken));
 
-    await expect(
-      authService.refresh({ refreshToken: session.refreshToken }),
-    ).rejects.toMatchObject({
-      response: { error: { code: AUTH_ERROR_CODES.SESSION_REVOKED } },
-    });
+    await expect(authService.refresh({ refreshToken: session.refreshToken })).rejects.toMatchObject(
+      {
+        response: { error: { code: AUTH_ERROR_CODES.SESSION_REVOKED } },
+      },
+    );
   });
 
   it('supports logout and logout-all', async () => {
@@ -192,15 +191,9 @@ describe('Auth PostgreSQL integration', () => {
       { clientKey: clientKey('logout-2') },
     );
 
-    await authService.logout(
-      first.session.id,
-      identityIdFromAccessToken(first.accessToken),
-    );
+    await authService.logout(first.session.id, identityIdFromAccessToken(first.accessToken));
     await expect(
-      authService.currentSession(
-        identityIdFromAccessToken(first.accessToken),
-        first.session.id,
-      ),
+      authService.currentSession(identityIdFromAccessToken(first.accessToken), first.session.id),
     ).rejects.toBeInstanceOf(AuthHttpException);
 
     const identityId = identityIdFromAccessToken(second.accessToken);
@@ -208,9 +201,7 @@ describe('Auth PostgreSQL integration', () => {
     expect(current.identityId).toBeTruthy();
 
     await authService.logoutAll(current.identityId, second.session.id);
-    await expect(
-      authService.refresh({ refreshToken: second.refreshToken }),
-    ).rejects.toMatchObject({
+    await expect(authService.refresh({ refreshToken: second.refreshToken })).rejects.toMatchObject({
       response: { error: { code: AUTH_ERROR_CODES.SESSION_REVOKED } },
     });
   });

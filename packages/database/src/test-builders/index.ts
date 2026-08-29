@@ -20,7 +20,4 @@ export {
   type InsertScopeRefInput,
   type InsertScopedRecordInput,
 } from './authz-builders';
-export {
-  countSecurityAuditEvents,
-  truncateSecurityAuditTables,
-} from './audit-builders';
+export { countSecurityAuditEvents, truncateSecurityAuditTables } from './audit-builders';

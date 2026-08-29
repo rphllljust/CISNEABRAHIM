@@ -3,8 +3,7 @@ import type { GrantRow } from '../repositories/authorization.repository';
 import { ScopeResolverService } from './scope-resolver.service';
 import { AUTHZ_SCOPES } from '../types/authz-scopes';
 
-const UUID_V4ISH =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_V4ISH = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export type ScopeSqlPredicate = {
   clause: string;

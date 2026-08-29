@@ -11,7 +11,8 @@ export const SECURITY_AUDIT_ACTIONS = {
   AppBootstrap: 'security:app:bootstrap',
 } as const;
 
-export type SecurityAuditAction = (typeof SECURITY_AUDIT_ACTIONS)[keyof typeof SECURITY_AUDIT_ACTIONS];
+export type SecurityAuditAction =
+  (typeof SECURITY_AUDIT_ACTIONS)[keyof typeof SECURITY_AUDIT_ACTIONS];
 
 export const SECURITY_AUDIT_CLASSIFICATIONS = {
   Critical: 'SECURITY_CRITICAL',

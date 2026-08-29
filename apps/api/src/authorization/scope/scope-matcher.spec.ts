@@ -16,12 +16,20 @@ describe('grantMatchesResourceContext', () => {
 
   it('allows UNIT only for matching unitId', () => {
     const allow = grantMatchesResourceContext({
-      grant: { scope_type: AUTHZ_SCOPES.Unit, resource_id: 'unit-a', resource_type: 'authz:scoped-record' },
+      grant: {
+        scope_type: AUTHZ_SCOPES.Unit,
+        resource_id: 'unit-a',
+        resource_type: 'authz:scoped-record',
+      },
       identityId,
       context: { unitId: 'unit-a', resourceId: 'rec-1' },
     });
     const deny = grantMatchesResourceContext({
-      grant: { scope_type: AUTHZ_SCOPES.Unit, resource_id: 'unit-a', resource_type: 'authz:scoped-record' },
+      grant: {
+        scope_type: AUTHZ_SCOPES.Unit,
+        resource_id: 'unit-a',
+        resource_type: 'authz:scoped-record',
+      },
       identityId,
       context: { unitId: 'unit-b', resourceId: 'rec-2' },
     });
@@ -31,12 +39,20 @@ describe('grantMatchesResourceContext', () => {
 
   it('allows ASSIGNED only for assigned identity', () => {
     const allow = grantMatchesResourceContext({
-      grant: { scope_type: AUTHZ_SCOPES.Assigned, resource_id: null, resource_type: 'authz:scoped-record' },
+      grant: {
+        scope_type: AUTHZ_SCOPES.Assigned,
+        resource_id: null,
+        resource_type: 'authz:scoped-record',
+      },
       identityId,
       context: { assignedIdentityId: identityId, resourceId: 'rec-1' },
     });
     const deny = grantMatchesResourceContext({
-      grant: { scope_type: AUTHZ_SCOPES.Assigned, resource_id: null, resource_type: 'authz:scoped-record' },
+      grant: {
+        scope_type: AUTHZ_SCOPES.Assigned,
+        resource_id: null,
+        resource_type: 'authz:scoped-record',
+      },
       identityId,
       context: { assignedIdentityId: 'other', resourceId: 'rec-1' },
     });

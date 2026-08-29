@@ -177,7 +177,9 @@ describe('Security audit PostgreSQL integration', () => {
     const passwordHash = await hashPassword(AUTH_TEST_PASSWORD);
     const { identityId: actorId } = await insertIdentity(pool, login, passwordHash);
     const targetId = crypto.randomUUID();
-    await pool.query(`INSERT INTO identity.identities (id, status) VALUES ($1, 'active')`, [targetId]);
+    await pool.query(`INSERT INTO identity.identities (id, status) VALUES ($1, 'active')`, [
+      targetId,
+    ]);
 
     const grantId = await insertGrant(pool, {
       identityId: targetId,

@@ -8,7 +8,9 @@ describe('auth-api', () => {
   });
 
   it('maps invalid credentials to a single safe message', () => {
-    expect(mapAuthErrorToUserMessage(AUTH_ERROR_CODES.INVALID_CREDENTIALS)).toBe('invalid_credentials');
+    expect(mapAuthErrorToUserMessage(AUTH_ERROR_CODES.INVALID_CREDENTIALS)).toBe(
+      'invalid_credentials',
+    );
     expect(userMessageText('invalid_credentials')).toBe('Invalid login or password.');
   });
 

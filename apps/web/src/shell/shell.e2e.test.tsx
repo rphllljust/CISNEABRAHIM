@@ -4,10 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../App';
 import { tokenStore } from '../auth/storage/token-store';
 import { resetTokenStoreForTests } from '../auth/storage/token-store';
-import {
-  MOCK_IDENTITY_ID,
-  createShellFetchMock,
-} from '../test/shell-fetch-mock';
+import { MOCK_IDENTITY_ID, createShellFetchMock } from '../test/shell-fetch-mock';
 
 describe('protected application shell', () => {
   beforeEach(() => {

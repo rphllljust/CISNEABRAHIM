@@ -1,11 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { AUTHZ_ACTIONS } from '../types/authz-actions';
 import { AUTHZ_RESOURCE_TYPES } from '../types/authz-resources';
-import {
-  ANCHORED_SCOPE_TYPES,
-  AUTHZ_SCOPES,
-  type AuthzScopeType,
-} from '../types/authz-scopes';
+import { ANCHORED_SCOPE_TYPES, AUTHZ_SCOPES, type AuthzScopeType } from '../types/authz-scopes';
 import { AUTHZ_ERROR_CODES } from '../errors/authz-error-codes';
 import { AuthzHttpException } from '../errors/authz-http.exception';
 import { AuthorizationRepository } from '../repositories/authorization.repository';
@@ -124,14 +120,14 @@ export class GrantAdminService {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
-      const revoked = await this.repository.revokeGrantForUpdate(
-        client,
-        grantId,
-        actor.identityId,
-      );
+      const revoked = await this.repository.revokeGrantForUpdate(client, grantId, actor.identityId);
       await client.query('COMMIT');
       if (!revoked) {
-        throw new AuthzHttpException(HttpStatus.FORBIDDEN, AUTHZ_ERROR_CODES.DENIED, 'Access denied.');
+        throw new AuthzHttpException(
+          HttpStatus.FORBIDDEN,
+          AUTHZ_ERROR_CODES.DENIED,
+          'Access denied.',
+        );
       }
       await this.securityAudit.record({
         actorIdentityId: actor.identityId,
@@ -158,7 +154,11 @@ export class GrantAdminService {
   ): Promise<void> {
     const decision = await this.policyDecisionPoint.decide(actor, { action, resourceType });
     if (decision.result === 'DENY') {
-      throw new AuthzHttpException(HttpStatus.FORBIDDEN, AUTHZ_ERROR_CODES.DENIED, 'Access denied.');
+      throw new AuthzHttpException(
+        HttpStatus.FORBIDDEN,
+        AUTHZ_ERROR_CODES.DENIED,
+        'Access denied.',
+      );
     }
   }
 
@@ -207,7 +207,11 @@ export class GrantAdminService {
     }
 
     if (command.scopeType === AUTHZ_SCOPES.Global) {
-      throw new AuthzHttpException(HttpStatus.FORBIDDEN, AUTHZ_ERROR_CODES.DENIED, 'Access denied.');
+      throw new AuthzHttpException(
+        HttpStatus.FORBIDDEN,
+        AUTHZ_ERROR_CODES.DENIED,
+        'Access denied.',
+      );
     }
 
     if (!SELF_ESCALATION_SCOPES.has(command.scopeType)) {
@@ -228,7 +232,8 @@ export class GrantAdminService {
           unitId: command.scopeType === AUTHZ_SCOPES.Unit ? command.resourceId : undefined,
           clientId: command.scopeType === AUTHZ_SCOPES.Client ? command.resourceId : undefined,
           contractId:
-            command.scopeType === AUTHZ_SCOPES.Contract || command.scopeType === AUTHZ_SCOPES.Financial
+            command.scopeType === AUTHZ_SCOPES.Contract ||
+            command.scopeType === AUTHZ_SCOPES.Financial
               ? command.resourceId
               : undefined,
           documentId: command.scopeType === AUTHZ_SCOPES.Document ? command.resourceId : undefined,
@@ -238,7 +243,11 @@ export class GrantAdminService {
     );
 
     if (!alreadyHasScope) {
-      throw new AuthzHttpException(HttpStatus.FORBIDDEN, AUTHZ_ERROR_CODES.DENIED, 'Access denied.');
+      throw new AuthzHttpException(
+        HttpStatus.FORBIDDEN,
+        AUTHZ_ERROR_CODES.DENIED,
+        'Access denied.',
+      );
     }
   }
 

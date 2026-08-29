@@ -34,7 +34,9 @@ export function PlatformDiagnosticsPage() {
         if (error instanceof AuthzApiError && error.status === 401) {
           expireSession();
         }
-        setProbe({ status: error instanceof AuthzApiError && error.status === 403 ? 'denied' : 'error' });
+        setProbe({
+          status: error instanceof AuthzApiError && error.status === 403 ? 'denied' : 'error',
+        });
       });
 
     return () => {
@@ -71,9 +73,7 @@ export function PlatformDiagnosticsPage() {
       {probe.status === 'denied' ? (
         <p role="alert">Access denied by the authorization service.</p>
       ) : null}
-      {probe.status === 'error' ? (
-        <p role="alert">Unable to complete the probe request.</p>
-      ) : null}
+      {probe.status === 'error' ? <p role="alert">Unable to complete the probe request.</p> : null}
       <p>
         <Link to="/app">Back to home</Link>
       </p>

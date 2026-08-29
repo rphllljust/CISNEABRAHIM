@@ -74,9 +74,9 @@ describe('seed and bootstrap (PostgreSQL integration)', () => {
 
   it('blocks DEVELOPMENT_SEED when NODE_ENV=production', async () => {
     process.env['NODE_ENV'] = 'production';
-    await expect(
-      runDevelopmentSeed(pool, { password: 'Dev-Only-1!Synthetic' }),
-    ).rejects.toThrow(/only permitted when NODE_ENV=development/);
+    await expect(runDevelopmentSeed(pool, { password: 'Dev-Only-1!Synthetic' })).rejects.toThrow(
+      /only permitted when NODE_ENV=development/,
+    );
     process.env['NODE_ENV'] = 'development';
   });
 

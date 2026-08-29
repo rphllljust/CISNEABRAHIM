@@ -9,7 +9,11 @@ import {
 import { AUTHZ_DENY_REASONS } from '../errors/authz-error-codes';
 import { AuthorizationRepository } from '../repositories/authorization.repository';
 import { grantMatchesResourceContext } from '../scope/scope-matcher';
-import type { AuthzDecision, AuthzEvaluationRequest, IdentityAuthzContext } from '../types/authz-decision';
+import type {
+  AuthzDecision,
+  AuthzEvaluationRequest,
+  IdentityAuthzContext,
+} from '../types/authz-decision';
 
 @Injectable()
 export class PolicyDecisionPointService {

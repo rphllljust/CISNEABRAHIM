@@ -70,11 +70,7 @@ export function useNavAccess(): NavAccessState {
   return state;
 }
 
-export function isNavItemVisible(
-  itemId: string,
-  access: NavAccessMap,
-  loading: boolean,
-): boolean {
+export function isNavItemVisible(itemId: string, access: NavAccessMap, loading: boolean): boolean {
   const item = SHELL_NAV_ITEMS.find((entry) => entry.id === itemId);
   if (!item) {
     return false;

@@ -9,7 +9,10 @@ type ShellErrorBoundaryState = {
   hasError: boolean;
 };
 
-export class ShellErrorBoundary extends Component<ShellErrorBoundaryProps, ShellErrorBoundaryState> {
+export class ShellErrorBoundary extends Component<
+  ShellErrorBoundaryProps,
+  ShellErrorBoundaryState
+> {
   state: ShellErrorBoundaryState = { hasError: false };
 
   static getDerivedStateFromError(): ShellErrorBoundaryState {

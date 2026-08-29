@@ -1,10 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { Pool, PoolClient } from 'pg';
 import { DatabaseService } from '../../infrastructure/database/database.service';
-import {
-  ANCHORED_SCOPE_TYPES,
-  type AuthzScopeType,
-} from '../types/authz-scopes';
+import { ANCHORED_SCOPE_TYPES, type AuthzScopeType } from '../types/authz-scopes';
 
 export type ScopedRecordRow = {
   id: string;

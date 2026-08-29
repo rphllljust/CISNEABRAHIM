@@ -2,8 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import type { Pool, PoolClient } from 'pg';
 
 /** Synthetic bcrypt-shaped hash for constraint tests — not a real password. */
-export const TEST_PASSWORD_HASH =
-  '$2b$12$abcdefghijklmnopqrstuv012345678901234567890123456789012';
+export const TEST_PASSWORD_HASH = '$2b$12$abcdefghijklmnopqrstuv012345678901234567890123456789012';
 
 export function normalizeLoginIdentifier(login: string): string {
   return login.trim().toLowerCase();

@@ -117,10 +117,7 @@ export const decisionAudits = authorizationSchema.table(
       'decision_audits_resource_type_not_empty_chk',
       sql`length(trim(${table.resourceType})) > 0`,
     ),
-    check(
-      'decision_audits_reason_code_not_empty_chk',
-      sql`length(trim(${table.reasonCode})) > 0`,
-    ),
+    check('decision_audits_reason_code_not_empty_chk', sql`length(trim(${table.reasonCode})) > 0`),
     index('decision_audits_identity_id_idx').on(table.identityId),
     index('decision_audits_created_at_idx').on(table.createdAt),
   ],

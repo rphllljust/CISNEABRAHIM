@@ -57,12 +57,20 @@ export class ScopedRecordAccessService {
       AUTHZ_RESOURCE_TYPES.ScopedRecord,
     );
     if (grants.length === 0) {
-      throw new AuthzHttpException(HttpStatus.FORBIDDEN, AUTHZ_ERROR_CODES.DENIED, 'Access denied.');
+      throw new AuthzHttpException(
+        HttpStatus.FORBIDDEN,
+        AUTHZ_ERROR_CODES.DENIED,
+        'Access denied.',
+      );
     }
 
     const filter = this.scopeEnforcement.buildScopedRecordListFilter(grants, actor.identityId);
     if (filter.clause === 'FALSE') {
-      throw new AuthzHttpException(HttpStatus.FORBIDDEN, AUTHZ_ERROR_CODES.DENIED, 'Access denied.');
+      throw new AuthzHttpException(
+        HttpStatus.FORBIDDEN,
+        AUTHZ_ERROR_CODES.DENIED,
+        'Access denied.',
+      );
     }
 
     const rows = await this.scopeContextRepository.listScopedRecords(filter.clause, filter.params);
@@ -73,7 +81,11 @@ export class ScopedRecordAccessService {
     this.assertValidClientResourceId(recordId);
     const row = await this.scopeContextRepository.findScopedRecordById(recordId);
     if (!row) {
-      throw new AuthzHttpException(HttpStatus.FORBIDDEN, AUTHZ_ERROR_CODES.DENIED, 'Access denied.');
+      throw new AuthzHttpException(
+        HttpStatus.FORBIDDEN,
+        AUTHZ_ERROR_CODES.DENIED,
+        'Access denied.',
+      );
     }
 
     await this.assertRecordAccess(actor, AUTHZ_ACTIONS.ScopedRecordRead, row);
@@ -88,13 +100,21 @@ export class ScopedRecordAccessService {
     this.assertValidClientResourceId(recordId);
     const row = await this.scopeContextRepository.findScopedRecordById(recordId);
     if (!row) {
-      throw new AuthzHttpException(HttpStatus.FORBIDDEN, AUTHZ_ERROR_CODES.DENIED, 'Access denied.');
+      throw new AuthzHttpException(
+        HttpStatus.FORBIDDEN,
+        AUTHZ_ERROR_CODES.DENIED,
+        'Access denied.',
+      );
     }
 
     await this.assertRecordAccess(actor, AUTHZ_ACTIONS.ScopedRecordUpdate, row);
     const updated = await this.scopeContextRepository.updateScopedRecordLabel(recordId, label);
     if (!updated) {
-      throw new AuthzHttpException(HttpStatus.FORBIDDEN, AUTHZ_ERROR_CODES.DENIED, 'Access denied.');
+      throw new AuthzHttpException(
+        HttpStatus.FORBIDDEN,
+        AUTHZ_ERROR_CODES.DENIED,
+        'Access denied.',
+      );
     }
     return toResponse(updated);
   }
@@ -103,7 +123,11 @@ export class ScopedRecordAccessService {
     try {
       this.scopeEnforcement.assertValidClientResourceId(recordId);
     } catch {
-      throw new AuthzHttpException(HttpStatus.FORBIDDEN, AUTHZ_ERROR_CODES.DENIED, 'Access denied.');
+      throw new AuthzHttpException(
+        HttpStatus.FORBIDDEN,
+        AUTHZ_ERROR_CODES.DENIED,
+        'Access denied.',
+      );
     }
   }
 
@@ -123,7 +147,11 @@ export class ScopedRecordAccessService {
     );
 
     if (decision.result === 'DENY') {
-      throw new AuthzHttpException(HttpStatus.FORBIDDEN, AUTHZ_ERROR_CODES.DENIED, 'Access denied.');
+      throw new AuthzHttpException(
+        HttpStatus.FORBIDDEN,
+        AUTHZ_ERROR_CODES.DENIED,
+        'Access denied.',
+      );
     }
   }
 }

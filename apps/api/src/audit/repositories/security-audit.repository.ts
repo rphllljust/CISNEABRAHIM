@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../infrastructure/database/database.service';
-import { coerceOptionalUuid, redactAuditMetadata, sanitizeAuditText } from '../services/audit-redaction.service';
+import {
+  coerceOptionalUuid,
+  redactAuditMetadata,
+  sanitizeAuditText,
+} from '../services/audit-redaction.service';
 import type {
   RecordSecurityAuditInput,
   SecurityAuditEventRow,

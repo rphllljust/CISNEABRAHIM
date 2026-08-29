@@ -18,8 +18,7 @@ const FORBIDDEN_METADATA_KEYS = new Set([
 const MAX_METADATA_BYTES = 4096;
 const MAX_FIELD_LENGTH = 256;
 
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export function coerceOptionalUuid(value: string | null | undefined): string | null {
   if (!value) {

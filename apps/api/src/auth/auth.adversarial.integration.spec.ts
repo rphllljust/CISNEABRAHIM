@@ -1,4 +1,8 @@
-import { hashPassword, insertIdentity, truncateIdentityAndAuthorizationTables } from '@cisne/database';
+import {
+  hashPassword,
+  insertIdentity,
+  truncateIdentityAndAuthorizationTables,
+} from '@cisne/database';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Pool } from 'pg';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -6,11 +10,7 @@ import { AuthModule } from './auth.module';
 import { AUTH_ERROR_CODES } from './errors/auth-error-codes';
 import { normalizeLoginIdentifier } from './crypto/token-crypto';
 import { AuthService } from './services/auth.service';
-import {
-  applyAuthTestEnv,
-  assertNoSensitiveLeak,
-  AUTH_TEST_PASSWORD,
-} from './test/auth-test-env';
+import { applyAuthTestEnv, assertNoSensitiveLeak, AUTH_TEST_PASSWORD } from './test/auth-test-env';
 
 describe('Auth adversarial (PostgreSQL integration)', () => {
   let pool: Pool;
@@ -115,9 +115,10 @@ describe('Auth adversarial (PostgreSQL integration)', () => {
       Buffer.from(issued.accessToken.split('.')[1] ?? '', 'base64url').toString('utf8'),
     ) as { sub: string };
 
-    await pool.query(`UPDATE identity.identities SET status = 'disabled', disabled_at = NOW() WHERE id = $1`, [
-      identityId.sub,
-    ]);
+    await pool.query(
+      `UPDATE identity.identities SET status = 'disabled', disabled_at = NOW() WHERE id = $1`,
+      [identityId.sub],
+    );
 
     await expect(
       authService.currentSession(identityId.sub, issued.session.id),

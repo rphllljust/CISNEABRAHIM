@@ -1,4 +1,8 @@
-import { hashPassword, insertIdentity, truncateIdentityAndAuthorizationTables } from '@cisne/database';
+import {
+  hashPassword,
+  insertIdentity,
+  truncateIdentityAndAuthorizationTables,
+} from '@cisne/database';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Pool } from 'pg';
@@ -33,10 +37,7 @@ describe('Security audit E2E', () => {
     );
     app.setGlobalPrefix('api/v1');
     app.useGlobalFilters(new AuthExceptionFilter(), new AuthzExceptionFilter());
-    app.useGlobalInterceptors(
-      new CorrelationIdInterceptor(),
-      new SecurityHeadersInterceptor(),
-    );
+    app.useGlobalInterceptors(new CorrelationIdInterceptor(), new SecurityHeadersInterceptor());
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
 

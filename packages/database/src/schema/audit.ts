@@ -1,14 +1,5 @@
 import { sql } from 'drizzle-orm';
-import {
-  index,
-  jsonb,
-  pgEnum,
-  pgSchema,
-  text,
-  timestamp,
-  uuid,
-  check,
-} from 'drizzle-orm/pg-core';
+import { index, jsonb, pgEnum, pgSchema, text, timestamp, uuid, check } from 'drizzle-orm/pg-core';
 import { identities } from './identity';
 
 export const auditSchema = pgSchema('audit');

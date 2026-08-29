@@ -10,10 +10,7 @@ import { Pool } from 'pg';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../app.module';
 import { normalizeLoginIdentifier } from '../auth/crypto/token-crypto';
-import {
-  applyAuthTestEnv,
-  AUTH_TEST_PASSWORD,
-} from '../auth/test/auth-test-env';
+import { applyAuthTestEnv, AUTH_TEST_PASSWORD } from '../auth/test/auth-test-env';
 import { parseAuthTokenResponse } from '../auth/test/auth-response-test-types';
 import { AUTHZ_ERROR_CODES } from './errors/authz-error-codes';
 import { AUTHZ_ACTIONS } from './types/authz-actions';
@@ -49,10 +46,7 @@ describe('Authorization E2E (negative)', () => {
     );
     app.setGlobalPrefix('api/v1');
     app.useGlobalFilters(new AuthExceptionFilter(), new AuthzExceptionFilter());
-    app.useGlobalInterceptors(
-      new CorrelationIdInterceptor(),
-      new SecurityHeadersInterceptor(),
-    );
+    app.useGlobalInterceptors(new CorrelationIdInterceptor(), new SecurityHeadersInterceptor());
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
     pool = new Pool({ connectionString: testDatabaseUrl });

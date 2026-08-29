@@ -4,7 +4,12 @@ import { isAuthzAction } from '../types/authz-actions';
 import { isAuthzResourceType } from '../types/authz-resources';
 import type { AuthzAction } from '../types/authz-actions';
 import type { AuthzResourceType } from '../types/authz-resources';
-import { AUTHZ_SCOPES, ANCHORED_SCOPE_TYPES, isAuthzScopeType, type AuthzScopeType } from '../types/authz-scopes';
+import {
+  AUTHZ_SCOPES,
+  ANCHORED_SCOPE_TYPES,
+  isAuthzScopeType,
+  type AuthzScopeType,
+} from '../types/authz-scopes';
 
 const ALLOWED_KEYS = new Set([
   'identityId',
@@ -31,7 +36,11 @@ function assertStrictObject(body: unknown): Record<string, unknown> {
   const record = body as Record<string, unknown>;
   for (const key of Object.keys(record)) {
     if (!ALLOWED_KEYS.has(key)) {
-      throw new AuthzHttpException(400, AUTHZ_ERROR_CODES.VALIDATION_FAILED, 'Invalid request body.');
+      throw new AuthzHttpException(
+        400,
+        AUTHZ_ERROR_CODES.VALIDATION_FAILED,
+        'Invalid request body.',
+      );
     }
   }
   return record;
@@ -64,7 +73,10 @@ export function parseCreateGrantInput(body: unknown): CreateGrantInput {
   if (scopeType === AUTHZ_SCOPES.Global && resourceId !== undefined) {
     throw new AuthzHttpException(400, AUTHZ_ERROR_CODES.VALIDATION_FAILED, 'Invalid resourceId.');
   }
-  if (ANCHORED_SCOPE_TYPES.has(scopeType) && (typeof resourceId !== 'string' || resourceId.length === 0)) {
+  if (
+    ANCHORED_SCOPE_TYPES.has(scopeType) &&
+    (typeof resourceId !== 'string' || resourceId.length === 0)
+  ) {
     throw new AuthzHttpException(400, AUTHZ_ERROR_CODES.VALIDATION_FAILED, 'Invalid resourceId.');
   }
   if (validUntil !== undefined && typeof validUntil !== 'string') {

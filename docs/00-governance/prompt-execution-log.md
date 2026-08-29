@@ -1758,3 +1758,62 @@ NOTES:
 - [x] Prompt 27 não executado
 
 ---
+
+```text
+PROMPT: 27
+TITLE: Gate integrado da fundação técnica
+STARTED_AT: 2026-08-29T13:13:00-04:00
+FINISHED_AT: 2026-08-29T13:20:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED:
+  docs/implementation/27-foundation-quality-gate.md
+FILES_CHANGED:
+  apps/api/src/**/*.ts (Prettier — 35 arquivos)
+  apps/web/src/**/*.ts(x) (Prettier — 27 arquivos)
+  packages/database/src/**/*.ts (Prettier — 7 arquivos)
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS_WITH_RESTRICTIONS
+TECHNICAL_FOUNDATION: READY_WITH_RESTRICTIONS
+BUSINESS_MODULES: NOT_STARTED
+FORMAT: PASS (após correção drift 69 arquivos)
+LINT: PASS
+TYPECHECK: PASS
+UNIT: PASS (database 3, api 37, web 28)
+INTEGRATION: PASS (database 20, api 28)
+E2E: PASS (api 13; web frontend e2e 13)
+BUILD: PASS
+EMPTY_DB_MIGRATION: PASS
+AUTHENTICATION: PASS
+AUTHORIZATION: PASS
+CROSS_SCOPE: PASS
+AUDIT_REDACTION: PASS
+CRITICAL_VULNERABILITIES: 0
+MODERATE_VULNERABILITIES: 1 (esbuild dev via drizzle-kit — aceito)
+SECRETS_COMMITTED: 0
+BUSINESS_TABLES: 0
+DOC_FILES_CREATED: 1
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Gate integrado executado sobre base 3b7572b (Prompt 26).
+  Instalação frozen-lockfile, lint, typecheck, test, integration, e2e, build — PASS.
+  Migrations em banco vazio (cisne_migration_gate_test) — 12 tabelas técnicas.
+  Correção única: drift Prettier em 69 arquivos (sem mudança de comportamento).
+  Riscos residuais: rate limit in-memory, esbuild dev-only moderate, ensure-migrations fallback.
+  Prompt 28 não executado.
+```
+
+## Quality gate Prompt 27 (evidência)
+
+- [x] Instalação reproduzível (`pnpm install --frozen-lockfile`)
+- [x] format:check, lint, typecheck — PASS
+- [x] Unit, integração PostgreSQL real, E2E API, E2E frontend — PASS
+- [x] Build sem segredo commitado — PASS
+- [x] Migrations em banco vazio — PASS
+- [x] Seed idempotente — PASS (integração)
+- [x] 12 cenários integrados cobertos por testes existentes
+- [x] Revisão de código: sem `any`, skip, mock PG, tabelas empresariais, segredos
+- [x] `pnpm audit --prod` — 0 críticas; 1 moderate dev-only documentada
+- [x] `docs/implementation/27-foundation-quality-gate.md`
+- [x] Prompt 28 não executado
+
+---

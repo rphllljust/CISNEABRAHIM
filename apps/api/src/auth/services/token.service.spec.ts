@@ -35,7 +35,10 @@ describe('TokenService', () => {
   });
 
   it('rejects tokens signed with another secret', () => {
-    const other = new TokenService({ ...testConfig, jwtSecret: 'another-secret-with-32-characters!!' });
+    const other = new TokenService({
+      ...testConfig,
+      jwtSecret: 'another-secret-with-32-characters!!',
+    });
     const issued = other.issueAccessToken('identity-1', 'session-1');
     expect(() => service.verifyAccessToken(issued.token)).toThrow();
   });

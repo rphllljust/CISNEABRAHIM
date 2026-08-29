@@ -26,8 +26,7 @@ export function validatePasswordStrength(password: string): { valid: boolean; re
   if (!hasLower || !hasUpper || !hasDigit || !hasSymbol) {
     return {
       valid: false,
-      reason:
-        'Password must include uppercase, lowercase, digit, and symbol characters.',
+      reason: 'Password must include uppercase, lowercase, digit, and symbol characters.',
     };
   }
 
