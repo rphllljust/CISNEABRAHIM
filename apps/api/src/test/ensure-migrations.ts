@@ -68,6 +68,11 @@ export default async function ensureMigrations(): Promise<void> {
     if (!hasClients) {
       await applySqlFile(pool, '0006_clients_baseline.sql');
     }
+
+    const hasCatalog = await tableExists(pool, 'cat.service_definitions');
+    if (!hasCatalog) {
+      await applySqlFile(pool, '0007_service_catalog_baseline.sql');
+    }
   } finally {
     await pool.end();
   }

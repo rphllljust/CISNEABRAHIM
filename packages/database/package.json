@@ -31,7 +31,8 @@
     "seed:dev": "pnpm build && node dist/cli/run-dev-seed.js",
     "bootstrap:production": "pnpm build && node dist/cli/run-production-bootstrap.js",
     "generate": "drizzle-kit generate",
-    "migrate": "drizzle-kit migrate"
+    "migrate": "drizzle-kit migrate",
+    "gate:ci-database": "node scripts/ci-database-gate.mjs"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.2",

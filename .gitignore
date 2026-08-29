@@ -80,6 +80,7 @@ uploads/tmp/
 # Test artifacts
 playwright-report/
 test-results/
+artifacts/ci/
 
 # Do not ignore project documentation
 # docs/ is versioned

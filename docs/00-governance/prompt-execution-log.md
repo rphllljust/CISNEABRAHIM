@@ -2218,3 +2218,43 @@ NOTES:
 - [x] Prompt 33 não executado
 
 ---
+
+```text
+PROMPT: 33
+TITLE: CI profissional e quality gates de engenharia
+STARTED_AT: 2026-08-29T16:30:00-04:00
+FINISHED_AT: 2026-08-29T16:42:00-04:00
+STATUS: EXECUTED
+BASELINE_COMMIT: 9ad53a6
+FILES_CREATED:
+  .github/workflows/ci.yml
+  .node-version
+  packages/database/scripts/ci-database-gate.mjs
+  scripts/ci-emit-build-metadata.mjs
+  docs/implementation/33-ci-quality-gates.md
+FILES_CHANGED:
+  package.json
+  packages/database/package.json
+  apps/api/src/test/ensure-migrations.ts
+  .gitignore
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+SRC_002_GATE: PASS
+CODE_CREATED: YES (CI/infra only)
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Pipeline GitHub Actions com lint, typecheck, audit, unit, database gate,
+  integration, API e2e, build e artifact metadata. Sem secrets em Git.
+  Branch protection documentada como pendência operacional.
+```
+
+## Quality gate Prompt 33 (evidência)
+
+- [x] `.github/workflows/ci.yml` — jobs sequenciais sem continue-on-error
+- [x] `gate:database` — fresh + incremental migrations, constraints, baseline
+- [x] `audit:deps` — high/critical threshold
+- [x] Artifact traceability (`build-metadata.json`)
+- [x] lint, typecheck, test, test:integration, test:e2e, build, gate:src-002 — PASS
+- [x] Prompt 34 não executado
+
+---
