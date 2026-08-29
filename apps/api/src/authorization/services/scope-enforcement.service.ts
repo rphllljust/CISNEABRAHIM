@@ -158,6 +158,48 @@ export class ScopeEnforcementService {
     };
   }
 
+  buildProposalListFilter(grants: GrantRow[]): ScopeSqlPredicate {
+    const hasGlobal = grants.some(
+      (grant) => grant.scope_type === AUTHZ_SCOPES.Global && grant.resource_id === null,
+    );
+    if (hasGlobal) {
+      return { clause: 'TRUE', params: [] };
+    }
+
+    const unitIds = grants
+      .filter(
+        (grant) => grant.scope_type === AUTHZ_SCOPES.Unit && grant.resource_id !== null,
+      )
+      .map((grant) => grant.resource_id as string);
+
+    const clientIds = grants
+      .filter(
+        (grant) => grant.scope_type === AUTHZ_SCOPES.Client && grant.resource_id !== null,
+      )
+      .map((grant) => grant.resource_id as string);
+
+    const clauses: string[] = [];
+    const params: unknown[] = [];
+
+    if (unitIds.length > 0) {
+      params.push(unitIds);
+      clauses.push(`unit_id = ANY($${params.length}::text[])`);
+    }
+    if (clientIds.length > 0) {
+      params.push(clientIds);
+      clauses.push(`client_id = ANY($${params.length}::uuid[])`);
+    }
+
+    if (clauses.length === 0) {
+      return { clause: 'FALSE', params: [] };
+    }
+
+    return {
+      clause: `(${clauses.join(' OR ')})`,
+      params,
+    };
+  }
+
   canAccessRecord(
     grants: GrantRow[],
     identityId: string,

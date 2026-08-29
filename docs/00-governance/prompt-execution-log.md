@@ -2667,3 +2667,76 @@ Resumo:
 - [x] Prompt 46 não executado
 
 ---
+
+## Prompt 46 — Propostas comerciais (backend)
+
+| Campo | Valor |
+| ----- | ----- |
+| ID | 46 |
+| Título | Propostas comerciais: backend |
+| Status | PASS |
+| Commit | feat(commercial): implement versioned commercial proposals |
+| Executado em | 2026-08-29 |
+
+```text
+PROMPT: 46
+TITLE: Propostas comerciais: backend
+STARTED_AT: 2026-08-29T18:00:00-04:00
+FINISHED_AT: 2026-08-29T18:50:00-04:00
+STATUS: PASS
+FILES_CREATED:
+  packages/database/migrations/0016_commercial_proposals_baseline.sql
+  packages/database/src/schema/commercial-proposals.ts
+  packages/database/src/test-builders/proposal-builders.ts
+  packages/database/src/commercial-proposals.persistence.integration.spec.ts
+  apps/api/src/commercial/domain/proposal.ts
+  apps/api/src/commercial/domain/proposal.validation.ts
+  apps/api/src/commercial/domain/proposal.validation.spec.ts
+  apps/api/src/commercial/repositories/proposals.repository.ts
+  apps/api/src/commercial/repositories/proposals.repository.types.ts
+  apps/api/src/commercial/services/proposals-access.service.ts
+  apps/api/src/commercial/controllers/proposals.controller.ts
+  apps/api/src/commercial/dto/proposals.dto.ts
+  apps/api/src/commercial/serializers/proposals-response.serializer.ts
+  apps/api/src/commercial/errors/commercial-exception.filter.ts
+  apps/api/src/commercial/proposals.integration.spec.ts
+  apps/api/src/commercial/proposals.e2e.spec.ts
+  docs/implementation/46-commercial-proposals-backend.md
+FILES_CHANGED:
+  packages/database/migrations/meta/_journal.json
+  packages/database/src/schema/index.ts
+  packages/database/src/test-builders/index.ts
+  apps/api/src/app.module.ts
+  apps/api/src/commercial/commercial.module.ts
+  apps/api/src/commercial/errors/commercial-error-codes.ts
+  apps/api/src/authorization/types/authz-actions.ts
+  apps/api/src/authorization/types/authz-resources.ts
+  apps/api/src/authorization/scope/scope-matcher.ts
+  apps/api/src/authorization/services/scope-enforcement.service.ts
+  apps/api/src/audit/types/security-audit.types.ts
+  apps/api/src/main.ts
+  apps/api/src/test/ensure-migrations.ts
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Agregado Proposal/ProposalVersion/ProposalItem em schema com.
+  GLOBAL_PRICE sem decomposição obrigatória; ITEMIZED com lineSaleAmount.
+  Emissão snapshota cliente e serviço; aceite exige acceptanceOriginCode.
+  CommercialExceptionFilter registrado em main e E2E.
+  Cenário regularização estrada 280 m³ / R$ 96.000 coberto em integração.
+  Prompt 47 não executado.
+```
+
+## Quality gate Prompt 46 (evidência)
+
+- [x] Draft, issue, version, accept, reject, expire, cancel
+- [x] GLOBAL_PRICE e ITEMIZED + precisão monetária
+- [x] Concorrência (row_version) e autorização cross-unit/CLIENT
+- [x] Audit trail e vínculo de documentos
+- [x] Migration 0016 + persistence test
+- [x] lint, typecheck, test, test:integration (proposals), test:e2e (proposals) — PASS
+- [x] Prompt 47 não executado
+
+---

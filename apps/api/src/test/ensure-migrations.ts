@@ -138,6 +138,11 @@ export default async function ensureMigrations(): Promise<void> {
     if (!hasDocuments) {
       await applySqlFile(pool, '0015_documents_baseline.sql');
     }
+
+    const hasProposals = await tableExists(pool, 'com.proposals');
+    if (!hasProposals) {
+      await applySqlFile(pool, '0016_commercial_proposals_baseline.sql');
+    }
   } finally {
     await pool.end();
   }

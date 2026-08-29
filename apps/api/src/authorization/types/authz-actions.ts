@@ -54,6 +54,15 @@ export const AUTHZ_ACTIONS = {
   DocumentsDocumentUploadVersion: 'documents:document:upload-version',
   DocumentsDocumentDownload: 'documents:document:download',
   CommercialPolicyRead: 'commercial:policy:read',
+  CommercialProposalCreate: 'commercial:proposal:create',
+  CommercialProposalRead: 'commercial:proposal:read',
+  CommercialProposalList: 'commercial:proposal:list',
+  CommercialProposalUpdate: 'commercial:proposal:update',
+  CommercialProposalIssue: 'commercial:proposal:issue',
+  CommercialProposalAccept: 'commercial:proposal:accept',
+  CommercialProposalReject: 'commercial:proposal:reject',
+  CommercialProposalExpire: 'commercial:proposal:expire',
+  CommercialProposalCancel: 'commercial:proposal:cancel',
 } as const;
 
 export type AuthzAction = (typeof AUTHZ_ACTIONS)[keyof typeof AUTHZ_ACTIONS];

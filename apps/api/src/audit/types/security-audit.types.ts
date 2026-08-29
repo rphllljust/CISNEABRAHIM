@@ -38,6 +38,13 @@ export const SECURITY_AUDIT_ACTIONS = {
   DocumentsDocumentCreate: 'security:documents:document:create',
   DocumentsDocumentUploadVersion: 'security:documents:document:upload-version',
   DocumentsDocumentDownload: 'security:documents:document:download',
+  CommercialProposalCreate: 'security:commercial:proposal:create',
+  CommercialProposalCreateVersion: 'security:commercial:proposal:create-version',
+  CommercialProposalIssue: 'security:commercial:proposal:issue',
+  CommercialProposalAccept: 'security:commercial:proposal:accept',
+  CommercialProposalReject: 'security:commercial:proposal:reject',
+  CommercialProposalExpire: 'security:commercial:proposal:expire',
+  CommercialProposalCancel: 'security:commercial:proposal:cancel',
 } as const;
 
 export type SecurityAuditAction =
@@ -73,6 +80,7 @@ export const SECURITY_AUDIT_RESOURCE_TYPES = {
   ResourcesLaborType: 'security:resources:labor-type',
   ResourcesAsset: 'security:resources:asset',
   DocumentsDocument: 'security:documents:document',
+  CommercialProposal: 'security:commercial:proposal',
 } as const;
 
 export type SecurityAuditResourceType =

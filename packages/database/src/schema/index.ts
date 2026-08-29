@@ -56,6 +56,16 @@ export {
   storedObjects,
 } from './documents';
 export {
+  comSchema,
+  proposalDocumentLinks,
+  proposalItemKindEnum,
+  proposalItems,
+  proposalPricingStructureEnum,
+  proposalVersionStatusEnum,
+  proposalVersions,
+  proposals,
+} from './commercial-proposals';
+export {
   catSchema,
   evidenceKindEnum,
   legalClassificationSchemeEnum,

@@ -105,6 +105,18 @@ export function toResourceContextFromDocument(document: {
   };
 }
 
+export function toResourceContextFromProposal(proposal: {
+  id: string;
+  unit_id: string;
+  client_id: string;
+}): AuthzResourceContext {
+  return {
+    resourceId: proposal.id,
+    unitId: proposal.unit_id,
+    clientId: proposal.client_id,
+  };
+}
+
 export function toResourceContextFromScopedRecord(record: {
   id: string;
   owner_identity_id: string;

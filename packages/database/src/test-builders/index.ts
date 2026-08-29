@@ -37,3 +37,4 @@ export {
 export { truncateAllOperationalTables, truncateClientTables } from './client-builders';
 export { truncatePhysicalAssetTables } from './asset-builders';
 export { truncateDocumentTables } from './document-builders';
+export { truncateCommercialProposalTables } from './proposal-builders';

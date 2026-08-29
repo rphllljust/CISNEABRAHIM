@@ -10,6 +10,7 @@ import { AuthzExceptionFilter } from './authorization/errors/authz-exception.fil
 import { CatalogExceptionFilter } from './catalog/errors/catalog-exception.filter';
 import { ClientExceptionFilter } from './clients/errors/client-exception.filter';
 import { DocumentExceptionFilter } from './documents/errors/document-exception.filter';
+import { CommercialExceptionFilter } from './commercial/errors/commercial-exception.filter';
 import { CorrelationIdInterceptor } from './infrastructure/http/correlation-id.interceptor';
 import { SecurityHeadersInterceptor } from './infrastructure/http/security-headers.interceptor';
 
@@ -38,6 +39,7 @@ async function bootstrap(): Promise<void> {
     new ClientExceptionFilter(),
     new CatalogExceptionFilter(),
     new DocumentExceptionFilter(),
+    new CommercialExceptionFilter(),
   );
   app.useGlobalInterceptors(new CorrelationIdInterceptor(), new SecurityHeadersInterceptor());
 
