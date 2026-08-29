@@ -2605,37 +2605,32 @@ Resumo:
 
 ---
 
-## Prompt 43 — Ativos físicos e veículos (backend)
+## Prompt 44 — Ativos físicos e veículos (frontend)
 
 | Campo | Valor |
 | ----- | ----- |
-| ID | 43 |
-| Título | Ativos físicos e veículos: backend |
+| ID | 44 |
+| Título | Ativos físicos e veículos: frontend |
 | Status | PASS |
-| Commit | feat(resources): implement physical asset registry |
+| Commit | feat(web): implement physical asset management |
 | Executado em | 2026-08-29 |
 
 ```
 Resumo:
-  Schema ast.physical_assets + ast.vehicle_profiles (extensão VEHICLE).
-  API CRUD com lifecycle/allocation separados, optimistic locking,
-  authz resources:asset:* com escopo UNIT, auditoria de mutações.
-  Prompt 44 não executado.
+  Módulo /app/assets com listagem, CRUD, lifecycle e formulário condicional
+  por ResourceType (placa só para VEHICLE). Capabilities, conflito de versão
+  e estados loading/empty/403/404. Prompt 45 não executado.
 ```
 
-## Quality gate Prompt 43 (evidência)
+## Quality gate Prompt 44 (evidência)
 
-- [x] Create vehicle e create machine
-- [x] Duplicate assetCode e duplicate plate
-- [x] Inactive resource type rejeitado
-- [x] Update stale (VERSION_CONFLICT)
-- [x] Deactivate / activate lifecycle
-- [x] Histórico em security_audit_events
-- [x] Authorization e cross-unit scope
-- [x] DTO sem campos internos (normalized_plate, created_by)
-- [x] Migration 0014 + persistence test
-- [x] E2E HTTP
-- [x] lint, typecheck, test:integration, test:e2e — PASS
-- [x] Prompt 44 não executado
+- [x] Lista paginada, busca e filtros (lifecycle, allocation, tipo)
+- [x] Detalhe, criação, edição, ativação e desativação
+- [x] Campos de veículo condicionais ao tipo VEHICLE
+- [x] Lifecycle e allocation exibidos separadamente
+- [x] Capabilities, conflict, double-submit, erros sanitizados
+- [x] Testes component, a11y, authorization, e2e
+- [x] lint, typecheck, test (web) — PASS
+- [x] Prompt 45 não executado
 
 ---

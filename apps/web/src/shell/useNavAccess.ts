@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { AuthzApiError, probeRequest } from '../auth/api/authz-api';
 import { probeClientListAccess } from '../clients/api/clients-api';
 import { probeCatalogListAccess } from '../catalog/api/service-catalog-api';
+import { probeAssetListAccess } from '../assets/api/physical-assets-api';
 import { useAuth } from '../auth/context/AuthProvider';
 import { SHELL_NAV_ITEMS } from './nav-config';
 import type { NavAccessMap } from './types';
@@ -71,6 +72,18 @@ export function useNavAccess(): NavAccessState {
         if (item.accessCheck === 'catalog-list') {
           try {
             const allowed = await probeCatalogListAccess(controller.signal);
+            nextAccess[item.id] = allowed;
+          } catch {
+            if (!cancelled) {
+              nextAccess[item.id] = false;
+            }
+          }
+          continue;
+        }
+
+        if (item.accessCheck === 'asset-list') {
+          try {
+            const allowed = await probeAssetListAccess(controller.signal);
             nextAccess[item.id] = allowed;
           } catch {
             if (!cancelled) {

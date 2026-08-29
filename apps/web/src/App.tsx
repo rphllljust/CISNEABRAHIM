@@ -17,6 +17,11 @@ import { ServiceDefinitionVersionCreatePage } from './catalog/pages/ServiceDefin
 import { ServiceDefinitionVersionDetailPage } from './catalog/pages/ServiceDefinitionVersionDetailPage';
 import { ServiceDefinitionsListPage } from './catalog/pages/ServiceDefinitionsListPage';
 import { AccessDeniedPage } from './pages/AccessDeniedPage';
+import { PhysicalAssetCreatePage } from './assets/pages/PhysicalAssetCreatePage';
+import { PhysicalAssetDetailPage } from './assets/pages/PhysicalAssetDetailPage';
+import { PhysicalAssetEditPage } from './assets/pages/PhysicalAssetEditPage';
+import { PhysicalAssetsListPage } from './assets/pages/PhysicalAssetsListPage';
+import { AssetsRoute } from './assets/AssetsRoute';
 import { AppHomePage } from './pages/AppHomePage';
 import { LoginPage } from './pages/LoginPage';
 import { PlatformDiagnosticsPage } from './pages/PlatformDiagnosticsPage';
@@ -130,6 +135,38 @@ export function App() {
                   <CatalogRoute>
                     <ServiceDefinitionDetailPage />
                   </CatalogRoute>
+                }
+              />
+              <Route
+                path="/app/assets"
+                element={
+                  <AssetsRoute>
+                    <PhysicalAssetsListPage />
+                  </AssetsRoute>
+                }
+              />
+              <Route
+                path="/app/assets/new"
+                element={
+                  <AssetsRoute>
+                    <PhysicalAssetCreatePage />
+                  </AssetsRoute>
+                }
+              />
+              <Route
+                path="/app/assets/:assetId/edit"
+                element={
+                  <AssetsRoute>
+                    <PhysicalAssetEditPage />
+                  </AssetsRoute>
+                }
+              />
+              <Route
+                path="/app/assets/:assetId"
+                element={
+                  <AssetsRoute>
+                    <PhysicalAssetDetailPage />
+                  </AssetsRoute>
                 }
               />
               <Route path="/app/no-access" element={<ShellAccessDeniedPage />} />

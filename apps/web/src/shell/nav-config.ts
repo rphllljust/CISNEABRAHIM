@@ -32,6 +32,13 @@ export const SHELL_NAV_ITEMS: ShellNavItem[] = [
     capabilityId: 'catalog:service:list',
     accessCheck: 'catalog-list',
   },
+  {
+    id: 'assets',
+    label: 'Ativos físicos',
+    path: '/app/assets',
+    capabilityId: 'resources:asset:list',
+    accessCheck: 'asset-list',
+  },
 ];
 
 export function findNavItemByPath(pathname: string): ShellNavItem | undefined {

@@ -92,6 +92,14 @@ export function createShellFetchMock(options: ShellFetchMockOptions = {}) {
       return jsonResponse({ error: { code: 'CLIENT_DENIED', message: 'Forbidden.' } }, 403);
     }
 
+    if (pathname === '/api/v1/catalog/service-definitions' && method === 'GET') {
+      return jsonResponse({ error: { code: 'CATALOG_DENIED', message: 'Forbidden.' } }, 403);
+    }
+
+    if (pathname === '/api/v1/resources/physical-assets' && method === 'GET') {
+      return jsonResponse({ error: { code: 'ASSET_DENIED', message: 'Forbidden.' } }, 403);
+    }
+
     if (pathname.startsWith('/api/v1/clients/') && method === 'GET') {
       return jsonResponse({ error: { code: 'CLIENT_NOT_FOUND', message: 'Not found.' } }, 404);
     }
