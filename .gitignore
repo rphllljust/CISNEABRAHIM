@@ -1,0 +1,86 @@
+# Operating systems
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# IDEs and editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.settings/
+
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+credentials.json
+service-account*.json
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Coverage and caches
+coverage/
+.nyc_output/
+.cache/
+.turbo/
+.parcel-cache/
+.eslintcache
+*.tsbuildinfo
+
+# Builds and dependencies (future; none exist yet)
+node_modules/
+dist/
+build/
+out/
+.next/
+.nuxt/
+.venv/
+venv/
+__pycache__/
+*.pyc
+target/
+vendor/
+
+# Local databases (future; none exist yet)
+*.sqlite
+*.sqlite3
+*.db
+*.mdb
+
+# Temporary uploads and scratch
+tmp/
+temp/
+uploads/tmp/
+*.tmp
+
+# Test artifacts
+playwright-report/
+test-results/
+
+# Do not ignore project documentation
+# docs/ is versioned
+# AGENTS.md and README.md are versioned

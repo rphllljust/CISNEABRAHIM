@@ -1,0 +1,31 @@
+# Line ending normalization. No application language has been selected.
+* text=auto eol=lf
+
+*.md   text eol=lf
+*.txt  text eol=lf
+*.json text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+*.xml  text eol=lf
+*.csv  text eol=lf
+*.svg  text eol=lf
+
+*.sh   text eol=lf
+*.ps1  text eol=lf
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.webp binary
+*.ico  binary
+*.pdf  binary
+*.zip  binary
+*.gz   binary
+*.7z   binary
+*.woff binary
+*.woff2 binary
+*.ttf  binary
+*.eot  binary
