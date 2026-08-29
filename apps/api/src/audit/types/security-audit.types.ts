@@ -60,6 +60,11 @@ export const SECURITY_AUDIT_ACTIONS = {
   ServiceOrdersServiceOrderPrepare: 'security:service-orders:service-order:prepare',
   ServiceOrdersServiceOrderRelease: 'security:service-orders:service-order:release',
   ServiceOrdersServiceOrderCancel: 'security:service-orders:service-order:cancel',
+  ServiceOrdersPlannedResourcePlan: 'security:service-orders:planned-resource:plan',
+  ServiceOrdersPlannedResourceRemove: 'security:service-orders:planned-resource:remove',
+  ServiceOrdersResourceAllocate: 'security:service-orders:resource-allocation:allocate',
+  ServiceOrdersResourceReallocate: 'security:service-orders:resource-allocation:reallocate',
+  ServiceOrdersResourceRemoveAllocation: 'security:service-orders:resource-allocation:remove',
 } as const;
 
 export type SecurityAuditAction =

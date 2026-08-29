@@ -8,6 +8,9 @@ export async function truncateServiceOrderTables(client: DbClient): Promise<void
      SET converted_service_order_id = NULL
      WHERE converted_service_order_id IS NOT NULL`,
   );
+  await client.query('DELETE FROM res.resource_allocation_history_events');
+  await client.query('DELETE FROM res.resource_allocations');
+  await client.query('DELETE FROM so.planned_resources');
   await client.query('DELETE FROM so.service_order_history_events');
   await client.query('DELETE FROM so.service_orders');
 }

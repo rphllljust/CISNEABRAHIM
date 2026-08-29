@@ -90,6 +90,15 @@ export {
   soSchema,
 } from './service-orders';
 export {
+  plannedResourceKindEnum,
+  plannedResources,
+  plannedResourceStatusEnum,
+  resSchema,
+  resourceAllocationHistoryEvents,
+  resourceAllocations,
+  resourceAllocationStatusEnum,
+} from './resource-planning';
+export {
   catSchema,
   evidenceKindEnum,
   legalClassificationSchemeEnum,

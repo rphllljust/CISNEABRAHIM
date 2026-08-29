@@ -86,6 +86,14 @@ export const AUTHZ_ACTIONS = {
   ServiceOrdersServiceOrderPrepare: 'service-orders:service-order:prepare',
   ServiceOrdersServiceOrderRelease: 'service-orders:service-order:release',
   ServiceOrdersServiceOrderCancel: 'service-orders:service-order:cancel',
+  ServiceOrdersPlannedResourcePlan: 'service-orders:planned-resource:plan',
+  ServiceOrdersPlannedResourceRead: 'service-orders:planned-resource:read',
+  ServiceOrdersPlannedResourceUpdate: 'service-orders:planned-resource:update',
+  ServiceOrdersPlannedResourceRemove: 'service-orders:planned-resource:remove',
+  ServiceOrdersResourceAllocate: 'service-orders:resource-allocation:allocate',
+  ServiceOrdersResourceReallocate: 'service-orders:resource-allocation:reallocate',
+  ServiceOrdersResourceRemoveAllocation: 'service-orders:resource-allocation:remove',
+  ServiceOrdersResourceAllocationRead: 'service-orders:resource-allocation:read',
 } as const;
 
 export type AuthzAction = (typeof AUTHZ_ACTIONS)[keyof typeof AUTHZ_ACTIONS];
