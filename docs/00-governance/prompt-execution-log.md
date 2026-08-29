@@ -1685,3 +1685,76 @@ NOTES:
 - [x] Prompt 26 não executado
 
 ---
+
+```text
+PROMPT: 26
+TITLE: Audit trail seguro
+STARTED_AT: 2026-08-29T13:05:00-04:00
+FINISHED_AT: 2026-08-29T13:12:00-04:00
+STATUS: PASS
+FILES_CREATED:
+  packages/database/migrations/0005_security_audit_events.sql
+  packages/database/src/schema/audit.ts
+  packages/database/src/test-builders/audit-builders.ts
+  apps/api/src/audit/audit.module.ts
+  apps/api/src/audit/types/audit-channels.ts
+  apps/api/src/audit/types/security-audit.types.ts
+  apps/api/src/audit/services/audit-redaction.service.ts
+  apps/api/src/audit/services/audit-redaction.service.spec.ts
+  apps/api/src/audit/services/security-audit.service.ts
+  apps/api/src/audit/services/security-audit.service.spec.ts
+  apps/api/src/audit/services/audit-bootstrap.service.ts
+  apps/api/src/audit/repositories/security-audit.repository.ts
+  apps/api/src/audit/controllers/security-audit.controller.ts
+  apps/api/src/audit/security-audit.integration.spec.ts
+  apps/api/src/audit/security-audit.e2e.spec.ts
+  apps/api/src/auth/types/auth-request-context.ts
+  docs/implementation/26-audit-trail.md
+FILES_CHANGED:
+  packages/database/migrations/meta/_journal.json
+  packages/database/src/schema/index.ts
+  packages/database/src/test-builders/authz-builders.ts
+  packages/database/src/test-builders/index.ts
+  apps/api/src/app.module.ts
+  apps/api/src/auth/auth.module.ts
+  apps/api/src/auth/auth.controller.ts
+  apps/api/src/auth/services/auth.service.ts
+  apps/api/src/auth/auth.integration.spec.ts
+  apps/api/src/auth/auth.adversarial.integration.spec.ts
+  apps/api/src/auth/auth.e2e.spec.ts
+  apps/api/src/authorization/authorization.module.ts
+  apps/api/src/authorization/services/grant-admin.service.ts
+  apps/api/src/authorization/services/policy-decision-point.service.ts
+  apps/api/src/authorization/services/policy-decision-point.service.spec.ts
+  apps/api/src/authorization/authorization.integration.spec.ts
+  apps/api/src/test/ensure-migrations.ts
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+DOC_FILES_CREATED: 1
+SECRETS_IN_AUDIT_ROWS: 0
+LINT: PASS
+TYPECHECK: PASS
+TEST: PASS (@cisne/web 28, @cisne/api 37, @cisne/database 3)
+INTEGRATION: PASS (@cisne/database 20, @cisne/api 28)
+E2E: PASS (@cisne/api 13)
+BUILD: PASS
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Canal SECURITY_AUDIT separado de AUDIT_TRAIL, DOMAIN_HISTORY e TECHNICAL_LOG.
+  Persistência append-only em audit.security_audit_events (trigger PostgreSQL; sem hash chain).
+  Redaction, sanitização, acesso restrito (platform:diagnostics:read) e falha de persistência tratada por criticidade.
+  Prompt 27 não executado.
+```
+
+## Quality gate Prompt 26 (evidência)
+
+- [x] SECURITY_AUDIT distinto de histórico de domínio e logs técnicos
+- [x] Eventos sensíveis existentes auditados (login, falha, logout, logout-all, refresh reuse, grant create/revoke, deny, bootstrap)
+- [x] Sem senha, token, hash ou payload sensível nos registros (containsForbiddenSecret = 0)
+- [x] Append-only com trigger; sem alegação de imutabilidade criptográfica
+- [x] Testes: criação, negação, redaction, append-only, concorrência, correlação, segredo, persistência, acesso indevido
+- [x] lint, typecheck, test, test:integration, test:e2e, build — PASS
+- [x] docs/implementation/26-audit-trail.md
+- [x] Prompt 27 não executado
+
+---

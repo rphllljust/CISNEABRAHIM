@@ -1,0 +1,72 @@
+export const SECURITY_AUDIT_ACTIONS = {
+  AuthLogin: 'security:auth:login',
+  AuthLoginFailure: 'security:auth:login_failure',
+  AuthLogout: 'security:auth:logout',
+  AuthLogoutAll: 'security:auth:logout_all',
+  AuthRefreshReuse: 'security:auth:refresh_reuse',
+  AuthSessionRevoked: 'security:auth:session_revoked',
+  AuthzGrantCreate: 'security:authz:grant_create',
+  AuthzGrantRevoke: 'security:authz:grant_revoke',
+  AuthzDenied: 'security:authz:denied',
+  AppBootstrap: 'security:app:bootstrap',
+} as const;
+
+export type SecurityAuditAction = (typeof SECURITY_AUDIT_ACTIONS)[keyof typeof SECURITY_AUDIT_ACTIONS];
+
+export const SECURITY_AUDIT_CLASSIFICATIONS = {
+  Critical: 'SECURITY_CRITICAL',
+  Standard: 'SECURITY_STANDARD',
+} as const;
+
+export type SecurityAuditClassification =
+  (typeof SECURITY_AUDIT_CLASSIFICATIONS)[keyof typeof SECURITY_AUDIT_CLASSIFICATIONS];
+
+export const SECURITY_AUDIT_OUTCOMES = {
+  Success: 'SUCCESS',
+  Failure: 'FAILURE',
+  Denied: 'DENIED',
+} as const;
+
+export type SecurityAuditOutcome =
+  (typeof SECURITY_AUDIT_OUTCOMES)[keyof typeof SECURITY_AUDIT_OUTCOMES];
+
+export const SECURITY_AUDIT_RESOURCE_TYPES = {
+  Identity: 'security:identity',
+  Session: 'security:session',
+  Grant: 'security:grant',
+  AuthzDecision: 'security:authz-decision',
+  Application: 'security:application',
+} as const;
+
+export type SecurityAuditResourceType =
+  (typeof SECURITY_AUDIT_RESOURCE_TYPES)[keyof typeof SECURITY_AUDIT_RESOURCE_TYPES];
+
+export type RecordSecurityAuditInput = {
+  actorIdentityId?: string | null;
+  actorSessionId?: string | null;
+  action: SecurityAuditAction;
+  resourceType: SecurityAuditResourceType;
+  resourceId?: string | null;
+  outcome: SecurityAuditOutcome;
+  scopeType?: string | null;
+  correlationId?: string | null;
+  reasonCode?: string | null;
+  classification: SecurityAuditClassification;
+  metadata?: Record<string, unknown>;
+};
+
+export type SecurityAuditEventRow = {
+  id: string;
+  occurred_at: string;
+  actor_identity_id: string | null;
+  actor_session_id: string | null;
+  action: string;
+  resource_type: string;
+  resource_id: string | null;
+  outcome: SecurityAuditOutcome;
+  scope_type: string | null;
+  correlation_id: string | null;
+  reason_code: string | null;
+  classification: SecurityAuditClassification;
+  metadata: Record<string, unknown>;
+};

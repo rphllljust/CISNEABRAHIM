@@ -130,6 +130,7 @@ export async function truncateAuthorizationTables(client: DbClient): Promise<voi
 export async function truncateIdentityAndAuthorizationTables(client: DbClient): Promise<void> {
   await client.query(`
     TRUNCATE TABLE
+      audit.security_audit_events,
       "authorization".decision_audits,
       "authorization".scoped_records,
       "authorization".grants,

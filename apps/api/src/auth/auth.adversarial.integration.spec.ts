@@ -1,4 +1,4 @@
-import { hashPassword, insertIdentity, truncateIdentityTables } from '@cisne/database';
+import { hashPassword, insertIdentity, truncateIdentityAndAuthorizationTables } from '@cisne/database';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Pool } from 'pg';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -33,7 +33,7 @@ describe('Auth adversarial (PostgreSQL integration)', () => {
   });
 
   beforeEach(async () => {
-    await truncateIdentityTables(pool);
+    await truncateIdentityAndAuthorizationTables(pool);
   });
 
   afterAll(async () => {
@@ -55,7 +55,7 @@ describe('Auth adversarial (PostgreSQL integration)', () => {
     const login = await seedActiveUser(`concurrent-refresh-${crypto.randomUUID()}@cisne.invalid`);
     const issued = await authService.login(
       { login, password: AUTH_TEST_PASSWORD },
-      clientKey('concurrent-refresh'),
+      { clientKey: clientKey('concurrent-refresh') },
     );
 
     const results = await Promise.allSettled([
@@ -80,26 +80,26 @@ describe('Auth adversarial (PostgreSQL integration)', () => {
     const login = await seedActiveUser(`concurrent-logout-${crypto.randomUUID()}@cisne.invalid`);
     const first = await authService.login(
       { login, password: AUTH_TEST_PASSWORD },
-      clientKey('logout-a'),
+      { clientKey: clientKey('logout-a') },
     );
     const second = await authService.login(
       { login, password: AUTH_TEST_PASSWORD },
-      clientKey('logout-b'),
+      { clientKey: clientKey('logout-b') },
     );
 
-    const logoutResults = await Promise.all([
-      authService.logout(first.session.id),
-      authService.logout(first.session.id),
-    ]);
-    expect(logoutResults).toEqual([{ success: true }, { success: true }]);
-
-    const identityId = JSON.parse(
+    const identityFromSecond = JSON.parse(
       Buffer.from(second.accessToken.split('.')[1] ?? '', 'base64url').toString('utf8'),
     ) as { sub: string };
 
+    const logoutResults = await Promise.all([
+      authService.logout(first.session.id, identityFromSecond.sub),
+      authService.logout(first.session.id, identityFromSecond.sub),
+    ]);
+    expect(logoutResults).toEqual([{ success: true }, { success: true }]);
+
     const logoutAllResults = await Promise.all([
-      authService.logoutAll(identityId.sub),
-      authService.logoutAll(identityId.sub),
+      authService.logoutAll(identityFromSecond.sub, second.session.id),
+      authService.logoutAll(identityFromSecond.sub, second.session.id),
     ]);
     expect(logoutAllResults).toEqual([{ success: true }, { success: true }]);
   });
@@ -108,7 +108,7 @@ describe('Auth adversarial (PostgreSQL integration)', () => {
     const login = await seedActiveUser(`disable-session-${crypto.randomUUID()}@cisne.invalid`);
     const issued = await authService.login(
       { login, password: AUTH_TEST_PASSWORD },
-      clientKey('disable-session'),
+      { clientKey: clientKey('disable-session') },
     );
 
     const identityId = JSON.parse(
@@ -134,7 +134,7 @@ describe('Auth adversarial (PostgreSQL integration)', () => {
     const login = await seedActiveUser(`leak-${crypto.randomUUID()}@cisne.invalid`);
     const issued = await authService.login(
       { login, password: AUTH_TEST_PASSWORD },
-      clientKey('leak'),
+      { clientKey: clientKey('leak') },
     );
 
     assertNoSensitiveLeak(issued);

@@ -1,5 +1,12 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { verifyPasswordHash } from '@cisne/database';
+import { SecurityAuditService } from '../../audit/services/security-audit.service';
+import {
+  SECURITY_AUDIT_ACTIONS,
+  SECURITY_AUDIT_CLASSIFICATIONS,
+  SECURITY_AUDIT_OUTCOMES,
+  SECURITY_AUDIT_RESOURCE_TYPES,
+} from '../../audit/types/security-audit.types';
 import { generateOpaqueToken, hashOpaqueToken } from '../crypto/token-crypto';
 import { AUTH_CONFIG } from '../auth.constants';
 import type { AuthConfig } from '../config/auth.config';
@@ -7,6 +14,7 @@ import { AUTH_ERROR_CODES } from '../errors/auth-error-codes';
 import { AuthHttpException } from '../errors/auth-http.exception';
 import type { LoginInput } from '../dto/login.dto';
 import type { RefreshInput } from '../dto/refresh.dto';
+import type { AuthRequestContext } from '../types/auth-request-context';
 import type { RefreshTokenLockedRow } from '../repositories/identity-auth.repository';
 import { IdentityAuthRepository } from '../repositories/identity-auth.repository';
 import { DatabaseService } from '../../infrastructure/database/database.service';
@@ -29,12 +37,22 @@ export class AuthService {
     private readonly tokenService: TokenService,
     private readonly loginRateLimiter: LoginRateLimiterService,
     private readonly sessionValidation: SessionValidationService,
+    private readonly securityAudit: SecurityAuditService,
   ) {}
 
-  async login(input: LoginInput, clientKey: string): Promise<AuthTokenResponseV1> {
+  async login(input: LoginInput, context: AuthRequestContext): Promise<AuthTokenResponseV1> {
     try {
-      this.loginRateLimiter.assertAllowed(clientKey);
+      this.loginRateLimiter.assertAllowed(context.clientKey);
     } catch {
+      await this.securityAudit.record({
+        action: SECURITY_AUDIT_ACTIONS.AuthLoginFailure,
+        resourceType: SECURITY_AUDIT_RESOURCE_TYPES.Identity,
+        outcome: SECURITY_AUDIT_OUTCOMES.Failure,
+        reasonCode: AUTH_ERROR_CODES.RATE_LIMITED,
+        classification: SECURITY_AUDIT_CLASSIFICATIONS.Critical,
+        correlationId: context.correlationId,
+        metadata: { client_ip: context.clientIp },
+      });
       throw new AuthHttpException(
         HttpStatus.TOO_MANY_REQUESTS,
         AUTH_ERROR_CODES.RATE_LIMITED,
@@ -44,6 +62,15 @@ export class AuthService {
 
     const credential = await this.repository.findCredentialByLogin(input.login);
     if (!credential) {
+      await this.securityAudit.record({
+        action: SECURITY_AUDIT_ACTIONS.AuthLoginFailure,
+        resourceType: SECURITY_AUDIT_RESOURCE_TYPES.Identity,
+        outcome: SECURITY_AUDIT_OUTCOMES.Failure,
+        reasonCode: AUTH_ERROR_CODES.INVALID_CREDENTIALS,
+        classification: SECURITY_AUDIT_CLASSIFICATIONS.Standard,
+        correlationId: context.correlationId,
+        metadata: { client_ip: context.clientIp },
+      });
       throw new AuthHttpException(
         HttpStatus.UNAUTHORIZED,
         AUTH_ERROR_CODES.INVALID_CREDENTIALS,
@@ -52,6 +79,17 @@ export class AuthService {
     }
 
     if (credential.identity_status !== 'active') {
+      await this.securityAudit.record({
+        actorIdentityId: credential.identity_id,
+        action: SECURITY_AUDIT_ACTIONS.AuthLoginFailure,
+        resourceType: SECURITY_AUDIT_RESOURCE_TYPES.Identity,
+        resourceId: credential.identity_id,
+        outcome: SECURITY_AUDIT_OUTCOMES.Denied,
+        reasonCode: AUTH_ERROR_CODES.ACCOUNT_DISABLED,
+        classification: SECURITY_AUDIT_CLASSIFICATIONS.Critical,
+        correlationId: context.correlationId,
+        metadata: { client_ip: context.clientIp },
+      });
       throw new AuthHttpException(
         HttpStatus.UNAUTHORIZED,
         AUTH_ERROR_CODES.INVALID_CREDENTIALS,
@@ -61,6 +99,17 @@ export class AuthService {
 
     const passwordValid = await verifyPasswordHash(input.password, credential.password_hash);
     if (!passwordValid) {
+      await this.securityAudit.record({
+        actorIdentityId: credential.identity_id,
+        action: SECURITY_AUDIT_ACTIONS.AuthLoginFailure,
+        resourceType: SECURITY_AUDIT_RESOURCE_TYPES.Identity,
+        resourceId: credential.identity_id,
+        outcome: SECURITY_AUDIT_OUTCOMES.Failure,
+        reasonCode: AUTH_ERROR_CODES.INVALID_CREDENTIALS,
+        classification: SECURITY_AUDIT_CLASSIFICATIONS.Standard,
+        correlationId: context.correlationId,
+        metadata: { client_ip: context.clientIp },
+      });
       throw new AuthHttpException(
         HttpStatus.UNAUTHORIZED,
         AUTH_ERROR_CODES.INVALID_CREDENTIALS,
@@ -68,10 +117,25 @@ export class AuthService {
       );
     }
 
-    return this.issueSessionTokens(credential.identity_id);
+    const tokens = await this.issueSessionTokens(credential.identity_id);
+    await this.securityAudit.record({
+      actorIdentityId: credential.identity_id,
+      actorSessionId: tokens.session.id,
+      action: SECURITY_AUDIT_ACTIONS.AuthLogin,
+      resourceType: SECURITY_AUDIT_RESOURCE_TYPES.Session,
+      resourceId: tokens.session.id,
+      outcome: SECURITY_AUDIT_OUTCOMES.Success,
+      classification: SECURITY_AUDIT_CLASSIFICATIONS.Critical,
+      correlationId: context.correlationId,
+      metadata: { client_ip: context.clientIp },
+    });
+    return tokens;
   }
 
-  async refresh(input: RefreshInput): Promise<AuthTokenResponseV1> {
+  async refresh(
+    input: RefreshInput,
+    context: Pick<AuthRequestContext, 'correlationId' | 'clientIp'> = {},
+  ): Promise<AuthTokenResponseV1> {
     const tokenHash = hashOpaqueToken(input.refreshToken);
     const pool = this.getPool();
     const client = await pool.connect();
@@ -94,6 +158,18 @@ export class AuthService {
         await this.repository.revokeSession(client, stored.session_id);
         await client.query('COMMIT');
         committed = true;
+        await this.securityAudit.record({
+          actorIdentityId: stored.identity_id,
+          actorSessionId: stored.session_id,
+          action: SECURITY_AUDIT_ACTIONS.AuthRefreshReuse,
+          resourceType: SECURITY_AUDIT_RESOURCE_TYPES.Session,
+          resourceId: stored.session_id,
+          outcome: SECURITY_AUDIT_OUTCOMES.Denied,
+          reasonCode: AUTH_ERROR_CODES.REFRESH_REUSED,
+          classification: SECURITY_AUDIT_CLASSIFICATIONS.Critical,
+          correlationId: context.correlationId,
+          metadata: { client_ip: context.clientIp },
+        });
         throw new AuthHttpException(
           HttpStatus.UNAUTHORIZED,
           AUTH_ERROR_CODES.REFRESH_REUSED,
@@ -168,7 +244,11 @@ export class AuthService {
     }
   }
 
-  async logout(sessionId: string): Promise<{ success: true }> {
+  async logout(
+    sessionId: string,
+    identityId: string,
+    context: Pick<AuthRequestContext, 'correlationId'> = {},
+  ): Promise<{ success: true }> {
     const pool = this.getPool();
     const client = await pool.connect();
     try {
@@ -193,11 +273,36 @@ export class AuthService {
       client.release();
     }
 
+    await this.securityAudit.record({
+      actorIdentityId: identityId,
+      actorSessionId: sessionId,
+      action: SECURITY_AUDIT_ACTIONS.AuthLogout,
+      resourceType: SECURITY_AUDIT_RESOURCE_TYPES.Session,
+      resourceId: sessionId,
+      outcome: SECURITY_AUDIT_OUTCOMES.Success,
+      classification: SECURITY_AUDIT_CLASSIFICATIONS.Standard,
+      correlationId: context.correlationId,
+    });
+
     return { success: true };
   }
 
-  async logoutAll(identityId: string): Promise<{ success: true }> {
+  async logoutAll(
+    identityId: string,
+    sessionId: string,
+    context: Pick<AuthRequestContext, 'correlationId'> = {},
+  ): Promise<{ success: true }> {
     await this.repository.revokeAllSessionsForIdentity(identityId);
+    await this.securityAudit.record({
+      actorIdentityId: identityId,
+      actorSessionId: sessionId,
+      action: SECURITY_AUDIT_ACTIONS.AuthLogoutAll,
+      resourceType: SECURITY_AUDIT_RESOURCE_TYPES.Identity,
+      resourceId: identityId,
+      outcome: SECURITY_AUDIT_OUTCOMES.Success,
+      classification: SECURITY_AUDIT_CLASSIFICATIONS.Critical,
+      correlationId: context.correlationId,
+    });
     return { success: true };
   }
 

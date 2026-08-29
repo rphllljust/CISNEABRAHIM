@@ -8,12 +8,13 @@ import { AUTHZ_RESOURCE_TYPES } from '../types/authz-resources';
 describe('PolicyDecisionPointService', () => {
   const findActiveGrants = vi.fn();
   const insertDecisionAudit = vi.fn();
+  const securityAudit = { record: vi.fn().mockResolvedValue('audit-id') };
   const repository = {
     findActiveGrants,
     insertDecisionAudit,
   } as unknown as AuthorizationRepository;
 
-  const pdp = new PolicyDecisionPointService(repository);
+  const pdp = new PolicyDecisionPointService(repository, securityAudit as never);
 
   it('denies by default without identity (fail-closed)', async () => {
     const decision = await pdp.decide(null, {

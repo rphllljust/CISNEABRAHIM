@@ -1,4 +1,4 @@
-import { hashPassword, insertIdentity, truncateIdentityTables } from '@cisne/database';
+import { hashPassword, insertIdentity, truncateIdentityAndAuthorizationTables } from '@cisne/database';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Pool } from 'pg';
@@ -51,7 +51,7 @@ describe('Auth E2E', () => {
   });
 
   beforeEach(async () => {
-    await truncateIdentityTables(pool);
+    await truncateIdentityAndAuthorizationTables(pool);
   });
 
   afterAll(async () => {

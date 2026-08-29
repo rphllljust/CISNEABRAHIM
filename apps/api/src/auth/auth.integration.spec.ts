@@ -1,4 +1,4 @@
-import { hashPassword, insertIdentity, truncateIdentityTables } from '@cisne/database';
+import { hashPassword, insertIdentity, truncateIdentityAndAuthorizationTables } from '@cisne/database';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Pool } from 'pg';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -35,7 +35,7 @@ describe('Auth PostgreSQL integration', () => {
   });
 
   beforeEach(async () => {
-    await truncateIdentityTables(pool);
+    await truncateIdentityAndAuthorizationTables(pool);
   });
 
   afterAll(async () => {
@@ -69,7 +69,7 @@ describe('Auth PostgreSQL integration', () => {
 
     const result = await authService.login(
       { login, password: AUTH_TEST_PASSWORD },
-      clientKey('valid-login'),
+      { clientKey: clientKey('valid-login') },
     );
 
     assertNoSensitiveLeak(result);
@@ -83,13 +83,13 @@ describe('Auth PostgreSQL integration', () => {
     const key = clientKey('invalid-creds');
 
     await expect(
-      authService.login({ login: `ghost-${crypto.randomUUID()}@cisne.invalid`, password: AUTH_TEST_PASSWORD }, key),
+      authService.login({ login: `ghost-${crypto.randomUUID()}@cisne.invalid`, password: AUTH_TEST_PASSWORD }, { clientKey: key }),
     ).rejects.toMatchObject({
       response: { error: { code: AUTH_ERROR_CODES.INVALID_CREDENTIALS } },
     });
 
     await expect(
-      authService.login({ login, password: 'WrongPassword1!' }, key),
+      authService.login({ login, password: 'WrongPassword1!' }, { clientKey: key }),
     ).rejects.toMatchObject({
       response: { error: { code: AUTH_ERROR_CODES.INVALID_CREDENTIALS } },
     });
@@ -113,7 +113,7 @@ describe('Auth PostgreSQL integration', () => {
     );
 
     await expect(
-      authService.login({ login, password: AUTH_TEST_PASSWORD }, clientKey('disabled')),
+      authService.login({ login, password: AUTH_TEST_PASSWORD }, { clientKey: clientKey('disabled') }),
     ).rejects.toMatchObject({
       response: { error: { code: AUTH_ERROR_CODES.INVALID_CREDENTIALS } },
     });
@@ -124,7 +124,7 @@ describe('Auth PostgreSQL integration', () => {
 
     const first = await authService.login(
       { login, password: AUTH_TEST_PASSWORD },
-      clientKey('refresh'),
+      { clientKey: clientKey('refresh') },
     );
     const rotated = await authService.refresh({ refreshToken: first.refreshToken });
     expect(rotated.refreshToken).not.toBe(first.refreshToken);
@@ -146,7 +146,7 @@ describe('Auth PostgreSQL integration', () => {
     const login = await seedActiveUser(`expired-${crypto.randomUUID()}@cisne.invalid`);
     const issued = await authService.login(
       { login, password: AUTH_TEST_PASSWORD },
-      clientKey('expired'),
+      { clientKey: clientKey('expired') },
     );
 
     await pool.query(
@@ -166,9 +166,12 @@ describe('Auth PostgreSQL integration', () => {
     const login2 = await seedActiveUser(`revoked-${crypto.randomUUID()}@cisne.invalid`);
     const session = await authService.login(
       { login: login2, password: AUTH_TEST_PASSWORD },
-      clientKey('revoked'),
+      { clientKey: clientKey('revoked') },
     );
-    await authService.logout(session.session.id);
+    await authService.logout(
+      session.session.id,
+      identityIdFromAccessToken(session.accessToken),
+    );
 
     await expect(
       authService.refresh({ refreshToken: session.refreshToken }),
@@ -182,14 +185,17 @@ describe('Auth PostgreSQL integration', () => {
 
     const first = await authService.login(
       { login, password: AUTH_TEST_PASSWORD },
-      clientKey('logout-1'),
+      { clientKey: clientKey('logout-1') },
     );
     const second = await authService.login(
       { login, password: AUTH_TEST_PASSWORD },
-      clientKey('logout-2'),
+      { clientKey: clientKey('logout-2') },
     );
 
-    await authService.logout(first.session.id);
+    await authService.logout(
+      first.session.id,
+      identityIdFromAccessToken(first.accessToken),
+    );
     await expect(
       authService.currentSession(
         identityIdFromAccessToken(first.accessToken),
@@ -201,7 +207,7 @@ describe('Auth PostgreSQL integration', () => {
     const current = await authService.currentSession(identityId, second.session.id);
     expect(current.identityId).toBeTruthy();
 
-    await authService.logoutAll(current.identityId);
+    await authService.logoutAll(current.identityId, second.session.id);
     await expect(
       authService.refresh({ refreshToken: second.refreshToken }),
     ).rejects.toMatchObject({
@@ -215,14 +221,14 @@ describe('Auth PostgreSQL integration', () => {
 
     for (let attempt = 0; attempt < 5; attempt += 1) {
       await expect(
-        authService.login({ login, password: 'WrongPassword1!' }, abuseKey),
+        authService.login({ login, password: 'WrongPassword1!' }, { clientKey: abuseKey }),
       ).rejects.toMatchObject({
         response: { error: { code: AUTH_ERROR_CODES.INVALID_CREDENTIALS } },
       });
     }
 
     await expect(
-      authService.login({ login, password: 'WrongPassword1!' }, abuseKey),
+      authService.login({ login, password: 'WrongPassword1!' }, { clientKey: abuseKey }),
     ).rejects.toMatchObject({
       response: { error: { code: AUTH_ERROR_CODES.RATE_LIMITED } },
     });

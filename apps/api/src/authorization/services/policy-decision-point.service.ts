@@ -1,4 +1,11 @@
 import { Injectable } from '@nestjs/common';
+import { SecurityAuditService } from '../../audit/services/security-audit.service';
+import {
+  SECURITY_AUDIT_ACTIONS,
+  SECURITY_AUDIT_CLASSIFICATIONS,
+  SECURITY_AUDIT_OUTCOMES,
+  SECURITY_AUDIT_RESOURCE_TYPES,
+} from '../../audit/types/security-audit.types';
 import { AUTHZ_DENY_REASONS } from '../errors/authz-error-codes';
 import { AuthorizationRepository } from '../repositories/authorization.repository';
 import { grantMatchesResourceContext } from '../scope/scope-matcher';
@@ -6,7 +13,10 @@ import type { AuthzDecision, AuthzEvaluationRequest, IdentityAuthzContext } from
 
 @Injectable()
 export class PolicyDecisionPointService {
-  constructor(private readonly repository: AuthorizationRepository) {}
+  constructor(
+    private readonly repository: AuthorizationRepository,
+    private readonly securityAudit: SecurityAuditService,
+  ) {}
 
   async decide(
     identity: IdentityAuthzContext | null,
@@ -93,5 +103,22 @@ export class PolicyDecisionPointService {
       reasonCode: decision.reasonCode,
       correlationId: options?.correlationId,
     });
+
+    if (decision.result === 'DENY') {
+      await this.securityAudit.record({
+        actorIdentityId: identityId,
+        action: SECURITY_AUDIT_ACTIONS.AuthzDenied,
+        resourceType: SECURITY_AUDIT_RESOURCE_TYPES.AuthzDecision,
+        resourceId: request.context?.resourceId ?? null,
+        outcome: SECURITY_AUDIT_OUTCOMES.Denied,
+        correlationId: options?.correlationId,
+        reasonCode: decision.reasonCode,
+        classification: SECURITY_AUDIT_CLASSIFICATIONS.Standard,
+        metadata: {
+          evaluated_action: request.action,
+          evaluated_resource_type: request.resourceType,
+        },
+      });
+    }
   }
 }

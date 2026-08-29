@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
+import { AuditModule } from '../audit/audit.module';
 import { DatabaseModule } from '../infrastructure/database/database.module';
+import { SecurityAuditController } from '../audit/controllers/security-audit.controller';
 import { AuthzGrantsController, AuthzProbeController } from './controllers/authz.controller';
 import { ScopedRecordController } from './controllers/scoped-record.controller';
 import { AuthorizationGuard } from './guards/authorization.guard';
@@ -13,8 +15,8 @@ import { ScopeResolverService } from './services/scope-resolver.service';
 import { ScopedRecordAccessService } from './services/scoped-record-access.service';
 
 @Module({
-  imports: [DatabaseModule, AuthModule],
-  controllers: [AuthzProbeController, AuthzGrantsController, ScopedRecordController],
+  imports: [DatabaseModule, AuthModule, AuditModule],
+  controllers: [AuthzProbeController, AuthzGrantsController, ScopedRecordController, SecurityAuditController],
   providers: [
     AuthorizationRepository,
     ScopeContextRepository,

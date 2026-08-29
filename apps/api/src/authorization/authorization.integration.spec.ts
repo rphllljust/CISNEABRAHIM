@@ -61,7 +61,7 @@ describe('Authorization PostgreSQL integration', () => {
     const { identityId, login } = await seedIdentity();
     const session = await authService.login(
       { login, password: AUTH_TEST_PASSWORD },
-      '127.0.0.1:authz-default',
+      { clientKey: '127.0.0.1:authz-default' },
     );
 
     const decision = await pdp.decide(

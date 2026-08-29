@@ -50,12 +50,19 @@ export default async function ensureMigrations(): Promise<void> {
   const pool = new pg.Pool({ connectionString: testDatabaseUrl });
   try {
     const hasScopedRecords = await tableExists(pool, '"authorization".scoped_records');
-    if (hasScopedRecords) {
+    const hasSecurityAudit = await tableExists(pool, 'audit.security_audit_events');
+    if (hasScopedRecords && hasSecurityAudit) {
       return;
     }
 
-    await applySqlFile(pool, '0003_contextual_scope_enums.sql');
-    await applySqlFile(pool, '0004_contextual_scope_tables.sql');
+    if (!hasScopedRecords) {
+      await applySqlFile(pool, '0003_contextual_scope_enums.sql');
+      await applySqlFile(pool, '0004_contextual_scope_tables.sql');
+    }
+
+    if (!hasSecurityAudit) {
+      await applySqlFile(pool, '0005_security_audit_events.sql');
+    }
   } finally {
     await pool.end();
   }

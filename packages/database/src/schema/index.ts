@@ -18,3 +18,9 @@ export {
   scopeRefs,
   scopedRecords,
 } from './authorization';
+export {
+  auditSchema,
+  securityAuditClassificationEnum,
+  securityAuditEvents,
+  securityAuditOutcomeEnum,
+} from './audit';

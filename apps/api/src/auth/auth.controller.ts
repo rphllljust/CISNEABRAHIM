@@ -1,5 +1,6 @@
 import { Controller, Get, HttpCode, Ip, Post, Req, UseGuards } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
+import { resolveCorrelationId } from '../infrastructure/http/correlation-id';
 import { CurrentAuth } from './decorators/current-auth.decorator';
 import { parseLoginInput } from './dto/login.dto';
 import { parseRefreshInput } from './dto/refresh.dto';
@@ -17,29 +18,40 @@ export class AuthController {
     const body: unknown = request.body;
     const input = parseLoginInput(body);
     const clientKey = `${ip}:${request.headers['user-agent'] ?? 'unknown'}`;
-    return this.authService.login(input, clientKey);
+    return this.authService.login(input, {
+      clientKey,
+      correlationId: resolveCorrelationId(request),
+      clientIp: ip,
+    });
   }
 
   @Post('refresh')
   @HttpCode(200)
-  async refresh(@Req() request: FastifyRequest) {
+  async refresh(@Req() request: FastifyRequest, @Ip() ip: string) {
     const body: unknown = request.body;
     const input = parseRefreshInput(body);
-    return this.authService.refresh(input);
+    return this.authService.refresh(input, {
+      correlationId: resolveCorrelationId(request),
+      clientIp: ip,
+    });
   }
 
   @Post('logout')
   @HttpCode(200)
   @UseGuards(JwtAuthGuard)
-  async logout(@CurrentAuth() auth: AccessTokenClaims) {
-    return this.authService.logout(auth.sid);
+  async logout(@CurrentAuth() auth: AccessTokenClaims, @Req() request: FastifyRequest) {
+    return this.authService.logout(auth.sid, auth.sub, {
+      correlationId: resolveCorrelationId(request),
+    });
   }
 
   @Post('logout-all')
   @HttpCode(200)
   @UseGuards(JwtAuthGuard)
-  async logoutAll(@CurrentAuth() auth: AccessTokenClaims) {
-    return this.authService.logoutAll(auth.sub);
+  async logoutAll(@CurrentAuth() auth: AccessTokenClaims, @Req() request: FastifyRequest) {
+    return this.authService.logoutAll(auth.sub, auth.sid, {
+      correlationId: resolveCorrelationId(request),
+    });
   }
 
   @Get('session')

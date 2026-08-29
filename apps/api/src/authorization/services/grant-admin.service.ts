@@ -15,6 +15,13 @@ import type { IdentityAuthzContext } from '../types/authz-decision';
 import type { AuthzAction } from '../types/authz-actions';
 import type { AuthzResourceType } from '../types/authz-resources';
 import { DatabaseService } from '../../infrastructure/database/database.service';
+import { SecurityAuditService } from '../../audit/services/security-audit.service';
+import {
+  SECURITY_AUDIT_ACTIONS,
+  SECURITY_AUDIT_CLASSIFICATIONS,
+  SECURITY_AUDIT_OUTCOMES,
+  SECURITY_AUDIT_RESOURCE_TYPES,
+} from '../../audit/types/security-audit.types';
 import { toGrantResponse, type GrantResponseV1 } from '../serializers/grant-response.serializer';
 import { grantMatchesResourceContext } from '../scope/scope-matcher';
 
@@ -44,6 +51,7 @@ export class GrantAdminService {
     private readonly repository: AuthorizationRepository,
     private readonly scopeContextRepository: ScopeContextRepository,
     private readonly policyDecisionPoint: PolicyDecisionPointService,
+    private readonly securityAudit: SecurityAuditService,
   ) {}
 
   async createGrant(
@@ -81,6 +89,21 @@ export class GrantAdminService {
       if (!grant) {
         throw new Error('grant not found after insert');
       }
+      await this.securityAudit.record({
+        actorIdentityId: actor.identityId,
+        actorSessionId: actor.sessionId,
+        action: SECURITY_AUDIT_ACTIONS.AuthzGrantCreate,
+        resourceType: SECURITY_AUDIT_RESOURCE_TYPES.Grant,
+        resourceId: grantId,
+        outcome: SECURITY_AUDIT_OUTCOMES.Success,
+        scopeType: command.scopeType,
+        classification: SECURITY_AUDIT_CLASSIFICATIONS.Critical,
+        metadata: {
+          target_identity_id: command.identityId,
+          action: command.action,
+          resource_type: command.resourceType,
+        },
+      });
       return toGrantResponse(grant);
     } catch (error) {
       await client.query('ROLLBACK');
@@ -110,6 +133,15 @@ export class GrantAdminService {
       if (!revoked) {
         throw new AuthzHttpException(HttpStatus.FORBIDDEN, AUTHZ_ERROR_CODES.DENIED, 'Access denied.');
       }
+      await this.securityAudit.record({
+        actorIdentityId: actor.identityId,
+        actorSessionId: actor.sessionId,
+        action: SECURITY_AUDIT_ACTIONS.AuthzGrantRevoke,
+        resourceType: SECURITY_AUDIT_RESOURCE_TYPES.Grant,
+        resourceId: grantId,
+        outcome: SECURITY_AUDIT_OUTCOMES.Success,
+        classification: SECURITY_AUDIT_CLASSIFICATIONS.Critical,
+      });
       return { success: true };
     } catch (error) {
       await client.query('ROLLBACK');
