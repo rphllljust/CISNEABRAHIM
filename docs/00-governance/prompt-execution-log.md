@@ -634,6 +634,47 @@ NOTES:
 - [x] modular monolith avaliado sem decisão final
 - [x] 0 microserviços, código, aggregates, máquinas de estado
 - [x] rastreabilidade atualizada
-- [x] Prompt 06 não executado
+- [x] Prompt 06 não executado (no encerramento Prompt 05)
+
+---
+
+```text
+PROMPT: 06
+TITLE: Invariantes, comandos, eventos e consistência do domínio
+STARTED_AT: 2026-08-29T01:00:00-04:00
+FINISHED_AT: 2026-08-29T01:35:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED:
+  docs/07-domain-behavior/ (24 artefatos — ver README.md)
+FILES_CHANGED:
+  docs/01-foundation/requirements-traceability.md
+  docs/00-governance/prompt-execution-log.md
+  docs/README.md
+QUALITY_GATE: PASS_WITH_RESTRICTIONS
+INV_COUNT: 22
+CMD_COUNT: 22
+DE_COUNT: 20
+REJ_COUNT: 18
+INV_CONFIRMED: 0
+AGGREGATES_DEFINED: 0
+CODE_CREATED: NO
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Comportamento candidato formalizado. 0 INV CONFIRMED.
+  Histórico/audit/domínio separados. DDP-037 mecanismos não escolhidos.
+  Prompt 07 não executado.
+```
+
+## Quality gate Prompt 06 (evidência)
+
+- [x] pasta `07-domain-behavior/` com 24 artefatos não vazios
+- [x] 22 INV com proveniência ou pendência explícita
+- [x] 22 CMD agnósticos de tecnologia
+- [x] 20 DE no passado; DE-006 AUDIT_ONLY candidato
+- [x] 18 REJ empresariais
+- [x] concorrência e idempotência classificadas
+- [x] 0 CONFIRMED, 0 aggregate, 0 código
+- [x] rastreabilidade EV→DE atualizada
+- [x] Prompt 07 não executado
 
 ---

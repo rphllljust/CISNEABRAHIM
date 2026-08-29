@@ -12,7 +12,8 @@
 6. `04-quality-attributes/` contém requisitos não funcionais do Prompt 03.
 7. `05-ubiquitous-language/` contém glossário e linguagem ubíqua do Prompt 04.
 8. `06-domain-boundaries/` contém subdomínios e bounded contexts candidatos do Prompt 05.
-9. `templates/` define a forma dos registros futuros.
+9. `07-domain-behavior/` contém invariantes, comandos e eventos candidatos do Prompt 06.
+10. `templates/` define a forma dos registros futuros.
 
 Agentes devem seguir [`../AGENTS.md`](../AGENTS.md) e o protocolo em [`00-governance/execution-protocol.md`](00-governance/execution-protocol.md).
 
@@ -108,6 +109,19 @@ Subdomínios e bounded contexts candidatos (Prompt 05). Índice: [06-domain-boun
 | [cross-context-workflows.md](06-domain-boundaries/cross-context-workflows.md) | Fluxos transversais |
 | [modular-monolith-assessment.md](06-domain-boundaries/modular-monolith-assessment.md) | Avaliação modular monolith |
 | [prompt-05-completeness-report.md](06-domain-boundaries/prompt-05-completeness-report.md) | Relatório de completude |
+
+## 07-domain-behavior
+
+Comportamento de domínio candidato (Prompt 06). Índice: [07-domain-behavior/README.md](07-domain-behavior/README.md).
+
+| Arquivo | Conteúdo |
+| --- | --- |
+| [invariant-register.md](07-domain-behavior/invariant-register.md) | 22 INV-001..INV-022 |
+| [command-register.md](07-domain-behavior/command-register.md) | 22 CMD-001..CMD-022 |
+| [domain-event-register.md](07-domain-behavior/domain-event-register.md) | 20 DE-001..DE-020 |
+| [rejection-reason-catalog.md](07-domain-behavior/rejection-reason-catalog.md) | 18 REJ |
+| [behavior-traceability.md](07-domain-behavior/behavior-traceability.md) | Cadeia EV→DE |
+| [prompt-06-completeness-report.md](07-domain-behavior/prompt-06-completeness-report.md) | Relatório |
 
 ## inputs
 

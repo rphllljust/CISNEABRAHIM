@@ -4,7 +4,7 @@
 | --- | --- |
 | Document ID | RTM-001 |
 | Policy | [`../00-governance/traceability-policy.md`](../00-governance/traceability-policy.md) |
-| Last updated | 2026-08-28 (Prompt 05) |
+| Last updated | 2026-08-28 (Prompt 06) |
 | Rule | Colunas inaplicáveis = `TBD`. Proibido inventar para completar. |
 
 Cadeia:
@@ -130,3 +130,23 @@ COMMAND / EVENT → CONTEXT OWNER
 ```
 
 Matriz CAP→BC: [`../06-domain-boundaries/capability-to-context-matrix.md`](../06-domain-boundaries/capability-to-context-matrix.md).
+
+## Resumo Prompt 06
+
+| Métrica | Valor |
+| --- | --- |
+| Invariantes (INV) | 22 (INV-001..INV-022) |
+| Comandos (CMD) | 22 (CMD-001..CMD-022) |
+| Eventos domínio (DE) | 20 (DE-001..DE-020) |
+| Rejeições (REJ) | 18 |
+| Predicados (PRED) | 12 |
+| INV CONFIRMED | **0** |
+| Aggregates / estados definitivos | **0** |
+| Índice | [`../07-domain-behavior/README.md`](../07-domain-behavior/README.md) |
+| Relatório | [`../07-domain-behavior/prompt-06-completeness-report.md`](../07-domain-behavior/prompt-06-completeness-report.md) |
+
+Cadeia Prompt 06:
+
+```text
+EV → BR → FR/UC → INV → CMD → DE / REJ
+```
