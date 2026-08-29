@@ -356,3 +356,22 @@ Cadeia Prompt 16:
 ```text
 ADR-TECH → monorepo → lint/typecheck/test/build → health técnico → (sem domínio)
 ```
+
+## Resumo Prompt 17
+
+| Métrica              | Valor                                                                                                      |
+| -------------------- | ---------------------------------------------------------------------------------------------------------- |
+| PostgreSQL           | 18.x (Docker local)                                                                                        |
+| ORM / migrations     | Drizzle + drizzle-kit                                                                                      |
+| Pacote               | `@cisne/database`                                                                                        |
+| Migrations técnicas  | 1                                                                                                          |
+| Tabelas empresariais | **0**                                                                                                      |
+| Health DB            | `GET /health` → `database.status`                                                                          |
+| Índice               | [`../18-database-foundation/README.md`](../18-database-foundation/README.md)                              |
+| Relatório            | [`../18-database-foundation/prompt-17-completeness-report.md`](../18-database-foundation/prompt-17-completeness-report.md) |
+
+Cadeia Prompt 17:
+
+```text
+ADR-TECH-004/005 → Docker PG → Drizzle migrate → health + integração → (sem domínio)
+```

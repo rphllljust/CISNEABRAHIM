@@ -23,7 +23,8 @@
 17. `15-security/` contém threat model e arquitetura de segurança do Prompt 14.
 18. `16-testing/` contém arquitetura de testes e estratégia de qualidade do Prompt 15.
 19. `17-bootstrap/` contém fundação técnica do monorepo do Prompt 16.
-20. `templates/` define a forma dos registros futuros.
+20. `18-database-foundation/` contém PostgreSQL local e Drizzle do Prompt 17.
+21. `templates/` define a forma dos registros futuros.
 
 Agentes devem seguir [`../AGENTS.md`](../AGENTS.md) e o protocolo em [`00-governance/execution-protocol.md`](00-governance/execution-protocol.md).
 
@@ -257,6 +258,19 @@ Fundação técnica do monorepo (Prompt 16). Índice implícito em cada arquivo 
 | [command-reference.md](17-bootstrap/command-reference.md)                                | Scripts raiz e pacotes      |
 | [bootstrap-decisions.md](17-bootstrap/bootstrap-decisions.md)                              | BOOT-DEC-001..011           |
 | [prompt-16-completeness-report.md](17-bootstrap/prompt-16-completeness-report.md)          | Relatório de completude     |
+
+## 18-database-foundation
+
+PostgreSQL local e persistência técnica (Prompt 17). Índice: [18-database-foundation/README.md](18-database-foundation/README.md).
+
+| Arquivo                                                                                           | Conteúdo                |
+| ------------------------------------------------------------------------------------------------- | ----------------------- |
+| [local-postgresql.md](18-database-foundation/local-postgresql.md)                               | Docker Compose PG 18    |
+| [connection-management.md](18-database-foundation/connection-management.md)                       | Pool `@cisne/database`  |
+| [environment-variables.md](18-database-foundation/environment-variables.md)                     | `.env.example`          |
+| [migration-workflow.md](18-database-foundation/migration-workflow.md)                           | drizzle-kit             |
+| [safe-reset-procedure.md](18-database-foundation/safe-reset-procedure.md)                       | Reset volume local      |
+| [prompt-17-completeness-report.md](18-database-foundation/prompt-17-completeness-report.md)     | Relatório               |
 
 ## inputs
 

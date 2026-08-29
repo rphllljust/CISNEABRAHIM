@@ -10,12 +10,20 @@
   "scripts": {
     "install:deps": "pnpm install",
     "lint": "turbo run lint",
-    "format": "prettier --write \"apps/**\" \"packages/**\" \"docs/17-bootstrap/**\" \"*.{json,mjs,md}\"",
-    "format:check": "prettier --check \"apps/**\" \"packages/**\" \"docs/17-bootstrap/**\" \"*.{json,mjs,md}\"",
+    "format": "prettier --write \"apps/**\" \"packages/**\" \"docs/17-bootstrap/**\" \"docs/18-database-foundation/**\" \"*.{json,mjs,md}\"",
+    "format:check": "prettier --check \"apps/**\" \"packages/**\" \"docs/17-bootstrap/**\" \"docs/18-database-foundation/**\" \"*.{json,mjs,md}\"",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "build": "turbo run build",
-    "dev": "turbo run dev --parallel"
+    "dev": "turbo run dev --parallel",
+    "db:up": "docker compose -f docker/compose.yaml up -d --wait",
+    "db:down": "docker compose -f docker/compose.yaml down",
+    "db:reset": "docker compose -f docker/compose.yaml down -v && docker compose -f docker/compose.yaml up -d --wait && node scripts/wait-for-postgres.mjs && pnpm db:migrate",
+    "db:wait": "node scripts/wait-for-postgres.mjs",
+    "db:migrate": "pnpm db:migrate:dev && pnpm db:migrate:test",
+    "db:migrate:dev": "pnpm --filter @cisne/database migrate",
+    "db:migrate:test": "node scripts/migrate-test-database.mjs",
+    "db:generate": "pnpm --filter @cisne/database generate"
   },
   "devDependencies": {
     "@cisne/eslint-config": "workspace:*",

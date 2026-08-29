@@ -25,31 +25,31 @@ Bootstrap técnico — primeira etapa com código e dependências. Sem módulos 
 
 ## Quality gate
 
-| Critério                  | Evidência                        | Resultado |
-| ------------------------- | -------------------------------- | --------- |
-| Stack ADR-TECH            | environment-prerequisites.md     | PASS      |
-| Sem módulos empresariais  | 0 BC modules                     | PASS      |
-| Sem banco empresarial     | 0 migrations                     | PASS      |
-| Sem segredos              | .env.example only                | PASS      |
-| `pnpm lint`               | turbo run lint                   | PASS      |
-| `pnpm format:check`       | escopo código + bootstrap docs   | PASS      |
-| `pnpm typecheck`          | turbo run typecheck              | PASS      |
-| `pnpm test`               | 2 testes (api + web)             | PASS      |
-| `pnpm build`              | nest build + vite build          | PASS      |
-| `pnpm audit --audit-level critical` | 0 críticas             | PASS      |
-| Prompt 17 não executado   | Sim                              | PASS      |
+| Critério                            | Evidência                      | Resultado |
+| ----------------------------------- | ------------------------------ | --------- |
+| Stack ADR-TECH                      | environment-prerequisites.md   | PASS      |
+| Sem módulos empresariais            | 0 BC modules                   | PASS      |
+| Sem banco empresarial               | 0 migrations                   | PASS      |
+| Sem segredos                        | .env.example only              | PASS      |
+| `pnpm lint`                         | turbo run lint                 | PASS      |
+| `pnpm format:check`                 | escopo código + bootstrap docs | PASS      |
+| `pnpm typecheck`                    | turbo run typecheck            | PASS      |
+| `pnpm test`                         | 2 testes (api + web)           | PASS      |
+| `pnpm build`                        | nest build + vite build        | PASS      |
+| `pnpm audit --audit-level critical` | 0 críticas                     | PASS      |
+| Prompt 17 não executado             | Sim                            | PASS      |
 
 ## Contagens
 
-| Métrica                    | Valor |
-| -------------------------- | ----- |
-| Business modules           | 0     |
-| Business tables            | 0     |
-| Secrets committed          | 0     |
-| Apps                       | 2     |
-| Shared packages            | 2     |
-| Pacotes resolvidos (lock)  | 1199  |
-| Testes fundação            | 2     |
+| Métrica                   | Valor |
+| ------------------------- | ----- |
+| Business modules          | 0     |
+| Business tables           | 0     |
+| Secrets committed         | 0     |
+| Apps                      | 2     |
+| Shared packages           | 2     |
+| Pacotes resolvidos (lock) | 1199  |
+| Testes fundação           | 2     |
 
 ## Execução validação (2026-08-29)
 

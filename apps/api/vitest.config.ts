@@ -1,12 +1,16 @@
+import { config } from 'dotenv';
+import { resolve } from 'node:path';
 import { defineConfig } from 'vitest/config';
 import swc from 'unplugin-swc';
+
+config({ path: resolve(__dirname, '../../.env') });
 
 export default defineConfig({
   plugins: [swc.vite({ module: { type: 'es6' } })],
   test: {
     globals: true,
     environment: 'node',
-    include: ['src/**/*.spec.ts'],
+    include: ['src/**/*.spec.ts', 'src/**/*.integration.spec.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],

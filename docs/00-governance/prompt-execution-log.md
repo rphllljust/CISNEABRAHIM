@@ -1122,3 +1122,65 @@ NOTES:
 - [x] Prompt 17 não executado
 
 ---
+
+```text
+PROMPT: 17
+TITLE: Fundação local PostgreSQL e persistência técnica
+STARTED_AT: 2026-08-29T00:10:00-04:00
+FINISHED_AT: 2026-08-29T00:20:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED:
+  docker/compose.yaml
+  docker/postgres/init/01-create-test-database.sh
+  packages/database/ (Drizzle + migrations)
+  scripts/wait-for-postgres.mjs
+  scripts/migrate-test-database.mjs
+  apps/api/src/infrastructure/database/
+  apps/api/src/infrastructure/database/database.integration.spec.ts
+  docs/18-database-foundation/ (9 artefatos)
+FILES_CHANGED:
+  .env.example
+  package.json
+  turbo.json
+  apps/api/package.json
+  apps/api/src/health/
+  apps/api/vitest.config.ts
+  README.md
+  docs/README.md
+  docs/01-foundation/requirements-traceability.md
+  docs/00-governance/prompt-execution-log.md
+  .prettierignore
+QUALITY_GATE: PASS_WITH_RESTRICTIONS
+POSTGRES_VERSION: 18.x
+DATABASE_REACHABLE: YES
+MIGRATION_TOOLING: YES
+TECHNICAL_MIGRATIONS: 1
+BUSINESS_TABLES: 0
+INTEGRATION_TEST: PASS
+LINT: PASS
+TYPECHECK: PASS
+TEST: PASS
+BUILD: PASS
+SECRETS_COMMITTED: 0
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  PG 18 volume mount /var/lib/postgresql. Drizzle-kit >=0.31.7.
+  Credenciais locais placeholder. Prompt 18 não executado.
+```
+
+## Quality gate Prompt 17 (evidência)
+
+- [x] Docker Compose PG 18 healthy, porta 127.0.0.1
+- [x] Volume nomeado `cisne_local_pg_data`
+- [x] `@cisne/database` com Drizzle + pool pg
+- [x] 1 migration técnica (`infrastructure.schema_baseline`)
+- [x] 0 tabelas empresariais
+- [x] Health check API com status de DB
+- [x] Teste integração PG real (transação + rollback)
+- [x] lint, typecheck, test, build — PASS
+- [x] `.env` ignorado; `.env.example` sem segredos reais
+- [x] docs/18-database-foundation/ com 9 artefatos
+- [x] rastreabilidade atualizada
+- [x] Prompt 18 não executado
+
+---

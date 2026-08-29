@@ -7,16 +7,16 @@
 
 ## Raiz (`package.json`)
 
-| Script         | Turbo / ferramenta         | Descrição         |
-| -------------- | -------------------------- | ----------------- |
-| `install:deps` | pnpm                       | Alias documentado |
-| `lint`         | `turbo run lint`           | ESLint            |
+| Script         | Turbo / ferramenta                                         | Descrição         |
+| -------------- | ---------------------------------------------------------- | ----------------- |
+| `install:deps` | pnpm                                                       | Alias documentado |
+| `lint`         | `turbo run lint`                                           | ESLint            |
 | `format`       | prettier --write (apps, packages, docs/17-bootstrap, raiz) | Formatar          |
-| `format:check` | prettier --check (mesmo escopo)                          | Gate formatação   |
-| `typecheck`    | `turbo run typecheck`      | TypeScript strict |
-| `test`         | `turbo run test`           | Vitest            |
-| `build`        | `turbo run build`          | Produção          |
-| `dev`          | `turbo run dev --parallel` | Desenvolvimento   |
+| `format:check` | prettier --check (mesmo escopo)                            | Gate formatação   |
+| `typecheck`    | `turbo run typecheck`                                      | TypeScript strict |
+| `test`         | `turbo run test`                                           | Vitest            |
+| `build`        | `turbo run build`                                          | Produção          |
+| `dev`          | `turbo run dev --parallel`                                 | Desenvolvimento   |
 
 ## @cisne/api
 
