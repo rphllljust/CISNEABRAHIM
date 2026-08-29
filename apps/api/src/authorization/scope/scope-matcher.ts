@@ -129,6 +129,18 @@ export function toResourceContextFromPurchaseOrder(purchaseOrder: {
   };
 }
 
+export function toResourceContextFromServiceRequest(serviceRequest: {
+  id: string;
+  unit_id: string;
+  client_id: string | null;
+}): AuthzResourceContext {
+  return {
+    resourceId: serviceRequest.id,
+    unitId: serviceRequest.unit_id,
+    clientId: serviceRequest.client_id ?? undefined,
+  };
+}
+
 export function toResourceContextFromScopedRecord(record: {
   id: string;
   owner_identity_id: string;

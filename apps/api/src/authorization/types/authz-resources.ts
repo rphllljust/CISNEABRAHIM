@@ -16,6 +16,7 @@ export const AUTHZ_RESOURCE_TYPES = {
   CommercialPolicy: 'commercial:policy',
   CommercialProposal: 'commercial:proposal',
   CommercialPurchaseOrder: 'commercial:purchase-order',
+  RequestsServiceRequest: 'requests:service-request',
 } as const;
 
 export type AuthzResourceType = (typeof AUTHZ_RESOURCE_TYPES)[keyof typeof AUTHZ_RESOURCE_TYPES];

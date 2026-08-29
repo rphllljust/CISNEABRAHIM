@@ -2811,3 +2811,52 @@ NOTES:
 - [x] Prompt 48 não executado
 
 ---
+
+## Prompt 48 — Solicitação de serviço: backend
+
+```
+PROMPT_ID: 48
+PROMPT_TITLE: Solicitação de serviço — backend
+EXECUTED_AT: 2026-08-29
+EXECUTION_STATUS: PASS
+COMMIT: feat(requests): implement service request domain
+ARTIFACTS:
+  packages/database/migrations/0018_service_requests_baseline.sql
+  packages/database/src/schema/service-requests.ts
+  packages/database/src/test-builders/service-request-builders.ts
+  packages/database/src/service-requests.persistence.integration.spec.ts
+  apps/api/src/requests/
+  apps/api/src/authorization/types/authz-actions.ts
+  apps/api/src/authorization/types/authz-resources.ts
+  apps/api/src/authorization/scope/scope-matcher.ts
+  apps/api/src/authorization/services/scope-enforcement.service.ts
+  apps/api/src/audit/types/security-audit.types.ts
+  apps/api/src/app.module.ts
+  apps/api/src/main.ts
+  apps/api/src/test/ensure-migrations.ts
+  docs/implementation/48-service-requests-backend.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  ServiceRequest como agregado de intake (sr.service_requests); distinto de ServiceOrder.
+  Origens externas WHATSAPP…OTHER; cliente opcional com contato externo obrigatório.
+  Transições explícitas sem PATCH de status; rejeição/cancelamento exigem motivo.
+  Porta ServiceRequestConversionPort com NotReadyServiceRequestConversionPort até Prompt 50.
+  CHECK DB: CONVERTED exige converted_service_order_id.
+  Prompt 49 não executado.
+```
+
+## Quality gate Prompt 48 (evidência)
+
+- [x] create, submit, review, approve, reject, cancel
+- [x] invalid transition, duplicate idempotency, stale version
+- [x] unauthorized, cross-scope
+- [x] document / proposal / PO reference
+- [x] conversion port not ready; rejected cannot convert
+- [x] Migration 0018 + persistence test
+- [x] lint, typecheck, test, test:integration (service-requests), test:e2e (service-requests) — PASS
+- [x] Prompt 49 não executado
+
+---

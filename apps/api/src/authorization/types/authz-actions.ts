@@ -69,6 +69,16 @@ export const AUTHZ_ACTIONS = {
   CommercialPurchaseOrderUpdate: 'commercial:purchase-order:update',
   CommercialPurchaseOrderRegister: 'commercial:purchase-order:register',
   CommercialPurchaseOrderCancel: 'commercial:purchase-order:cancel',
+  RequestsServiceRequestCreate: 'requests:service-request:create',
+  RequestsServiceRequestRead: 'requests:service-request:read',
+  RequestsServiceRequestList: 'requests:service-request:list',
+  RequestsServiceRequestUpdate: 'requests:service-request:update',
+  RequestsServiceRequestSubmit: 'requests:service-request:submit',
+  RequestsServiceRequestReview: 'requests:service-request:review',
+  RequestsServiceRequestApprove: 'requests:service-request:approve',
+  RequestsServiceRequestReject: 'requests:service-request:reject',
+  RequestsServiceRequestCancel: 'requests:service-request:cancel',
+  RequestsServiceRequestConvert: 'requests:service-request:convert',
 } as const;
 
 export type AuthzAction = (typeof AUTHZ_ACTIONS)[keyof typeof AUTHZ_ACTIONS];

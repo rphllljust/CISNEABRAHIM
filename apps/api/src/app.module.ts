@@ -7,9 +7,10 @@ import { ClientsModule } from './clients/clients.module';
 import { CommercialModule } from './commercial/commercial.module';
 import { DocumentsModule } from './documents/documents.module';
 import { HealthModule } from './health/health.module';
+import { RequestsModule } from './requests/requests.module';
 import { ResourcesModule } from './resources/resources.module';
 
 @Module({
-  imports: [HealthModule, AuditModule, AuthModule, AuthorizationModule, ClientsModule, CatalogModule, CommercialModule, ResourcesModule, DocumentsModule],
+  imports: [HealthModule, AuditModule, AuthModule, AuthorizationModule, ClientsModule, CatalogModule, CommercialModule, RequestsModule, ResourcesModule, DocumentsModule],
 })
 export class AppModule {}

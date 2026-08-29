@@ -11,6 +11,7 @@ import { CatalogExceptionFilter } from './catalog/errors/catalog-exception.filte
 import { ClientExceptionFilter } from './clients/errors/client-exception.filter';
 import { DocumentExceptionFilter } from './documents/errors/document-exception.filter';
 import { CommercialExceptionFilter } from './commercial/errors/commercial-exception.filter';
+import { RequestsExceptionFilter } from './requests/errors/requests-exception.filter';
 import { CorrelationIdInterceptor } from './infrastructure/http/correlation-id.interceptor';
 import { SecurityHeadersInterceptor } from './infrastructure/http/security-headers.interceptor';
 
@@ -40,6 +41,7 @@ async function bootstrap(): Promise<void> {
     new CatalogExceptionFilter(),
     new DocumentExceptionFilter(),
     new CommercialExceptionFilter(),
+    new RequestsExceptionFilter(),
   );
   app.useGlobalInterceptors(new CorrelationIdInterceptor(), new SecurityHeadersInterceptor());
 

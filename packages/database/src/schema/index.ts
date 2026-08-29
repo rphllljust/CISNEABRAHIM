@@ -75,6 +75,14 @@ export {
   purchaseOrderStatusEnum,
 } from './commercial-purchase-orders';
 export {
+  serviceRequestDocumentLinks,
+  serviceRequestOriginEnum,
+  serviceRequestPriorityEnum,
+  serviceRequests,
+  serviceRequestStatusEnum,
+  srSchema,
+} from './service-requests';
+export {
   catSchema,
   evidenceKindEnum,
   legalClassificationSchemeEnum,
