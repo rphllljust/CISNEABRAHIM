@@ -14,6 +14,7 @@
     "format:check": "prettier --check \"apps/**\" \"packages/**\" \"docs/17-bootstrap/**\" \"docs/18-database-foundation/**\" \"*.{json,mjs,md}\"",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
+    "test:integration": "turbo run test:integration",
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",
     "db:up": "docker compose -f docker/compose.yaml up -d --wait",

@@ -30,7 +30,17 @@ const FORBIDDEN_BUSINESS_TABLES = [
   'business_audit',
 ] as const;
 
-const ALLOWED_USER_TABLES = new Set(['schema_baseline', '__drizzle_migrations']);
+const ALLOWED_TECHNICAL_TABLES = new Set([
+  'schema_baseline',
+  '__drizzle_migrations',
+  'identities',
+  'credentials',
+  'sessions',
+  'refresh_token_families',
+  'refresh_tokens',
+]);
+
+const ALLOWED_SCHEMAS = new Set(['infrastructure', 'identity', 'public']);
 
 describe('PostgreSQL integration', () => {
   let pool: Pool;
@@ -80,14 +90,17 @@ describe('PostgreSQL integration', () => {
     const result = await pool.query<{ schemaname: string; tablename: string }>(
       `SELECT schemaname, tablename
        FROM pg_tables
-       WHERE schemaname IN ('public', 'infrastructure')
+       WHERE schemaname IN ('public', 'infrastructure', 'identity')
        ORDER BY schemaname, tablename`,
     );
 
     for (const row of result.rows) {
       const tableName = row.tablename.toLowerCase();
       expect(FORBIDDEN_BUSINESS_TABLES).not.toContain(tableName);
-      expect(row.schemaname === 'infrastructure' || ALLOWED_USER_TABLES.has(tableName)).toBe(true);
+      expect(ALLOWED_SCHEMAS.has(row.schemaname)).toBe(true);
+      if (row.schemaname === 'public') {
+        expect(ALLOWED_TECHNICAL_TABLES.has(tableName)).toBe(true);
+      }
     }
   });
 });

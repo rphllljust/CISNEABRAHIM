@@ -1,0 +1,572 @@
+{
+  "id": "edebdd70-0d26-4457-8117-88c5b81a7ac9",
+  "prevId": "28f8d27d-fad8-40b6-b298-1c62c7447032",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "identity.credentials": {
+      "name": "credentials",
+      "schema": "identity",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "identity_id": {
+          "name": "identity_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "login_identifier_normalized": {
+          "name": "login_identifier_normalized",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "password_hash": {
+          "name": "password_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "credentials_identity_id_idx": {
+          "name": "credentials_identity_id_idx",
+          "columns": [
+            {
+              "expression": "identity_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "credentials_identity_id_identities_id_fk": {
+          "name": "credentials_identity_id_identities_id_fk",
+          "tableFrom": "credentials",
+          "tableTo": "identities",
+          "schemaTo": "identity",
+          "columnsFrom": ["identity_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "credentials_login_identifier_normalized_uq": {
+          "name": "credentials_login_identifier_normalized_uq",
+          "nullsNotDistinct": false,
+          "columns": ["login_identifier_normalized"]
+        },
+        "credentials_identity_id_uq": {
+          "name": "credentials_identity_id_uq",
+          "nullsNotDistinct": false,
+          "columns": ["identity_id"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "credentials_password_hash_not_empty_chk": {
+          "name": "credentials_password_hash_not_empty_chk",
+          "value": "length(trim(\"identity\".\"credentials\".\"password_hash\")) >= 60"
+        },
+        "credentials_revoked_at_after_created_chk": {
+          "name": "credentials_revoked_at_after_created_chk",
+          "value": "\"identity\".\"credentials\".\"revoked_at\" IS NULL OR \"identity\".\"credentials\".\"revoked_at\" >= \"identity\".\"credentials\".\"created_at\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "identity.identities": {
+      "name": "identities",
+      "schema": "identity",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "status": {
+          "name": "status",
+          "type": "identity_status",
+          "typeSchema": "identity",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'active'"
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "disabled_at": {
+          "name": "disabled_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "identities_disabled_at_consistency_chk": {
+          "name": "identities_disabled_at_consistency_chk",
+          "value": "(\"identity\".\"identities\".\"status\" = 'active' AND \"identity\".\"identities\".\"disabled_at\" IS NULL) OR (\"identity\".\"identities\".\"status\" <> 'active' AND \"identity\".\"identities\".\"disabled_at\" IS NOT NULL)"
+        },
+        "identities_version_positive_chk": {
+          "name": "identities_version_positive_chk",
+          "value": "\"identity\".\"identities\".\"version\" >= 1"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "identity.refresh_token_families": {
+      "name": "refresh_token_families",
+      "schema": "identity",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "identity_id": {
+          "name": "identity_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "refresh_token_families_identity_id_idx": {
+          "name": "refresh_token_families_identity_id_idx",
+          "columns": [
+            {
+              "expression": "identity_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "refresh_token_families_session_id_sessions_id_fk": {
+          "name": "refresh_token_families_session_id_sessions_id_fk",
+          "tableFrom": "refresh_token_families",
+          "tableTo": "sessions",
+          "schemaTo": "identity",
+          "columnsFrom": ["session_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        },
+        "refresh_token_families_identity_id_identities_id_fk": {
+          "name": "refresh_token_families_identity_id_identities_id_fk",
+          "tableFrom": "refresh_token_families",
+          "tableTo": "identities",
+          "schemaTo": "identity",
+          "columnsFrom": ["identity_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "refresh_token_families_session_id_uq": {
+          "name": "refresh_token_families_session_id_uq",
+          "nullsNotDistinct": false,
+          "columns": ["session_id"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "identity.refresh_tokens": {
+      "name": "refresh_tokens",
+      "schema": "identity",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "family_id": {
+          "name": "family_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "replaced_by_token_id": {
+          "name": "replaced_by_token_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "refresh_tokens_family_id_idx": {
+          "name": "refresh_tokens_family_id_idx",
+          "columns": [
+            {
+              "expression": "family_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "refresh_tokens_expires_at_idx": {
+          "name": "refresh_tokens_expires_at_idx",
+          "columns": [
+            {
+              "expression": "expires_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "refresh_tokens_family_id_refresh_token_families_id_fk": {
+          "name": "refresh_tokens_family_id_refresh_token_families_id_fk",
+          "tableFrom": "refresh_tokens",
+          "tableTo": "refresh_token_families",
+          "schemaTo": "identity",
+          "columnsFrom": ["family_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "refresh_tokens_token_hash_uq": {
+          "name": "refresh_tokens_token_hash_uq",
+          "nullsNotDistinct": false,
+          "columns": ["token_hash"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "refresh_tokens_token_hash_not_empty_chk": {
+          "name": "refresh_tokens_token_hash_not_empty_chk",
+          "value": "length(trim(\"identity\".\"refresh_tokens\".\"token_hash\")) >= 64"
+        },
+        "refresh_tokens_expires_after_created_chk": {
+          "name": "refresh_tokens_expires_after_created_chk",
+          "value": "\"identity\".\"refresh_tokens\".\"expires_at\" > \"identity\".\"refresh_tokens\".\"created_at\""
+        },
+        "refresh_tokens_revoked_at_after_created_chk": {
+          "name": "refresh_tokens_revoked_at_after_created_chk",
+          "value": "\"identity\".\"refresh_tokens\".\"revoked_at\" IS NULL OR \"identity\".\"refresh_tokens\".\"revoked_at\" >= \"identity\".\"refresh_tokens\".\"created_at\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "infrastructure.schema_baseline": {
+      "name": "schema_baseline",
+      "schema": "infrastructure",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "schema_baseline_id_seq",
+            "schema": "infrastructure",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "2147483647",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "baseline_version": {
+          "name": "baseline_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "applied_at": {
+          "name": "applied_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "identity.sessions": {
+      "name": "sessions",
+      "schema": "identity",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "identity_id": {
+          "name": "identity_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "session_status",
+          "typeSchema": "identity",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'active'"
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "last_seen_at": {
+          "name": "last_seen_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "sessions_identity_id_idx": {
+          "name": "sessions_identity_id_idx",
+          "columns": [
+            {
+              "expression": "identity_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "sessions_expires_at_idx": {
+          "name": "sessions_expires_at_idx",
+          "columns": [
+            {
+              "expression": "expires_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "sessions_identity_id_identities_id_fk": {
+          "name": "sessions_identity_id_identities_id_fk",
+          "tableFrom": "sessions",
+          "tableTo": "identities",
+          "schemaTo": "identity",
+          "columnsFrom": ["identity_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "sessions_version_positive_chk": {
+          "name": "sessions_version_positive_chk",
+          "value": "\"identity\".\"sessions\".\"version\" >= 1"
+        },
+        "sessions_expires_after_created_chk": {
+          "name": "sessions_expires_after_created_chk",
+          "value": "\"identity\".\"sessions\".\"expires_at\" > \"identity\".\"sessions\".\"created_at\""
+        },
+        "sessions_revoked_consistency_chk": {
+          "name": "sessions_revoked_consistency_chk",
+          "value": "(\"identity\".\"sessions\".\"status\" = 'revoked' AND \"identity\".\"sessions\".\"revoked_at\" IS NOT NULL) OR (\"identity\".\"sessions\".\"status\" <> 'revoked')"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "identity.identity_status": {
+      "name": "identity_status",
+      "schema": "identity",
+      "values": ["active", "disabled", "locked"]
+    },
+    "identity.session_status": {
+      "name": "session_status",
+      "schema": "identity",
+      "values": ["active", "revoked", "expired"]
+    }
+  },
+  "schemas": {
+    "identity": "identity",
+    "infrastructure": "infrastructure"
+  },
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

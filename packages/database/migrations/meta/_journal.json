@@ -8,6 +8,13 @@
       "when": 1787976818483,
       "tag": "0000_early_thaddeus_ross",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1787978256744,
+      "tag": "0001_striped_the_liberteens",
+      "breakpoints": true
     }
   ]
 }

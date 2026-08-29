@@ -1184,3 +1184,61 @@ NOTES:
 - [x] Prompt 18 não executado
 
 ---
+
+```text
+PROMPT: 18
+TITLE: Persistência segura de identidade
+STARTED_AT: 2026-08-29T00:30:00-04:00
+FINISHED_AT: 2026-08-29T00:40:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED:
+  packages/database/src/schema/identity.ts
+  packages/database/migrations/0001_striped_the_liberteens.sql
+  packages/database/src/identity.persistence.integration.spec.ts
+  packages/database/src/test/identity-test-helpers.ts
+  packages/database/vitest.integration.config.ts
+  apps/api/vitest.integration.config.ts
+  docs/implementation/18-identity-persistence.md
+FILES_CHANGED:
+  packages/database/src/schema/index.ts
+  packages/database/drizzle.config.ts
+  packages/database/package.json
+  packages/database/migrations/meta/
+  package.json
+  turbo.json
+  apps/api/package.json
+  apps/api/vitest.config.ts
+  apps/api/src/infrastructure/database/database.integration.spec.ts
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS_WITH_RESTRICTIONS
+MIGRATIONS_ADDED: 1
+TECHNICAL_TABLES: identities, credentials, sessions, refresh_token_families, refresh_tokens
+BUSINESS_TABLES: 0
+CONSTRAINT_TESTS: 11
+INTEGRATION_TESTS: PASS
+LINT: PASS
+TYPECHECK: PASS
+TEST: PASS
+BUILD: PASS
+SECRETS_COMMITTED: 0
+DOC_FILES_CREATED: 1
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Schema identity; refresh family SEC-DEC-002. Sem AuthN runtime nem roles empresariais.
+  Prompt 19 não executado.
+```
+
+## Quality gate Prompt 18 (evidência)
+
+- [x] schema `identity` com 5 tabelas técnicas
+- [x] UUID interno, login normalizado único, hashes only
+- [x] FK RESTRICT, CHECK, índices, expiração/revogação
+- [x] 1 migration determinística (`0001_striped_the_liberteens.sql`)
+- [x] 0 tabelas empresariais, 0 roles empresariais
+- [x] 11 testes integração PostgreSQL real
+- [x] lint, typecheck, test, test:integration, build — PASS
+- [x] docs/implementation/18-identity-persistence.md (único doc novo)
+- [x] prompt-execution-log atualizado
+- [x] Prompt 19 não executado
+
+---

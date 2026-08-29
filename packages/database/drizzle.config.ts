@@ -19,5 +19,5 @@ export default defineConfig({
   dbCredentials: {
     url: databaseUrl,
   },
-  schemaFilter: ['infrastructure'],
+  schemaFilter: ['infrastructure', 'identity'],
 });
