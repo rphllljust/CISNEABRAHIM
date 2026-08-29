@@ -13,6 +13,12 @@ export const SECURITY_AUDIT_ACTIONS = {
   ClientUpdate: 'security:client:update',
   ClientDeactivate: 'security:client:deactivate',
   ClientActivate: 'security:client:activate',
+  CatalogServiceCreate: 'security:catalog:service:create',
+  CatalogServiceUpdateDraft: 'security:catalog:service:update-draft',
+  CatalogServiceCreateVersion: 'security:catalog:service:create-version',
+  CatalogServicePublish: 'security:catalog:service:publish',
+  CatalogServiceDeactivate: 'security:catalog:service:deactivate',
+  CatalogServiceActivate: 'security:catalog:service:activate',
 } as const;
 
 export type SecurityAuditAction =
@@ -42,6 +48,7 @@ export const SECURITY_AUDIT_RESOURCE_TYPES = {
   AuthzDecision: 'security:authz-decision',
   Application: 'security:application',
   Client: 'security:client',
+  CatalogService: 'security:catalog:service',
 } as const;
 
 export type SecurityAuditResourceType =

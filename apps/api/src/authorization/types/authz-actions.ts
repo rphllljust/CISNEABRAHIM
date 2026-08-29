@@ -17,6 +17,13 @@ export const AUTHZ_ACTIONS = {
   ClientUpdate: 'client:client:update',
   ClientDeactivate: 'client:client:deactivate',
   ClientActivate: 'client:client:activate',
+  CatalogServiceCreate: 'catalog:service:create',
+  CatalogServiceRead: 'catalog:service:read',
+  CatalogServiceList: 'catalog:service:list',
+  CatalogServiceUpdate: 'catalog:service:update',
+  CatalogServicePublish: 'catalog:service:publish',
+  CatalogServiceDeactivate: 'catalog:service:deactivate',
+  CatalogServiceActivate: 'catalog:service:activate',
 } as const;
 
 export type AuthzAction = (typeof AUTHZ_ACTIONS)[keyof typeof AUTHZ_ACTIONS];

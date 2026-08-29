@@ -26,6 +26,7 @@ const MIGRATION_FILES = [
   '0005_security_audit_events.sql',
   '0006_clients_baseline.sql',
   '0007_service_catalog_baseline.sql',
+  '0008_service_definitions_lineage_version.sql',
 ];
 
 const INCREMENTAL_BASELINE_FILES = MIGRATION_FILES.slice(0, -1);
@@ -208,18 +209,45 @@ async function assertConstraints(connectionString) {
   }
 }
 
-async function assertCatalogAbsent(connectionString) {
+async function assertPreDeltaState(connectionString, deltaFile) {
   const client = new pg.Client({ connectionString });
   await client.connect();
   try {
-    const result = await client.query('SELECT to_regclass($1) AS regclass', [
-      'cat.service_definitions',
-    ]);
-    if (result.rows[0]?.regclass) {
-      throw new Error(
-        'Incremental baseline incorrectly contains cat.service_definitions before delta',
-      );
+    if (deltaFile === '0007_service_catalog_baseline.sql') {
+      const result = await client.query('SELECT to_regclass($1) AS regclass', [
+        'cat.service_definitions',
+      ]);
+      if (result.rows[0]?.regclass) {
+        throw new Error(
+          'Incremental baseline incorrectly contains cat.service_definitions before delta',
+        );
+      }
+      return;
     }
+
+    if (deltaFile === '0008_service_definitions_lineage_version.sql') {
+      const catalog = await client.query('SELECT to_regclass($1) AS regclass', [
+        'cat.service_definitions',
+      ]);
+      if (!catalog.rows[0]?.regclass) {
+        throw new Error('Expected cat.service_definitions before 0008 delta');
+      }
+      const column = await client.query(
+        `SELECT 1
+         FROM information_schema.columns
+         WHERE table_schema = 'cat'
+           AND table_name = 'service_definitions'
+           AND column_name = 'version'`,
+      );
+      if ((column.rowCount ?? 0) > 0) {
+        throw new Error(
+          'Incremental baseline incorrectly contains service_definitions.version before 0008',
+        );
+      }
+      return;
+    }
+
+    throw new Error(`Unsupported incremental delta migration: ${deltaFile}`);
   } finally {
     await client.end();
   }
@@ -244,7 +272,7 @@ async function main() {
   console.log('CI database gate: incremental migration (N-1 → N)');
   const incrementalUrl = databaseUrlForName(incrementalDb);
   await applyMigrations(incrementalUrl, INCREMENTAL_BASELINE_FILES);
-  await assertCatalogAbsent(incrementalUrl);
+  await assertPreDeltaState(incrementalUrl, INCREMENTAL_DELTA_FILE);
   await applyMigrations(incrementalUrl, [INCREMENTAL_DELTA_FILE]);
   await assertExpectedSchema(incrementalUrl);
   await assertConstraints(incrementalUrl);

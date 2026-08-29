@@ -53,9 +53,13 @@ export async function insertCatalogCategory(
     code?: string;
     name?: string;
     actorLogin?: string;
+    actorIdentityId?: string;
   } = {},
 ): Promise<BuiltCatalogCategory> {
-  const { identityId } = await insertIdentity(client, input.actorLogin ?? `cat-actor-${randomUUID()}@test.local`);
+  const actorIdentityId =
+    input.actorIdentityId ??
+    (await insertIdentity(client, input.actorLogin ?? `cat-actor-${randomUUID()}@test.local`))
+      .identityId;
   const categoryId = randomUUID();
   const code = input.code ?? `CAT-${randomUUID().slice(0, 8).toUpperCase()}`;
 
@@ -63,10 +67,10 @@ export async function insertCatalogCategory(
     `INSERT INTO cat.service_categories (
        id, code, name, created_by_identity_id, updated_by_identity_id
      ) VALUES ($1, $2, $3, $4, $4)`,
-    [categoryId, code, input.name ?? 'Test category', identityId],
+    [categoryId, code, input.name ?? 'Test category', actorIdentityId],
   );
 
-  return { categoryId, actorIdentityId: identityId };
+  return { categoryId, actorIdentityId };
 }
 
 export type BuiltCatalogDefinition = BuiltCatalogCategory & {

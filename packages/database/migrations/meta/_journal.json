@@ -57,6 +57,13 @@
       "when": 1787986000000,
       "tag": "0007_service_catalog_baseline",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1787986100000,
+      "tag": "0008_service_definitions_lineage_version",
+      "breakpoints": true
     }
   ]
 }

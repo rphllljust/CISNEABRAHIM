@@ -2258,3 +2258,62 @@ NOTES:
 - [x] Prompt 34 não executado
 
 ---
+
+```text
+PROMPT: 34
+TITLE: Catálogo de serviços — backend, domínio e API
+STARTED_AT: 2026-08-29T16:20:00-04:00
+FINISHED_AT: 2026-08-29T16:50:00-04:00
+STATUS: EXECUTED
+BASELINE_COMMIT: 3ae7349
+FILES_CREATED:
+  packages/database/migrations/0008_service_definitions_lineage_version.sql
+  apps/api/src/catalog/catalog.module.ts
+  apps/api/src/catalog/controllers/service-definitions.controller.ts
+  apps/api/src/catalog/services/service-catalog-access.service.ts
+  apps/api/src/catalog/repositories/service-catalog.repository.ts
+  apps/api/src/catalog/dto/service-catalog.dto.ts
+  apps/api/src/catalog/serializers/service-catalog-response.serializer.ts
+  apps/api/src/catalog/domain/service-catalog-status.ts
+  apps/api/src/catalog/domain/service-catalog.validation.ts
+  apps/api/src/catalog/domain/service-catalog.validation.spec.ts
+  apps/api/src/catalog/errors/catalog-error-codes.ts
+  apps/api/src/catalog/errors/catalog-http.exception.ts
+  apps/api/src/catalog/errors/catalog-exception.filter.ts
+  apps/api/src/catalog/service-catalog.integration.spec.ts
+  apps/api/src/catalog/service-catalog.e2e.spec.ts
+  docs/implementation/34-service-catalog-backend.md
+FILES_CHANGED:
+  packages/database/migrations/meta/_journal.json
+  packages/database/src/schema/service-catalog.ts
+  packages/database/src/test-builders/catalog-builders.ts
+  packages/database/scripts/ci-database-gate.mjs
+  apps/api/src/app.module.ts
+  apps/api/src/main.ts
+  apps/api/src/test/ensure-migrations.ts
+  apps/api/src/authorization/types/authz-actions.ts
+  apps/api/src/authorization/types/authz-resources.ts
+  apps/api/src/audit/types/security-audit.types.ts
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+SRC_002_GATE: PASS
+CODE_CREATED: YES (catalog backend + API)
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  ServiceDefinition versionado com comandos explícitos, PDP, auditoria,
+  optimistic locking na linhagem, publish transacional e DTOs camelCase.
+  Prompt 35 não executado.
+```
+
+## Quality gate Prompt 34 (evidência)
+
+- [x] Agregado ServiceDefinition + versões separadas (code estável, version 1..N)
+- [x] Estados DRAFT / PUBLISHED (DB ACTIVE) / INACTIVE linhagem
+- [x] Versão publicada imutável (domínio + trigger Prompt 32)
+- [x] Capabilities catalog:service:* integradas ao PDP
+- [x] VERSION_CONFLICT em mutações concorrentes
+- [x] Testes unit, integration, e2e — PASS
+- [x] lint, typecheck, test, test:integration, test:e2e, build, gate:database, gate:src-002 — PASS
+- [x] Prompt 35 não executado
+
+---

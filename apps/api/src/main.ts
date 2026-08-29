@@ -7,6 +7,7 @@ import { AppModule } from './app.module';
 import { loadAuthConfig } from './auth/config/auth.config';
 import { AuthExceptionFilter } from './infrastructure/http/auth-exception.filter';
 import { AuthzExceptionFilter } from './authorization/errors/authz-exception.filter';
+import { CatalogExceptionFilter } from './catalog/errors/catalog-exception.filter';
 import { ClientExceptionFilter } from './clients/errors/client-exception.filter';
 import { CorrelationIdInterceptor } from './infrastructure/http/correlation-id.interceptor';
 import { SecurityHeadersInterceptor } from './infrastructure/http/security-headers.interceptor';
@@ -30,7 +31,12 @@ async function bootstrap(): Promise<void> {
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Authorization', 'Content-Type', 'X-Correlation-Id'],
   });
-  app.useGlobalFilters(new AuthExceptionFilter(), new AuthzExceptionFilter(), new ClientExceptionFilter());
+  app.useGlobalFilters(
+    new AuthExceptionFilter(),
+    new AuthzExceptionFilter(),
+    new ClientExceptionFilter(),
+    new CatalogExceptionFilter(),
+  );
   app.useGlobalInterceptors(new CorrelationIdInterceptor(), new SecurityHeadersInterceptor());
 
   await app.listen({ port, host });

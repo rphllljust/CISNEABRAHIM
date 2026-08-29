@@ -154,6 +154,7 @@ export const serviceDefinitions = catSchema.table(
       onUpdate: 'cascade',
     }),
     deactivationReason: text('deactivation_reason'),
+    version: integer('version').notNull().default(1),
     createdByIdentityId: uuid('created_by_identity_id')
       .notNull()
       .references(() => identities.id, { onDelete: 'restrict', onUpdate: 'cascade' }),
@@ -167,6 +168,7 @@ export const serviceDefinitions = catSchema.table(
       'service_definitions_code_format_chk',
       sql`${table.code} ~ '^[A-Z0-9][A-Z0-9_-]{1,63}$'`,
     ),
+    check('service_definitions_version_positive_chk', sql`${table.version} >= 1`),
     uniqueIndex('service_definitions_code_uidx').on(table.code),
     index('service_definitions_status_idx').on(table.status),
   ],
