@@ -40,6 +40,8 @@ const ALLOWED_TECHNICAL_TABLES = new Set([
   'refresh_tokens',
   'grants',
   'decision_audits',
+  'scope_refs',
+  'scoped_records',
 ]);
 
 const ALLOWED_SCHEMAS = new Set(['infrastructure', 'identity', 'authorization', 'public']);

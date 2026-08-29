@@ -3,17 +3,86 @@ import type { Pool, PoolClient } from 'pg';
 
 type DbClient = Pool | PoolClient;
 
+export type AuthzScopeTypeDb =
+  | 'GLOBAL'
+  | 'OWN'
+  | 'ASSIGNED'
+  | 'UNIT'
+  | 'CLIENT'
+  | 'CONTRACT'
+  | 'DOCUMENT'
+  | 'FINANCIAL'
+  | 'PLATFORM';
+
 export type InsertGrantInput = {
   identityId: string;
   action: string;
   resourceType: string;
-  scopeType: 'GLOBAL' | 'OWN' | 'PLATFORM';
+  scopeType: AuthzScopeTypeDb;
   grantedByIdentityId: string;
   resourceId?: string;
   validFrom?: string;
   validUntil?: string;
   revokedAt?: string;
 };
+
+export type InsertScopeRefInput = {
+  scopeType: Extract<AuthzScopeTypeDb, 'UNIT' | 'CLIENT' | 'CONTRACT' | 'DOCUMENT' | 'FINANCIAL'>;
+  refId: string;
+};
+
+export type InsertScopedRecordInput = {
+  ownerIdentityId: string;
+  assignedIdentityId?: string;
+  unitId: string;
+  clientId: string;
+  contractId: string;
+  documentId: string;
+  isFinancial?: boolean;
+  label?: string;
+};
+
+export async function insertScopeRef(client: DbClient, input: InsertScopeRefInput): Promise<void> {
+  await client.query(
+    `INSERT INTO "authorization".scope_refs (scope_type, ref_id)
+     VALUES ($1, $2)
+     ON CONFLICT DO NOTHING`,
+    [input.scopeType, input.refId],
+  );
+}
+
+export async function insertScopedRecord(
+  client: DbClient,
+  input: InsertScopedRecordInput,
+): Promise<string> {
+  const recordId = randomUUID();
+  await client.query(
+    `INSERT INTO "authorization".scoped_records (
+       id,
+       owner_identity_id,
+       assigned_identity_id,
+       unit_id,
+       client_id,
+       contract_id,
+       document_id,
+       is_financial,
+       label
+     )
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+    [
+      recordId,
+      input.ownerIdentityId,
+      input.assignedIdentityId ?? null,
+      input.unitId,
+      input.clientId,
+      input.contractId,
+      input.documentId,
+      input.isFinancial ?? false,
+      input.label ?? '',
+    ],
+  );
+  return recordId;
+}
 
 export async function insertGrant(client: DbClient, input: InsertGrantInput): Promise<string> {
   const grantId = randomUUID();
@@ -51,7 +120,9 @@ export async function truncateAuthorizationTables(client: DbClient): Promise<voi
   await client.query(`
     TRUNCATE TABLE
       "authorization".decision_audits,
-      "authorization".grants
+      "authorization".scoped_records,
+      "authorization".grants,
+      "authorization".scope_refs
     RESTART IDENTITY CASCADE
   `);
 }
@@ -60,7 +131,9 @@ export async function truncateIdentityAndAuthorizationTables(client: DbClient): 
   await client.query(`
     TRUNCATE TABLE
       "authorization".decision_audits,
+      "authorization".scoped_records,
       "authorization".grants,
+      "authorization".scope_refs,
       identity.refresh_tokens,
       identity.refresh_token_families,
       identity.sessions,

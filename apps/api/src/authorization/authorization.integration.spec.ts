@@ -131,6 +131,17 @@ describe('Authorization PostgreSQL integration', () => {
     );
     expect(expired.result).toBe('DENY');
 
+    await pool.query(
+      `UPDATE "authorization".grants
+       SET revoked_at = NOW(), revoked_by_identity_id = $1
+       WHERE identity_id = $1
+         AND action = $2
+         AND resource_type = $3
+         AND scope_type = 'GLOBAL'
+         AND revoked_at IS NULL`,
+      [identityId, AUTHZ_ACTIONS.ProbeExecute, AUTHZ_RESOURCE_TYPES.Probe],
+    );
+
     const grantId = await insertGrant(pool, {
       identityId,
       action: AUTHZ_ACTIONS.ProbeExecute,

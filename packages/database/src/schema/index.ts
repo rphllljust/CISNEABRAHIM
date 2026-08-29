@@ -15,4 +15,6 @@ export {
   authzScopeTypeEnum,
   decisionAudits,
   grants,
+  scopeRefs,
+  scopedRecords,
 } from './authorization';

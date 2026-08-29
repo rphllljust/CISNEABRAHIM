@@ -12,7 +12,11 @@ export {
 } from './identity-builders';
 export {
   insertGrant,
+  insertScopeRef,
+  insertScopedRecord,
   truncateAuthorizationTables,
   truncateIdentityAndAuthorizationTables,
   type InsertGrantInput,
+  type InsertScopeRefInput,
+  type InsertScopedRecordInput,
 } from './authz-builders';

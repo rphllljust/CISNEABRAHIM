@@ -1,17 +1,22 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { AUTHZ_ACTIONS } from '../types/authz-actions';
 import { AUTHZ_RESOURCE_TYPES } from '../types/authz-resources';
-import { AUTHZ_SCOPES } from '../types/authz-scopes';
+import {
+  ANCHORED_SCOPE_TYPES,
+  AUTHZ_SCOPES,
+  type AuthzScopeType,
+} from '../types/authz-scopes';
 import { AUTHZ_ERROR_CODES } from '../errors/authz-error-codes';
 import { AuthzHttpException } from '../errors/authz-http.exception';
 import { AuthorizationRepository } from '../repositories/authorization.repository';
+import { ScopeContextRepository } from '../repositories/scope-context.repository';
 import { PolicyDecisionPointService } from './policy-decision-point.service';
 import type { IdentityAuthzContext } from '../types/authz-decision';
 import type { AuthzAction } from '../types/authz-actions';
 import type { AuthzResourceType } from '../types/authz-resources';
-import type { AuthzScopeType } from '../types/authz-scopes';
 import { DatabaseService } from '../../infrastructure/database/database.service';
 import { toGrantResponse, type GrantResponseV1 } from '../serializers/grant-response.serializer';
+import { grantMatchesResourceContext } from '../scope/scope-matcher';
 
 export type CreateGrantCommand = {
   identityId: string;
@@ -23,11 +28,21 @@ export type CreateGrantCommand = {
   validUntil?: string;
 };
 
+const SELF_ESCALATION_SCOPES = new Set<AuthzScopeType>([
+  AUTHZ_SCOPES.Global,
+  AUTHZ_SCOPES.Financial,
+  AUTHZ_SCOPES.Unit,
+  AUTHZ_SCOPES.Client,
+  AUTHZ_SCOPES.Contract,
+  AUTHZ_SCOPES.Document,
+]);
+
 @Injectable()
 export class GrantAdminService {
   constructor(
     private readonly databaseService: DatabaseService,
     private readonly repository: AuthorizationRepository,
+    private readonly scopeContextRepository: ScopeContextRepository,
     private readonly policyDecisionPoint: PolicyDecisionPointService,
   ) {}
 
@@ -37,7 +52,10 @@ export class GrantAdminService {
   ): Promise<GrantResponseV1> {
     await this.assertAllowed(actor, AUTHZ_ACTIONS.GrantCreate, AUTHZ_RESOURCE_TYPES.Grant);
 
+    this.assertGrantShape(command);
     this.assertTechnicalGrantIsolation(command);
+    await this.assertScopeRefExists(command);
+    await this.assertNoSelfEscalation(actor, command);
 
     const pool = this.databaseService.getConnection()?.pool;
     if (!pool) {
@@ -112,10 +130,86 @@ export class GrantAdminService {
     }
   }
 
-  /**
-   * Administrador técnico (PLATFORM) não recebe escopo financeiro/operacional automaticamente.
-   * Grants de plataforma ficam restritos a recursos platform:* e ações authz/platform.
-   */
+  private assertGrantShape(command: CreateGrantCommand): void {
+    if (command.scopeType === AUTHZ_SCOPES.Global && command.resourceId) {
+      throw new AuthzHttpException(
+        HttpStatus.BAD_REQUEST,
+        AUTHZ_ERROR_CODES.VALIDATION_FAILED,
+        'GLOBAL scope cannot include resourceId.',
+      );
+    }
+
+    if (ANCHORED_SCOPE_TYPES.has(command.scopeType) && !command.resourceId) {
+      throw new AuthzHttpException(
+        HttpStatus.BAD_REQUEST,
+        AUTHZ_ERROR_CODES.VALIDATION_FAILED,
+        'Anchored scope requires resourceId.',
+      );
+    }
+  }
+
+  private async assertScopeRefExists(command: CreateGrantCommand): Promise<void> {
+    if (!ANCHORED_SCOPE_TYPES.has(command.scopeType) || !command.resourceId) {
+      return;
+    }
+
+    const exists = await this.scopeContextRepository.scopeRefExists(
+      command.scopeType,
+      command.resourceId,
+    );
+    if (!exists) {
+      throw new AuthzHttpException(
+        HttpStatus.BAD_REQUEST,
+        AUTHZ_ERROR_CODES.VALIDATION_FAILED,
+        'Scope reference not found.',
+      );
+    }
+  }
+
+  private async assertNoSelfEscalation(
+    actor: IdentityAuthzContext,
+    command: CreateGrantCommand,
+  ): Promise<void> {
+    if (command.identityId !== actor.identityId) {
+      return;
+    }
+
+    if (command.scopeType === AUTHZ_SCOPES.Global) {
+      throw new AuthzHttpException(HttpStatus.FORBIDDEN, AUTHZ_ERROR_CODES.DENIED, 'Access denied.');
+    }
+
+    if (!SELF_ESCALATION_SCOPES.has(command.scopeType)) {
+      return;
+    }
+
+    const actorGrants = await this.repository.findActiveGrants(
+      actor.identityId,
+      command.action,
+      command.resourceType,
+    );
+
+    const alreadyHasScope = actorGrants.some((grant) =>
+      grantMatchesResourceContext({
+        grant,
+        identityId: actor.identityId,
+        context: {
+          unitId: command.scopeType === AUTHZ_SCOPES.Unit ? command.resourceId : undefined,
+          clientId: command.scopeType === AUTHZ_SCOPES.Client ? command.resourceId : undefined,
+          contractId:
+            command.scopeType === AUTHZ_SCOPES.Contract || command.scopeType === AUTHZ_SCOPES.Financial
+              ? command.resourceId
+              : undefined,
+          documentId: command.scopeType === AUTHZ_SCOPES.Document ? command.resourceId : undefined,
+          isFinancial: command.scopeType === AUTHZ_SCOPES.Financial ? true : undefined,
+        },
+      }),
+    );
+
+    if (!alreadyHasScope) {
+      throw new AuthzHttpException(HttpStatus.FORBIDDEN, AUTHZ_ERROR_CODES.DENIED, 'Access denied.');
+    }
+  }
+
   private assertTechnicalGrantIsolation(command: CreateGrantCommand): void {
     if (command.scopeType === AUTHZ_SCOPES.Platform) {
       const allowed =

@@ -1487,3 +1487,76 @@ NOTES:
 - [x] Prompt 23 não executado
 
 ---
+
+```text
+PROMPT: 23
+TITLE: Escopo contextual e isolamento de dados
+STARTED_AT: 2026-08-29T01:20:00-04:00
+FINISHED_AT: 2026-08-29T01:30:00-04:00
+STATUS: PASS
+FILES_CREATED:
+  packages/database/migrations/0003_contextual_scope_enums.sql
+  packages/database/migrations/0004_contextual_scope_tables.sql
+  apps/api/src/authorization/scope/scope-matcher.ts
+  apps/api/src/authorization/scope/scope-matcher.spec.ts
+  apps/api/src/authorization/services/scope-resolver.service.ts
+  apps/api/src/authorization/services/scope-enforcement.service.ts
+  apps/api/src/authorization/services/scoped-record-access.service.ts
+  apps/api/src/authorization/repositories/scope-context.repository.ts
+  apps/api/src/authorization/controllers/scoped-record.controller.ts
+  apps/api/src/authorization/contextual-scope.integration.spec.ts
+  apps/api/src/authorization/contextual-scope.e2e.spec.ts
+  apps/api/src/test/ensure-migrations.ts
+  scripts/apply-contextual-scope-migrations.mjs
+  docs/implementation/23-contextual-scope.md
+FILES_CHANGED:
+  packages/database/src/schema/authorization.ts
+  packages/database/src/schema/index.ts
+  packages/database/src/test-builders/authz-builders.ts
+  packages/database/src/test-builders/index.ts
+  packages/database/migrations/meta/_journal.json
+  packages/database/drizzle.config.ts
+  apps/api/src/authorization/types/authz-scopes.ts
+  apps/api/src/authorization/types/authz-actions.ts
+  apps/api/src/authorization/types/authz-resources.ts
+  apps/api/src/authorization/services/policy-decision-point.service.ts
+  apps/api/src/authorization/services/grant-admin.service.ts
+  apps/api/src/authorization/errors/authz-error-codes.ts
+  apps/api/src/authorization/dto/create-grant.dto.ts
+  apps/api/src/authorization/authorization.module.ts
+  apps/api/src/authorization/authorization.integration.spec.ts
+  apps/api/src/infrastructure/database/database.integration.spec.ts
+  apps/api/vitest.integration.config.ts
+  apps/api/vitest.e2e.config.ts
+  scripts/migrate-test-database.mjs
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+CROSS_SCOPE_LEAKS: 0
+DOC_FILES_CREATED: 1
+LINT: PASS
+TYPECHECK: PASS
+TEST: PASS
+INTEGRATION: PASS
+E2E: PASS
+MIGRATION: PASS (0003/0004 + fallback test bootstrap)
+BUILD: PASS
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Escopos OWN/ASSIGNED/UNIT/CLIENT/CONTRACT/DOCUMENT/FINANCIAL/GLOBAL (+ PLATFORM técnico).
+  Sem tenant_id; âncoras em scope_refs; filtros SQL obrigatórios em listagem.
+  Anti self-escalation em GrantAdminService; GLOBAL exige resource_id null.
+  Fixture scoped_records para isolamento técnico (não domínio empresarial).
+  Prompt 24 não executado.
+```
+
+## Quality gate Prompt 23 (evidência)
+
+- [x] Escopos contextuais implementados conforme AUTHZ-SCOPE-001 (somente os listados)
+- [x] Resolução de escopo efetivo + validação action/resource/scope
+- [x] Filtros obrigatórios no acesso a dados (listagem + lookup por ID)
+- [x] Prevenção self-escalation e concessão não órfã (scope_refs)
+- [x] 0 vazamentos cross-scope nos testes de isolamento
+- [x] docs/implementation/23-contextual-scope.md
+- [x] Prompt 24 não executado
+
+---

@@ -15,5 +15,6 @@ export default defineConfig({
     include: ['src/**/*.e2e.spec.ts'],
     fileParallelism: false,
     sequence: { concurrent: false },
+    globalSetup: ['./src/test/ensure-migrations.ts'],
   },
 });

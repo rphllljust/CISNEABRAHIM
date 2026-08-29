@@ -4,7 +4,7 @@ import { isAuthzAction } from '../types/authz-actions';
 import { isAuthzResourceType } from '../types/authz-resources';
 import type { AuthzAction } from '../types/authz-actions';
 import type { AuthzResourceType } from '../types/authz-resources';
-import { AUTHZ_SCOPES, type AuthzScopeType } from '../types/authz-scopes';
+import { AUTHZ_SCOPES, ANCHORED_SCOPE_TYPES, isAuthzScopeType, type AuthzScopeType } from '../types/authz-scopes';
 
 const ALLOWED_KEYS = new Set([
   'identityId',
@@ -37,8 +37,6 @@ function assertStrictObject(body: unknown): Record<string, unknown> {
   return record;
 }
 
-const SCOPE_SET = new Set<string>(Object.values(AUTHZ_SCOPES));
-
 export function parseCreateGrantInput(body: unknown): CreateGrantInput {
   const record = assertStrictObject(body);
   const identityId = record['identityId'];
@@ -60,8 +58,14 @@ export function parseCreateGrantInput(body: unknown): CreateGrantInput {
   if (resourceId !== undefined && typeof resourceId !== 'string') {
     throw new AuthzHttpException(400, AUTHZ_ERROR_CODES.VALIDATION_FAILED, 'Invalid resourceId.');
   }
-  if (typeof scopeType !== 'string' || !SCOPE_SET.has(scopeType)) {
+  if (typeof scopeType !== 'string' || !isAuthzScopeType(scopeType)) {
     throw new AuthzHttpException(400, AUTHZ_ERROR_CODES.VALIDATION_FAILED, 'Invalid scopeType.');
+  }
+  if (scopeType === AUTHZ_SCOPES.Global && resourceId !== undefined) {
+    throw new AuthzHttpException(400, AUTHZ_ERROR_CODES.VALIDATION_FAILED, 'Invalid resourceId.');
+  }
+  if (ANCHORED_SCOPE_TYPES.has(scopeType) && (typeof resourceId !== 'string' || resourceId.length === 0)) {
+    throw new AuthzHttpException(400, AUTHZ_ERROR_CODES.VALIDATION_FAILED, 'Invalid resourceId.');
   }
   if (validUntil !== undefined && typeof validUntil !== 'string') {
     throw new AuthzHttpException(400, AUTHZ_ERROR_CODES.VALIDATION_FAILED, 'Invalid validUntil.');
@@ -72,7 +76,7 @@ export function parseCreateGrantInput(body: unknown): CreateGrantInput {
     action,
     resourceType,
     resourceId,
-    scopeType: scopeType as AuthzScopeType,
+    scopeType,
     validUntil,
   };
 }

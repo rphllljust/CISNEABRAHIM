@@ -1,0 +1,100 @@
+import type { GrantRow } from '../repositories/authorization.repository';
+import { AUTHZ_SCOPES, type AuthzResourceContext } from '../types/authz-scopes';
+
+export type ScopeMatchInput = {
+  grant: Pick<GrantRow, 'scope_type' | 'resource_id' | 'resource_type'>;
+  identityId: string;
+  context?: AuthzResourceContext;
+};
+
+/**
+ * Verifica se uma concessão cobre o contexto do recurso.
+ * Fail-closed: contexto ausente em escopos contextuais → não casa.
+ */
+export function grantMatchesResourceContext(input: ScopeMatchInput): boolean {
+  const { grant, identityId, context } = input;
+
+  switch (grant.scope_type) {
+    case AUTHZ_SCOPES.Global:
+      return grant.resource_id === null;
+
+    case AUTHZ_SCOPES.Own:
+      if (grant.resource_id && context?.resourceId) {
+        return grant.resource_id === context.resourceId;
+      }
+      return context?.ownerIdentityId === identityId;
+
+    case AUTHZ_SCOPES.Assigned:
+      if (context?.assignedIdentityId !== identityId) {
+        return false;
+      }
+      if (grant.resource_id && context.resourceId) {
+        return grant.resource_id === context.resourceId;
+      }
+      return true;
+
+    case AUTHZ_SCOPES.Unit:
+      return (
+        grant.resource_id !== null &&
+        context?.unitId !== undefined &&
+        grant.resource_id === context.unitId
+      );
+
+    case AUTHZ_SCOPES.Client:
+      return (
+        grant.resource_id !== null &&
+        context?.clientId !== undefined &&
+        grant.resource_id === context.clientId
+      );
+
+    case AUTHZ_SCOPES.Contract:
+      return (
+        grant.resource_id !== null &&
+        context?.contractId !== undefined &&
+        grant.resource_id === context.contractId
+      );
+
+    case AUTHZ_SCOPES.Document:
+      return (
+        grant.resource_id !== null &&
+        context?.documentId !== undefined &&
+        grant.resource_id === context.documentId
+      );
+
+    case AUTHZ_SCOPES.Financial:
+      return (
+        context?.isFinancial === true &&
+        grant.resource_id !== null &&
+        context.contractId !== undefined &&
+        grant.resource_id === context.contractId
+      );
+
+    case AUTHZ_SCOPES.Platform:
+      return grant.resource_type === 'platform:system' || grant.resource_type.startsWith('authz:');
+
+    default:
+      return false;
+  }
+}
+
+export function toResourceContextFromScopedRecord(record: {
+  id: string;
+  owner_identity_id: string;
+  assigned_identity_id: string | null;
+  unit_id: string;
+  client_id: string;
+  contract_id: string;
+  document_id: string;
+  is_financial: boolean;
+}): AuthzResourceContext {
+  return {
+    resourceId: record.id,
+    ownerIdentityId: record.owner_identity_id,
+    assignedIdentityId: record.assigned_identity_id ?? undefined,
+    unitId: record.unit_id,
+    clientId: record.client_id,
+    contractId: record.contract_id,
+    documentId: record.document_id,
+    isFinancial: record.is_financial,
+  };
+}

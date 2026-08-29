@@ -5,6 +5,7 @@ export const AUTHZ_RESOURCE_TYPES = {
   Probe: 'authz:probe',
   Grant: 'authz:grant',
   Platform: 'platform:system',
+  ScopedRecord: 'authz:scoped-record',
 } as const;
 
 export type AuthzResourceType = (typeof AUTHZ_RESOURCE_TYPES)[keyof typeof AUTHZ_RESOURCE_TYPES];

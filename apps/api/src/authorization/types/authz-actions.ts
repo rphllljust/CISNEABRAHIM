@@ -8,6 +8,9 @@ export const AUTHZ_ACTIONS = {
   GrantRevoke: 'authz:grant:revoke',
   GrantList: 'authz:grant:list',
   PlatformDiagnosticsRead: 'platform:diagnostics:read',
+  ScopedRecordRead: 'authz:scoped-record:read',
+  ScopedRecordList: 'authz:scoped-record:list',
+  ScopedRecordUpdate: 'authz:scoped-record:update',
 } as const;
 
 export type AuthzAction = (typeof AUTHZ_ACTIONS)[keyof typeof AUTHZ_ACTIONS];

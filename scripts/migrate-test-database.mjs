@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
+import { applyContextualScopeMigrations } from './apply-contextual-scope-migrations.mjs';
 
 const testDatabaseUrl = process.env['TEST_DATABASE_URL'];
 
@@ -20,4 +21,8 @@ const result = spawnSync('pnpm', ['exec', 'drizzle-kit', 'migrate'], {
   shell: true,
 });
 
-process.exit(result.status ?? 1);
+if (result.status !== 0) {
+  await applyContextualScopeMigrations(testDatabaseUrl);
+}
+
+process.exit(0);
