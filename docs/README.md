@@ -13,7 +13,8 @@
 7. `05-ubiquitous-language/` contém glossário e linguagem ubíqua do Prompt 04.
 8. `06-domain-boundaries/` contém subdomínios e bounded contexts candidatos do Prompt 05.
 9. `07-domain-behavior/` contém invariantes, comandos e eventos candidatos do Prompt 06.
-10. `templates/` define a forma dos registros futuros.
+10. `08-state-machines/` contém máquinas de estado empresariais candidatas do Prompt 07.
+11. `templates/` define a forma dos registros futuros.
 
 Agentes devem seguir [`../AGENTS.md`](../AGENTS.md) e o protocolo em [`00-governance/execution-protocol.md`](00-governance/execution-protocol.md).
 
@@ -122,6 +123,19 @@ Comportamento de domínio candidato (Prompt 06). Índice: [07-domain-behavior/RE
 | [rejection-reason-catalog.md](07-domain-behavior/rejection-reason-catalog.md) | 18 REJ |
 | [behavior-traceability.md](07-domain-behavior/behavior-traceability.md) | Cadeia EV→DE |
 | [prompt-06-completeness-report.md](07-domain-behavior/prompt-06-completeness-report.md) | Relatório |
+
+## 08-state-machines
+
+Máquinas de estado empresariais candidatas (Prompt 07). Índice: [08-state-machines/README.md](08-state-machines/README.md).
+
+| Arquivo | Conteúdo |
+| --- | --- |
+| [service-order-state-machine.md](08-state-machines/service-order-state-machine.md) | SM-CAND-002 |
+| [state-transition-register.md](08-state-machines/state-transition-register.md) | 48 TR-CAND |
+| [transition-guard-register.md](08-state-machines/transition-guard-register.md) | 28 GUARD |
+| [state-event-timestamp-matrix.md](08-state-machines/state-event-timestamp-matrix.md) | STATE/EVENT/TIMESTAMP |
+| [cross-lifecycle-dependencies.md](08-state-machines/cross-lifecycle-dependencies.md) | 14 XLC |
+| [prompt-07-completeness-report.md](08-state-machines/prompt-07-completeness-report.md) | Relatório |
 
 ## inputs
 

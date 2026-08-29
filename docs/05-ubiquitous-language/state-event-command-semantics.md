@@ -5,7 +5,7 @@
 | Document ID | Semântica de estado, evento, comando e timestamp |
 | Prompt | 04 (revisão estrutural) |
 
-> Estados definitivos e máquinas: Prompt 07 — **não** criados aqui.
+> Máquinas candidatas: [`../08-state-machines/`](../08-state-machines/) (Prompt 07). Nenhuma definitiva.
 
 ## Matriz de análise (termos obrigatórios)
 

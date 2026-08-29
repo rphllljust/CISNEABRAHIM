@@ -678,3 +678,47 @@ NOTES:
 - [x] Prompt 07 não executado
 
 ---
+
+```text
+PROMPT: 07
+TITLE: Máquinas de estado empresariais candidatas
+STARTED_AT: 2026-08-28T23:00:00-04:00
+FINISHED_AT: 2026-08-28T23:30:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED:
+  docs/08-state-machines/ (24 artefatos — ver README.md)
+FILES_CHANGED:
+  docs/01-foundation/requirements-traceability.md
+  docs/00-governance/prompt-execution-log.md
+  docs/README.md
+  docs/05-ubiquitous-language/state-event-command-semantics.md
+QUALITY_GATE: PASS_WITH_RESTRICTIONS
+SM_CAND_COUNT: 10
+STATE_CAND_COUNT: 52
+TR_CAND_COUNT: 48
+GUARD_COUNT: 28
+INV_TR_COUNT: 22
+TERMINAL_STATES: 18
+XLC_COUNT: 14
+SM_DEFINITIVE: 0
+CODE_CREATED: NO
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  10 ciclos separados. VIEWED/ACK não promovidos a estado OS.
+  Convertida = vínculo+evento (SDD-001). Pagamento parcial/estorno não confirmados.
+  DDP-004, DDP-005, DDP-032 bloqueiam transições. Prompt 08 não executado.
+```
+
+## Quality gate Prompt 07 (evidência)
+
+- [x] pasta `08-state-machines/` com 24 artefatos não vazios
+- [x] 10 SM-CAND com ciclos separados
+- [x] 52 STATE-CAND definidos semanticamente (pendentes marcados)
+- [x] 48 TR-CAND com comando, guarda e resultado
+- [x] VIEWED/ACKNOWLEDGED/PAID classificados — não contaminam OS
+- [x] cancelamento/reabertura não inventados (DDP-004, DDP-005)
+- [x] 0 máquinas definitivas, 0 código/enum/script
+- [x] rastreabilidade atualizada
+- [x] Prompt 08 não executado
+
+---

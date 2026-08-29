@@ -4,7 +4,7 @@
 | --- | --- |
 | Document ID | RTM-001 |
 | Policy | [`../00-governance/traceability-policy.md`](../00-governance/traceability-policy.md) |
-| Last updated | 2026-08-28 (Prompt 06) |
+| Last updated | 2026-08-28 (Prompt 07) |
 | Rule | Colunas inaplicáveis = `TBD`. Proibido inventar para completar. |
 
 Cadeia:
@@ -149,4 +149,25 @@ Cadeia Prompt 06:
 
 ```text
 EV → BR → FR/UC → INV → CMD → DE / REJ
+```
+
+## Resumo Prompt 07
+
+| Métrica | Valor |
+| --- | --- |
+| Máquinas candidatas (SM-CAND) | 10 |
+| Estados candidatos (STATE-CAND) | 52 |
+| Transições candidatas (TR-CAND) | 48 |
+| Guardas (GUARD) | 28 |
+| Transições inválidas (INV-TR) | 22 |
+| Dependências cruzadas (XLC) | 14 |
+| SM definitivas | **0** |
+| Código / enum / script | **0** |
+| Índice | [`../08-state-machines/README.md`](../08-state-machines/README.md) |
+| Relatório | [`../08-state-machines/prompt-07-completeness-report.md`](../08-state-machines/prompt-07-completeness-report.md) |
+
+Cadeia Prompt 07:
+
+```text
+INV → CMD → DE → SM-CAND → STATE-CAND → TR-CAND → GUARD
 ```
