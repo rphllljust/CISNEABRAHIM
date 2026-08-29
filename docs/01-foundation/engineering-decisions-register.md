@@ -54,4 +54,4 @@ Status: `PROPOSED`, `ACCEPTED`, `DEPRECATED`, `SUPERSEDED`, `REJECTED`.
 
 ## Não decidido (exemplos explícitos)
 
-Linguagem, monorepo vs polirepo, Postgres vs outro, Nest vs outro, React vs outro: **não decidido**. Não há ADR de runtime.
+Linguagem, monorepo vs polirepo, Postgres vs outro, Nest vs outro, React vs outro: **não decidido**. ADRs fundamentais em [`../10-architecture/adr-index.md`](../10-architecture/adr-index.md) (Prompt 09); stack runtime aguarda prompts posteriores.

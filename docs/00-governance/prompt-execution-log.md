@@ -764,3 +764,49 @@ NOTES:
 - [x] Prompt 09 não executado
 
 ---
+
+```text
+PROMPT: 09
+TITLE: Drivers arquiteturais, opções e ADRs fundamentais
+STARTED_AT: 2026-08-29T00:15:00-04:00
+FINISHED_AT: 2026-08-29T00:45:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED:
+  docs/10-architecture/ (20 artefatos + 6 ADRs — ver README.md)
+FILES_CHANGED:
+  docs/01-foundation/requirements-traceability.md
+  docs/00-governance/prompt-execution-log.md
+  docs/README.md
+  docs/01-foundation/engineering-decisions-register.md
+QUALITY_GATE: PASS_WITH_RESTRICTIONS
+ARCH_DRV_COUNT: 22
+ADR_COUNT: 6
+ADR_ACCEPTED: 2
+ADR_PROPOSED: 4
+ARCH_RISK_COUNT: 14
+ARCH_DDP_COUNT: 12
+STYLE_CANDIDATE: MODULAR_MONOLITH
+FRAMEWORK_CHOSEN: 0
+CODE_CREATED: NO
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Opções A–E comparadas. Microservices rejeitado para início.
+  ADR-002 domain boundaries e ADR-003 data ownership ACCEPTED.
+  ADR-001/004/005/006 PROPOSED. PostgreSQL candidato, não stack definitiva.
+  Camadas PRESENTATION→APPLICATION→DOMAIN←INFRASTRUCTURE. Prompt 10 não executado.
+```
+
+## Quality gate Prompt 09 (evidência)
+
+- [x] pasta `10-architecture/` com artefatos e ADRs não vazios
+- [x] 22 drivers rastreáveis
+- [x] 5 estilos comparados com critérios do enunciado
+- [x] 6 ADRs com template completo
+- [x] modularidade baseada em BC-CAND-001..018
+- [x] ownership de dados documentado (ADR-003)
+- [x] domínio independente de framework
+- [x] 0 implementação, 0 script, 0 framework silencioso
+- [x] rastreabilidade atualizada
+- [x] Prompt 10 não executado
+
+---

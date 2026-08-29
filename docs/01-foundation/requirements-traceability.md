@@ -4,7 +4,7 @@
 | --- | --- |
 | Document ID | RTM-001 |
 | Policy | [`../00-governance/traceability-policy.md`](../00-governance/traceability-policy.md) |
-| Last updated | 2026-08-28 (Prompt 08) |
+| Last updated | 2026-08-28 (Prompt 09) |
 | Rule | Colunas inaplicáveis = `TBD`. Proibido inventar para completar. |
 
 Cadeia:
@@ -190,4 +190,23 @@ Cadeia Prompt 08:
 
 ```text
 ACT → ROLE-CAND → AUTHZ → CMD/TR → SOD → DENY → SEC-REQ
+```
+
+## Resumo Prompt 09
+
+| Métrica | Valor |
+| --- | --- |
+| Drivers arquiteturais (ARCH-DRV) | 22 |
+| ADRs | 6 (2 ACCEPTED, 4 PROPOSED) |
+| Riscos arquiteturais (ARCH-RISK) | 14 |
+| Decisões pendentes (ARCH-DDP) | 12 |
+| Estilo candidato | Modular monolith |
+| Framework / código | **0** |
+| Índice | [`../10-architecture/README.md`](../10-architecture/README.md) |
+| Relatório | [`../10-architecture/prompt-09-completeness-report.md`](../10-architecture/prompt-09-completeness-report.md) |
+
+Cadeia Prompt 09:
+
+```text
+NFR/SEC/RISK → ARCH-DRV → OPTIONS → ADR → LOGICAL ARCH → BC MODULES
 ```

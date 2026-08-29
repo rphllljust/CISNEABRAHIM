@@ -15,7 +15,8 @@
 9. `07-domain-behavior/` contém invariantes, comandos e eventos candidatos do Prompt 06.
 10. `08-state-machines/` contém máquinas de estado empresariais candidatas do Prompt 07.
 11. `09-authorization/` contém autorização empresarial e segregação do Prompt 08.
-12. `templates/` define a forma dos registros futuros.
+12. `10-architecture/` contém drivers, opções e ADRs fundamentais do Prompt 09.
+13. `templates/` define a forma dos registros futuros.
 
 Agentes devem seguir [`../AGENTS.md`](../AGENTS.md) e o protocolo em [`00-governance/execution-protocol.md`](00-governance/execution-protocol.md).
 
@@ -150,6 +151,18 @@ Autorização empresarial e segregação (Prompt 08). Índice: [09-authorization
 | [segregation-of-duties-matrix.md](09-authorization/segregation-of-duties-matrix.md) | 12 SOD |
 | [sensitive-data-access-matrix.md](09-authorization/sensitive-data-access-matrix.md) | Dados restritos |
 | [prompt-08-completeness-report.md](09-authorization/prompt-08-completeness-report.md) | Relatório |
+
+## 10-architecture
+
+Drivers, opções e ADRs fundamentais (Prompt 09). Índice: [10-architecture/README.md](10-architecture/README.md).
+
+| Arquivo | Conteúdo |
+| --- | --- |
+| [architecture-drivers.md](10-architecture/architecture-drivers.md) | 22 ARCH-DRV |
+| [architecture-options-analysis.md](10-architecture/architecture-options-analysis.md) | Comparação de estilos |
+| [logical-architecture.md](10-architecture/logical-architecture.md) | Visão lógica |
+| [adr-index.md](10-architecture/adr-index.md) | 6 ADRs |
+| [prompt-09-completeness-report.md](10-architecture/prompt-09-completeness-report.md) | Relatório |
 
 ## inputs
 
