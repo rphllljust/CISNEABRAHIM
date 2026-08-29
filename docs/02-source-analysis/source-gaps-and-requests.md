@@ -31,3 +31,20 @@ Ver [../01-foundation/source-registry.md](../01-foundation/source-registry.md) �
 ## Critério de encerramento de lacuna
 
 Cada pedido exige: artefato depositado em `docs/inputs/`, novo ou atualizado `SRC-NNN`, e nova rodada de análise atômica.
+
+## Dependências do Prompt 02 (2026-08-28)
+
+O Prompt 02 derivou 42 FRs, 26 UCs e 52 ACs exclusivamente de SRC-001. As lacunas abaixo **bloqueiam validação** dos requisitos (não a existência dos registros candidatos):
+
+| Lacuna | Impacto em requisitos | Artefatos afetados |
+| --- | --- | --- |
+| Fontes primárias ausentes | Nenhum FR/BR pode ser `CONFIRMED` | Todos em `03-requirements/` |
+| Transcrições originais | Validação de EV e FR de solicitação/OS | FR-001..FR-014, UC-001..UC-008 |
+| Matriz criar/liberar OS | AUTH-REQ-004..006, FR-014 | `authorization-requirements.md` |
+| Decisão WhatsApp (DDP-021, DDP-033) | FR-002 `CAPABILITY_ONLY` | `notification-requirements.md`, INT-REQ-004 |
+| Modo fiscal (DDP-023) | FR-039 sem emissão fiscal presumida | FR-039, UC-023, RQ-QUESTION fiscal |
+| Source of Truth ERP (DDP-014) | INT-REQ-001, FR-039 pagamento | `integration-requirements.md` |
+| Escopo primeiro release (DDP-026) | CAP-* `first release UNKNOWN` | `business-capability-map.md`, RQ-QUESTION direção |
+| Faixas de aging (DDP-024) | RPT-REQ sem bandas inventadas | `reporting-requirements.md`, BR-022 |
+
+Revalidação exigida após ingestão de fonte primária: atualizar `requirements-traceability.md`, `provenance-matrix.md` e `requirements-coverage.md`.

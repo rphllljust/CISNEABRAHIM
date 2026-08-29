@@ -8,7 +8,8 @@
 2. Fundação (`01-foundation/`) registra o que se sabe, o que falta e o que está pendente.
 3. `inputs/` recebe fontes empresariais. SRC-001 disponível desde Prompt 00.1; analisado no Prompt 01.
 4. `02-source-analysis/` contém decomposição atômica e análises do Prompt 01.
-5. `templates/` define a forma dos registros futuros.
+5. `03-requirements/` contém requisitos funcionais e casos de uso do Prompt 02.
+6. `templates/` define a forma dos registros futuros.
 
 Agentes devem seguir [`../AGENTS.md`](../AGENTS.md) e o protocolo em [`00-governance/execution-protocol.md`](00-governance/execution-protocol.md).
 
@@ -51,6 +52,18 @@ Análise atômica e temática das fontes (Prompt 01). Índice: [02-source-analys
 | [atomic-evidence-register.md](02-source-analysis/atomic-evidence-register.md) | 84 evidências EV-001–EV-084 |
 | [source-assessment.md](02-source-analysis/source-assessment.md) | Avaliação SRC-000 e SRC-001 |
 | [prompt-01-completeness-report.md](02-source-analysis/prompt-01-completeness-report.md) | Relatório de completude |
+
+## 03-requirements
+
+Requisitos funcionais e casos de uso (Prompt 02). Índice: [03-requirements/README.md](03-requirements/README.md).
+
+| Arquivo | Conteúdo |
+| --- | --- |
+| [functional-requirements-register.md](03-requirements/functional-requirements-register.md) | 42 FRs FR-001..FR-042 |
+| [use-case-catalog.md](03-requirements/use-case-catalog.md) | 26 UCs UC-001..UC-026 |
+| [acceptance-criteria-catalog.md](03-requirements/acceptance-criteria-catalog.md) | 52 ACs AC-001..AC-052 |
+| [business-capability-map.md](03-requirements/business-capability-map.md) | 27 capacidades candidatas |
+| [prompt-02-completeness-report.md](03-requirements/prompt-02-completeness-report.md) | Relatório de completude |
 
 ## inputs
 

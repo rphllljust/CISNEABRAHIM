@@ -200,4 +200,79 @@ NOTES:
 - [x] 0 regras CONFIRMED
 - [x] 0 conflitos de fonte fabricados
 - [x] nenhum código funcional, package.json, DB
-- [x] Prompt 02 não executado
+- [x] Prompt 01 não executado (histórico Prompt 00.1 gate)
+
+---
+
+```text
+PROMPT: 02
+TITLE: Requisitos funcionais e casos de uso empresariais
+STARTED_AT: 2026-08-28T21:23:25-04:00
+FINISHED_AT: 2026-08-28T22:08:25-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED:
+  docs/03-requirements/README.md
+  docs/03-requirements/requirements-method.md
+  docs/03-requirements/business-capability-map.md
+  docs/03-requirements/functional-requirements-register.md
+  docs/03-requirements/actor-goal-matrix.md
+  docs/03-requirements/use-case-catalog.md
+  docs/03-requirements/business-validation-rules.md
+  docs/03-requirements/authorization-requirements.md
+  docs/03-requirements/data-requirements.md
+  docs/03-requirements/document-requirements.md
+  docs/03-requirements/notification-requirements.md
+  docs/03-requirements/integration-requirements.md
+  docs/03-requirements/reporting-requirements.md
+  docs/03-requirements/error-and-exception-requirements.md
+  docs/03-requirements/acceptance-criteria-catalog.md
+  docs/03-requirements/requirement-dependency-map.md
+  docs/03-requirements/requirement-prioritization.md
+  docs/03-requirements/requirements-open-questions.md
+  docs/03-requirements/requirements-coverage.md
+  docs/03-requirements/prompt-02-completeness-report.md
+FILES_CHANGED:
+  docs/01-foundation/requirements-traceability.md
+  docs/02-source-analysis/provenance-matrix.md
+  docs/02-source-analysis/source-gaps-and-requests.md
+  docs/02-source-analysis/coverage-audit.md
+  docs/00-governance/prompt-execution-log.md
+  docs/README.md
+QUALITY_GATE: PASS_WITH_RESTRICTIONS
+FUNCTIONAL_CODE_CREATED: NO
+FUNCTIONAL_REQUIREMENTS: 42
+USE_CASES: 26
+ACCEPTANCE_CRITERIA: 52
+VR: 22
+AUTH_REQ: 20
+DR: 28
+DOC_REQ: 14
+NOTIF_REQ: 10
+INT_REQ: 8
+RPT_REQ: 12
+EX: 18
+OPEN_QUESTIONS: 25
+EV_USED: 54
+CONFIRMED_RULES: 0
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Fonte operacional única: SRC-001 (LEVEL_3, PENDING_BUSINESS_VALIDATION).
+  0 regras CONFIRMED. 0 FR CONFIRMED.
+  WhatsApp: CAPABILITY_ONLY. Integrações: PENDING_EXTERNAL_DOCUMENTATION.
+  Sem código, endpoints, telas, RBAC técnico ou emissão fiscal presumida.
+  Prompt 03 não executado.
+```
+
+## Quality gate Prompt 02 (evidência)
+
+- [x] pasta `03-requirements/` com 20 artefatos não vazios
+- [x] 42 FRs atômicos FR-001..FR-042
+- [x] 26 UCs UC-001..UC-026
+- [x] 52 ACs AC-001..AC-052 em formato DADO/QUANDO/ENTÃO
+- [x] 27 capacidades com first release UNKNOWN
+- [x] 0 regras ou requisitos CONFIRMED
+- [x] rastreabilidade atualizada (requirements-traceability, provenance-matrix)
+- [x] cobertura auditada (requirements-coverage, coverage-audit)
+- [x] nenhum código funcional, package.json, DB
+- [x] SRC-001 não alterado
+- [x] Prompt 03 não executado

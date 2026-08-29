@@ -3,7 +3,7 @@
 | Campo | Valor |
 | --- | --- |
 | Document ID | CA-001 |
-| Data | 2026-08-28 |
+| Data | 2026-08-28 (Prompt 01); atualizado Prompt 02 |
 
 ## Por fonte
 
@@ -42,7 +42,29 @@
 | SRC-001 marcado analisado no source-registry | PASS (pendente update) |
 | DDP e RISK incrementados | PASS (pendente update) |
 | Prompt 02 não executado | PASS |
-| Código funcional não criado | PASS |
+
+## Prompt 02 — cobertura de requisitos (2026-08-28)
+
+| Métrica | Valor | Avaliação |
+| --- | --- | --- |
+| Arquivos em `03-requirements/` | 20 | PASS (não vazios) |
+| FR (FR-001..FR-042) | 42 | PASS |
+| UC (UC-001..UC-026) | 26 | PASS |
+| AC (AC-001..AC-052) | 52 | PASS |
+| VR | 22 | PASS |
+| AUTH-REQ | 20 | PASS |
+| DR | 28 | PASS |
+| DOC-REQ | 14 | PASS |
+| NOTIF-REQ | 10 | PASS |
+| INT-REQ | 8 | PASS |
+| RPT-REQ | 12 | PASS |
+| EX | 18 | PASS |
+| RQ-QUESTION | 25 | PASS |
+| Capacidades (CAP) | 27 | PASS |
+| EV utilizadas em FRs | 54 de 84 | PASS (30 EV sem FR direto — meta/organização/escopo) |
+| BR CONFIRMED | 0 | PASS |
+| Código funcional | 0 | PASS |
+| Quality gate Prompt 02 | PASS_WITH_RESTRICTIONS | Sem fontes primárias |
 
 ## Itens não cobertos (esperado)
 
