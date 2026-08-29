@@ -84,3 +84,41 @@ NOTES:
 - [x] existe registro do Prompt 00
 - [x] o Prompt 01 não foi executado
 - [x] o estado final do Git foi verificado (pré-commit: repositório local, sem commits; pós-commit: ver `git log` / `git status`)
+
+---
+
+```text
+PROMPT: 00.1
+TITLE: Registro do contexto empresarial inicial
+STARTED_AT: 2026-08-28T20:55:59-04:00
+FINISHED_AT: 2026-08-28T20:57:24-04:00
+STATUS: PASS
+FILES_CREATED:
+  docs/inputs/SRC-001-contexto-inicial-patrocinador.md
+FILES_CHANGED:
+  docs/01-foundation/source-registry.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: NO
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Pré-condições: Prompt 00 STATUS PASS; git working tree limpa; identidade Git configurada.
+  SRC-000 preservado. SRC-001 registrado como SPONSOR_CONTEXT_RECONSTRUCTED e PENDING_BUSINESS_VALIDATION.
+  Fonte não substitui originais primários; lista NOT_PROVIDED mantida.
+  Data de consolidação do arquivo: 2026-08-28 (data real de criação).
+  Nenhuma regra alterada para CONFIRMED. Nenhum DDP encerrado. Análise atômica não executada.
+  Prompt 01 não executado.
+```
+
+## Quality gate Prompt 00.1 (evidência)
+
+- [x] arquivo criado em `docs/inputs/`
+- [x] conteúdo não vazio
+- [x] SRC-001 no registro de fontes
+- [x] SRC-000 preservado
+- [x] nenhuma regra `CONFIRMED`
+- [x] nenhuma decisão pendente encerrada
+- [x] nenhum código funcional criado
+- [x] nenhuma dependência instalada
+- [x] Prompt 01 não executado
+

@@ -3,7 +3,7 @@
 | Campo | Valor |
 | --- | --- |
 | Document ID | SRC-REG-001 |
-| Last updated | 2026-08-28 |
+| Last updated | 2026-08-28 (Prompt 00.1: SRC-001) |
 
 ## Como preencher
 
@@ -29,9 +29,31 @@
 | May prove operational business rules? | **NO** |
 | Notes | Autoriza estrutura documental, protocolo, princípios de engenharia e restrições desta fase. O contexto empresarial citado no prompt é preliminar e não contratual. |
 
+### SRC-001
+
+| Campo | Valor |
+| --- | --- |
+| SOURCE-ID | SRC-001 |
+| Title | Contexto inicial informado pelo patrocinador |
+| Type | Declaração inicial consolidada |
+| Origin | Informações apresentadas pelo responsável pelo projeto durante o levantamento preliminar |
+| Location | [`../inputs/SRC-001-contexto-inicial-patrocinador.md`](../inputs/SRC-001-contexto-inicial-patrocinador.md) |
+| Date received / consolidation | 2026-08-28 |
+| Reliability | Média |
+| Status | `PENDING_BUSINESS_VALIDATION` |
+| Classification | `SPONSOR_CONTEXT_RECONSTRUCTED` · `PENDING_BUSINESS_VALIDATION` |
+| May prove operational business rules in isolation? | **NO** |
+| Must be confronted with primary documents? | **YES** |
+| Substitutes primary sources? | **NO** — não substitui Documento Mestre, transcrições originais, proposta, contrato, PO, nota/fatura, documentação fiscal, contábil, ERP, nem confirmação formal da direção |
+| Integrity | Arquivo criado neste repositório no Prompt 00.1; consolidação reconstruída, não original primário |
+| Personal / sensitive data | Não identificado neste consolidado |
+| Affected domains (candidatos de cobertura desta fonte; não são módulos confirmados) | Atividades empresariais citadas; solicitação de serviço; abertura e liberação de OS; conteúdo operacional da OS; equipamentos, veículos e máquinas; mão de obra; custo interno vs preço comercial; origem de cobrança e fases de item; cadeia comercial (proposta, pedido, PO, contrato, OS, execução, medição, faturamento, pagamento); documentos e versões; responsabilidade e handoff; gargalos e aging; integrações candidatas; preocupações de segurança; prioridade candidata (locação); decisões bloqueantes listadas na fonte |
+| Atomic analysis | **NOT STARTED** (reservada ao Prompt 01) |
+| Notes | Fonte de contexto reconstruído. Nenhuma afirmação deste artefato deve ser promovida a regra `CONFIRMED` só por constar no arquivo. Prompt 01 deve decompor evidências; este Prompt 00.1 apenas registra. |
+
 ## Fontes ainda não fornecidas
 
-Status uniforme: `NOT_PROVIDED`. Nenhum `SOURCE-ID` foi atribuído (atribuir somente quando o artefato existir).
+Status uniforme: `NOT_PROVIDED`. Nenhum `SOURCE-ID` foi atribuído a estes artefatos (atribuir somente quando o original existir). **SRC-001 não preenche e não substitui** esta lista.
 
 | Artefato esperado | Status |
 | --- | --- |
