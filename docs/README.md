@@ -17,7 +17,8 @@
 11. `09-authorization/` contém autorização empresarial e segregação do Prompt 08.
 12. `10-architecture/` contém drivers, opções e ADRs fundamentais do Prompt 09.
 13. `11-technology/` contém seleção de stack e ADRs tecnológicos do Prompt 10.
-14. `templates/` define a forma dos registros futuros.
+14. `12-domain-model/` contém modelo conceitual e aggregates candidatos do Prompt 11.
+15. `templates/` define a forma dos registros futuros.
 
 Agentes devem seguir [`../AGENTS.md`](../AGENTS.md) e o protocolo em [`00-governance/execution-protocol.md`](00-governance/execution-protocol.md).
 
@@ -176,6 +177,18 @@ Seleção de stack (Prompt 10). Índice: [11-technology/README.md](11-technology
 | [compatibility-matrix.md](11-technology/compatibility-matrix.md) | Compatibilidade |
 | [adr/](11-technology/adr/) | ADR-TECH-001..007 |
 | [prompt-10-completeness-report.md](11-technology/prompt-10-completeness-report.md) | Relatório |
+
+## 12-domain-model
+
+Modelo conceitual e aggregates (Prompt 11). Índice: [12-domain-model/README.md](12-domain-model/README.md).
+
+| Arquivo | Conteúdo |
+| --- | --- |
+| [conceptual-domain-model.md](12-domain-model/conceptual-domain-model.md) | Visão + Mermaid |
+| [aggregate-candidates.md](12-domain-model/aggregate-candidates.md) | 14 AGG-CAND |
+| [aggregate-invariant-matrix.md](12-domain-model/aggregate-invariant-matrix.md) | INV × AGG |
+| [cardinality-decisions-pending.md](12-domain-model/cardinality-decisions-pending.md) | 12 CARD-DDP |
+| [prompt-11-completeness-report.md](12-domain-model/prompt-11-completeness-report.md) | Relatório |
 
 ## inputs
 

@@ -4,7 +4,7 @@
 | --- | --- |
 | Document ID | RTM-001 |
 | Policy | [`../00-governance/traceability-policy.md`](../00-governance/traceability-policy.md) |
-| Last updated | 2026-08-28 (Prompt 10) |
+| Last updated | 2026-08-28 (Prompt 11) |
 | Rule | Colunas inaplicáveis = `TBD`. Proibido inventar para completar. |
 
 Cadeia:
@@ -233,4 +233,24 @@ Cadeia Prompt 10:
 
 ```text
 ARCH-DRV → SCORECARD → ADR-TECH → COMPATIBILITY / VERSION-POLICY
+```
+
+## Resumo Prompt 11
+
+| Métrica | Valor |
+| --- | --- |
+| Aggregates candidatos (AGG-CAND) | 14 |
+| ACCEPTED_FOR_LOGICAL_MODELING | 4 |
+| Entidades (ENTITY-CAND) | 26 |
+| Value objects (VO-CAND) | 22 |
+| Cardinalidades pendentes (CARD-DDP) | 12 |
+| Invariantes mapeadas | 22/22 |
+| ORM / tabelas / código | **0** |
+| Índice | [`../12-domain-model/README.md`](../12-domain-model/README.md) |
+| Relatório | [`../12-domain-model/prompt-11-completeness-report.md`](../12-domain-model/prompt-11-completeness-report.md) |
+
+Cadeia Prompt 11:
+
+```text
+TERM → ENTITY/VO → AGG-CAND → INV → CMD → SM-CAND
 ```

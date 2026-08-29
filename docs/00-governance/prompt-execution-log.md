@@ -850,3 +850,43 @@ NOTES:
 - [x] Prompt 11 não executado
 
 ---
+
+```text
+PROMPT: 11
+TITLE: Modelo conceitual do domínio e aggregates candidatos
+STARTED_AT: 2026-08-29T01:25:00-04:00
+FINISHED_AT: 2026-08-29T01:55:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED:
+  docs/12-domain-model/ (20 artefatos — ver README.md)
+FILES_CHANGED:
+  docs/01-foundation/requirements-traceability.md
+  docs/00-governance/prompt-execution-log.md
+  docs/README.md
+QUALITY_GATE: PASS_WITH_RESTRICTIONS
+AGG_CAND_COUNT: 14
+AGG_ACCEPTED_LOGICAL: 4
+ENTITY_CAND_COUNT: 26
+VO_CAND_COUNT: 22
+CARD_DDP_COUNT: 12
+MDDP_COUNT: 11
+INV_MAPPED: 22/22
+ORM_TABLES_CODE: NO
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Solicitação≠OS; medição≠faturamento≠nota≠pagamento. PO consumo CARD-DDP pendente.
+  Doc/versão/arquivo separados. Money e Quantity como VO. 0 FINAL. Prompt 12 não executado.
+```
+
+## Quality gate Prompt 11 (evidência)
+
+- [x] pasta `12-domain-model/` com 20 artefatos não vazios
+- [x] 14 AGG-CAND com campos obrigatórios
+- [x] 22/22 INV mapeadas
+- [x] 12 CARD-DDP explícitas
+- [x] sem ORM, tabela, código
+- [x] aggregates pequenos; maciços rejeitados
+- [x] rastreabilidade atualizada
+- [x] Prompt 12 não executado
+
+---
