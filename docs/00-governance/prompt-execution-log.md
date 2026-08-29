@@ -1560,3 +1560,66 @@ NOTES:
 - [x] Prompt 24 não executado
 
 ---
+
+```text
+PROMPT: 24
+TITLE: Autenticação e sessão no frontend
+STARTED_AT: 2026-08-29T12:20:00-04:00
+FINISHED_AT: 2026-08-29T12:38:00-04:00
+STATUS: PASS
+FILES_CREATED:
+  apps/web/src/auth/types/auth.types.ts
+  apps/web/src/auth/storage/token-store.ts
+  apps/web/src/auth/storage/token-store.test.ts
+  apps/web/src/auth/api/auth-api.ts
+  apps/web/src/auth/api/auth-api.test.ts
+  apps/web/src/auth/utils/safe-redirect.ts
+  apps/web/src/auth/utils/safe-redirect.test.ts
+  apps/web/src/auth/context/AuthProvider.tsx
+  apps/web/src/auth/components/ProtectedRoute.tsx
+  apps/web/src/auth/auth-flow.e2e.test.tsx
+  apps/web/src/pages/LoginPage.tsx
+  apps/web/src/pages/LoginPage.test.tsx
+  apps/web/src/pages/AppHomePage.tsx
+  apps/web/src/pages/AccessDeniedPage.tsx
+  apps/web/src/pages/ServiceUnavailablePage.tsx
+  apps/web/src/test/request-url.ts
+  apps/web/src/vite-env.d.ts
+  docs/implementation/24-frontend-authentication.md
+FILES_CHANGED:
+  apps/web/package.json
+  apps/web/src/App.tsx
+  apps/web/src/App.test.tsx
+  apps/web/src/index.css
+  pnpm-lock.yaml
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+DOC_FILES_CREATED: 1
+LINT: PASS
+TYPECHECK: PASS
+TEST: PASS
+E2E: PASS (vitest jsdom + fetch mocks)
+BUILD: PASS
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Bearer JWT SPA (SEC-DEC-004): access em memória, refresh em sessionStorage (não localStorage).
+  Login, bootstrap/refresh, logout/logout-all, rota protegida /app, access-denied, unavailable.
+  Mensagem única para credenciais inválidas; sanitizeRedirectPath contra open redirect.
+  Shell técnico em /app — sem dashboard ou módulos empresariais.
+  Prompt 25 não executado.
+```
+
+## Quality gate Prompt 24 (evidência)
+
+- [x] Página de login acessível com validação, loading e mensagem segura
+- [x] Bootstrap de sessão com refresh mutex e cancelamento (AbortController)
+- [x] Logout e logout-all limpam estado local
+- [x] Rota protegida, acesso negado, redirect seguro, rede/indisponível
+- [x] Zero segredo no bundle; tokens não em localStorage
+- [x] Testes unit/component/E2E (vitest) — 15 testes @cisne/web
+- [x] lint, typecheck, test, build — PASS
+- [x] docs/implementation/24-frontend-authentication.md
+- [x] Prompt 25 não executado
+
+---

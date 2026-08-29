@@ -1,10 +1,22 @@
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 
 describe('App', () => {
-  it('renders bootstrap heading', () => {
+  it('renders login when unauthenticated', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: async () => ({ error: { code: 'AUTH_UNAUTHORIZED', message: 'Unauthorized.' } }),
+      }),
+    );
+
     render(<App />);
-    expect(screen.getByRole('heading', { name: /cisne rondônia/i })).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /sign in/i })).toBeInTheDocument();
+    });
   });
 });
