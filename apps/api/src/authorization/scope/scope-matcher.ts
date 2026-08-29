@@ -77,6 +77,13 @@ export function grantMatchesResourceContext(input: ScopeMatchInput): boolean {
   }
 }
 
+export function toResourceContextFromClient(client: { id: string }): AuthzResourceContext {
+  return {
+    resourceId: client.id,
+    clientId: client.id,
+  };
+}
+
 export function toResourceContextFromScopedRecord(record: {
   id: string;
   owner_identity_id: string;

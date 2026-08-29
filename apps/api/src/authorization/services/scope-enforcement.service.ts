@@ -82,6 +82,37 @@ export class ScopeEnforcementService {
     };
   }
 
+  buildClientListFilter(grants: GrantRow[]): ScopeSqlPredicate {
+    const clauses: string[] = [];
+    const params: unknown[] = [];
+    let paramIndex = 1;
+
+    for (const grant of grants) {
+      switch (grant.scope_type) {
+        case AUTHZ_SCOPES.Global:
+          if (grant.resource_id === null) {
+            return { clause: 'TRUE', params: [] };
+          }
+          break;
+        case AUTHZ_SCOPES.Client:
+          clauses.push(`id::text = $${paramIndex++}`);
+          params.push(grant.resource_id);
+          break;
+        default:
+          break;
+      }
+    }
+
+    if (clauses.length === 0) {
+      return { clause: 'FALSE', params: [] };
+    }
+
+    return {
+      clause: `(${clauses.join(' OR ')})`,
+      params,
+    };
+  }
+
   canAccessRecord(
     grants: GrantRow[],
     identityId: string,

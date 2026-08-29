@@ -24,3 +24,12 @@ export {
   securityAuditEvents,
   securityAuditOutcomeEnum,
 } from './audit';
+export {
+  addressPurposeEnum,
+  clientAddresses,
+  clientContacts,
+  clients,
+  clientStatusEnum,
+  contactPurposeEnum,
+  ptySchema,
+} from './clients';

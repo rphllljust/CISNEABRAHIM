@@ -44,7 +44,7 @@ const ALLOWED_TECHNICAL_TABLES = new Set([
   'scoped_records',
 ]);
 
-const ALLOWED_SCHEMAS = new Set(['infrastructure', 'identity', 'authorization', 'public']);
+const ALLOWED_SCHEMAS = new Set(['infrastructure', 'identity', 'authorization', 'audit', 'pty']);
 
 describe('PostgreSQL integration', () => {
   let pool: Pool;
@@ -94,14 +94,20 @@ describe('PostgreSQL integration', () => {
     const result = await pool.query<{ schemaname: string; tablename: string }>(
       `SELECT schemaname, tablename
        FROM pg_tables
-       WHERE schemaname IN ('public', 'infrastructure', 'identity')
+       WHERE schemaname IN ('public', 'infrastructure', 'identity', 'pty')
        ORDER BY schemaname, tablename`,
     );
 
     for (const row of result.rows) {
       const tableName = row.tablename.toLowerCase();
-      expect(FORBIDDEN_BUSINESS_TABLES).not.toContain(tableName);
+      if (row.schemaname !== 'pty') {
+        expect(FORBIDDEN_BUSINESS_TABLES).not.toContain(tableName);
+      }
       expect(ALLOWED_SCHEMAS.has(row.schemaname)).toBe(true);
+      if (row.schemaname === 'pty') {
+        expect(['clients', 'client_contacts', 'client_addresses']).toContain(tableName);
+        continue;
+      }
       if (row.schemaname === 'public') {
         expect(ALLOWED_TECHNICAL_TABLES.has(tableName)).toBe(true);
       }

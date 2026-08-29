@@ -9,6 +9,10 @@ export const SECURITY_AUDIT_ACTIONS = {
   AuthzGrantRevoke: 'security:authz:grant_revoke',
   AuthzDenied: 'security:authz:denied',
   AppBootstrap: 'security:app:bootstrap',
+  ClientCreate: 'security:client:create',
+  ClientUpdate: 'security:client:update',
+  ClientDeactivate: 'security:client:deactivate',
+  ClientActivate: 'security:client:activate',
 } as const;
 
 export type SecurityAuditAction =
@@ -37,6 +41,7 @@ export const SECURITY_AUDIT_RESOURCE_TYPES = {
   Grant: 'security:grant',
   AuthzDecision: 'security:authz-decision',
   Application: 'security:application',
+  Client: 'security:client',
 } as const;
 
 export type SecurityAuditResourceType =

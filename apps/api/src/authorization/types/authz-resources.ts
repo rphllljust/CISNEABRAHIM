@@ -6,6 +6,7 @@ export const AUTHZ_RESOURCE_TYPES = {
   Grant: 'authz:grant',
   Platform: 'platform:system',
   ScopedRecord: 'authz:scoped-record',
+  Client: 'client:client',
 } as const;
 
 export type AuthzResourceType = (typeof AUTHZ_RESOURCE_TYPES)[keyof typeof AUTHZ_RESOURCE_TYPES];

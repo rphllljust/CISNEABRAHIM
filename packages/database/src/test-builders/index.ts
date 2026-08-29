@@ -21,3 +21,4 @@ export {
   type InsertScopedRecordInput,
 } from './authz-builders';
 export { countSecurityAuditEvents, truncateSecurityAuditTables } from './audit-builders';
+export { truncateAllOperationalTables, truncateClientTables } from './client-builders';

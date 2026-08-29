@@ -1,51 +1,81 @@
 # Prompt 29 — Módulo de Clientes: backend e persistência
 
-**Status:** `NOT_EXECUTED` — pré-condição não atendida  
+**Status:** `EXECUTED`  
 **Executado em:** 2026-08-29  
-**Base Git:** `9f7433f` (Prompt 28)
+**Base Git:** `ec24085` (SRC-002 aprovado)  
+**Pré-condição:** SRC-002 `LIBERADO` — `pnpm gate:src-002` → PASS
 
-## Pré-condição
-
-```text
-Execute somente se o Prompt 28 declarou o módulo de Clientes pronto para implementação.
-```
-
-## Resultado da verificação
+## Resultado
 
 | Verificação | Resultado |
 | ----------- | --------- |
-| Prompt 28 — decisão global | `BLOCKED_AWAITING_BUSINESS_CONFIRMATION` |
-| Módulo Clientes liberado | **NÃO** |
-| SRC-002 preenchido e assinado | **NÃO** (`AWAITING_RESPONSE`) |
-| Regras `CONFIRMED` para clientes | **0** |
-| DDP-028 (dados mínimos de cliente) | `OPEN` |
-| DDP-020 (Source of Truth — cliente) | `OPEN` |
+| SRC-002 business gate | PASS |
+| Technical quality gate | PASS |
+| Módulo Clientes implementado | **SIM** |
+| Exclusão física (DELETE) | **NÃO** — desativação lógica apenas |
+| Cliente PF | **NÃO** — Release 1 PJ apenas |
 
-Referência: [`28-business-readiness-gate.md`](./28-business-readiness-gate.md).
+## Operações HTTP (`/api/v1/clients`)
 
-## Ação tomada
+| Método | Rota | Capability | Descrição |
+| ------ | ---- | ---------- | --------- |
+| POST | `/clients` | `client:client:create` | Criar Cliente PJ |
+| GET | `/clients` | `client:client:list` | Listar com paginação e filtro `status` |
+| GET | `/clients/:clientId` | `client:client:read` | Consultar por ID |
+| PATCH | `/clients/:clientId` | `client:client:update` | Alterar (optimistic locking via `version`) |
+| POST | `/clients/:clientId/deactivate` | `client:client:deactivate` | Desativar (motivo obrigatório) |
+| POST | `/clients/:clientId/activate` | `client:client:activate` | Reativar |
 
-Nenhuma implementação foi realizada, conforme:
+## Tabelas (`pty` schema)
 
-- instrução do Prompt 29 (pré-condição);
-- `AGENTS.md` — não antecipar módulos empresariais sem validação;
-- `AGENTS.md` — parada em bloqueio crítico (`NOT_READY_FOR_IMPLEMENTATION`).
+| Tabela | Descrição |
+| ------ | --------- |
+| `pty.clients` | Cadastro PJ — `legal_name`, `normalized_tax_id` (único), `external_erp_id`, `status`, `version`, timestamps de desativação |
+| `pty.client_contacts` | Contatos com `purpose` (operational/commercial/billing) |
+| `pty.client_addresses` | Endereços com `purpose` (operational/billing/correspondence) |
 
-## O que não foi criado
+Migration: `packages/database/migrations/0006_clients_baseline.sql`
 
-| Artefato | Status |
-| -------- | ------ |
-| Código (`apps/api`, `packages/database`) | Não criado |
-| Migration de clientes | Não criada |
-| Tabelas empresariais | 0 adicionais |
-| Testes (unit, integração, E2E) | Não criados |
-| Endpoints HTTP de clientes | Não criados |
+## Regras empresariais implementadas (SRC-002)
 
-## Desbloqueio necessário
+| Regra | Implementação |
+| ----- | ------------- |
+| BR-026 | Módulo Clientes PJ Release 1 |
+| BR-027 | CNPJ obrigatório |
+| BR-028 | PF não suportado |
+| BR-029 | CNPJ único + normalização (dígitos) |
+| BR-030/031 | ID interno UUID; `externalErpId` opcional, nunca PK |
+| BR-032 | Cliente = contraparte comercial |
+| BR-033/036 | Sem DELETE físico; desativação preserva histórico |
+| BR-034 | Capabilities `CLIENT_*` via grants GLOBAL/CLIENT |
+| BR-035 | Empregado sem grant admin não administra |
+| BR-037 | Status ACTIVE/INACTIVE (liberação OS = consumidor futuro) |
 
-1. Preencher e assinar [`../inputs/SRC-002-business-baseline-confirmation.md`](../inputs/SRC-002-business-baseline-confirmation.md) — seção **1. Dados mínimos de cliente**.
-2. Registrar SRC-002 em `source-registry.md` e promover regras aplicáveis a `CONFIRMED`.
-3. Responder DDP-028 e DDP-020 (cliente / SoT).
-4. Reexecutar gate empresarial ou emitir decisão explícita liberando o módulo Clientes.
+## Autorização
+
+- Grants em `authorization.grants` com actions `client:client:*`
+- Perfil de Controle: escopo `GLOBAL` (visão administrativa)
+- Empregado: escopo `CLIENT` ancorado em `authorization.scope_refs` (criado automaticamente no cadastro)
+- PDP + audit trail de decisões; security audit em create/update/deactivate/activate
+
+## Testes
+
+| Suite | Escopo |
+| ----- | ------ |
+| Unit | `cnpj.spec.ts`, `client.validation.spec.ts` |
+| Integration | `clients.integration.spec.ts` — CRUD, unicidade, concorrência, cross-scope |
+| E2E | `clients.e2e.spec.ts` — ciclo HTTP completo |
+| Migration | `clients.persistence.integration.spec.ts` |
+| Database guard | `database.integration.spec.ts` atualizado para schema `pty` |
+
+## Quality gate (evidência)
+
+- [x] `pnpm lint` — PASS
+- [x] `pnpm typecheck` — PASS
+- [x] `pnpm test` — PASS
+- [x] `pnpm test:integration` — PASS
+- [x] `pnpm --filter @cisne/api test:e2e` — PASS
+- [x] `pnpm build` — PASS
+- [x] `pnpm gate:src-002` — PASS
 
 Prompt 30 não executado.

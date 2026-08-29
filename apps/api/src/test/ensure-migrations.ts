@@ -51,7 +51,8 @@ export default async function ensureMigrations(): Promise<void> {
   try {
     const hasScopedRecords = await tableExists(pool, '"authorization".scoped_records');
     const hasSecurityAudit = await tableExists(pool, 'audit.security_audit_events');
-    if (hasScopedRecords && hasSecurityAudit) {
+    const hasClients = await tableExists(pool, 'pty.clients');
+    if (hasScopedRecords && hasSecurityAudit && hasClients) {
       return;
     }
 
@@ -62,6 +63,10 @@ export default async function ensureMigrations(): Promise<void> {
 
     if (!hasSecurityAudit) {
       await applySqlFile(pool, '0005_security_audit_events.sql');
+    }
+
+    if (!hasClients) {
+      await applySqlFile(pool, '0006_clients_baseline.sql');
     }
   } finally {
     await pool.end();

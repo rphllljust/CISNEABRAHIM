@@ -11,6 +11,12 @@ export const AUTHZ_ACTIONS = {
   ScopedRecordRead: 'authz:scoped-record:read',
   ScopedRecordList: 'authz:scoped-record:list',
   ScopedRecordUpdate: 'authz:scoped-record:update',
+  ClientCreate: 'client:client:create',
+  ClientRead: 'client:client:read',
+  ClientList: 'client:client:list',
+  ClientUpdate: 'client:client:update',
+  ClientDeactivate: 'client:client:deactivate',
+  ClientActivate: 'client:client:activate',
 } as const;
 
 export type AuthzAction = (typeof AUTHZ_ACTIONS)[keyof typeof AUTHZ_ACTIONS];

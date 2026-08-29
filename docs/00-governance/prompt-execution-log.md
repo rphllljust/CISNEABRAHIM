@@ -2020,3 +2020,45 @@ NOTES:
 - [x] Prompt 30 não executado
 
 ---
+
+```text
+PROMPT: 29
+TITLE: Módulo de Clientes — backend e persistência
+STARTED_AT: 2026-08-29T15:00:00-04:00
+FINISHED_AT: 2026-08-29T15:10:00-04:00
+STATUS: EXECUTED
+FILES_CREATED:
+  packages/database/src/schema/clients.ts
+  packages/database/migrations/0006_clients_baseline.sql
+  packages/database/src/test-builders/client-builders.ts
+  packages/database/src/clients.persistence.integration.spec.ts
+  apps/api/src/clients/** (module, domain, repository, service, controller, tests)
+FILES_CHANGED:
+  apps/api/src/app.module.ts
+  apps/api/src/main.ts
+  apps/api/src/authorization/** (actions, resources, scope-enforcement, module exports)
+  apps/api/src/audit/types/security-audit.types.ts
+  apps/api/src/test/ensure-migrations.ts
+  apps/api/src/infrastructure/database/database.integration.spec.ts
+  docs/implementation/29-clients-backend.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+SRC_002_GATE: PASS
+CODE_CREATED: YES (clients backend only)
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  CRUD PJ com CNPJ único, desativação lógica, autorização por capabilities, audit trail.
+  Sem PF, sem DELETE físico, sem ERP fictício. Prompt 30 não executado.
+```
+
+## Quality gate Prompt 29 (evidência)
+
+- [x] SRC-002 gate PASS (pré-condição)
+- [x] Schema `pty` + migration 0006
+- [x] Operações create/read/list/update/deactivate/activate
+- [x] Autorização `client:client:*` + escopo GLOBAL/CLIENT
+- [x] Unit, integration, E2E, migration tests — PASS
+- [x] lint, typecheck, build — PASS
+- [x] Prompt 30 não executado
+
+---

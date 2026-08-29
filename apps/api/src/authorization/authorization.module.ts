@@ -36,6 +36,7 @@ import { ScopedRecordAccessService } from './services/scoped-record-access.servi
     PolicyDecisionPointService,
     AuthorizationGuard,
     AuthorizationRepository,
+    ScopeContextRepository,
     ScopeEnforcementService,
     ScopeResolverService,
   ],
