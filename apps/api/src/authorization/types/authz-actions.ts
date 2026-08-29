@@ -79,6 +79,9 @@ export const AUTHZ_ACTIONS = {
   RequestsServiceRequestReject: 'requests:service-request:reject',
   RequestsServiceRequestCancel: 'requests:service-request:cancel',
   RequestsServiceRequestConvert: 'requests:service-request:convert',
+  ServiceOrdersServiceOrderCreate: 'service-orders:service-order:create',
+  ServiceOrdersServiceOrderRead: 'service-orders:service-order:read',
+  ServiceOrdersServiceOrderList: 'service-orders:service-order:list',
 } as const;
 
 export type AuthzAction = (typeof AUTHZ_ACTIONS)[keyof typeof AUTHZ_ACTIONS];

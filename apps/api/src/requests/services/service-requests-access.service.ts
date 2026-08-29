@@ -365,29 +365,34 @@ export class ServiceRequestsAccessService {
       actorIdentityId: actor.identityId,
     });
 
-    if (conversion.outcome === 'not_ready') {
-      throw new RequestsHttpException(
-        HttpStatus.CONFLICT,
-        REQUESTS_ERROR_CODES.CONVERSION_NOT_READY,
-        'Service order conversion is not available yet.',
-      );
+    switch (conversion.outcome) {
+      case 'converted':
+        await this.securityAudit.record({
+          actorIdentityId: actor.identityId,
+          actorSessionId: actor.sessionId,
+          action: SECURITY_AUDIT_ACTIONS.RequestsServiceRequestConvert,
+          resourceType: SECURITY_AUDIT_RESOURCE_TYPES.RequestsServiceRequest,
+          resourceId: serviceRequestId,
+          outcome: SECURITY_AUDIT_OUTCOMES.Success,
+          classification: SECURITY_AUDIT_CLASSIFICATIONS.Standard,
+          metadata: { serviceOrderId: conversion.serviceOrderId },
+        });
+        break;
+      case 'already_converted':
+        throw this.invalidState();
+      case 'version_conflict':
+        throw this.versionConflict();
+      case 'service_not_found':
+        throw this.serviceNotFound();
+      case 'invalid_state':
+        throw this.invalidState();
+      default:
+        throw this.invalidState();
     }
 
-    const converted = await this.repository.transition({
-      serviceRequestId,
-      rowVersion: validated.rowVersion,
-      nextStatus: SERVICE_REQUEST_STATUSES.Converted,
-      actorIdentityId: actor.identityId,
-      currentStatus: current.status,
-      convertedServiceOrderId: conversion.serviceOrderId,
-      transitionField: 'convert',
-    });
-
-    if (converted === 'VERSION_CONFLICT') {
-      throw this.versionConflict();
-    }
-    if (converted === 'INVALID_STATE') {
-      throw this.invalidState();
+    const converted = await this.repository.findById(serviceRequestId);
+    if (!converted) {
+      throw this.notFound();
     }
 
     const links = await this.repository.listDocumentLinks(serviceRequestId);

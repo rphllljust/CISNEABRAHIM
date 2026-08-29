@@ -54,6 +54,8 @@ export const SECURITY_AUDIT_ACTIONS = {
   RequestsServiceRequestApprove: 'security:requests:service-request:approve',
   RequestsServiceRequestReject: 'security:requests:service-request:reject',
   RequestsServiceRequestCancel: 'security:requests:service-request:cancel',
+  RequestsServiceRequestConvert: 'security:requests:service-request:convert',
+  ServiceOrdersServiceOrderCreate: 'security:service-orders:service-order:create',
 } as const;
 
 export type SecurityAuditAction =
@@ -92,6 +94,7 @@ export const SECURITY_AUDIT_RESOURCE_TYPES = {
   CommercialProposal: 'security:commercial:proposal',
   CommercialPurchaseOrder: 'security:commercial:purchase-order',
   RequestsServiceRequest: 'security:requests:service-request',
+  ServiceOrdersServiceOrder: 'security:service-orders:service-order',
 } as const;
 
 export type SecurityAuditResourceType =

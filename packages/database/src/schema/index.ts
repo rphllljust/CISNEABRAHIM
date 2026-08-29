@@ -83,6 +83,13 @@ export {
   srSchema,
 } from './service-requests';
 export {
+  serviceOrderHistoryEvents,
+  serviceOrderOriginEnum,
+  serviceOrders,
+  serviceOrderStatusEnum,
+  soSchema,
+} from './service-orders';
+export {
   catSchema,
   evidenceKindEnum,
   legalClassificationSchemeEnum,

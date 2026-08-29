@@ -13,6 +13,7 @@ import {
   truncateCommercialPurchaseOrderTables,
   truncateDocumentTables,
   truncateIdentityAndAuthorizationTables,
+  truncateServiceOrderTables,
   truncateServiceRequestTables,
 } from '@cisne/database';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -155,6 +156,7 @@ describe('Service requests PostgreSQL integration', () => {
 
   beforeEach(async () => {
     await truncateServiceRequestTables(pool);
+    await truncateServiceOrderTables(pool);
     await truncateCommercialPurchaseOrderTables(pool);
     await truncateCommercialProposalTables(pool);
     await truncateDocumentTables(pool);
@@ -430,13 +432,16 @@ describe('Service requests PostgreSQL integration', () => {
     expect(linked.documentLinks[0]?.documentId).toBe(document.document.id);
   });
 
-  it('returns conversion not ready and blocks rejected conversion', async () => {
+  it('converts approved request to service order and blocks rejected conversion', async () => {
     const { actor } = await seedActor();
     const client = await seedClient(actor);
+    const publishedService = await seedPublishedService(actor);
     const created = await serviceRequestsAccess.create(actor, {
       unitId: UNIT_A,
       originSource: SERVICE_REQUEST_ORIGINS.PurchaseOrder,
       clientId: client.id,
+      serviceDefinitionId: publishedService.serviceDefinitionId,
+      serviceDefinitionVersionId: publishedService.id,
       description: 'Para conversão',
     });
     const submitted = await serviceRequestsAccess.submit(actor, created.serviceRequest.id, {
@@ -449,11 +454,24 @@ describe('Service requests PostgreSQL integration', () => {
       rowVersion: underReview.serviceRequest.rowVersion,
     });
 
+    const converted = await serviceRequestsAccess.convert(actor, created.serviceRequest.id, {
+      rowVersion: approved.serviceRequest.rowVersion,
+    });
+    expect(converted.serviceRequest.status).toBe(SERVICE_REQUEST_STATUSES.Converted);
+    expect(converted.serviceRequest.convertedServiceOrderId).not.toBeNull();
+
+    const order = await pool.query<{ order_number: string; service_snapshot: Record<string, unknown> }>(
+      `SELECT order_number, service_snapshot FROM so.service_orders WHERE id = $1`,
+      [converted.serviceRequest.convertedServiceOrderId],
+    );
+    expect(order.rows[0]?.order_number).toMatch(/^OS-/);
+    expect(order.rows[0]?.service_snapshot?.['serviceCode']).toBe(publishedService.code);
+
     await expect(
       serviceRequestsAccess.convert(actor, created.serviceRequest.id, {
-        rowVersion: approved.serviceRequest.rowVersion,
+        rowVersion: converted.serviceRequest.rowVersion,
       }),
-    ).rejects.toMatchObject({ code: REQUESTS_ERROR_CODES.CONVERSION_NOT_READY });
+    ).rejects.toMatchObject({ code: REQUESTS_ERROR_CODES.INVALID_STATE });
 
     const rejectedFlow = await serviceRequestsAccess.create(actor, {
       unitId: UNIT_A,

@@ -2899,3 +2899,53 @@ NOTES:
 - [x] Prompt 50 não executado
 
 ---
+
+## Prompt 50 — Ordem de serviço: núcleo backend
+
+```
+PROMPT_ID: 50
+PROMPT_TITLE: Ordem de serviço — núcleo backend
+EXECUTED_AT: 2026-08-29
+EXECUTION_STATUS: PASS
+COMMIT: feat(service-orders): implement service order aggregate
+ARTIFACTS:
+  packages/database/migrations/0019_service_orders_baseline.sql
+  packages/database/src/schema/service-orders.ts
+  packages/database/src/test-builders/service-order-builders.ts
+  packages/database/src/service-orders.persistence.integration.spec.ts
+  apps/api/src/service-orders/
+  apps/api/src/requests/domain/service-request-conversion.port.ts
+  apps/api/src/requests/requests.module.ts
+  apps/api/src/requests/services/service-requests-access.service.ts
+  apps/api/src/authorization/types/authz-actions.ts
+  apps/api/src/authorization/types/authz-resources.ts
+  apps/api/src/authorization/scope/scope-matcher.ts
+  apps/api/src/authorization/services/scope-enforcement.service.ts
+  apps/api/src/audit/types/security-audit.types.ts
+  apps/api/src/app.module.ts
+  apps/api/src/main.ts
+  apps/api/src/test/ensure-migrations.ts
+  docs/implementation/50-service-orders-backend.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  ServiceOrder aggregate em so.service_orders com order_number empresarial e internal_code.
+  Conversão atômica ServiceRequest APPROVED → OS DRAFT + status CONVERTED na mesma transação.
+  Snapshots de catálogo, cliente e referências comerciais (proposal/PO/RC/contrato).
+  Histórico em service_order_history_events; auditoria em security_audit_events.
+  Porta ServiceRequestConversionPort implementada; NotReady removido.
+  Prompt 51 não executado.
+```
+
+## Quality gate Prompt 50 (evidência)
+
+- [x] create DRAFT, request conversion, double conversion race
+- [x] rejected/cancelled request, catalog snapshot, client/PO/proposal refs
+- [x] rollback, authorization, concurrency, DTO, E2E
+- [x] Migration 0019 + persistence test
+- [x] lint, typecheck, test, test:integration, test:e2e — PASS
+- [x] Prompt 51 não executado
+
+---

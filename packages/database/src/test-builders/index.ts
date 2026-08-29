@@ -40,3 +40,4 @@ export { truncateDocumentTables } from './document-builders';
 export { truncateCommercialProposalTables } from './proposal-builders';
 export { truncateCommercialPurchaseOrderTables } from './purchase-order-builders';
 export { truncateServiceRequestTables } from './service-request-builders';
+export { truncateServiceOrderTables } from './service-order-builders';
