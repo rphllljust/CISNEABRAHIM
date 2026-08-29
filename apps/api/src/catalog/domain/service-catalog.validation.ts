@@ -5,6 +5,10 @@ import {
   isValidPhysicalResourceTypeCodeFormat,
   normalizePhysicalResourceTypeCode,
 } from '../../resources/domain/physical-resource-type';
+import {
+  isValidLaborTypeCodeFormat,
+  normalizeLaborTypeCode,
+} from '../../resources/domain/operational-labor-type';
 
 export class CatalogValidationError extends Error {
   constructor(readonly code: string) {
@@ -120,6 +124,44 @@ export function assertResourceRequirements(
       throw new CatalogValidationError('DUPLICATE_RESOURCE_TYPE');
     }
     codes.add(requirement.resourceTypeCode);
+  }
+  return normalized;
+}
+
+export type LaborRequirementInput = {
+  laborTypeCode: string;
+  requirementLevel: RequirementLevel;
+  minQuantity?: number;
+  sortOrder?: number;
+};
+
+export function assertLaborRequirements(requirements: LaborRequirementInput[]): LaborRequirementInput[] {
+  const normalized = requirements.map((requirement, index) => {
+    const laborTypeCode = normalizeLaborTypeCode(requirement.laborTypeCode);
+    if (!isValidLaborTypeCodeFormat(laborTypeCode)) {
+      throw new CatalogValidationError('INVALID_LABOR_TYPE_CODE');
+    }
+    if (!(REQUIREMENT_LEVELS as readonly string[]).includes(requirement.requirementLevel)) {
+      throw new CatalogValidationError('INVALID_REQUIREMENT_LEVEL');
+    }
+    const minQuantity = requirement.minQuantity ?? 1;
+    if (!Number.isInteger(minQuantity) || minQuantity < 1) {
+      throw new CatalogValidationError('INVALID_MIN_QUANTITY');
+    }
+    return {
+      laborTypeCode,
+      requirementLevel: requirement.requirementLevel,
+      minQuantity,
+      sortOrder: requirement.sortOrder ?? index,
+    };
+  });
+
+  const codes = new Set<string>();
+  for (const requirement of normalized) {
+    if (codes.has(requirement.laborTypeCode)) {
+      throw new CatalogValidationError('DUPLICATE_LABOR_TYPE');
+    }
+    codes.add(requirement.laborTypeCode);
   }
   return normalized;
 }

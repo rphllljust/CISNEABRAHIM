@@ -1,4 +1,5 @@
 import {
+  ensureOperationalLaborTypesBaseline,
   ensurePhysicalResourceTypesBaseline,
   ensureUnitsOfMeasureBaseline,
   hashPassword,
@@ -34,6 +35,15 @@ const SAMPLE_RESOURCE_REQUIREMENTS = [
   },
 ];
 const EMPTY_RESOURCE_REQUIREMENTS: [] = [];
+const SAMPLE_LABOR_REQUIREMENTS = [
+  {
+    laborTypeCode: 'DRIVER',
+    requirementLevel: 'REQUIRED' as const,
+    minQuantity: 1,
+    sortOrder: 0,
+  },
+];
+const EMPTY_LABOR_REQUIREMENTS: [] = [];
 
 async function grantCatalogAdmin(
   pool: Pool,
@@ -85,6 +95,7 @@ describe('Service catalog PostgreSQL integration', () => {
     await truncateIdentityAndAuthorizationTables(pool);
     await ensureUnitsOfMeasureBaseline(pool);
     await ensurePhysicalResourceTypesBaseline(pool);
+    await ensureOperationalLaborTypesBaseline(pool);
   });
 
   afterAll(async () => {
@@ -132,6 +143,7 @@ describe('Service catalog PostgreSQL integration', () => {
       measurementMode: 'BY_PERIOD',
       allowedUnits: SAMPLE_UNITS,
       resourceRequirements: EMPTY_RESOURCE_REQUIREMENTS,
+      laborRequirements: EMPTY_LABOR_REQUIREMENTS,
     });
     expect(updated.name).toBe('Locação Caminhão Pipa — Rascunho');
 
@@ -198,6 +210,7 @@ describe('Service catalog PostgreSQL integration', () => {
         measurementMode: 'BY_PERIOD',
         allowedUnits: SAMPLE_UNITS,
         resourceRequirements: EMPTY_RESOURCE_REQUIREMENTS,
+      laborRequirements: EMPTY_LABOR_REQUIREMENTS,
       }),
     ).rejects.toMatchObject({ code: CATALOG_ERROR_CODES.INVALID_STATE });
   });
@@ -217,6 +230,7 @@ describe('Service catalog PostgreSQL integration', () => {
       measurementMode: 'BY_PERIOD',
       allowedUnits: SAMPLE_UNITS,
       resourceRequirements: EMPTY_RESOURCE_REQUIREMENTS,
+      laborRequirements: EMPTY_LABOR_REQUIREMENTS,
       sourceVersion: 1,
     });
     expect(version2.version).toBe(2);
@@ -257,6 +271,7 @@ describe('Service catalog PostgreSQL integration', () => {
       measurementMode: 'BY_PERIOD',
       allowedUnits: SAMPLE_UNITS,
       resourceRequirements: EMPTY_RESOURCE_REQUIREMENTS,
+      laborRequirements: EMPTY_LABOR_REQUIREMENTS,
     });
 
     await expect(
@@ -268,6 +283,7 @@ describe('Service catalog PostgreSQL integration', () => {
         measurementMode: 'BY_PERIOD',
         allowedUnits: SAMPLE_UNITS,
         resourceRequirements: EMPTY_RESOURCE_REQUIREMENTS,
+      laborRequirements: EMPTY_LABOR_REQUIREMENTS,
       }),
     ).rejects.toMatchObject({ code: CATALOG_ERROR_CODES.VERSION_CONFLICT });
   });
@@ -469,6 +485,7 @@ describe('Service catalog PostgreSQL integration', () => {
       measurementMode: 'BY_PERIOD',
       allowedUnits: SAMPLE_UNITS,
       resourceRequirements: EMPTY_RESOURCE_REQUIREMENTS,
+      laborRequirements: EMPTY_LABOR_REQUIREMENTS,
       sourceVersion: 1,
     });
 
@@ -480,5 +497,81 @@ describe('Service catalog PostgreSQL integration', () => {
         sortOrder: 0,
       },
     ]);
+  });
+
+  it('associates labor type requirements on service definitions', async () => {
+    const { identityId, categoryId } = await seedActor();
+    const actor = { identityId, sessionId: 'sid' };
+
+    const created = await catalogAccess.create(actor, {
+      ...createPayload(categoryId, 'LOCACAO_CAMINHAO_PIPA_LABOR'),
+      laborRequirements: SAMPLE_LABOR_REQUIREMENTS,
+    });
+    expect(created.laborRequirements).toEqual([
+      {
+        laborTypeCode: 'DRIVER',
+        requirementLevel: 'REQUIRED',
+        minQuantity: 1,
+        sortOrder: 0,
+      },
+    ]);
+  });
+
+  it('rejects unknown labor type codes on service definition create', async () => {
+    const { identityId, categoryId } = await seedActor();
+    const actor = { identityId, sessionId: 'sid' };
+
+    await expect(
+      catalogAccess.create(actor, {
+        ...createPayload(categoryId),
+        laborRequirements: [
+          {
+            laborTypeCode: 'NOT_A_LABOR_TYPE',
+            requirementLevel: 'REQUIRED',
+            minQuantity: 1,
+          },
+        ],
+      }),
+    ).rejects.toMatchObject({ code: CATALOG_ERROR_CODES.INVALID_LABOR_TYPE });
+  });
+
+  it('keeps historical published versions valid when a labor type is later deactivated', async () => {
+    const { identityId, categoryId } = await seedActor();
+    const actor = { identityId, sessionId: 'sid' };
+
+    const created = await catalogAccess.create(actor, {
+      ...createPayload(categoryId, 'INSTALACAO_ELETRICA'),
+      laborRequirements: [{ laborTypeCode: 'ELECTRICIAN', requirementLevel: 'REQUIRED', minQuantity: 1 }],
+    });
+    const definition = await catalogAccess.getDefinition(actor, created.serviceDefinitionId);
+    await catalogAccess.publishVersion(actor, created.serviceDefinitionId, 1, definition.version);
+
+    const electrician = await pool.query<{ id: string }>(
+      `SELECT id FROM cat.operational_labor_types WHERE code = 'ELECTRICIAN'`,
+    );
+    const typeRow = electrician.rows[0];
+    expect(typeRow).toBeDefined();
+
+    await pool.query(
+      `UPDATE cat.operational_labor_types
+       SET status = 'INACTIVE', version = version + 1, deactivated_at = now()
+       WHERE id = $1`,
+      [typeRow!.id],
+    );
+
+    const historical = await catalogAccess.getVersion(actor, created.serviceDefinitionId, 1);
+    expect(historical.laborRequirements.some((requirement) => requirement.laborTypeCode === 'ELECTRICIAN')).toBe(
+      true,
+    );
+  });
+
+  it('does not expose employee or assignment concepts in labor type catalog', async () => {
+    const tables = await pool.query<{ tablename: string }>(
+      `SELECT tablename
+       FROM pg_tables
+       WHERE schemaname IN ('cat', 'pty', 'identity')
+         AND tablename ~* '(employee|assignment|payroll|personnel)'`,
+    );
+    expect(tables.rows).toEqual([]);
   });
 });

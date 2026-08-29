@@ -18,3 +18,7 @@ export {
   BASELINE_PHYSICAL_RESOURCE_TYPES,
   ensurePhysicalResourceTypesBaseline,
 } from './catalog/physical-resource-types-baseline';
+export {
+  BASELINE_OPERATIONAL_LABOR_TYPES,
+  ensureOperationalLaborTypesBaseline,
+} from './catalog/operational-labor-types-baseline';

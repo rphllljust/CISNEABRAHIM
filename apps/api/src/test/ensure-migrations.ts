@@ -103,6 +103,11 @@ export default async function ensureMigrations(): Promise<void> {
     if (!hasPhysicalResourceTypes) {
       await applySqlFile(pool, '0010_physical_resource_types.sql');
     }
+
+    const hasLaborTypes = await tableExists(pool, 'cat.operational_labor_types');
+    if (!hasLaborTypes) {
+      await applySqlFile(pool, '0011_operational_labor_types.sql');
+    }
   } finally {
     await pool.end();
   }

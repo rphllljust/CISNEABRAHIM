@@ -41,6 +41,13 @@ export type ResourceRequirementRow = {
   sort_order: number;
 };
 
+export type LaborRequirementRow = {
+  labor_type_code: string;
+  requirement_level: 'REQUIRED' | 'OPTIONAL' | 'CONDITIONAL';
+  min_quantity: number;
+  sort_order: number;
+};
+
 export type ServiceDefinitionSummary = ServiceDefinitionRow & {
   latest_published_version: number | null;
   current_draft_version: number | null;
@@ -50,6 +57,7 @@ export type ServiceDefinitionVersionDetail = ServiceDefinitionVersionRow & {
   code: string;
   allowed_units: AllowedUnitRow[];
   resource_requirements: ResourceRequirementRow[];
+  labor_requirements: LaborRequirementRow[];
 };
 
 export type ServiceDefinitionResponse = {
@@ -80,6 +88,12 @@ export type ServiceDefinitionVersionResponse = {
   allowedUnits: Array<{ unitCode: string; isDefault: boolean; sortOrder: number }>;
   resourceRequirements: Array<{
     resourceTypeCode: string;
+    requirementLevel: 'REQUIRED' | 'OPTIONAL' | 'CONDITIONAL';
+    minQuantity: number;
+    sortOrder: number;
+  }>;
+  laborRequirements: Array<{
+    laborTypeCode: string;
     requirementLevel: 'REQUIRED' | 'OPTIONAL' | 'CONDITIONAL';
     minQuantity: number;
     sortOrder: number;
@@ -126,6 +140,12 @@ export function toServiceDefinitionVersionResponse(
     })),
     resourceRequirements: row.resource_requirements.map((requirement) => ({
       resourceTypeCode: requirement.physical_resource_type_code,
+      requirementLevel: requirement.requirement_level,
+      minQuantity: requirement.min_quantity,
+      sortOrder: requirement.sort_order,
+    })),
+    laborRequirements: row.labor_requirements.map((requirement) => ({
+      laborTypeCode: requirement.labor_type_code,
       requirementLevel: requirement.requirement_level,
       minQuantity: requirement.min_quantity,
       sortOrder: requirement.sort_order,

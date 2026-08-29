@@ -27,6 +27,7 @@ import { CatalogHttpException } from '../errors/catalog-http.exception';
 import { ServiceCatalogRepository } from '../repositories/service-catalog.repository';
 import { UnitsOfMeasureRepository } from '../repositories/units-of-measure.repository';
 import { PhysicalResourceTypesRepository } from '../../resources/repositories/physical-resource-types.repository';
+import { OperationalLaborTypesRepository } from '../../resources/repositories/operational-labor-types.repository';
 import {
   toServiceDefinitionResponse,
   toServiceDefinitionVersionResponse,
@@ -40,6 +41,7 @@ export class ServiceCatalogAccessService {
     private readonly repository: ServiceCatalogRepository,
     private readonly unitsRepository: UnitsOfMeasureRepository,
     private readonly resourceTypesRepository: PhysicalResourceTypesRepository,
+    private readonly laborTypesRepository: OperationalLaborTypesRepository,
     private readonly authorizationRepository: AuthorizationRepository,
     private readonly policyDecisionPoint: PolicyDecisionPointService,
     private readonly securityAudit: SecurityAuditService,
@@ -65,11 +67,15 @@ export class ServiceCatalogAccessService {
     await this.assertActiveResourceTypeReferences(
       (input.resourceRequirements ?? []).map((requirement) => requirement.resourceTypeCode),
     );
+    await this.assertActiveLaborTypeReferences(
+      (input.laborRequirements ?? []).map((requirement) => requirement.laborTypeCode),
+    );
 
     try {
       const created = await this.repository.createDefinitionWithDraft({
         ...input,
         resourceRequirements: input.resourceRequirements ?? [],
+        laborRequirements: input.laborRequirements ?? [],
         actorIdentityId: actor.identityId,
       });
 
@@ -167,11 +173,15 @@ export class ServiceCatalogAccessService {
     await this.assertActiveResourceTypeReferences(
       (input.resourceRequirements ?? []).map((requirement) => requirement.resourceTypeCode),
     );
+    await this.assertActiveLaborTypeReferences(
+      (input.laborRequirements ?? []).map((requirement) => requirement.laborTypeCode),
+    );
 
     const created = await this.repository.createDraftVersion({
       definitionId,
       ...input,
       resourceRequirements: input.resourceRequirements ?? [],
+      laborRequirements: input.laborRequirements ?? [],
       actorIdentityId: actor.identityId,
     });
 
@@ -261,6 +271,9 @@ export class ServiceCatalogAccessService {
     await this.assertActiveResourceTypeReferences(
       (input.resourceRequirements ?? []).map((requirement) => requirement.resourceTypeCode),
     );
+    await this.assertActiveLaborTypeReferences(
+      (input.laborRequirements ?? []).map((requirement) => requirement.laborTypeCode),
+    );
 
     const updated = await this.repository.updateDraftVersion({
       definitionId,
@@ -274,6 +287,7 @@ export class ServiceCatalogAccessService {
       defaultUnitCode: input.defaultUnitCode,
       allowedUnits: input.allowedUnits,
       resourceRequirements: input.resourceRequirements ?? [],
+      laborRequirements: input.laborRequirements ?? [],
       actorIdentityId: actor.identityId,
     });
 
@@ -331,6 +345,9 @@ export class ServiceCatalogAccessService {
     );
     await this.assertActiveResourceTypeReferences(
       draft.resource_requirements.map((requirement) => requirement.physical_resource_type_code),
+    );
+    await this.assertActiveLaborTypeReferences(
+      draft.labor_requirements.map((requirement) => requirement.labor_type_code),
     );
 
     const result = await this.repository.publishVersion(
@@ -584,6 +601,24 @@ export class ServiceCatalogAccessService {
         HttpStatus.CONFLICT,
         CATALOG_ERROR_CODES.INACTIVE_RESOURCE_TYPE,
         'One or more resource type codes are inactive.',
+      );
+    }
+  }
+
+  private async assertActiveLaborTypeReferences(typeCodes: string[]): Promise<void> {
+    const validation = await this.laborTypesRepository.validateTypeReferences(typeCodes, true);
+    if (validation === 'INVALID_TYPE') {
+      throw new CatalogHttpException(
+        HttpStatus.BAD_REQUEST,
+        CATALOG_ERROR_CODES.INVALID_LABOR_TYPE,
+        'One or more labor type codes are not registered in the catalog.',
+      );
+    }
+    if (validation === 'INACTIVE_TYPE') {
+      throw new CatalogHttpException(
+        HttpStatus.CONFLICT,
+        CATALOG_ERROR_CODES.INACTIVE_LABOR_TYPE,
+        'One or more labor type codes are inactive.',
       );
     }
   }

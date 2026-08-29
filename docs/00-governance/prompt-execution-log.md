@@ -2416,3 +2416,33 @@ Resumo:
 - [x] Prompt 38 não executado
 
 ---
+
+## Prompt 38 — Tipos de mão de obra e capacidades operacionais
+
+| Campo | Valor |
+| ----- | ----- |
+| ID | 38 |
+| Título | Tipos de mão de obra e capacidades operacionais |
+| Status | PASS |
+| Commit | feat(resources): implement operational labor types |
+| Executado em | 2026-08-29 |
+
+```
+Resumo:
+  cat.operational_labor_types com seed baseline (DRIVER, ELECTRICIAN, etc.),
+  API resources/labor-types, laborRequirements em ServiceDefinition,
+  sem Employee/Assignment/RH. Prompt 39 não executado.
+```
+
+## Quality gate Prompt 38 (evidência)
+
+- [x] Tabela `cat.operational_labor_types` com code único, status, version
+- [x] Seed idempotente dos 10 tipos operacionais iniciais
+- [x] FK `labor_type_code` em `service_labor_requirements`
+- [x] API `/api/v1/resources/labor-types` com authz, audit e optimistic locking
+- [x] Service catalog aceita `laborRequirements`; histórico preservado
+- [x] Sem acoplamento a Employee/Assignment (schema + testes)
+- [x] lint, typecheck, test, test:integration, test:e2e, gate:database — PASS
+- [x] Prompt 39 não executado
+
+---

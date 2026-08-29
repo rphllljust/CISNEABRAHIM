@@ -6,10 +6,12 @@ import {
   assertArchetype,
   assertMeasurementMode,
   assertNonEmptyName,
+  assertLaborRequirements,
   assertResourceRequirements,
   assertServiceCode,
   assertUuid,
   type AllowedUnitInput,
+  type LaborRequirementInput,
   type ResourceRequirementInput,
 } from '../domain/service-catalog.validation';
 import { LINEAGE_STATUSES, type LineageStatus } from '../domain/service-catalog-status';
@@ -135,6 +137,50 @@ function parseResourceRequirements(
   });
 }
 
+function parseLaborRequirements(
+  body: Record<string, unknown>,
+  required = false,
+): LaborRequirementInput[] {
+  const raw = body['laborRequirements'];
+  if (raw === undefined) {
+    if (required) {
+      throw new CatalogHttpException(
+        HttpStatus.BAD_REQUEST,
+        CATALOG_ERROR_CODES.VALIDATION_FAILED,
+        'Invalid request body.',
+      );
+    }
+    return [];
+  }
+  if (!Array.isArray(raw)) {
+    throw new CatalogHttpException(
+      HttpStatus.BAD_REQUEST,
+      CATALOG_ERROR_CODES.VALIDATION_FAILED,
+      'Invalid request body.',
+    );
+  }
+  return raw.map((item) => {
+    if (typeof item !== 'object' || item === null) {
+      throw new CatalogHttpException(
+        HttpStatus.BAD_REQUEST,
+        CATALOG_ERROR_CODES.VALIDATION_FAILED,
+        'Invalid request body.',
+      );
+    }
+    const record = item as Record<string, unknown>;
+    return {
+      laborTypeCode: parseRequiredString(record, 'laborTypeCode'),
+      requirementLevel: parseRequiredString(record, 'requirementLevel') as LaborRequirementInput['requirementLevel'],
+      minQuantity:
+        record['minQuantity'] === undefined
+          ? undefined
+          : parsePositiveInt(record['minQuantity'], 'minQuantity'),
+      sortOrder:
+        record['sortOrder'] === undefined ? undefined : parsePositiveInt(record['sortOrder'], 'sortOrder'),
+    };
+  });
+}
+
 export type CreateServiceDefinitionInput = {
   code: string;
   name: string;
@@ -145,12 +191,14 @@ export type CreateServiceDefinitionInput = {
   defaultUnitCode?: string;
   allowedUnits: AllowedUnitInput[];
   resourceRequirements?: ResourceRequirementInput[];
+  laborRequirements?: LaborRequirementInput[];
 };
 
 export function parseCreateServiceDefinitionInput(body: unknown): CreateServiceDefinitionInput {
   const record = assertObject(body);
   const allowedUnits = parseAllowedUnits(record);
   const resourceRequirements = parseResourceRequirements(record);
+  const laborRequirements = parseLaborRequirements(record);
   return {
     code: assertServiceCode(parseRequiredString(record, 'code')),
     name: assertNonEmptyName(parseRequiredString(record, 'name')),
@@ -161,6 +209,7 @@ export function parseCreateServiceDefinitionInput(body: unknown): CreateServiceD
     defaultUnitCode: parseOptionalString(record, 'defaultUnitCode'),
     allowedUnits: assertAllowedUnits(allowedUnits),
     resourceRequirements: assertResourceRequirements(resourceRequirements),
+    laborRequirements: assertLaborRequirements(laborRequirements),
   };
 }
 
@@ -173,6 +222,7 @@ export type CreateServiceDefinitionVersionInput = {
   defaultUnitCode?: string;
   allowedUnits: AllowedUnitInput[];
   resourceRequirements: ResourceRequirementInput[];
+  laborRequirements: LaborRequirementInput[];
   sourceVersion?: number;
 };
 
@@ -182,6 +232,7 @@ export function parseCreateServiceDefinitionVersionInput(
   const record = assertObject(body);
   const allowedUnits = parseAllowedUnits(record);
   const resourceRequirements = parseResourceRequirements(record, true);
+  const laborRequirements = parseLaborRequirements(record, true);
   const sourceVersionRaw = record['sourceVersion'];
   return {
     name: assertNonEmptyName(parseRequiredString(record, 'name')),
@@ -192,6 +243,7 @@ export function parseCreateServiceDefinitionVersionInput(
     defaultUnitCode: parseOptionalString(record, 'defaultUnitCode'),
     allowedUnits: assertAllowedUnits(allowedUnits),
     resourceRequirements: assertResourceRequirements(resourceRequirements),
+    laborRequirements: assertLaborRequirements(laborRequirements),
     sourceVersion:
       sourceVersionRaw === undefined ? undefined : parsePositiveInt(sourceVersionRaw, 'sourceVersion'),
   };
@@ -207,6 +259,7 @@ export type UpdateDraftServiceDefinitionInput = {
   defaultUnitCode?: string | null;
   allowedUnits: AllowedUnitInput[];
   resourceRequirements?: ResourceRequirementInput[];
+  laborRequirements?: LaborRequirementInput[];
 };
 
 export function parseUpdateDraftServiceDefinitionInput(
@@ -215,6 +268,7 @@ export function parseUpdateDraftServiceDefinitionInput(
   const record = assertObject(body);
   const allowedUnits = parseAllowedUnits(record);
   const resourceRequirements = parseResourceRequirements(record, true);
+  const laborRequirements = parseLaborRequirements(record, true);
   const description = record['description'];
   const defaultUnitCode = record['defaultUnitCode'];
   return {
@@ -233,6 +287,7 @@ export function parseUpdateDraftServiceDefinitionInput(
           : parseRequiredString(record, 'defaultUnitCode'),
     allowedUnits: assertAllowedUnits(allowedUnits),
     resourceRequirements: assertResourceRequirements(resourceRequirements),
+    laborRequirements: assertLaborRequirements(laborRequirements),
   };
 }
 

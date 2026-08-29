@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { ensureUnitsOfMeasureBaseline } from '../catalog/units-of-measure-baseline';
 import { ensurePhysicalResourceTypesBaseline } from '../catalog/physical-resource-types-baseline';
+import { ensureOperationalLaborTypesBaseline } from '../catalog/operational-labor-types-baseline';
 import { insertIdentity } from './identity-builders';
 
 type DbClient = Pool | PoolClient;
@@ -14,6 +15,7 @@ export async function applyServiceCatalogMigration(client: DbClient): Promise<vo
     '0008_service_definitions_lineage_version.sql',
     '0009_units_of_measure.sql',
     '0010_physical_resource_types.sql',
+    '0011_operational_labor_types.sql',
   ]) {
     const migrationPath = resolve(__dirname, '../../migrations', file);
     const sql = readFileSync(migrationPath, 'utf8');
@@ -45,6 +47,7 @@ export async function truncateCatalogTables(client: DbClient): Promise<void> {
   await client.query(`
     TRUNCATE TABLE
       cat.service_evidence_requirements,
+      cat.service_labor_requirements,
       cat.service_resource_requirements,
       cat.service_pricing_models,
       cat.service_allowed_units,
@@ -56,10 +59,12 @@ export async function truncateCatalogTables(client: DbClient): Promise<void> {
   `);
   await ensureUnitsOfMeasureBaseline(client);
   await ensurePhysicalResourceTypesBaseline(client);
+  await ensureOperationalLaborTypesBaseline(client);
 }
 
 export { ensureUnitsOfMeasureBaseline } from '../catalog/units-of-measure-baseline';
 export { ensurePhysicalResourceTypesBaseline } from '../catalog/physical-resource-types-baseline';
+export { ensureOperationalLaborTypesBaseline } from '../catalog/operational-labor-types-baseline';
 
 export type BuiltCatalogCategory = {
   categoryId: string;

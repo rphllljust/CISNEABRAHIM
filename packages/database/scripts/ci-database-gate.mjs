@@ -29,6 +29,7 @@ const MIGRATION_FILES = [
   '0008_service_definitions_lineage_version.sql',
   '0009_units_of_measure.sql',
   '0010_physical_resource_types.sql',
+  '0011_operational_labor_types.sql',
 ];
 
 const INCREMENTAL_BASELINE_FILES = MIGRATION_FILES.slice(0, -1);
@@ -52,6 +53,8 @@ const EXPECTED_TABLES = [
   'cat.service_evidence_requirements',
   'cat.units_of_measure',
   'cat.physical_resource_types',
+  'cat.operational_labor_types',
+  'cat.service_labor_requirements',
 ];
 
 function adminConnectionString() {
@@ -280,6 +283,24 @@ async function assertPreDeltaState(connectionString, deltaFile) {
       if (resourceTypes.rows[0]?.regclass) {
         throw new Error(
           'Incremental baseline incorrectly contains cat.physical_resource_types before 0010',
+        );
+      }
+      return;
+    }
+
+    if (deltaFile === '0011_operational_labor_types.sql') {
+      const resourceTypes = await client.query('SELECT to_regclass($1) AS regclass', [
+        'cat.physical_resource_types',
+      ]);
+      if (!resourceTypes.rows[0]?.regclass) {
+        throw new Error('Expected cat.physical_resource_types before 0011 delta');
+      }
+      const laborTypes = await client.query('SELECT to_regclass($1) AS regclass', [
+        'cat.operational_labor_types',
+      ]);
+      if (laborTypes.rows[0]?.regclass) {
+        throw new Error(
+          'Incremental baseline incorrectly contains cat.operational_labor_types before 0011',
         );
       }
       return;
