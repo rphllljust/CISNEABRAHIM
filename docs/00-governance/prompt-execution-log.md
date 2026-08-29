@@ -1817,3 +1817,47 @@ NOTES:
 - [x] Prompt 28 não executado
 
 ---
+
+```text
+PROMPT: 28
+TITLE: Gate de validação empresarial antes dos módulos
+STARTED_AT: 2026-08-29T13:22:00-04:00
+FINISHED_AT: 2026-08-29T13:28:00-04:00
+STATUS: BLOCKED
+FILES_CREATED:
+  docs/inputs/SRC-002-business-baseline-confirmation.md
+  docs/implementation/28-business-readiness-gate.md
+FILES_CHANGED:
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: BLOCKED
+BUSINESS_READINESS: BLOCKED_AWAITING_BUSINESS_CONFIRMATION
+TECHNICAL_FOUNDATION: READY_WITH_RESTRICTIONS (Prompt 27 — inalterado)
+CONFIRMED_BUSINESS_SOURCE: NONE
+CONFIRMED_RULES: 0
+BLOCKING_DECISIONS: DDP-001,002,003,009,010,011,012,013,015,020,022,023,026,028,029,037 (+ 25 DDPs OPEN)
+FIRST_RELEASE_SCOPE: UNKNOWN
+CODE_CREATED: NO
+DOC_FILES_CREATED: 2
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Inspeção integral de fontes, regras (0 CONFIRMED), DDPs (40 OPEN), UCs (26), BCs candidatos, invariantes, estados, authz, modelo.
+  Nenhuma fonte formal pós-SRC-001 assinada — criado questionário SRC-002 aguardando patrocinador.
+  Fundação técnica pronta ≠ domínio validado. Nenhum módulo empresarial autorizado.
+  Source registry, DDPs e regras NÃO atualizados (sem resposta real).
+  Prompt 29 não executado.
+```
+
+## Quality gate Prompt 28 (evidência)
+
+- [x] Fontes, regras, DDPs, requisitos, UCs, linguagem, BCs, invariantes, estados, authz e modelo inspecionados
+- [x] Relatório Prompt 27 considerado (fundação técnica READY_WITH_RESTRICTIONS)
+- [x] Nenhuma fonte confirmada pós-SRC-001 — SRC-002 questionário criado, não respondido
+- [x] Nenhuma regra promovida sem resposta
+- [x] Conflitos preservados (0 SC-*)
+- [x] Decisões bloqueantes listadas
+- [x] Escopo inicial: UNKNOWN
+- [x] Zero código empresarial
+- [x] docs/implementation/28-business-readiness-gate.md
+- [x] Prompt 29 não executado
+
+---
