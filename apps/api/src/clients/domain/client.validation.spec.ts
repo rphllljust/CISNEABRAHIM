@@ -40,4 +40,54 @@ describe('client.validation', () => {
   it('requires deactivation reason', () => {
     expect(() => assertDeactivationReason('   ')).toThrow(ClientValidationError);
   });
+
+  it('rejects missing legal name', () => {
+    expect(() =>
+      assertCreateClientInput({
+        legalName: '   ',
+        taxId: '11897171000181',
+        contacts: [validContact],
+      }),
+    ).toThrow(ClientValidationError);
+  });
+
+  it('rejects missing tax id', () => {
+    expect(() =>
+      assertCreateClientInput({
+        legalName: 'Empresa',
+        taxId: '',
+        contacts: [validContact],
+      }),
+    ).toThrow(ClientValidationError);
+  });
+
+  it('rejects invalid formatted tax id', () => {
+    expect(() =>
+      assertCreateClientInput({
+        legalName: 'Empresa',
+        taxId: '11.897.171/0001-XX',
+        contacts: [validContact],
+      }),
+    ).toThrow(ClientValidationError);
+  });
+
+  it('rejects missing operational contact', () => {
+    expect(() =>
+      assertCreateClientInput({
+        legalName: 'Empresa',
+        taxId: '11897171000181',
+        contacts: [],
+      }),
+    ).toThrow(ClientValidationError);
+  });
+
+  it('rejects unusable operational contact without phone or email', () => {
+    expect(() =>
+      assertCreateClientInput({
+        legalName: 'Empresa',
+        taxId: '11897171000181',
+        contacts: [{ name: 'Sem canal', purpose: CONTACT_PURPOSES.Operational }],
+      }),
+    ).toThrow(ClientValidationError);
+  });
 });

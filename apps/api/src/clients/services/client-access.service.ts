@@ -309,7 +309,7 @@ export class ClientAccessService {
 
     await this.assertAction(
       actor,
-      AUTHZ_ACTIONS.ClientUpdate,
+      AUTHZ_ACTIONS.ClientActivate,
       toResourceContextFromClient(existing),
       undefined,
     );

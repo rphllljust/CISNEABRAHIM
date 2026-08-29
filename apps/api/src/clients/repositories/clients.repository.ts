@@ -239,13 +239,16 @@ export class ClientsRepository {
     reason?: string,
   ): Promise<ClientDetail | 'VERSION_CONFLICT' | 'INVALID_STATE' | null> {
     const pool = this.pool();
-    const current = await pool.query<{ status: 'ACTIVE' | 'INACTIVE' }>(
-      `SELECT status FROM pty.clients WHERE id = $1`,
+    const current = await pool.query<{ status: 'ACTIVE' | 'INACTIVE'; version: number }>(
+      `SELECT status, version FROM pty.clients WHERE id = $1`,
       [clientId],
     );
     const currentRow = current.rows[0];
     if (!currentRow) {
       return null;
+    }
+    if (currentRow.version !== expectedVersion) {
+      return 'VERSION_CONFLICT';
     }
     if (currentRow.status === status) {
       return 'INVALID_STATE';
@@ -256,9 +259,9 @@ export class ClientsRepository {
        SET status = $3::"pty"."client_status",
            version = version + 1,
            updated_at = NOW(),
-           deactivated_at = CASE WHEN $3::text = 'INACTIVE' THEN NOW() ELSE NULL END,
-           deactivated_by_identity_id = CASE WHEN $3::text = 'INACTIVE' THEN $4::uuid ELSE NULL END,
-           deactivation_reason = CASE WHEN $3::text = 'INACTIVE' THEN $5 ELSE NULL END
+           deactivated_at = CASE WHEN $3::text = 'INACTIVE' THEN NOW() ELSE deactivated_at END,
+           deactivated_by_identity_id = CASE WHEN $3::text = 'INACTIVE' THEN $4::uuid ELSE deactivated_by_identity_id END,
+           deactivation_reason = CASE WHEN $3::text = 'INACTIVE' THEN $5 ELSE deactivation_reason END
        WHERE id = $1 AND version = $2
        RETURNING id,
                  legal_name,

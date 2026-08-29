@@ -50,4 +50,44 @@ describe('Clients persistence migration', () => {
       'clients',
     ]);
   });
+
+  it('upgrades from pre-0006 schema without destroying existing identity data', async () => {
+    const before = await pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM identity.identities`,
+    );
+    const identitiesBefore = Number(before.rows[0]?.count ?? '0');
+
+    const migrationPath = resolve(__dirname, '../migrations/0006_clients_baseline.sql');
+    const sql = readFileSync(migrationPath, 'utf8');
+    const statements = sql
+      .split('--> statement-breakpoint')
+      .map((statement) => statement.trim())
+      .filter((statement) => statement.length > 0);
+
+    for (const statement of statements) {
+      try {
+        await pool.query(statement);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (message.includes('already exists')) {
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    const after = await pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM identity.identities`,
+    );
+    expect(Number(after.rows[0]?.count)).toBe(identitiesBefore);
+
+    const uniqueIndex = await pool.query<{ indexname: string }>(
+      `SELECT indexname
+       FROM pg_indexes
+       WHERE schemaname = 'pty'
+         AND tablename = 'clients'
+         AND indexname = 'clients_normalized_tax_id_uidx'`,
+    );
+    expect(uniqueIndex.rows).toHaveLength(1);
+  });
 });

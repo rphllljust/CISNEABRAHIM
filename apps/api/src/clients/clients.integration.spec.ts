@@ -127,6 +127,8 @@ describe('Clients PostgreSQL integration', () => {
       deactivated.version,
     );
     expect(reactivated.status).toBe('ACTIVE');
+    expect(reactivated.deactivationReason).toBe('Encerramento contratual');
+    expect(reactivated.deactivatedAt).not.toBeNull();
   });
 
   it('rejects duplicate CNPJ', async () => {
@@ -196,23 +198,17 @@ describe('Clients PostgreSQL integration', () => {
       resourceId: clientA.id,
       grantedByIdentityId: admin.identityId,
     });
-    await insertGrant(pool, {
-      identityId: employeeId,
-      action: AUTHZ_ACTIONS.ClientList,
-      resourceType: AUTHZ_RESOURCE_TYPES.Client,
-      scopeType: AUTHZ_SCOPES.Client,
-      resourceId: clientA.id,
-      grantedByIdentityId: admin.identityId,
-    });
 
     const employeeActor = { identityId: employeeId, sessionId: 'sid' };
+    await expect(clientAccess.list(employeeActor, { limit: 20, offset: 0 })).rejects.toMatchObject({
+      code: CLIENT_ERROR_CODES.DENIED,
+    });
     await expect(clientAccess.getById(employeeActor, clientB.id)).rejects.toBeInstanceOf(
       ClientHttpException,
     );
-
-    const list = await clientAccess.list(employeeActor, { limit: 20, offset: 0 });
-    expect(list.items).toHaveLength(1);
-    expect(list.items[0]?.id).toBe(clientA.id);
+    await expect(clientAccess.getById(employeeActor, clientA.id)).resolves.toMatchObject({
+      id: clientA.id,
+    });
   });
 
   it('detects optimistic concurrency conflicts', async () => {

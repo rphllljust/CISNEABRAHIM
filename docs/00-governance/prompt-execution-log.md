@@ -2062,3 +2062,46 @@ NOTES:
 - [x] Prompt 30 não executado
 
 ---
+
+```text
+PROMPT: 29-B
+TITLE: Auditoria de fechamento do backend de Clientes
+STARTED_AT: 2026-08-29T15:12:00-04:00
+FINISHED_AT: 2026-08-29T15:22:00-04:00
+STATUS: EXECUTED
+BASELINE_COMMIT: 8e31b02
+FILES_CREATED:
+  apps/api/src/clients/domain/client-service-order-guard.ts
+  apps/api/src/clients/domain/client-service-order-guard.spec.ts
+  apps/api/src/clients/clients.audit-closure.integration.spec.ts
+FILES_CHANGED:
+  apps/api/src/authorization/services/scope-enforcement.service.ts
+  apps/api/src/clients/repositories/clients.repository.ts
+  apps/api/src/clients/services/client-access.service.ts
+  apps/api/src/clients/clients.integration.spec.ts
+  apps/api/src/clients/domain/client.validation.spec.ts
+  packages/database/src/clients.persistence.integration.spec.ts
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+SRC_002_GATE: PASS
+AUDIT_RESULT: PASS
+FIXES:
+  - listagem restrita a escopo GLOBAL (empregado não enumera Clientes)
+  - activate usa capability ClientActivate; histórico de desativação preservado
+  - setStatus valida version antes de INVALID_STATE (optimistic lock)
+  - guard BR-037 assertClientEligibleForServiceOrderRelease para ReleaseServiceOrder futuro
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  ReleaseServiceOrder ainda inexistente; invariante BR-037 coberta por guard de domínio + testes.
+  Prompt 30 não executado.
+```
+
+## Quality gate Prompt 29-B (evidência)
+
+- [x] Baseline 8e31b02 confirmado
+- [x] Lacunas corrigidas: enumeração empregado, activate capability, histórico desativação, stale version deactivate/activate
+- [x] Testes negativos create PJ, CNPJ concorrente, IDOR, soft deactivate, migration 0005→0006
+- [x] lint, typecheck, test, test:integration, test:e2e, build, gate:src-002 — PASS
+- [x] Prompt 30 não executado
+
+---
