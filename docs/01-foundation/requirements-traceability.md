@@ -275,3 +275,23 @@ Cadeia Prompt 12:
 ```text
 AGG-CAND → TBL-CAND → UNQ/CHK/FK → INV → INDEX_HYPOTHESIS
 ```
+
+## Resumo Prompt 13
+
+| Métrica | Valor |
+| --- | --- |
+| Comandos críticos analisados | 11 |
+| Decisões transacionais (TXN-DEC) | 14 |
+| Cenários falha (TXN-FAIL) | 24 |
+| Cenários teste (TXN-TEST) | 18 |
+| Operações FINANCIAL_RACE | 6 |
+| Outbox | PROPOSED (não ACCEPTED) |
+| Código / migrations / filas | **0** |
+| Índice | [`../14-transaction-design/README.md`](../14-transaction-design/README.md) |
+| Relatório | [`../14-transaction-design/prompt-13-completeness-report.md`](../14-transaction-design/prompt-13-completeness-report.md) |
+
+Cadeia Prompt 13:
+
+```text
+CMD → boundary → isolation/lock → idempotency → external effect → reconcile
+```

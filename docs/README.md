@@ -19,7 +19,8 @@
 13. `11-technology/` contém seleção de stack e ADRs tecnológicos do Prompt 10.
 14. `12-domain-model/` contém modelo conceitual e aggregates candidatos do Prompt 11.
 15. `13-data-model/` contém modelo lógico relacional e constraints candidatas do Prompt 12.
-16. `templates/` define a forma dos registros futuros.
+16. `14-transaction-design/` contém transações, concorrência e idempotência do Prompt 13.
+17. `templates/` define a forma dos registros futuros.
 
 Agentes devem seguir [`../AGENTS.md`](../AGENTS.md) e o protocolo em [`00-governance/execution-protocol.md`](00-governance/execution-protocol.md).
 
@@ -203,6 +204,18 @@ Modelo lógico relacional e constraints candidatas (Prompt 12). Índice: [13-dat
 | [erd-candidate.md](13-data-model/erd-candidate.md) | ERD Mermaid |
 | [unresolved-cardinalities.md](13-data-model/unresolved-cardinalities.md) | CARD-DDP → FK |
 | [prompt-12-completeness-report.md](13-data-model/prompt-12-completeness-report.md) | Relatório |
+
+## 14-transaction-design
+
+Transações, concorrência e idempotência (Prompt 13). Índice: [14-transaction-design/README.md](14-transaction-design/README.md).
+
+| Arquivo | Conteúdo |
+| --- | --- |
+| [use-case-transaction-matrix.md](14-transaction-design/use-case-transaction-matrix.md) | Análise por comando crítico |
+| [transaction-decisions.md](14-transaction-design/transaction-decisions.md) | 14 TXN-DEC |
+| [outbox-pattern-assessment.md](14-transaction-design/outbox-pattern-assessment.md) | Outbox PROPOSED |
+| [financial-race-analysis.md](14-transaction-design/financial-race-analysis.md) | FINANCIAL_RACE |
+| [prompt-13-completeness-report.md](14-transaction-design/prompt-13-completeness-report.md) | Relatório |
 
 ## inputs
 

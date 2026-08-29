@@ -934,3 +934,45 @@ NOTES:
 - [x] Prompt 13 não executado
 
 ---
+
+```text
+PROMPT: 13
+TITLE: Arquitetura de transações, concorrência e idempotência
+STARTED_AT: 2026-08-29T02:40:00-04:00
+FINISHED_AT: 2026-08-29T03:15:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED:
+  docs/14-transaction-design/ (21 artefatos — ver README.md)
+FILES_CHANGED:
+  docs/01-foundation/requirements-traceability.md
+  docs/00-governance/prompt-execution-log.md
+  docs/README.md
+QUALITY_GATE: PASS_WITH_RESTRICTIONS
+CRITICAL_CMD_ANALYZED: 11
+TXN_DEC_COUNT: 14
+TXN_FAIL_COUNT: 24
+TXN_TEST_COUNT: 18
+FINANCIAL_RACE_OPS: 6
+OUTBOX_STATUS: PROPOSED
+CODE_CREATED: NO
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  OPT vs PESS por cenário; RC default. Efeitos externos pós-commit.
+  Outbox/inbox PROPOSED BC-015/018. Sem lost update silencioso.
+  Prompt 14 não executado.
+```
+
+## Quality gate Prompt 13 (evidência)
+
+- [x] pasta `14-transaction-design/` com 21 artefatos não vazios
+- [x] 11 comandos críticos com análise completa (12 dimensões)
+- [x] optimistic vs pessimistic comparado por cenário
+- [x] 6 operações FINANCIAL_RACE classificadas
+- [x] retry não duplica efeito documentado
+- [x] efeitos externos separados do commit local
+- [x] outbox avaliado — PROPOSED (não ACCEPTED global)
+- [x] 0 código, migrations, filas
+- [x] rastreabilidade atualizada
+- [x] Prompt 14 não executado
+
+---
