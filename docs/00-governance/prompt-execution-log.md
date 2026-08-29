@@ -2146,3 +2146,34 @@ NOTES:
 - [x] Prompt 31 não executado
 
 ---
+
+```text
+PROMPT: 31
+TITLE: Arquitetura orientada a catálogo de serviços (domínio)
+STARTED_AT: 2026-08-29T16:10:00-04:00
+FINISHED_AT: 2026-08-29T16:25:00-04:00
+STATUS: EXECUTED
+BASELINE_COMMIT: 5e9d9d2
+FILES_CREATED:
+  docs/implementation/31-service-catalog-domain.md
+FILES_CHANGED:
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+SRC_002_GATE: PASS
+CODE_CREATED: NO (documentação de domínio apenas)
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  CNAE ≠ ServiceDefinition; 12 arquétipos; contrato conceitual versionado;
+  variabilidade vs invariantes; snapshots para OS histórica; grupos CISNE reconhecidos.
+  Sem banco, frontend, Clients ou Prompt 32.
+```
+
+## Quality gate Prompt 31 (evidência)
+
+- [x] `31-service-catalog-domain.md` criado com fronteiras, invariantes, arquétipos, versionamento, CNAE↔catálogo
+- [x] Configurável vs código obrigatório separado
+- [x] Grupos empresariais CISNE reconhecidos sem fluxo por item
+- [x] Clients não alterado; Prompt 32 não executado
+- [x] lint, typecheck, test, test:integration, build, gate:src-002 — PASS
+
+---
