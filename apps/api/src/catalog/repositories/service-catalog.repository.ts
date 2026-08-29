@@ -2,12 +2,19 @@ import { Injectable } from '@nestjs/common';
 import type { Pool, PoolClient } from 'pg';
 import { DatabaseService } from '../../infrastructure/database/database.service';
 import type { LineageStatus } from '../domain/service-catalog-status';
-import type { AllowedUnitInput, LaborRequirementInput, NormalizedPricingModelInput, ResourceRequirementInput } from '../domain/service-catalog.validation';
+import type {
+  AllowedUnitInput,
+  LaborRequirementInput,
+  NormalizedExecutionRequirementInput,
+  NormalizedPricingModelInput,
+  ResourceRequirementInput,
+} from '../domain/service-catalog.validation';
 import { toPersistedPricingModel, normalizePricingModelInput } from '../../commercial/domain/commercial-compatibility';
 import { commercialCodeFromPersisted, isCommercialPricingModelCode } from '../../commercial/domain/pricing-model';
 import type {
   AllowedUnitRow,
   LaborRequirementRow,
+  ExecutionRequirementRow,
   PricingModelRow,
   ResourceRequirementRow,
   ServiceDefinitionRow,
@@ -29,6 +36,7 @@ export type CreateDefinitionWithDraftInput = {
   resourceRequirements: ResourceRequirementInput[];
   laborRequirements: LaborRequirementInput[];
   pricingModels: NormalizedPricingModelInput[];
+  executionRequirements: NormalizedExecutionRequirementInput[];
   actorIdentityId: string;
 };
 
@@ -45,6 +53,7 @@ export type CreateDraftVersionInput = {
   resourceRequirements: ResourceRequirementInput[];
   laborRequirements: LaborRequirementInput[];
   pricingModels: NormalizedPricingModelInput[];
+  executionRequirements: NormalizedExecutionRequirementInput[];
   sourceVersion?: number;
   actorIdentityId: string;
 };
@@ -64,6 +73,7 @@ export type UpdateDraftVersionInput = {
   resourceRequirements: ResourceRequirementInput[];
   laborRequirements: LaborRequirementInput[];
   pricingModels: NormalizedPricingModelInput[];
+  executionRequirements: NormalizedExecutionRequirementInput[];
   actorIdentityId: string;
 };
 
@@ -208,12 +218,23 @@ export class ServiceCatalogRepository {
        ORDER BY sort_order ASC, pricing_model_code ASC`,
       [row.id],
     );
+    const executionRequirements = await this.pool().query<ExecutionRequirementRow>(
+      `SELECT evidence_kind,
+              requirement_level,
+              config,
+              sort_order
+       FROM cat.service_evidence_requirements
+       WHERE service_definition_version_id = $1
+       ORDER BY sort_order ASC, evidence_kind ASC`,
+      [row.id],
+    );
     return {
       ...row,
       allowed_units: units.rows,
       resource_requirements: resourceRequirements.rows,
       labor_requirements: laborRequirements.rows,
       pricing_models: pricingModels.rows,
+      execution_requirements: executionRequirements.rows,
     };
   }
 
@@ -296,6 +317,7 @@ export class ServiceCatalogRepository {
       await this.replaceResourceRequirements(client, versionId, input.resourceRequirements);
       await this.replaceLaborRequirements(client, versionId, input.laborRequirements);
       await this.replacePricingModels(client, versionId, input.pricingModels);
+      await this.replaceExecutionRequirements(client, versionId, input.executionRequirements);
       await client.query('COMMIT');
 
       const detail = await this.findVersionDetail(defRow.id, 1);
@@ -408,6 +430,15 @@ export class ServiceCatalogRepository {
                     index,
                   );
                 }),
+          executionRequirements:
+            input.executionRequirements.length > 0
+              ? input.executionRequirements
+              : source.execution_requirements.map((requirement) => ({
+                  requirementType: requirement.evidence_kind as NormalizedExecutionRequirementInput['requirementType'],
+                  requirementLevel: requirement.requirement_level,
+                  config: requirement.config as NormalizedExecutionRequirementInput['config'],
+                  sortOrder: requirement.sort_order,
+                })),
         };
       }
 
@@ -449,6 +480,7 @@ export class ServiceCatalogRepository {
       await this.replaceResourceRequirements(client, versionId, payload.resourceRequirements);
       await this.replaceLaborRequirements(client, versionId, payload.laborRequirements);
       await this.replacePricingModels(client, versionId, payload.pricingModels);
+      await this.replaceExecutionRequirements(client, versionId, payload.executionRequirements);
       await client.query(
         `UPDATE cat.service_definitions
          SET updated_at = now(), updated_by_identity_id = $2, version = version + 1
@@ -548,6 +580,7 @@ export class ServiceCatalogRepository {
       await this.replaceResourceRequirements(client, currentRow.id, input.resourceRequirements);
       await this.replaceLaborRequirements(client, currentRow.id, input.laborRequirements);
       await this.replacePricingModels(client, currentRow.id, input.pricingModels);
+      await this.replaceExecutionRequirements(client, currentRow.id, input.executionRequirements);
 
       const lineageUpdated = await client.query(
         `UPDATE cat.service_definitions
@@ -871,6 +904,34 @@ export class ServiceCatalogRepository {
           persisted.internalCost,
           persisted.currencyCode,
           persisted.sortOrder,
+        ],
+      );
+    }
+  }
+
+  private async replaceExecutionRequirements(
+    client: PoolClient,
+    versionId: string,
+    requirements: NormalizedExecutionRequirementInput[],
+  ): Promise<void> {
+    await client.query(`DELETE FROM cat.service_evidence_requirements WHERE service_definition_version_id = $1`, [
+      versionId,
+    ]);
+    for (const requirement of requirements) {
+      await client.query(
+        `INSERT INTO cat.service_evidence_requirements (
+           service_definition_version_id,
+           evidence_kind,
+           requirement_level,
+           config,
+           sort_order
+         ) VALUES ($1, $2::cat.evidence_kind, $3::cat.requirement_level, $4::jsonb, $5)`,
+        [
+          versionId,
+          requirement.requirementType,
+          requirement.requirementLevel,
+          requirement.config ? JSON.stringify(requirement.config) : null,
+          requirement.sortOrder,
         ],
       );
     }

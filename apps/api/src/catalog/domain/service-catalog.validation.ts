@@ -17,6 +17,12 @@ import {
   type NormalizedPricingModelInput,
   type PricingModelInput,
 } from '../../commercial/domain/commercial-compatibility';
+import {
+  assertExecutionRequirements,
+  ExecutionRequirementValidationError,
+  type ExecutionRequirementInput,
+  type NormalizedExecutionRequirementInput,
+} from './execution-requirement';
 
 export class CatalogValidationError extends Error {
   constructor(readonly code: string) {
@@ -172,6 +178,21 @@ export function assertLaborRequirements(requirements: LaborRequirementInput[]): 
     codes.add(requirement.laborTypeCode);
   }
   return normalized;
+}
+
+export type { ExecutionRequirementInput, NormalizedExecutionRequirementInput };
+
+export function assertExecutionRequirementsCatalog(
+  requirements: ExecutionRequirementInput[],
+): NormalizedExecutionRequirementInput[] {
+  try {
+    return assertExecutionRequirements(requirements);
+  } catch (error) {
+    if (error instanceof ExecutionRequirementValidationError) {
+      throw new CatalogValidationError(error.code);
+    }
+    throw error;
+  }
 }
 
 export type { PricingModelInput, NormalizedPricingModelInput };

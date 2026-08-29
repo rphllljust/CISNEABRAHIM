@@ -18,6 +18,7 @@ import { identities } from './identity';
 import type {
   CatalogCommercialConfigV1,
   CatalogExecutionConfigV1,
+  CatalogExecutionRequirementConfigV1,
   CatalogMeasurementConfigV1,
   CatalogPricingModelConfigV1,
   CatalogRequirementConfigV1,
@@ -106,6 +107,15 @@ export const evidenceKindEnum = catSchema.enum('evidence_kind', [
   'HOUR_METER',
   'DOCUMENT',
   'OTHER',
+  'START_TIME',
+  'END_TIME',
+  'LOCATION',
+  'MILEAGE',
+  'QUANTITY',
+  'WEIGHT',
+  'VOLUME',
+  'RECEIPT',
+  'OBSERVATION',
 ]);
 
 export const requirementLevelEnum = catSchema.enum('requirement_level', [
@@ -547,7 +557,7 @@ export const serviceEvidenceRequirements = catSchema.table(
     evidenceKind: evidenceKindEnum('evidence_kind').notNull(),
     requirementLevel: requirementLevelEnum('requirement_level').notNull(),
     configSchemaVersion: smallint('config_schema_version').notNull().default(1),
-    config: jsonb('config').$type<CatalogRequirementConfigV1 | null>(),
+    config: jsonb('config').$type<CatalogExecutionRequirementConfigV1 | null>(),
     sortOrder: integer('sort_order').notNull().default(0),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .notNull()

@@ -61,6 +61,23 @@ export type PricingModelRow = {
   sort_order: number;
 };
 
+export type ExecutionRequirementRow = {
+  evidence_kind: string;
+  requirement_level: 'REQUIRED' | 'OPTIONAL' | 'CONDITIONAL';
+  config: {
+    schemaVersion?: number;
+    conditional?: {
+      conditionType: string;
+      measurementBasis?: string;
+      archetype?: string;
+      resourceTypeCode?: string;
+      laborTypeCode?: string;
+    };
+    notes?: string;
+  } | null;
+  sort_order: number;
+};
+
 export type ServiceDefinitionSummary = ServiceDefinitionRow & {
   latest_published_version: number | null;
   current_draft_version: number | null;
@@ -72,6 +89,7 @@ export type ServiceDefinitionVersionDetail = ServiceDefinitionVersionRow & {
   resource_requirements: ResourceRequirementRow[];
   labor_requirements: LaborRequirementRow[];
   pricing_models: PricingModelRow[];
+  execution_requirements: ExecutionRequirementRow[];
 };
 
 export type ServiceDefinitionResponse = {
@@ -119,6 +137,12 @@ export type ServiceDefinitionVersionResponse = {
     salePrice: string | null;
     internalCost: string | null;
     currencyCode: string;
+    sortOrder: number;
+  }>;
+  executionRequirements: Array<{
+    requirementType: string;
+    requirementLevel: 'REQUIRED' | 'OPTIONAL' | 'CONDITIONAL';
+    config: ExecutionRequirementRow['config'];
     sortOrder: number;
   }>;
   publishedAt: string | null;
@@ -188,6 +212,12 @@ export function toServiceDefinitionVersionResponse(
         sortOrder: model.sort_order,
       };
     }),
+    executionRequirements: row.execution_requirements.map((requirement) => ({
+      requirementType: requirement.evidence_kind,
+      requirementLevel: requirement.requirement_level,
+      config: requirement.config,
+      sortOrder: requirement.sort_order,
+    })),
     publishedAt: row.published_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

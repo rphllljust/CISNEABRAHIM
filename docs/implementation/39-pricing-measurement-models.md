@@ -5,7 +5,7 @@
 | **Status** | `EXECUTED` |
 | **Executado em** | 2026-08-29 |
 | **Commit** | `feat(commercial): implement pricing and measurement models` |
-| **Próximo passo autorizado** | Prompt 40 |
+| **Próximo passo autorizado** | Prompt 41 (via Prompt 40) |
 
 ## Resultado
 
@@ -17,7 +17,7 @@
 | `internalCost` ≠ `salePrice` | **SIM** — campos independentes; sem margem/custo para empregado |
 | Tributação (ICMS/ISS/NCM/CFOP) | **NÃO** |
 | Agregado Measurement | **NÃO** — apenas policies/vocabulário |
-| Prompt 40 executado | **NÃO** |
+| Prompt 40 executado | **SIM** — ver `40-execution-requirements.md` |
 
 ## Mapeamento comercial → persistência
 

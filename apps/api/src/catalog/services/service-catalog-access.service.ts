@@ -15,7 +15,13 @@ import { AUTHZ_SCOPES } from '../../authorization/types/authz-scopes';
 import type { IdentityAuthzContext } from '../../authorization/types/authz-decision';
 import { LINEAGE_STATUSES } from '../domain/service-catalog-status';
 import type { MeasurementMode } from '../domain/service-catalog-status';
-import { CatalogValidationError, assertCommercialCatalogInput, assertUuid } from '../domain/service-catalog.validation';
+import {
+  CatalogValidationError,
+  assertCommercialCatalogInput,
+  assertExecutionRequirementsCatalog,
+  assertUuid,
+} from '../domain/service-catalog.validation';
+import type { NormalizedExecutionRequirementInput, ExecutionRequirementInput } from '../domain/execution-requirement';
 import { normalizeUnitCode } from '../domain/unit-of-measure';
 import type {
   CreateServiceDefinitionInput,
@@ -78,6 +84,7 @@ export class ServiceCatalogAccessService {
         ...commercial,
         resourceRequirements: input.resourceRequirements ?? [],
         laborRequirements: input.laborRequirements ?? [],
+        executionRequirements: this.resolveExecutionRequirements(input.executionRequirements),
         actorIdentityId: actor.identityId,
       });
 
@@ -190,6 +197,10 @@ export class ServiceCatalogAccessService {
       pricingModels: [...commercial.pricingModels],
       resourceRequirements: input.resourceRequirements ?? [],
       laborRequirements: input.laborRequirements ?? [],
+      executionRequirements: this.resolveExecutionRequirements(
+        input.executionRequirements,
+        input.sourceVersion,
+      ),
       actorIdentityId: actor.identityId,
     });
 
@@ -299,6 +310,7 @@ export class ServiceCatalogAccessService {
       resourceRequirements: input.resourceRequirements ?? [],
       laborRequirements: input.laborRequirements ?? [],
       pricingModels: commercial.pricingModels,
+      executionRequirements: this.resolveExecutionRequirements(input.executionRequirements),
       actorIdentityId: actor.identityId,
     });
 
@@ -664,6 +676,26 @@ export class ServiceCatalogAccessService {
           sortOrder: model.sortOrder,
         })),
       });
+    } catch (error) {
+      if (error instanceof CatalogValidationError) {
+        const code =
+          CATALOG_ERROR_CODES[error.code as keyof typeof CATALOG_ERROR_CODES] ??
+          CATALOG_ERROR_CODES.VALIDATION_FAILED;
+        throw new CatalogHttpException(HttpStatus.BAD_REQUEST, code, 'Invalid request body.');
+      }
+      throw error;
+    }
+  }
+
+  private resolveExecutionRequirements(
+    requirements: ExecutionRequirementInput[] | undefined,
+    sourceVersion?: number,
+  ): NormalizedExecutionRequirementInput[] {
+    if ((requirements?.length ?? 0) === 0 && sourceVersion !== undefined) {
+      return [];
+    }
+    try {
+      return assertExecutionRequirementsCatalog(requirements ?? []);
     } catch (error) {
       if (error instanceof CatalogValidationError) {
         const code =

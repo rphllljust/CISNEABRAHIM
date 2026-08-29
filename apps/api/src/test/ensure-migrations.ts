@@ -113,6 +113,21 @@ export default async function ensureMigrations(): Promise<void> {
     if (!hasMeasurementBasis) {
       await applySqlFile(pool, '0012_commercial_pricing_measurement.sql');
     }
+
+    const hasObservationEvidenceKind = await pool.query<{ exists: boolean }>(
+      `SELECT EXISTS (
+         SELECT 1
+         FROM pg_type t
+         INNER JOIN pg_enum e ON e.enumtypid = t.oid
+         INNER JOIN pg_namespace n ON n.oid = t.typnamespace
+         WHERE n.nspname = 'cat'
+           AND t.typname = 'evidence_kind'
+           AND e.enumlabel = 'OBSERVATION'
+       ) AS exists`,
+    );
+    if (!hasObservationEvidenceKind.rows[0]?.exists) {
+      await applySqlFile(pool, '0013_execution_requirements.sql');
+    }
   } finally {
     await pool.end();
   }

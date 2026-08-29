@@ -2477,3 +2477,35 @@ Resumo:
 - [x] Prompt 40 não executado
 
 ---
+
+## Prompt 40 — Requisitos de execução e evidências tipadas
+
+| Campo | Valor |
+| ----- | ----- |
+| ID | 40 |
+| Título | Requisitos de execução e evidências tipadas |
+| Status | PASS |
+| Commit | feat(catalog): implement typed execution requirements |
+| Executado em | 2026-08-29 |
+
+```
+Resumo:
+  executionRequirements[] no service catalog com 13 tipos aprovados,
+  níveis REQUIRED/OPTIONAL/CONDITIONAL, condições tipadas e schema JSONB v1.
+  Migration 0013 estende evidence_kind. Sem motor de expressão aberta.
+  Prompt 41 não executado.
+```
+
+## Quality gate Prompt 40 (evidência)
+
+- [x] Tipos aprovados mapeados para `cat.evidence_kind` (enum estendido)
+- [x] Obrigatoriedade REQUIRED / OPTIONAL / CONDITIONAL validada no backend
+- [x] CONDITIONAL apenas com condições tipadas suportadas
+- [x] Chaves proibidas (`eval`, `script`, `sql`, etc.) rejeitadas
+- [x] Requirements versionados por `ServiceDefinition`; publicado imutável
+- [x] `CatalogExecutionRequirementConfigV1` com validação explícita
+- [x] Testes: required, optional, conditional, unknown condition, invalid payload, version, immutability, authz
+- [x] lint, typecheck, test, test:integration, test:e2e, gate:database — PASS
+- [x] Prompt 41 não executado
+
+---

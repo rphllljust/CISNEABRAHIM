@@ -40,11 +40,27 @@ export type CatalogPricingModelConfigV1 = {
   tierRules?: Array<{ upToQuantity: number; unitCode: string }>;
 };
 
-/** resource / evidence row config — schema_version 1 (opcional) */
+/** execution requirement row config — schema_version 1 */
+export type CatalogExecutionRequirementConfigV1 = {
+  schemaVersion: 1;
+  conditional?: {
+    conditionType:
+      | 'WHEN_MEASUREMENT_BASIS_IS'
+      | 'WHEN_ARCHETYPE_IS'
+      | 'WHEN_RESOURCE_TYPE_IS'
+      | 'WHEN_LABOR_TYPE_IS';
+    measurementBasis?: string;
+    archetype?: string;
+    resourceTypeCode?: string;
+    laborTypeCode?: string;
+  };
+  notes?: string;
+};
+
+/** resource row config — schema_version 1 (opcional) */
 export type CatalogRequirementConfigV1 = {
   schemaVersion: 1;
   notes?: string;
-  metadata?: Record<string, string>;
 };
 
 export const CATALOG_JSON_SCHEMA_VERSION = 1 as const;

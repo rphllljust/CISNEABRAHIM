@@ -9,10 +9,13 @@ import {
   assertLaborRequirements,
   assertResourceRequirements,
   assertCommercialCatalogInput,
+  assertExecutionRequirementsCatalog,
   assertServiceCode,
   assertUuid,
   CatalogValidationError,
   type AllowedUnitInput,
+  type ExecutionRequirementInput,
+  type NormalizedExecutionRequirementInput,
   type LaborRequirementInput,
   type PricingModelInput,
   type NormalizedPricingModelInput,
@@ -186,6 +189,64 @@ function parseLaborRequirements(
   });
 }
 
+function parseExecutionRequirements(
+  body: Record<string, unknown>,
+  required = false,
+): ExecutionRequirementInput[] {
+  const raw = body['executionRequirements'];
+  if (raw === undefined) {
+    if (required) {
+      throw new CatalogHttpException(
+        HttpStatus.BAD_REQUEST,
+        CATALOG_ERROR_CODES.VALIDATION_FAILED,
+        'Invalid request body.',
+      );
+    }
+    return [];
+  }
+  if (!Array.isArray(raw)) {
+    throw new CatalogHttpException(
+      HttpStatus.BAD_REQUEST,
+      CATALOG_ERROR_CODES.VALIDATION_FAILED,
+      'Invalid request body.',
+    );
+  }
+  return raw.map((item) => {
+    if (typeof item !== 'object' || item === null) {
+      throw new CatalogHttpException(
+        HttpStatus.BAD_REQUEST,
+        CATALOG_ERROR_CODES.VALIDATION_FAILED,
+        'Invalid request body.',
+      );
+    }
+    const record = item as Record<string, unknown>;
+    const config = record['config'];
+    return {
+      requirementType: parseRequiredString(record, 'requirementType'),
+      requirementLevel: parseRequiredString(record, 'requirementLevel') as ExecutionRequirementInput['requirementLevel'],
+      config:
+        config === undefined || config === null
+          ? undefined
+          : (config as ExecutionRequirementInput['config']),
+      sortOrder:
+        record['sortOrder'] === undefined ? undefined : parsePositiveInt(record['sortOrder'], 'sortOrder'),
+    };
+  });
+}
+
+function normalizeExecutionRequirements(
+  requirements: ExecutionRequirementInput[],
+): NormalizedExecutionRequirementInput[] {
+  try {
+    return assertExecutionRequirementsCatalog(requirements);
+  } catch (error) {
+    if (error instanceof CatalogValidationError) {
+      raiseCatalogValidation(error);
+    }
+    throw error;
+  }
+}
+
 function raiseCatalogValidation(error: CatalogValidationError): never {
   const code =
     CATALOG_ERROR_CODES[error.code as keyof typeof CATALOG_ERROR_CODES] ??
@@ -296,6 +357,7 @@ export type CreateServiceDefinitionInput = {
   resourceRequirements?: ResourceRequirementInput[];
   laborRequirements?: LaborRequirementInput[];
   pricingModels: PricingModelInput[];
+  executionRequirements?: ExecutionRequirementInput[];
 };
 
 export function parseCreateServiceDefinitionInput(body: unknown): CreateServiceDefinitionInput {
@@ -303,6 +365,7 @@ export function parseCreateServiceDefinitionInput(body: unknown): CreateServiceD
   const allowedUnits = parseAllowedUnits(record);
   const resourceRequirements = parseResourceRequirements(record);
   const laborRequirements = parseLaborRequirements(record);
+  const executionRequirements = normalizeExecutionRequirements(parseExecutionRequirements(record));
   const measurementMode = assertMeasurementMode(parseRequiredString(record, 'measurementMode'));
   const measurementBasis = parseMeasurementBasis(record);
   const pricingModels = validateCommercialFields(
@@ -324,6 +387,7 @@ export function parseCreateServiceDefinitionInput(body: unknown): CreateServiceD
     resourceRequirements: assertResourceRequirements(resourceRequirements),
     laborRequirements: assertLaborRequirements(laborRequirements),
     pricingModels,
+    executionRequirements,
   };
 }
 
@@ -339,6 +403,7 @@ export type CreateServiceDefinitionVersionInput = {
   resourceRequirements: ResourceRequirementInput[];
   laborRequirements: LaborRequirementInput[];
   pricingModels: PricingModelInput[];
+  executionRequirements: ExecutionRequirementInput[];
   sourceVersion?: number;
 };
 
@@ -349,6 +414,7 @@ export function parseCreateServiceDefinitionVersionInput(
   const allowedUnits = parseAllowedUnits(record);
   const resourceRequirements = parseResourceRequirements(record, true);
   const laborRequirements = parseLaborRequirements(record, true);
+  const executionRequirements = normalizeExecutionRequirements(parseExecutionRequirements(record, true));
   const measurementMode = assertMeasurementMode(parseRequiredString(record, 'measurementMode'));
   const measurementBasis = parseMeasurementBasis(record);
   const pricingModels = validateCommercialFields(
@@ -370,6 +436,7 @@ export function parseCreateServiceDefinitionVersionInput(
     resourceRequirements: assertResourceRequirements(resourceRequirements),
     laborRequirements: assertLaborRequirements(laborRequirements),
     pricingModels,
+    executionRequirements,
     sourceVersion:
       sourceVersionRaw === undefined ? undefined : parsePositiveInt(sourceVersionRaw, 'sourceVersion'),
   };
@@ -388,6 +455,7 @@ export type UpdateDraftServiceDefinitionInput = {
   resourceRequirements?: ResourceRequirementInput[];
   laborRequirements?: LaborRequirementInput[];
   pricingModels: PricingModelInput[];
+  executionRequirements: ExecutionRequirementInput[];
 };
 
 export function parseUpdateDraftServiceDefinitionInput(
@@ -397,6 +465,7 @@ export function parseUpdateDraftServiceDefinitionInput(
   const allowedUnits = parseAllowedUnits(record);
   const resourceRequirements = parseResourceRequirements(record, true);
   const laborRequirements = parseLaborRequirements(record, true);
+  const executionRequirements = normalizeExecutionRequirements(parseExecutionRequirements(record, true));
   const measurementMode = assertMeasurementMode(parseRequiredString(record, 'measurementMode'));
   const measurementBasis = parseMeasurementBasis(record);
   const pricingModels = validateCommercialFields(
@@ -426,6 +495,7 @@ export function parseUpdateDraftServiceDefinitionInput(
     resourceRequirements: assertResourceRequirements(resourceRequirements),
     laborRequirements: assertLaborRequirements(laborRequirements),
     pricingModels,
+    executionRequirements,
   };
 }
 

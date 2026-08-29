@@ -51,6 +51,10 @@ const SAMPLE_LABOR_REQUIREMENTS = [
   },
 ];
 const EMPTY_LABOR_REQUIREMENTS: [] = [];
+const EMPTY_EXECUTION_REQUIREMENTS: [] = [];
+const SAMPLE_EXECUTION_REQUIREMENTS = [
+  { requirementType: 'PHOTO', requirementLevel: 'REQUIRED' as const, sortOrder: 0 },
+];
 
 async function grantCatalogAdmin(
   pool: Pool,
@@ -143,6 +147,7 @@ describe('Service catalog PostgreSQL integration', () => {
       resourceRequirements: EMPTY_RESOURCE_REQUIREMENTS,
       laborRequirements: EMPTY_LABOR_REQUIREMENTS,
       pricingModels: SAMPLE_PRICING_MODELS,
+      executionRequirements: EMPTY_EXECUTION_REQUIREMENTS,
     };
   }
 
@@ -157,6 +162,7 @@ describe('Service catalog PostgreSQL integration', () => {
       resourceRequirements: EMPTY_RESOURCE_REQUIREMENTS,
       laborRequirements: EMPTY_LABOR_REQUIREMENTS,
       pricingModels: SAMPLE_PRICING_MODELS,
+      executionRequirements: EMPTY_EXECUTION_REQUIREMENTS,
     };
   }
 
@@ -671,5 +677,152 @@ describe('Service catalog PostgreSQL integration', () => {
       unitCode: 'UN',
       salePrice: '100',
     });
+  });
+
+  it('associates required and optional execution requirements on service definitions', async () => {
+    const { identityId, categoryId } = await seedActor();
+    const actor = { identityId, sessionId: 'sid' };
+
+    const created = await catalogAccess.create(actor, {
+      ...createPayload(categoryId, 'EXEC_REQ_BASIC'),
+      executionRequirements: [
+        { requirementType: 'PHOTO', requirementLevel: 'REQUIRED' },
+        { requirementType: 'OBSERVATION', requirementLevel: 'OPTIONAL' },
+      ],
+    });
+
+    expect(created.executionRequirements).toEqual([
+      { requirementType: 'PHOTO', requirementLevel: 'REQUIRED', config: null, sortOrder: 0 },
+      { requirementType: 'OBSERVATION', requirementLevel: 'OPTIONAL', config: null, sortOrder: 1 },
+    ]);
+  });
+
+  it('accepts conditional execution requirements with typed supported conditions', async () => {
+    const { identityId, categoryId } = await seedActor();
+    const actor = { identityId, sessionId: 'sid' };
+
+    const created = await catalogAccess.create(actor, {
+      ...createPayload(categoryId, 'EXEC_REQ_CONDITIONAL'),
+      measurementMode: 'BY_EVENT',
+      measurementBasis: 'TRIP',
+      allowedUnits: [{ unitCode: 'TRIP', isDefault: true, sortOrder: 0 }],
+      pricingModels: [{ modelCode: 'PER_TRIP' }],
+      executionRequirements: [
+        {
+          requirementType: 'MILEAGE',
+          requirementLevel: 'CONDITIONAL',
+            config: {
+              schemaVersion: 1,
+              conditional: {
+                conditionType: 'WHEN_MEASUREMENT_BASIS_IS' as const,
+                measurementBasis: 'TRIP',
+              },
+            },
+        },
+      ],
+    });
+
+    expect(created.executionRequirements[0]?.requirementLevel).toBe('CONDITIONAL');
+    expect(created.executionRequirements[0]?.config?.conditional?.conditionType).toBe(
+      'WHEN_MEASUREMENT_BASIS_IS',
+    );
+  });
+
+  it('rejects unknown conditional types and forbidden executable config payloads', async () => {
+    const { identityId, categoryId } = await seedActor();
+    const actor = { identityId, sessionId: 'sid' };
+
+    await expect(
+      catalogAccess.create(actor, {
+        ...createPayload(categoryId, 'EXEC_REQ_UNKNOWN_CONDITION'),
+        executionRequirements: [
+          {
+            requirementType: 'LOCATION',
+            requirementLevel: 'CONDITIONAL',
+            config: {
+              schemaVersion: 1,
+              conditional: { conditionType: 'RUN_JAVASCRIPT' as never },
+            },
+          },
+        ],
+      }),
+    ).rejects.toMatchObject({ code: CATALOG_ERROR_CODES.UNKNOWN_CONDITION_TYPE });
+
+    await expect(
+      catalogAccess.create(actor, {
+        ...createPayload(categoryId, 'EXEC_REQ_FORBIDDEN_CONFIG'),
+        executionRequirements: [
+          {
+            requirementType: 'DOCUMENT',
+            requirementLevel: 'OPTIONAL',
+            config: { schemaVersion: 1, expression: 'eval(1)' } as never,
+          },
+        ],
+      }),
+    ).rejects.toMatchObject({ code: CATALOG_ERROR_CODES.FORBIDDEN_EXECUTION_REQUIREMENT_CONFIG });
+  });
+
+  it('preserves execution requirements on published versions and copies them to new drafts', async () => {
+    const { identityId, categoryId } = await seedActor();
+    const actor = { identityId, sessionId: 'sid' };
+
+    const created = await catalogAccess.create(actor, {
+      ...createPayload(categoryId, 'EXEC_REQ_VERSIONING'),
+      executionRequirements: SAMPLE_EXECUTION_REQUIREMENTS,
+    });
+    const definition = await catalogAccess.getDefinition(actor, created.serviceDefinitionId);
+    await catalogAccess.publishVersion(actor, created.serviceDefinitionId, 1, definition.version);
+
+    const historical = await catalogAccess.getVersion(actor, created.serviceDefinitionId, 1);
+    expect(historical.executionRequirements.some((item) => item.requirementType === 'PHOTO')).toBe(true);
+
+    const version2 = await catalogAccess.createVersion(actor, created.serviceDefinitionId, {
+      ...versionCreateBase(categoryId),
+      executionRequirements: [],
+      sourceVersion: 1,
+    });
+    expect(version2.executionRequirements[0]?.requirementType).toBe('PHOTO');
+  });
+
+  it('rejects mutating execution requirements on a published version', async () => {
+    const { identityId, categoryId } = await seedActor();
+    const actor = { identityId, sessionId: 'sid' };
+
+    const created = await catalogAccess.create(actor, {
+      ...createPayload(categoryId, 'EXEC_REQ_PUBLISHED_IMMUTABLE'),
+      executionRequirements: SAMPLE_EXECUTION_REQUIREMENTS,
+    });
+    const definition = await catalogAccess.getDefinition(actor, created.serviceDefinitionId);
+    await catalogAccess.publishVersion(actor, created.serviceDefinitionId, 1, definition.version);
+
+    await expect(
+      catalogAccess.updateDraft(actor, created.serviceDefinitionId, 1, {
+        ...draftUpdateBase(categoryId, definition.version + 1),
+        executionRequirements: [{ requirementType: 'SIGNATURE', requirementLevel: 'REQUIRED' }],
+      }),
+    ).rejects.toMatchObject({ code: CATALOG_ERROR_CODES.INVALID_STATE });
+  });
+
+  it('denies catalog mutation without authorization grants', async () => {
+    const admin = await seedActor();
+    const employeeLogin = normalizeLoginIdentifier(`catalog-exec-employee-${crypto.randomUUID()}@cisne.invalid`);
+    const passwordHash = await hashPassword(AUTH_TEST_PASSWORD);
+    const { identityId: employeeId } = await insertIdentity(pool, employeeLogin, passwordHash);
+
+    const created = await catalogAccess.create(
+      { identityId: admin.identityId, sessionId: 'sid' },
+      {
+        ...createPayload(admin.categoryId, 'EXEC_REQ_SECURITY'),
+        executionRequirements: SAMPLE_EXECUTION_REQUIREMENTS,
+      },
+    );
+
+    await expect(
+      catalogAccess.getVersion(
+        { identityId: employeeId, sessionId: 'sid' },
+        created.serviceDefinitionId,
+        1,
+      ),
+    ).rejects.toMatchObject({ code: CATALOG_ERROR_CODES.DENIED });
   });
 });

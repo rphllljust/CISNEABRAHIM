@@ -31,6 +31,7 @@ const MIGRATION_FILES = [
   '0010_physical_resource_types.sql',
   '0011_operational_labor_types.sql',
   '0012_commercial_pricing_measurement.sql',
+  '0013_execution_requirements.sql',
 ];
 
 const INCREMENTAL_BASELINE_FILES = MIGRATION_FILES.slice(0, -1);
@@ -326,6 +327,33 @@ async function assertPreDeltaState(connectionString, deltaFile) {
         throw new Error(
           'Incremental baseline incorrectly contains measurement_basis before 0012',
         );
+      }
+      return;
+    }
+
+    if (deltaFile === '0013_execution_requirements.sql') {
+      const measurementBasis = await client.query(
+        `SELECT 1
+         FROM information_schema.columns
+         WHERE table_schema = 'cat'
+           AND table_name = 'service_definition_versions'
+           AND column_name = 'measurement_basis'
+         LIMIT 1`,
+      );
+      if ((measurementBasis.rowCount ?? 0) === 0) {
+        throw new Error('Expected measurement_basis before 0013 delta');
+      }
+      const enumValues = await client.query(
+        `SELECT e.enumlabel
+         FROM pg_type t
+         INNER JOIN pg_enum e ON e.enumtypid = t.oid
+         INNER JOIN pg_namespace n ON n.oid = t.typnamespace
+         WHERE n.nspname = 'cat'
+           AND t.typname = 'evidence_kind'
+           AND e.enumlabel = 'OBSERVATION'`,
+      );
+      if ((enumValues.rowCount ?? 0) > 0) {
+        throw new Error('Incremental baseline incorrectly contains OBSERVATION evidence_kind before 0013');
       }
       return;
     }
