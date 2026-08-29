@@ -529,3 +529,70 @@ NOTES:
 - [x] 0 código, scripts, enums ou nomes de API congelados
 - [x] rastreabilidade atualizada
 - [x] Prompt 05 não executado
+
+---
+
+```text
+PROMPT: 04-REVISED
+TITLE: Glossário — revisão estrutural (catálogos, semântica, auditoria)
+STARTED_AT: 2026-08-28T23:40:00-04:00
+FINISHED_AT: 2026-08-29T00:05:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED:
+  docs/05-ubiquitous-language/language-method.md
+  docs/05-ubiquitous-language/business-verbs-catalog.md
+  docs/05-ubiquitous-language/business-nouns-catalog.md
+  docs/05-ubiquitous-language/state-event-command-semantics.md
+  docs/05-ubiquitous-language/execution-and-evidence-language.md
+  docs/05-ubiquitous-language/responsibility-and-aging-language.md
+  docs/05-ubiquitous-language/technical-versus-domain-language.md
+  docs/05-ubiquitous-language/naming-policy.md
+  docs/05-ubiquitous-language/terms-pending-business-validation.md
+  docs/05-ubiquitous-language/language-consistency-audit.md
+FILES_CHANGED:
+  docs/05-ubiquitous-language/README.md
+  docs/05-ubiquitous-language/ubiquitous-language-register.md
+  docs/05-ubiquitous-language/homonyms-and-collisions.md
+  docs/05-ubiquitous-language/prompt-04-completeness-report.md
+  docs/02-source-analysis/ambiguous-terms.md
+  docs/03-requirements/requirements-open-questions.md
+  docs/01-foundation/requirements-traceability.md
+  docs/README.md
+  docs/00-governance/prompt-execution-log.md
+FILES_REMOVED:
+  docs/05-ubiquitous-language/glossary-method.md
+  docs/05-ubiquitous-language/glossary-traceability.md
+  docs/05-ubiquitous-language/glossary-open-questions.md
+  docs/05-ubiquitous-language/discouraged-and-prohibited-terms.md
+  docs/05-ubiquitous-language/naming-conventions-candidates.md
+  docs/05-ubiquitous-language/business-vs-technical-language.md
+  docs/05-ubiquitous-language/state-event-timestamp-semantics.md
+  docs/05-ubiquitous-language/execution-language.md
+  docs/05-ubiquitous-language/responsibility-language.md
+QUALITY_GATE: PASS_WITH_RESTRICTIONS
+TERM_COUNT: 48
+ACCEPTED_FOR_DOCUMENTATION: 24
+AMBIGUOUS: 18
+PENDING_BUSINESS_DECISION: 6
+TERM_CONFIRMED: 0
+GLQ_COUNT: 12
+ARTIFACT_COUNT_05: 22
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Revisão estrutural Prompt 04. Status enum atualizado.
+  RC não evidenciado em SRC-001 — não registrado como TERM.
+  RC inventado: NO. Prompt 05 não executado.
+```
+
+## Quality gate Prompt 04 revisado (evidência)
+
+- [x] pasta `05-ubiquitous-language/` com 22 artefatos não vazios
+- [x] 48 TERM com proveniência
+- [x] catálogos de verbos e substantivos obrigatórios
+- [x] normalizações críticas documentadas
+- [x] 0 termos CONFIRMED
+- [x] 0 bounded contexts / código / scripts
+- [x] rastreabilidade atualizada
+- [x] Prompt 05 não executado
+
+---

@@ -87,9 +87,12 @@ Glossário e linguagem ubíqua (Prompt 04). Índice: [05-ubiquitous-language/REA
 
 | Arquivo | Conteúdo |
 | --- | --- |
+| [language-method.md](05-ubiquitous-language/language-method.md) | Método e classes semânticas |
 | [ubiquitous-language-register.md](05-ubiquitous-language/ubiquitous-language-register.md) | 48 termos TERM-001..TERM-048 |
-| [ambiguous-terms-resolution.md](05-ubiquitous-language/ambiguous-terms-resolution.md) | Resolução de ambiguidades |
-| [glossary-traceability.md](05-ubiquitous-language/glossary-traceability.md) | Rastreabilidade TERM |
+| [business-verbs-catalog.md](05-ubiquitous-language/business-verbs-catalog.md) | Verbos empresariais |
+| [business-nouns-catalog.md](05-ubiquitous-language/business-nouns-catalog.md) | Substantivos empresariais |
+| [state-event-command-semantics.md](05-ubiquitous-language/state-event-command-semantics.md) | Estado, evento, comando |
+| [language-consistency-audit.md](05-ubiquitous-language/language-consistency-audit.md) | Auditoria terminológica |
 | [prompt-04-completeness-report.md](05-ubiquitous-language/prompt-04-completeness-report.md) | Relatório de completude |
 
 ## inputs

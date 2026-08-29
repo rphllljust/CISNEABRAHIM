@@ -1,43 +1,49 @@
-# UL-RPT-COMPLETE-004
+# UL-RPT-COMPLETE-004-REV
 
 | Campo | Valor |
 | --- | --- |
-| Document ID | Relatório de completude — Prompt 04 |
+| Document ID | Relatório de completude — Prompt 04 (revisão estrutural) |
 | Fonte | SRC-001 |
 | Gerado em | 2026-08-28 |
 | Prompt | 04 |
 | Resultado | PASS_WITH_RESTRICTIONS |
 
-> Nenhum termo `CONFIRMED`. Definições candidatas com proveniência EV-*.
+> Nenhum termo com regra empresarial confirmada. `ACCEPTED_FOR_DOCUMENTATION` ≠ confirmação.
 
 ## Resumo
 
-Glossário empresarial controlado com 48 termos (TERM-001..TERM-048), mapeamento das 38 ambiguidades do Prompt 01, vocabulário por domínio e separação negócio/técnico.
+Revisão estrutural do glossário: 48 termos preservados, novos catálogos de verbos/substantivos, semântica estado/evento/comando expandida, auditoria de consistência e política de nomes. Conteúdo substantivo da execução anterior mantido.
 
 ## Contagens
 
 | Item | Quantidade |
 | --- | --- |
 | Termos (TERM) | 48 |
-| CANDIDATE | 24 |
-| PENDING_DISAMBIGUATION | 18 |
-| PENDING_VALIDATION | 6 |
+| ACCEPTED_FOR_DOCUMENTATION | 24 |
+| AMBIGUOUS | 18 |
+| PENDING_BUSINESS_DECISION | 6 |
 | CONFIRMED | 0 |
 | Questões abertas (GLQ) | 12 |
-| Arquivos em `05-ubiquitous-language/` | 21 |
-| Ambiguidades AT-001 referenciadas | 38 |
-| Enums / API / tabelas criados | 0 |
+| Colisões semânticas (homônimos) | 9 |
+| Ambiguidades estado/evento | 8 |
+| Ambiguidades AT-001 mapeadas | 38 |
+| Arquivos em `05-ubiquitous-language/` | 22 |
+| Verbos analisados (catálogo) | 26 |
+| Substantivos analisados (catálogo) | 44 |
+| Enums / API / bounded contexts | 0 |
 
 ## Quality gate
 
 | Critério | Resultado |
 | --- | --- |
-| Termos com proveniência | PASS |
-| Nenhuma definição de dicionário como prova | PASS |
-| Ambiguidades não resolvidas sem fonte | PASS |
-| Negócio ≠ técnico documentado | PASS |
-| IDs históricos preservados | PASS |
+| Proveniência para todos os termos | PASS |
+| Ambiguidades preservadas | PASS |
+| Nenhum termo inventado como definitivo | PASS |
+| Distinções críticas documentadas | PASS |
+| Nenhum estado congelado | PASS |
+| Nenhum bounded context | PASS |
 | Sem código ou scripts | PASS |
+| Rastreabilidade atualizada | PASS |
 | Prompt 05 não executado | PASS |
 
 **Resultado:** PASS_WITH_RESTRICTIONS
@@ -48,4 +54,13 @@ Glossário empresarial controlado com 48 termos (TERM-001..TERM-048), mapeamento
 FUNCTIONAL_CODE_CREATED: NO
 TERMS_CONFIRMED: 0
 PROMPT_05_EXECUTED: NO
+RC_TERM_INVENTED: NO
 ```
+
+## Arquivos atualizados fora da pasta
+
+- `docs/02-source-analysis/ambiguous-terms.md`
+- `docs/03-requirements/requirements-open-questions.md`
+- `docs/01-foundation/requirements-traceability.md`
+- `docs/00-governance/prompt-execution-log.md`
+- `docs/README.md`

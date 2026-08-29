@@ -97,11 +97,12 @@ Matriz completa: [`../04-quality-attributes/nfr-risk-traceability.md`](../04-qua
 | --- | --- |
 | Termos de glossário (TERM) | 48 (TERM-001..TERM-048) |
 | CONFIRMED | **0** |
-| PENDING_DISAMBIGUATION | 18 |
-| CANDIDATE | 24 |
-| PENDING_VALIDATION | 6 |
+| ACCEPTED_FOR_DOCUMENTATION | 24 |
+| AMBIGUOUS | 18 |
+| PENDING_BUSINESS_DECISION | 6 |
 | Questões abertas glossário (GLQ) | 12 |
 | Índice | [`../05-ubiquitous-language/README.md`](../05-ubiquitous-language/README.md) |
 | Relatório | [`../05-ubiquitous-language/prompt-04-completeness-report.md`](../05-ubiquitous-language/prompt-04-completeness-report.md) |
+| Auditoria | [`../05-ubiquitous-language/language-consistency-audit.md`](../05-ubiquitous-language/language-consistency-audit.md) |
 
-Cadeia estendida: `SOURCE → EVIDENCE → TERM → BR → FR → NFR → DDP`.
+Cadeia estendida: `SOURCE → EVIDENCE → TERM → BR → FR → NFR → UC → DDP → FUTURE TEST (TBD)`.

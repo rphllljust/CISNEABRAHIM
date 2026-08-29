@@ -1,10 +1,13 @@
-# UL-REG-001
+﻿# UL-REG-001
 
 | Campo | Valor |
 | --- | --- |
 | Document ID | Registro de linguagem ubíqua |
 | Fonte | SRC-001 |
 | Total | 48 termos (TERM-001..TERM-048) |
+| ACCEPTED_FOR_DOCUMENTATION | 24 (não confirmado empresarialmente) |
+| AMBIGUOUS | 18 |
+| PENDING_BUSINESS_DECISION | 6 |
 | CONFIRMED | 0 |
 | Prompt | 04 |
 
@@ -14,54 +17,54 @@
 
 | ID | Termo preferencial | Domínio | Status |
 | --- | --- | --- | --- |
-| TERM-001 | Solicitação de serviço | Solicitação | CANDIDATE |
-| TERM-002 | Ordem de Serviço (OS) | OS | PENDING_DISAMBIGUATION |
-| TERM-003 | Serviço (operacional) | Escopo | PENDING_DISAMBIGUATION |
-| TERM-004 | Cliente | Comercial | PENDING_VALIDATION |
-| TERM-005 | Solicitante | Solicitação | CANDIDATE |
-| TERM-006 | Executor de serviço | Execução | PENDING_VALIDATION |
-| TERM-007 | Autorizador empresarial | Autorização | PENDING_DISAMBIGUATION |
-| TERM-008 | Responsável pela OS | Responsabilidade | CANDIDATE |
-| TERM-009 | Rascunho de OS | OS | PENDING_DISAMBIGUATION |
-| TERM-010 | Liberação de OS | OS | PENDING_DISAMBIGUATION |
-| TERM-011 | Proposta comercial | Comercial | PENDING_VALIDATION |
-| TERM-012 | Pedido do cliente | Comercial | PENDING_DISAMBIGUATION |
-| TERM-013 | Purchase Order (PO) | Comercial | PENDING_DISAMBIGUATION |
-| TERM-014 | Contrato comercial | Comercial | PENDING_VALIDATION |
-| TERM-015 | Referência comercial | Comercial | CANDIDATE |
-| TERM-016 | Medição | Medição | PENDING_DISAMBIGUATION |
-| TERM-017 | Faturamento (registro) | Financeiro | PENDING_DISAMBIGUATION |
-| TERM-018 | Documento de faturamento informado | Financeiro | CANDIDATE |
-| TERM-019 | Pagamento (registro) | Financeiro | PENDING_VALIDATION |
-| TERM-020 | Custo interno | Preço/custo | CANDIDATE |
-| TERM-021 | Preço comercial | Preço/custo | CANDIDATE |
-| TERM-022 | Margem | Preço/custo | PENDING_VALIDATION |
-| TERM-023 | Quantidade planejada | Quantidades | CANDIDATE |
-| TERM-024 | Quantidade utilizada | Quantidades | CANDIDATE |
-| TERM-025 | Equipamento | Recurso | PENDING_DISAMBIGUATION |
-| TERM-026 | Veículo | Recurso | PENDING_DISAMBIGUATION |
-| TERM-027 | Máquina | Recurso | PENDING_DISAMBIGUATION |
-| TERM-028 | Mão de obra | Recurso | PENDING_DISAMBIGUATION |
-| TERM-029 | Recurso (operacional) | Recurso | CANDIDATE |
-| TERM-030 | Alocação de recurso | Recurso | CANDIDATE |
-| TERM-031 | Documento lógico | Documento | CANDIDATE |
-| TERM-032 | Versão documental | Documento | CANDIDATE |
-| TERM-033 | Arquivo associado | Documento | CANDIDATE |
-| TERM-034 | Evidência de execução | Execução | CANDIDATE |
-| TERM-035 | Evidência (solicitação) | Solicitação | CANDIDATE |
-| TERM-036 | WhatsApp (canal) | Canal | PENDING_DISAMBIGUATION |
-| TERM-037 | Fonte da verdade (Source of Truth) | Integração | PENDING_DISAMBIGUATION |
-| TERM-038 | Locação (escopo candidato) | Escopo | PENDING_VALIDATION |
-| TERM-039 | Envelhecimento operacional (aging) | Relatórios | PENDING_VALIDATION |
-| TERM-040 | Item faturável | Faturamento | CANDIDATE |
-| TERM-041 | Origem de item faturável | Faturamento | CANDIDATE |
-| TERM-042 | Divergência comercial | Comercial | CANDIDATE |
-| TERM-043 | Substituição documental | Documento | CANDIDATE |
-| TERM-044 | Histórico da OS | Auditoria | CANDIDATE |
-| TERM-045 | Conversão (solicitação → OS) | Solicitação/OS | CANDIDATE |
-| TERM-046 | Decisão sobre solicitação | Solicitação | CANDIDATE |
-| TERM-047 | Decisão sobre medição | Medição | CANDIDATE |
-| TERM-048 | Identificador externo comercial | Comercial | CANDIDATE |
+| TERM-001 | Solicitação de serviço | Solicitação | ACCEPTED_FOR_DOCUMENTATION |
+| TERM-002 | Ordem de Serviço (OS) | OS | AMBIGUOUS |
+| TERM-003 | Serviço (operacional) | Escopo | AMBIGUOUS |
+| TERM-004 | Cliente | Comercial | PENDING_BUSINESS_DECISION |
+| TERM-005 | Solicitante | Solicitação | ACCEPTED_FOR_DOCUMENTATION |
+| TERM-006 | Executor de serviço | Execução | PENDING_BUSINESS_DECISION |
+| TERM-007 | Autorizador empresarial | Autorização | AMBIGUOUS |
+| TERM-008 | Responsável pela OS | Responsabilidade | ACCEPTED_FOR_DOCUMENTATION |
+| TERM-009 | Rascunho de OS | OS | AMBIGUOUS |
+| TERM-010 | Liberação de OS | OS | AMBIGUOUS |
+| TERM-011 | Proposta comercial | Comercial | PENDING_BUSINESS_DECISION |
+| TERM-012 | Pedido do cliente | Comercial | AMBIGUOUS |
+| TERM-013 | Purchase Order (PO) | Comercial | AMBIGUOUS |
+| TERM-014 | Contrato comercial | Comercial | PENDING_BUSINESS_DECISION |
+| TERM-015 | Referência comercial | Comercial | ACCEPTED_FOR_DOCUMENTATION |
+| TERM-016 | Medição | Medição | AMBIGUOUS |
+| TERM-017 | Faturamento (registro) | Financeiro | AMBIGUOUS |
+| TERM-018 | Documento de faturamento informado | Financeiro | ACCEPTED_FOR_DOCUMENTATION |
+| TERM-019 | Pagamento (registro) | Financeiro | PENDING_BUSINESS_DECISION |
+| TERM-020 | Custo interno | Preço/custo | ACCEPTED_FOR_DOCUMENTATION |
+| TERM-021 | Preço comercial | Preço/custo | ACCEPTED_FOR_DOCUMENTATION |
+| TERM-022 | Margem | Preço/custo | PENDING_BUSINESS_DECISION |
+| TERM-023 | Quantidade planejada | Quantidades | ACCEPTED_FOR_DOCUMENTATION |
+| TERM-024 | Quantidade utilizada | Quantidades | ACCEPTED_FOR_DOCUMENTATION |
+| TERM-025 | Equipamento | Recurso | AMBIGUOUS |
+| TERM-026 | Veículo | Recurso | AMBIGUOUS |
+| TERM-027 | Máquina | Recurso | AMBIGUOUS |
+| TERM-028 | Mão de obra | Recurso | AMBIGUOUS |
+| TERM-029 | Recurso (operacional) | Recurso | ACCEPTED_FOR_DOCUMENTATION |
+| TERM-030 | Alocação de recurso | Recurso | ACCEPTED_FOR_DOCUMENTATION |
+| TERM-031 | Documento lógico | Documento | ACCEPTED_FOR_DOCUMENTATION |
+| TERM-032 | Versão documental | Documento | ACCEPTED_FOR_DOCUMENTATION |
+| TERM-033 | Arquivo associado | Documento | ACCEPTED_FOR_DOCUMENTATION |
+| TERM-034 | Evidência de execução | Execução | ACCEPTED_FOR_DOCUMENTATION |
+| TERM-035 | Evidência (solicitação) | Solicitação | ACCEPTED_FOR_DOCUMENTATION |
+| TERM-036 | WhatsApp (canal) | Canal | AMBIGUOUS |
+| TERM-037 | Fonte da verdade (Source of Truth) | Integração | AMBIGUOUS |
+| TERM-038 | Locação (escopo candidato) | Escopo | PENDING_BUSINESS_DECISION |
+| TERM-039 | Envelhecimento operacional (aging) | Relatórios | PENDING_BUSINESS_DECISION |
+| TERM-040 | Item faturável | Faturamento | ACCEPTED_FOR_DOCUMENTATION |
+| TERM-041 | Origem de item faturável | Faturamento | ACCEPTED_FOR_DOCUMENTATION |
+| TERM-042 | Divergência comercial | Comercial | ACCEPTED_FOR_DOCUMENTATION |
+| TERM-043 | Substituição documental | Documento | ACCEPTED_FOR_DOCUMENTATION |
+| TERM-044 | Histórico da OS | Auditoria | ACCEPTED_FOR_DOCUMENTATION |
+| TERM-045 | Conversão (solicitação → OS) | Solicitação/OS | ACCEPTED_FOR_DOCUMENTATION |
+| TERM-046 | Decisão sobre solicitação | Solicitação | ACCEPTED_FOR_DOCUMENTATION |
+| TERM-047 | Decisão sobre medição | Medição | ACCEPTED_FOR_DOCUMENTATION |
+| TERM-048 | Identificador externo comercial | Comercial | ACCEPTED_FOR_DOCUMENTATION |
 
 ---
 
@@ -85,7 +88,7 @@
 | Termos confundidos | TERM-002 (OS); TERM-012 (pedido comercial) |
 | Exemplos válidos | "Registrar solicitação de transporte com origem WhatsApp" |
 | Exemplos inválidos | "Solicitação = OS já liberada" |
-| Status | CANDIDATE |
+| Status | ACCEPTED_FOR_DOCUMENTATION |
 | Confiança | MEDIUM |
 | DDPs | DDP-002, DDP-028 |
 
@@ -109,7 +112,7 @@
 | Termos confundidos | TERM-001; TERM-009; TERM-010 |
 | Exemplos válidos | "Criar rascunho de OS a partir de solicitação aprovada" |
 | Exemplos inválidos | "Toda solicitação já é OS" |
-| Status | PENDING_DISAMBIGUATION |
+| Status | AMBIGUOUS |
 | Confiança | MEDIUM |
 | DDPs | DDP-001, DDP-003, DDP-035 |
 
@@ -133,7 +136,7 @@
 | Termos confundidos | TERM-038 (locação como vertical) |
 | Exemplos válidos | "Serviço de fretamento descrito na OS" |
 | Exemplos inválidos | "Serviço = qualquer linha do ERP" |
-| Status | PENDING_DISAMBIGUATION |
+| Status | AMBIGUOUS |
 | Confiança | MEDIUM |
 | DDPs | DDP-026, DDP-035 |
 
@@ -157,7 +160,7 @@
 | Termos confundidos | TERM-005 (solicitante interno) |
 | Exemplos válidos | "Cliente solicitou serviço via representante" |
 | Exemplos inválidos | "Cliente = usuário do sistema" (técnico) |
-| Status | PENDING_VALIDATION |
+| Status | PENDING_BUSINESS_DECISION |
 | Confiança | LOW |
 | DDPs | DDP-002 |
 
@@ -181,7 +184,7 @@
 | Termos confundidos | TERM-004; TERM-007 |
 | Exemplos válidos | "Solicitante anexou evidência à solicitação" |
 | Exemplos inválidos | "Solicitante libera OS" |
-| Status | CANDIDATE |
+| Status | ACCEPTED_FOR_DOCUMENTATION |
 | Confiança | MEDIUM |
 | DDPs | DDP-028 |
 
@@ -205,7 +208,7 @@
 | Termos confundidos | TERM-008 (responsável pela OS) |
 | Exemplos válidos | "Executor registra progresso da OS" |
 | Exemplos inválidos | "Executor = qualquer login" |
-| Status | PENDING_VALIDATION |
+| Status | PENDING_BUSINESS_DECISION |
 | Confiança | MEDIUM |
 | DDPs | DDP-006 |
 
@@ -229,7 +232,7 @@
 | Termos confundidos | TERM-008; perfil "admin" |
 | Exemplos válidos | "Autorizador empresarial libera OS" |
 | Exemplos inválidos | "Autorizador = DBA" |
-| Status | PENDING_DISAMBIGUATION |
+| Status | AMBIGUOUS |
 | Confiança | MEDIUM |
 | DDPs | DDP-003, DDP-015 |
 
@@ -253,7 +256,7 @@
 | Termos confundidos | TERM-006 |
 | Exemplos válidos | "Atribuir responsável à OS" |
 | Exemplos inválidos | "Responsável = dono do veículo no ERP" |
-| Status | CANDIDATE |
+| Status | ACCEPTED_FOR_DOCUMENTATION |
 | Confiança | MEDIUM |
 | DDPs | DDP-032 |
 
@@ -277,7 +280,7 @@
 | Termos confundidos | TERM-032 (versão documental) |
 | Exemplos válidos | "OS em rascunho aguardando conteúdo" |
 | Exemplos inválidos | "Rascunho = OS cancelada" |
-| Status | PENDING_DISAMBIGUATION |
+| Status | AMBIGUOUS |
 | Confiança | MEDIUM |
 | DDPs | DDP-001, DDP-022 |
 
@@ -301,7 +304,7 @@
 | Termos confundidos | TERM-045 (conversão); aprovação de solicitação |
 | Exemplos válidos | "Liberar OS após preparação" |
 | Exemplos inválidos | "Salvar rascunho = liberar" |
-| Status | PENDING_DISAMBIGUATION |
+| Status | AMBIGUOUS |
 | Confiança | MEDIUM |
 | DDPs | DDP-003, DDP-029 |
 
@@ -325,7 +328,7 @@
 | Termos confundidos | TERM-012, TERM-013, TERM-014 |
 | Exemplos válidos | "Referenciar proposta na OS" |
 | Exemplos inválidos | "Proposta = OS" |
-| Status | PENDING_VALIDATION |
+| Status | PENDING_BUSINESS_DECISION |
 | Confiança | LOW |
 | DDPs | DDP-009, DDP-030 |
 
@@ -349,7 +352,7 @@
 | Termos confundidos | TERM-001; TERM-013 |
 | Exemplos válidos | "Preservar ID do pedido do cliente na OS" |
 | Exemplos inválidos | "Pedido = PO sempre" |
-| Status | PENDING_DISAMBIGUATION |
+| Status | AMBIGUOUS |
 | Confiança | LOW |
 | DDPs | DDP-009 |
 
@@ -373,7 +376,7 @@
 | Termos confundidos | TERM-012; TERM-002 |
 | Exemplos válidos | "Registrar consumo candidato de PO" |
 | Exemplos inválidos | "PO = Ordem de Serviço" |
-| Status | PENDING_DISAMBIGUATION |
+| Status | AMBIGUOUS |
 | Confiança | MEDIUM |
 | DDPs | DDP-009 |
 
@@ -397,7 +400,7 @@
 | Termos confundidos | TERM-011, TERM-013 |
 | Exemplos válidos | "Referência a contrato na OS" |
 | Exemplos inválidos | "Contrato importado automaticamente" (não afirmado) |
-| Status | PENDING_VALIDATION |
+| Status | PENDING_BUSINESS_DECISION |
 | Confiança | LOW |
 | DDPs | DDP-009 |
 
@@ -421,7 +424,7 @@
 | Termos confundidos | TERM-048 |
 | Exemplos válidos | "Registrar referência comercial na OS" |
 | Exemplos inválidos | "Referência comercial = nota fiscal" |
-| Status | CANDIDATE |
+| Status | ACCEPTED_FOR_DOCUMENTATION |
 | Confiança | MEDIUM |
 | DDPs | DDP-009 |
 
@@ -445,7 +448,7 @@
 | Termos confundidos | TERM-024 (quantidade); TERM-017 |
 | Exemplos válidos | "Preparar medição de itens executados" |
 | Exemplos inválidos | "Medição = nota emitida" |
-| Status | PENDING_DISAMBIGUATION |
+| Status | AMBIGUOUS |
 | Confiança | MEDIUM |
 | DDPs | DDP-010, DDP-011 |
 
@@ -469,7 +472,7 @@
 | Termos confundidos | TERM-018; TERM-019 |
 | Exemplos válidos | "Registrar faturamento informado externamente" |
 | Exemplos inválidos | "Faturamento = sistema emite nota fiscal" |
-| Status | PENDING_DISAMBIGUATION |
+| Status | AMBIGUOUS |
 | Confiança | MEDIUM |
 | DDPs | DDP-011, DDP-023 |
 
@@ -493,7 +496,7 @@
 | Termos confundidos | TERM-031 (documento lógico genérico) |
 | Exemplos válidos | "Registrar número de nota emitida no ERP externo" |
 | Exemplos inválidos | "Nota = evidência de execução" |
-| Status | CANDIDATE |
+| Status | ACCEPTED_FOR_DOCUMENTATION |
 | Confiança | MEDIUM |
 | DDPs | DDP-023 |
 
@@ -517,7 +520,7 @@
 | Termos confundidos | TERM-017; TERM-018 |
 | Exemplos válidos | "Pagamento atrasado identificado como condição candidata" |
 | Exemplos inválidos | "Pagamento registrado automaticamente pelo banco" |
-| Status | PENDING_VALIDATION |
+| Status | PENDING_BUSINESS_DECISION |
 | Confiança | LOW |
 | DDPs | DDP-012, DDP-020 |
 
@@ -541,7 +544,7 @@
 | Termos confundidos | TERM-021 |
 | Exemplos válidos | "Separar custo interno e preço comercial" |
 | Exemplos inválidos | "Custo = preço na proposta ao cliente" |
-| Status | CANDIDATE |
+| Status | ACCEPTED_FOR_DOCUMENTATION |
 | Confiança | MEDIUM |
 | DDPs | DDP-030 |
 
@@ -565,7 +568,7 @@
 | Termos confundidos | TERM-020 |
 | Exemplos válidos | "Preço comercial por item na OS" |
 | Exemplos inválidos | "Preço = custo + margem fixa" (regra não confirmada) |
-| Status | CANDIDATE |
+| Status | ACCEPTED_FOR_DOCUMENTATION |
 | Confiança | MEDIUM |
 | DDPs | DDP-031 |
 
@@ -589,7 +592,7 @@
 | Termos confundidos | TERM-021; markup genérico |
 | Exemplos válidos | "Restringir visualização de margem" |
 | Exemplos inválidos | "Margem = 30%" |
-| Status | PENDING_VALIDATION |
+| Status | PENDING_BUSINESS_DECISION |
 | Confiança | LOW |
 | DDPs | DDP-030, DDP-031 |
 
@@ -613,7 +616,7 @@
 | Termos confundidos | TERM-024 |
 | Exemplos válidos | "12 horas planejadas de mão de obra" |
 | Exemplos inválidos | "Planejado = utilizado sempre" |
-| Status | CANDIDATE |
+| Status | ACCEPTED_FOR_DOCUMENTATION |
 | Confiança | MEDIUM |
 | DDPs | DDP-030 |
 
@@ -637,7 +640,7 @@
 | Termos confundidos | TERM-023; TERM-016 |
 | Exemplos válidos | "Registrar 10h utilizadas quando 12h planejadas" |
 | Exemplos inválidos | "Utilizada = faturada automaticamente" |
-| Status | CANDIDATE |
+| Status | ACCEPTED_FOR_DOCUMENTATION |
 | Confiança | MEDIUM |
 | DDPs | DDP-010 |
 
@@ -661,7 +664,7 @@
 | Termos confundidos | TERM-026; TERM-027 |
 | Exemplos válidos | "Alocar equipamento X ao item da OS" |
 | Exemplos inválidos | "Equipamento = qualquer recurso" |
-| Status | PENDING_DISAMBIGUATION |
+| Status | AMBIGUOUS |
 | Confiança | MEDIUM |
 | DDPs | DDP-007, DDP-034 |
 
@@ -685,7 +688,7 @@
 | Termos confundidos | TERM-025 |
 | Exemplos válidos | "Planejar veículo na OS" |
 | Exemplos inválidos | "Veículo = equipamento sempre" |
-| Status | PENDING_DISAMBIGUATION |
+| Status | AMBIGUOUS |
 | Confiança | MEDIUM |
 | DDPs | DDP-008, DDP-034 |
 
@@ -709,7 +712,7 @@
 | Termos confundidos | TERM-025; TERM-038 |
 | Exemplos válidos | "Locação de máquina sem operador (candidato)" |
 | Exemplos inválidos | "Máquina = veículo leve" |
-| Status | PENDING_DISAMBIGUATION |
+| Status | AMBIGUOUS |
 | Confiança | LOW |
 | DDPs | DDP-007, DDP-026 |
 
@@ -733,7 +736,7 @@
 | Termos confundidos | TERM-006; ajudante/motorista sem taxonomia |
 | Exemplos válidos | "Planejar mão de obra na OS" |
 | Exemplos inválidos | "Mão de obra = campo texto livre apenas" |
-| Status | PENDING_DISAMBIGUATION |
+| Status | AMBIGUOUS |
 | Confiança | MEDIUM |
 | DDPs | DDP-006 |
 
@@ -757,7 +760,7 @@
 | Termos confundidos | TERM-025..028 (específicos) |
 | Exemplos válidos | "Planejar recursos necessários na OS" |
 | Exemplos inválidos | "Recurso = usuário do sistema" |
-| Status | CANDIDATE |
+| Status | ACCEPTED_FOR_DOCUMENTATION |
 | Confiança | MEDIUM |
 | DDPs | DDP-007 |
 
@@ -781,7 +784,7 @@
 | Termos confundidos | TERM-023 (planejamento) |
 | Exemplos válidos | "Alocar motorista João ao item 2" |
 | Exemplos inválidos | "Alocação = substituição automática" |
-| Status | CANDIDATE |
+| Status | ACCEPTED_FOR_DOCUMENTATION |
 | Confiança | MEDIUM |
 | DDPs | DDP-007 |
 
@@ -805,7 +808,7 @@
 | Termos confundidos | TERM-033; TERM-018 |
 | Exemplos válidos | "Criar documento lógico 'Contrato XYZ'" |
 | Exemplos inválidos | "Documento = qualquer anexo sem entidade" |
-| Status | CANDIDATE |
+| Status | ACCEPTED_FOR_DOCUMENTATION |
 | Confiança | MEDIUM |
 | DDPs | DDP-013, DDP-033 |
 
@@ -829,7 +832,7 @@
 | Termos confundidos | TERM-009 |
 | Exemplos válidos | "Adicionar versão 2 ao documento lógico" |
 | Exemplos inválidos | "Nova versão apaga a anterior" |
-| Status | CANDIDATE |
+| Status | ACCEPTED_FOR_DOCUMENTATION |
 | Confiança | MEDIUM |
 | DDPs | DDP-013 |
 
@@ -853,7 +856,7 @@
 | Termos confundidos | TERM-031 |
 | Exemplos válidos | "PDF associado à versão 1" |
 | Exemplos inválidos | "Arquivo = documento lógico" |
-| Status | CANDIDATE |
+| Status | ACCEPTED_FOR_DOCUMENTATION |
 | Confiança | MEDIUM |
 | DDPs | DDP-013 |
 
@@ -877,7 +880,7 @@
 | Termos confundidos | TERM-035; TERM-033 |
 | Exemplos válidos | "Foto de entrega anexada à OS" |
 | Exemplos inválidos | "Evidência de execução = nota fiscal" |
-| Status | CANDIDATE |
+| Status | ACCEPTED_FOR_DOCUMENTATION |
 | Confiança | MEDIUM |
 | DDPs | DDP-013 |
 
@@ -901,7 +904,7 @@
 | Termos confundidos | TERM-034 |
 | Exemplos válidos | "Anexar e-mail do cliente à solicitação" |
 | Exemplos inválidos | "Evidência = qualquer campo texto" |
-| Status | CANDIDATE |
+| Status | ACCEPTED_FOR_DOCUMENTATION |
 | Confiança | MEDIUM |
 | DDPs | DDP-002 |
 
@@ -925,7 +928,7 @@
 | Termos confundidos | INT-REQ-004; integração genérica |
 | Exemplos válidos | "Origem da solicitação: WhatsApp" |
 | Exemplos inválidos | "WhatsApp substitui cadastro no sistema" |
-| Status | PENDING_DISAMBIGUATION |
+| Status | AMBIGUOUS |
 | Confiança | MEDIUM |
 | DDPs | DDP-021 |
 
@@ -949,7 +952,7 @@
 | Termos confundidos | sistema único; ERP |
 | Exemplos válidos | "ERP é SoT de PO — hipótese a validar" |
 | Exemplos inválidos | "SoT = WhatsApp" |
-| Status | PENDING_DISAMBIGUATION |
+| Status | AMBIGUOUS |
 | Confiança | LOW |
 | DDPs | DDP-020 |
 
@@ -973,7 +976,7 @@
 | Termos confundidos | TERM-003 (serviço genérico) |
 | Exemplos válidos | "Locação como atividade futura candidata" |
 | Exemplos inválidos | "Locação no MVP obrigatória" |
-| Status | PENDING_VALIDATION |
+| Status | PENDING_BUSINESS_DECISION |
 | Confiança | MEDIUM |
 | DDPs | DDP-026 |
 
@@ -997,7 +1000,7 @@
 | Termos confundidos | TERM-039 vs SLA |
 | Exemplos válidos | "OS parada há tempo indefinido — relatório candidato" |
 | Exemplos inválidos | "Aging > 48h bloqueia sistema" |
-| Status | PENDING_VALIDATION |
+| Status | PENDING_BUSINESS_DECISION |
 | Confiança | LOW |
 | DDPs | DDP-024 |
 
@@ -1021,7 +1024,7 @@
 | Termos confundidos | TERM-018 |
 | Exemplos válidos | "Item faturável sem origem — bloquear" |
 | Exemplos inválidos | "Todo item da OS é faturável automaticamente" |
-| Status | CANDIDATE |
+| Status | ACCEPTED_FOR_DOCUMENTATION |
 | Confiança | MEDIUM |
 | DDPs | DDP-011 |
 
@@ -1045,7 +1048,7 @@
 | Termos confundidos | TERM-015 |
 | Exemplos válidos | "Origem = medição M-123" |
 | Exemplos inválidos | "Origem = desconhecida aceita" |
-| Status | CANDIDATE |
+| Status | ACCEPTED_FOR_DOCUMENTATION |
 | Confiança | MEDIUM |
 | DDPs | DDP-010, DDP-011 |
 
@@ -1069,7 +1072,7 @@
 | Termos confundidos | bug; falha de integração |
 | Exemplos válidos | "Divergência entre PO e consumo registrado" |
 | Exemplos inválidos | "Divergência = rejeitar OS automaticamente" (regra TBD) |
-| Status | CANDIDATE |
+| Status | ACCEPTED_FOR_DOCUMENTATION |
 | Confiança | MEDIUM |
 | DDPs | DDP-009 |
 
@@ -1093,7 +1096,7 @@
 | Termos confundidos | sobrescrever arquivo |
 | Exemplos válidos | "Substituir versão vigente mantendo v1 arquivada" |
 | Exemplos inválidos | "Substituir = apagar versão anterior" |
-| Status | CANDIDATE |
+| Status | ACCEPTED_FOR_DOCUMENTATION |
 | Confiança | MEDIUM |
 | DDPs | DDP-033 |
 
@@ -1117,7 +1120,7 @@
 | Termos confundidos | TECHNICAL_LOG |
 | Exemplos válidos | "Consultar quem alterou itens da OS" |
 | Exemplos inválidos | "Histórico = stdout do servidor" |
-| Status | CANDIDATE |
+| Status | ACCEPTED_FOR_DOCUMENTATION |
 | Confiança | MEDIUM |
 | DDPs | DDP-015 |
 
@@ -1141,7 +1144,7 @@
 | Termos confundidos | TERM-010 |
 | Exemplos válidos | "Converter solicitação aprovada em rascunho de OS" |
 | Exemplos inválidos | "Converter = liberar para execução" |
-| Status | CANDIDATE |
+| Status | ACCEPTED_FOR_DOCUMENTATION |
 | Confiança | MEDIUM |
 | DDPs | DDP-002 |
 
@@ -1165,7 +1168,7 @@
 | Termos confundidos | TERM-010 |
 | Exemplos válidos | "Rejeitar solicitação com motivo" |
 | Exemplos inválidos | "Decisão implícita por silêncio" (TBD) |
-| Status | CANDIDATE |
+| Status | ACCEPTED_FOR_DOCUMENTATION |
 | Confiança | MEDIUM |
 | DDPs | DDP-002 |
 
@@ -1189,7 +1192,7 @@
 | Termos confundidos | TERM-016 (processo inteiro) |
 | Exemplos válidos | "Aprovar medição para prosseguir faturamento candidato" |
 | Exemplos inválidos | "Quem prepara medição aprova a própria" |
-| Status | CANDIDATE |
+| Status | ACCEPTED_FOR_DOCUMENTATION |
 | Confiança | MEDIUM |
 | DDPs | DDP-010 |
 
@@ -1213,6 +1216,6 @@
 | Termos confundidos | TERM-015 |
 | Exemplos válidos | "Preservar número PO do cliente" |
 | Exemplos inválidos | "Alterar ID externo silenciosamente" |
-| Status | CANDIDATE |
+| Status | ACCEPTED_FOR_DOCUMENTATION |
 | Confiança | MEDIUM |
 | DDPs | DDP-020 |

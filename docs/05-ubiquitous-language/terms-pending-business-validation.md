@@ -1,10 +1,11 @@
-# UL-GLQ-001
+# UL-TPBV-001
 
 | Campo | Valor |
 | --- | --- |
-| Document ID | Questões abertas do glossário |
+| Document ID | Termos pendentes de validação empresarial |
 | Total | 12 (GLQ-001..GLQ-012) |
-| Prompt | 04 |
+| Prompt | 04 (revisão estrutural) |
+| Arquivo anterior | `glossary-open-questions.md` (histórico Git) |
 
 ### GLQ-001
 

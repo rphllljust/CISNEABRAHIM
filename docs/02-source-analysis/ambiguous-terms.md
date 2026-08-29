@@ -47,4 +47,27 @@
 | Saldo autorizado (PO) | AMBIGUOUS_VALUE | EV-060 | Regra consumo TBD |
 | Chassi | AMBIGUOUS_ATTRIBUTE | EV-052 | Exibição vs armazenamento DDP-027 |
 
-Glossário formal: Prompt 04 — ver [`../05-ubiquitous-language/`](../05-ubiquitous-language/).
+## Mapeamento Prompt 04 (revisão 2026-08-28)
+
+| Ambiguidade AT-001 | TERM principal | Status glossário |
+| --- | --- | --- |
+| OS / Ordem de Serviço | TERM-002 | AMBIGUOUS |
+| Solicitação | TERM-001 | ACCEPTED_FOR_DOCUMENTATION |
+| Serviço | TERM-003 | AMBIGUOUS |
+| Cliente | TERM-004 | PENDING_BUSINESS_DECISION |
+| Executor | TERM-006 | PENDING_BUSINESS_DECISION |
+| Pessoa autorizada | TERM-007 | AMBIGUOUS |
+| PO / Purchase Order | TERM-013 | AMBIGUOUS |
+| Medição | TERM-016 | AMBIGUOUS |
+| Faturamento / Nota / Pagamento | TERM-017, TERM-018, TERM-019 | AMBIGUOUS / PENDING |
+| Custo / Preço / Margem | TERM-020..022 | Documentados |
+| Equipamento / Veículo / Máquina / Mão de obra | TERM-025..028 | AMBIGUOUS |
+| Documento / Versão | TERM-031, TERM-032 | ACCEPTED_FOR_DOCUMENTATION |
+| ASSIGNED / VIEWED / etc. | TERM-008 | AMBIGUOUS — DDP-032 |
+| RC | — | **Não evidenciado** em SRC-001 |
+
+Glossário formal: [`../05-ubiquitous-language/README.md`](../05-ubiquitous-language/README.md).
+
+Resolução detalhada: [`../05-ubiquitous-language/ambiguous-terms-resolution.md`](../05-ubiquitous-language/ambiguous-terms-resolution.md).
+
+Auditoria cruzada: [`../05-ubiquitous-language/language-consistency-audit.md`](../05-ubiquitous-language/language-consistency-audit.md).
