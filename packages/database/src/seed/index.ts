@@ -13,6 +13,7 @@ export {
   verifyPasswordHash,
 } from './password-policy';
 export { runProductionBootstrap } from './production-bootstrap';
+export { ensureCisneServicePortfolioBaseline, type CisnePortfolioSeedResult } from '../catalog/cisne-service-portfolio-baseline';
 export type {
   ProductionBootstrapInput,
   ProductionBootstrapResult,

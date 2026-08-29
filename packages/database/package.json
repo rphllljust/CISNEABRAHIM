@@ -29,6 +29,7 @@
     "test": "vitest run --passWithNoTests --exclude '**/*.integration.spec.ts'",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "seed:dev": "pnpm build && node dist/cli/run-dev-seed.js",
+    "seed:portfolio": "pnpm build && node dist/cli/run-portfolio-seed.js",
     "bootstrap:production": "pnpm build && node dist/cli/run-production-bootstrap.js",
     "generate": "drizzle-kit generate",
     "migrate": "drizzle-kit migrate",

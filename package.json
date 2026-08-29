@@ -27,6 +27,7 @@
     "db:migrate:test": "node scripts/migrate-test-database.mjs",
     "db:generate": "pnpm --filter @cisne/database generate",
     "db:seed:dev": "pnpm --filter @cisne/database seed:dev",
+    "db:seed:portfolio": "pnpm --filter @cisne/database seed:portfolio",
     "bootstrap:first-identity": "pnpm --filter @cisne/database bootstrap:production",
     "gate:src-002": "node scripts/validate-src-002-gate.mjs",
     "gate:database": "pnpm --filter @cisne/database gate:ci-database",

@@ -16,6 +16,8 @@ export async function applyServiceCatalogMigration(client: DbClient): Promise<vo
     '0009_units_of_measure.sql',
     '0010_physical_resource_types.sql',
     '0011_operational_labor_types.sql',
+    '0012_commercial_pricing_measurement.sql',
+    '0013_execution_requirements.sql',
   ]) {
     const migrationPath = resolve(__dirname, '../../migrations', file);
     const sql = readFileSync(migrationPath, 'utf8');

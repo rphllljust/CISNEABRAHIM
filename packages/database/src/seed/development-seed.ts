@@ -4,6 +4,7 @@ import { DEVELOPMENT_SEED_LOGIN } from './constants';
 import { assertDevelopmentOnly } from './environment';
 import { generateSecurePassword, hashPassword } from './password-policy';
 import type { SafeSeedResult } from './types';
+import { ensureCisneServicePortfolioBaseline } from '../catalog/cisne-service-portfolio-baseline';
 
 function normalizeLogin(login: string): string {
   return login.trim().toLowerCase();
@@ -47,11 +48,12 @@ export async function runDevelopmentSeed(
 
   const existing = await findIdentityByLogin(pool, normalized);
   if (existing) {
+    const portfolio = await ensureCisneServicePortfolioBaseline(pool);
     return {
       outcome: 'already_exists',
       login: normalized,
       identityId: existing.identityId,
-      message: 'Development seed identity already present; no changes applied.',
+      message: `Development seed identity already present; portfolio ${portfolio.outcome}.`,
     };
   }
 
@@ -89,10 +91,12 @@ export async function runDevelopmentSeed(
     throw error;
   }
 
+  const portfolio = await ensureCisneServicePortfolioBaseline(pool);
+
   return {
     outcome: 'created',
     login: normalized,
     identityId,
-    message: 'Development seed identity created.',
+    message: `Development seed identity created; portfolio ${portfolio.outcome}.`,
   };
 }

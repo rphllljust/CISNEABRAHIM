@@ -22,3 +22,10 @@ export {
   BASELINE_OPERATIONAL_LABOR_TYPES,
   ensureOperationalLaborTypesBaseline,
 } from './catalog/operational-labor-types-baseline';
+export {
+  CISNE_PORTFOLIO_CATEGORY_CODE,
+  CISNE_SERVICE_PORTFOLIO,
+  ensureCisneServicePortfolioBaseline,
+  type CisnePortfolioSeedResult,
+} from './catalog/cisne-service-portfolio-baseline';
+export { normalizeCnaeCode, portfolioServiceDefinitionCode } from './catalog/cnae-code';

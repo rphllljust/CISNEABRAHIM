@@ -2509,3 +2509,32 @@ Resumo:
 - [x] Prompt 41 não executado
 
 ---
+
+## Prompt 41 — Seed canônico do portfólio de serviços CISNE
+
+| Campo | Valor |
+| ----- | ----- |
+| ID | 41 |
+| Título | Seed canônico do portfólio de serviços CISNE |
+| Status | PASS |
+| Commit | feat(catalog): seed complete Cisne service portfolio |
+| Executado em | 2026-08-29 |
+
+```
+Resumo:
+  49 ServiceDefinitions idempotentes com CNAE como referência legal,
+  arquétipos mapeados, v1 publicada, sem preço/imposto/requisitos inventados.
+  Prompt 42 não executado.
+```
+
+## Quality gate Prompt 41 (evidência)
+
+- [x] 49 atividades CNAE cadastradas com codes únicos
+- [x] Arquétipos operacionais válidos (sem nova policy)
+- [x] Seed idempotente — segunda execução sem novas versões
+- [x] Versões publicadas (ACTIVE v1)
+- [x] Sem pricing, evidence, labor ou resource requirements inventados
+- [x] lint, typecheck, test, test:integration, gate:database — PASS
+- [x] Prompt 42 não executado
+
+---

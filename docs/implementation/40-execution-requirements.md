@@ -5,7 +5,7 @@
 | **Status** | `EXECUTED` |
 | **Executado em** | 2026-08-29 |
 | **Commit** | `feat(catalog): implement typed execution requirements` |
-| **Próximo passo autorizado** | Prompt 41 |
+| **Próximo passo autorizado** | Prompt 42 (via Prompt 41) |
 
 ## Resultado
 
