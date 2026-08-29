@@ -33,3 +33,32 @@ export {
   contactPurposeEnum,
   ptySchema,
 } from './clients';
+export {
+  CATALOG_JSON_SCHEMA_VERSION,
+  type CatalogCommercialConfigV1,
+  type CatalogExecutionConfigV1,
+  type CatalogMeasurementConfigV1,
+  type CatalogPricingModelConfigV1,
+  type CatalogRequirementConfigV1,
+} from './catalog-json-contracts';
+export {
+  catSchema,
+  evidenceKindEnum,
+  legalClassificationSchemeEnum,
+  measurementModeEnum,
+  operationalArchetypeEnum,
+  pricingModelCodeEnum,
+  requirementLevelEnum,
+  resourceKindEnum,
+  serviceAllowedUnits,
+  serviceCategories,
+  serviceCategoryStatusEnum,
+  serviceDefinitionLineageStatusEnum,
+  serviceDefinitions,
+  serviceDefinitionVersionStatusEnum,
+  serviceDefinitionVersions,
+  serviceEvidenceRequirements,
+  serviceLegalClassifications,
+  servicePricingModels,
+  serviceResourceRequirements,
+} from './service-catalog';

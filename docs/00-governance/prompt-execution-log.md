@@ -2177,3 +2177,44 @@ NOTES:
 - [x] lint, typecheck, test, test:integration, build, gate:src-002 — PASS
 
 ---
+
+```text
+PROMPT: 32
+TITLE: Persistência versionada do Catálogo de Serviços
+STARTED_AT: 2026-08-29T16:12:00-04:00
+FINISHED_AT: 2026-08-29T16:20:00-04:00
+STATUS: EXECUTED
+BASELINE_COMMIT: 38cc6ce
+FILES_CREATED:
+  packages/database/migrations/0007_service_catalog_baseline.sql
+  packages/database/src/schema/service-catalog.ts
+  packages/database/src/schema/catalog-json-contracts.ts
+  packages/database/src/service-catalog.persistence.integration.spec.ts
+  packages/database/src/test-builders/catalog-builders.ts
+  docs/implementation/32-service-catalog-persistence.md
+FILES_CHANGED:
+  packages/database/migrations/meta/_journal.json
+  packages/database/src/schema/index.ts
+  packages/database/src/test-builders/index.ts
+  packages/database/src/test-builders/client-builders.ts
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+SRC_002_GATE: PASS
+CODE_CREATED: YES (database catalog persistence only)
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Schema cat com 8 tabelas, enums, trigger de imutabilidade pós-publicação;
+  JSONB com schema_version; 9 testes integração migration/constraints/versionamento.
+  Clients inalterado; Prompt 33 não executado.
+```
+
+## Quality gate Prompt 32 (evidência)
+
+- [x] Migration `0007` forward-only aplicável em banco vazio e incremental
+- [x] UUID, code único, version>=1, status, soft deactivation, actors, FKs, CHECKs, índices
+- [x] Versão publicada imutável (trigger); evolução semântica via nova versão
+- [x] Testes: duplicidade code, versionamento, FK inválida, rollback transacional
+- [x] lint, typecheck, test, test:integration, build, gate:src-002 — PASS
+- [x] Prompt 33 não executado
+
+---

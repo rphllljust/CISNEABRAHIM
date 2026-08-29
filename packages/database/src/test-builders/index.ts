@@ -21,4 +21,14 @@ export {
   type InsertScopedRecordInput,
 } from './authz-builders';
 export { countSecurityAuditEvents, truncateSecurityAuditTables } from './audit-builders';
+export {
+  applyServiceCatalogMigration,
+  insertCatalogCategory,
+  insertCatalogDefinition,
+  insertCatalogVersion,
+  truncateCatalogTables,
+  type BuiltCatalogCategory,
+  type BuiltCatalogDefinition,
+  type BuiltCatalogVersion,
+} from './catalog-builders';
 export { truncateAllOperationalTables, truncateClientTables } from './client-builders';

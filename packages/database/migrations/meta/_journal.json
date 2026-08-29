@@ -50,6 +50,13 @@
       "when": 1787985900000,
       "tag": "0006_clients_baseline",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1787986000000,
+      "tag": "0007_service_catalog_baseline",
+      "breakpoints": true
     }
   ]
 }
