@@ -38,3 +38,4 @@ export { truncateAllOperationalTables, truncateClientTables } from './client-bui
 export { truncatePhysicalAssetTables } from './asset-builders';
 export { truncateDocumentTables } from './document-builders';
 export { truncateCommercialProposalTables } from './proposal-builders';
+export { truncateCommercialPurchaseOrderTables } from './purchase-order-builders';

@@ -2740,3 +2740,74 @@ NOTES:
 - [x] Prompt 47 não executado
 
 ---
+
+## Prompt 47 — Purchase orders e autorizações comerciais
+
+| Campo | Valor |
+| ----- | ----- |
+| ID | 47 |
+| Título | Purchase order, RC e autorizações comerciais |
+| Status | PASS |
+| Commit | feat(commercial): implement purchase orders and authorizations |
+| Executado em | 2026-08-29 |
+
+```text
+PROMPT: 47
+TITLE: Purchase order, RC e autorizações comerciais
+STARTED_AT: 2026-08-29T18:48:00-04:00
+FINISHED_AT: 2026-08-29T18:56:00-04:00
+STATUS: PASS
+FILES_CREATED:
+  packages/database/migrations/0017_commercial_purchase_orders_baseline.sql
+  packages/database/src/schema/commercial-purchase-orders.ts
+  packages/database/src/test-builders/purchase-order-builders.ts
+  packages/database/src/commercial-purchase-orders.persistence.integration.spec.ts
+  apps/api/src/commercial/domain/purchase-order.ts
+  apps/api/src/commercial/domain/purchase-order.validation.ts
+  apps/api/src/commercial/domain/purchase-order.validation.spec.ts
+  apps/api/src/commercial/repositories/purchase-orders.repository.ts
+  apps/api/src/commercial/repositories/purchase-orders.repository.types.ts
+  apps/api/src/commercial/services/purchase-orders-access.service.ts
+  apps/api/src/commercial/controllers/purchase-orders.controller.ts
+  apps/api/src/commercial/dto/purchase-orders.dto.ts
+  apps/api/src/commercial/serializers/purchase-orders-response.serializer.ts
+  apps/api/src/commercial/purchase-orders.integration.spec.ts
+  apps/api/src/commercial/purchase-orders.e2e.spec.ts
+  docs/implementation/47-commercial-purchase-orders.md
+FILES_CHANGED:
+  packages/database/migrations/meta/_journal.json
+  packages/database/src/schema/index.ts
+  packages/database/src/test-builders/index.ts
+  apps/api/src/commercial/commercial.module.ts
+  apps/api/src/commercial/errors/commercial-error-codes.ts
+  apps/api/src/authorization/types/authz-actions.ts
+  apps/api/src/authorization/types/authz-resources.ts
+  apps/api/src/authorization/scope/scope-matcher.ts
+  apps/api/src/authorization/services/scope-enforcement.service.ts
+  apps/api/src/audit/types/security-audit.types.ts
+  apps/api/src/test/ensure-migrations.ts
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  PurchaseOrder/PurchaseOrderItem em schema com; sem CommercialAuthorization genérica.
+  Regras de faturamento por PO (PO_NUMBER_REQUIRED_ON_INVOICE, XML/PDF, BILLING_CUTOFF, RECIPIENT).
+  precedence_tier=PURCHASE_ORDER sem resolver de hierarquia empresarial.
+  Registro snapshota cliente e serviço; unique (client_id, po_number) para DRAFT/REGISTERED.
+  Fixture RC 991487 / PO 41926266 apenas em testes.
+  Prompt 48 não executado.
+```
+
+## Quality gate Prompt 47 (evidência)
+
+- [x] Duplicate PO per client
+- [x] Authorization cross-unit
+- [x] Document link + audit on register
+- [x] Version/conflict (row_version)
+- [x] LINE_ITEMS precision + HEADER_TOTAL
+- [x] Migration 0017 + persistence test
+- [x] lint, typecheck, test, test:integration (purchase-orders), test:e2e (purchase-orders) — PASS
+- [x] Prompt 48 não executado
+
+---

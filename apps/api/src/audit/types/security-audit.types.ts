@@ -45,6 +45,9 @@ export const SECURITY_AUDIT_ACTIONS = {
   CommercialProposalReject: 'security:commercial:proposal:reject',
   CommercialProposalExpire: 'security:commercial:proposal:expire',
   CommercialProposalCancel: 'security:commercial:proposal:cancel',
+  CommercialPurchaseOrderCreate: 'security:commercial:purchase-order:create',
+  CommercialPurchaseOrderRegister: 'security:commercial:purchase-order:register',
+  CommercialPurchaseOrderCancel: 'security:commercial:purchase-order:cancel',
 } as const;
 
 export type SecurityAuditAction =
@@ -81,6 +84,7 @@ export const SECURITY_AUDIT_RESOURCE_TYPES = {
   ResourcesAsset: 'security:resources:asset',
   DocumentsDocument: 'security:documents:document',
   CommercialProposal: 'security:commercial:proposal',
+  CommercialPurchaseOrder: 'security:commercial:purchase-order',
 } as const;
 
 export type SecurityAuditResourceType =

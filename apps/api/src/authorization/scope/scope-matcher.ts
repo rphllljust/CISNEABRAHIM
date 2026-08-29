@@ -117,6 +117,18 @@ export function toResourceContextFromProposal(proposal: {
   };
 }
 
+export function toResourceContextFromPurchaseOrder(purchaseOrder: {
+  id: string;
+  unit_id: string;
+  client_id: string;
+}): AuthzResourceContext {
+  return {
+    resourceId: purchaseOrder.id,
+    unitId: purchaseOrder.unit_id,
+    clientId: purchaseOrder.client_id,
+  };
+}
+
 export function toResourceContextFromScopedRecord(record: {
   id: string;
   owner_identity_id: string;

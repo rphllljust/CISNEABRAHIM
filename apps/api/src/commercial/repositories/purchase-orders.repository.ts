@@ -1,0 +1,580 @@
+import { Injectable } from '@nestjs/common';
+import type { Pool, PoolClient } from 'pg';
+import { DatabaseService } from '../../infrastructure/database/database.service';
+import { PURCHASE_ORDER_STATUSES } from '../domain/purchase-order';
+import type { PurchaseOrderItemInput } from '../domain/purchase-order.validation';
+import type {
+  ClientSnapshotSource,
+  CreatePurchaseOrderPersistenceInput,
+  PurchaseOrderBillingRuleRow,
+  PurchaseOrderDocumentLinkRow,
+  PurchaseOrderItemRow,
+  PurchaseOrderRow,
+  RegisterPurchaseOrderPersistenceInput,
+  ServiceSnapshotSource,
+  UpdatePurchaseOrderDraftPersistenceInput,
+} from './purchase-orders.repository.types';
+
+const PO_SELECT = `
+  SELECT
+    id,
+    internal_code,
+    client_id,
+    unit_id,
+    po_number,
+    rc_number,
+    issue_date::text AS issue_date,
+    buyer_contact,
+    service_manager,
+    delivery_location,
+    billing_location,
+    currency_code,
+    pricing_structure::text AS pricing_structure,
+    total_amount::text AS total_amount,
+    payment_terms,
+    payment_method,
+    client_snapshot,
+    original_document_id,
+    status::text AS status,
+    registered_at,
+    registered_by_identity_id,
+    cancelled_at,
+    cancelled_by_identity_id,
+    cancellation_reason,
+    row_version,
+    created_at,
+    updated_at
+  FROM com.purchase_orders
+`;
+
+@Injectable()
+export class PurchaseOrdersRepository {
+  constructor(private readonly databaseService: DatabaseService) {}
+
+  private pool(): Pool {
+    const connection = this.databaseService.getConnection();
+    if (!connection) {
+      throw new Error('DATABASE_URL is not configured.');
+    }
+    return connection.pool;
+  }
+
+  async isUnitRegistered(unitId: string): Promise<boolean> {
+    const result = await this.pool().query<{ exists: boolean }>(
+      `SELECT EXISTS (
+         SELECT 1 FROM "authorization".scope_refs
+         WHERE scope_type = 'UNIT' AND ref_id = $1
+       ) AS exists`,
+      [unitId],
+    );
+    return result.rows[0]?.exists === true;
+  }
+
+  async findClientById(clientId: string): Promise<ClientSnapshotSource | null> {
+    const result = await this.pool().query<ClientSnapshotSource>(
+      `SELECT id, legal_name, trade_name, normalized_tax_id, status::text AS status
+       FROM pty.clients WHERE id = $1`,
+      [clientId],
+    );
+    return result.rows[0] ?? null;
+  }
+
+  async findDocumentById(documentId: string): Promise<{ id: string; unit_id: string } | null> {
+    const result = await this.pool().query<{ id: string; unit_id: string }>(
+      `SELECT id, unit_id FROM doc.documents WHERE id = $1`,
+      [documentId],
+    );
+    return result.rows[0] ?? null;
+  }
+
+  async findServiceSnapshot(
+    serviceDefinitionId: string,
+    serviceDefinitionVersionId?: string,
+  ): Promise<ServiceSnapshotSource | null> {
+    const result = await this.pool().query<ServiceSnapshotSource>(
+      `SELECT
+         sd.id AS service_definition_id,
+         sdv.id AS service_definition_version_id,
+         sd.code,
+         sdv.name,
+         sdv.version,
+         sdv.status::text AS version_status
+       FROM cat.service_definitions sd
+       INNER JOIN cat.service_definition_versions sdv ON sdv.service_definition_id = sd.id
+       WHERE sd.id = $1
+         AND ($2::uuid IS NULL OR sdv.id = $2::uuid)
+       ORDER BY sdv.version DESC
+       LIMIT 1`,
+      [serviceDefinitionId, serviceDefinitionVersionId ?? null],
+    );
+    return result.rows[0] ?? null;
+  }
+
+  async findById(purchaseOrderId: string): Promise<PurchaseOrderRow | null> {
+    const result = await this.pool().query<PurchaseOrderRow>(
+      `${PO_SELECT} WHERE id = $1`,
+      [purchaseOrderId],
+    );
+    return result.rows[0] ?? null;
+  }
+
+  async listPurchaseOrders(
+    whereClause: string,
+    params: unknown[],
+    limit: number,
+    offset: number,
+  ): Promise<PurchaseOrderRow[]> {
+    const result = await this.pool().query<PurchaseOrderRow>(
+      `${PO_SELECT}
+       WHERE ${whereClause}
+       ORDER BY created_at DESC
+       LIMIT $${params.length + 1}
+       OFFSET $${params.length + 2}`,
+      [...params, limit, offset],
+    );
+    return result.rows;
+  }
+
+  async listItems(purchaseOrderId: string): Promise<PurchaseOrderItemRow[]> {
+    const result = await this.pool().query<PurchaseOrderItemRow>(
+      `SELECT
+         id,
+         purchase_order_id,
+         line_number,
+         description,
+         service_definition_id,
+         service_definition_version_id,
+         service_snapshot,
+         quantity::text AS quantity,
+         unit_code,
+         unit_price_amount::text AS unit_price_amount,
+         line_total_amount::text AS line_total_amount,
+         rc_line_reference
+       FROM com.purchase_order_items
+       WHERE purchase_order_id = $1
+       ORDER BY line_number ASC`,
+      [purchaseOrderId],
+    );
+    return result.rows;
+  }
+
+  async listBillingRules(purchaseOrderId: string): Promise<PurchaseOrderBillingRuleRow[]> {
+    const result = await this.pool().query<PurchaseOrderBillingRuleRow>(
+      `SELECT id, purchase_order_id, rule_type::text AS rule_type, rule_config, precedence_tier, created_at
+       FROM com.purchase_order_billing_rules
+       WHERE purchase_order_id = $1
+       ORDER BY created_at ASC`,
+      [purchaseOrderId],
+    );
+    return result.rows;
+  }
+
+  async listDocumentLinks(purchaseOrderId: string): Promise<PurchaseOrderDocumentLinkRow[]> {
+    const result = await this.pool().query<PurchaseOrderDocumentLinkRow>(
+      `SELECT id, purchase_order_id, document_id, link_purpose, created_at
+       FROM com.purchase_order_document_links
+       WHERE purchase_order_id = $1
+       ORDER BY created_at ASC`,
+      [purchaseOrderId],
+    );
+    return result.rows;
+  }
+
+  async createPurchaseOrder(input: CreatePurchaseOrderPersistenceInput): Promise<{
+    purchaseOrder: PurchaseOrderRow;
+    items: PurchaseOrderItemRow[];
+    billingRules: PurchaseOrderBillingRuleRow[];
+  }> {
+    const client = await this.pool().connect();
+    try {
+      await client.query('BEGIN');
+
+      const poResult = await client.query<PurchaseOrderRow>(
+        `INSERT INTO com.purchase_orders (
+           internal_code, client_id, unit_id, po_number, rc_number, issue_date,
+           buyer_contact, service_manager, delivery_location, billing_location,
+           currency_code, pricing_structure, total_amount, payment_terms, payment_method,
+           original_document_id, created_by_identity_id, updated_by_identity_id
+         )
+         VALUES (
+           $1, $2, $3, $4, $5, $6::date, $7, $8, $9, $10,
+           $11, $12::com.purchase_order_pricing_structure, $13, $14, $15, $16, $17, $17
+         )
+         RETURNING
+           id, internal_code, client_id, unit_id, po_number, rc_number,
+           issue_date::text AS issue_date, buyer_contact, service_manager,
+           delivery_location, billing_location, currency_code,
+           pricing_structure::text AS pricing_structure,
+           total_amount::text AS total_amount, payment_terms, payment_method,
+           client_snapshot, original_document_id, status::text AS status,
+           registered_at, registered_by_identity_id, cancelled_at,
+           cancelled_by_identity_id, cancellation_reason, row_version, created_at, updated_at`,
+        [
+          input.internalCode,
+          input.clientId,
+          input.unitId,
+          input.poNumber,
+          input.rcNumber ?? null,
+          input.issueDate ?? null,
+          JSON.stringify(input.buyerContact),
+          input.serviceManager ?? null,
+          JSON.stringify(input.deliveryLocation),
+          JSON.stringify(input.billingLocation),
+          input.currencyCode,
+          input.pricingStructure,
+          input.totalAmount ?? null,
+          input.paymentTerms ?? null,
+          input.paymentMethod ?? null,
+          input.originalDocumentId ?? null,
+          input.actorIdentityId,
+        ],
+      );
+      const purchaseOrder = poResult.rows[0];
+      if (!purchaseOrder) {
+        throw new Error('PURCHASE_ORDER_CREATE_FAILED');
+      }
+
+      const items = await this.replaceItems(client, purchaseOrder.id, input.items);
+      const billingRules = await this.replaceBillingRules(
+        client,
+        purchaseOrder.id,
+        input.billingRules,
+        input.actorIdentityId,
+      );
+
+      await client.query('COMMIT');
+      return { purchaseOrder, items, billingRules };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async updateDraft(
+    input: UpdatePurchaseOrderDraftPersistenceInput,
+  ): Promise<
+    | { purchaseOrder: PurchaseOrderRow; items: PurchaseOrderItemRow[]; billingRules: PurchaseOrderBillingRuleRow[] }
+    | 'VERSION_CONFLICT'
+    | 'INVALID_STATE'
+  > {
+    const client = await this.pool().connect();
+    try {
+      await client.query('BEGIN');
+
+      const lock = await client.query<PurchaseOrderRow>(
+        `${PO_SELECT} WHERE id = $1 FOR UPDATE`,
+        [input.purchaseOrderId],
+      );
+      const current = lock.rows[0];
+      if (!current) {
+        await client.query('ROLLBACK');
+        return 'VERSION_CONFLICT';
+      }
+      if (current.status !== PURCHASE_ORDER_STATUSES.Draft) {
+        await client.query('ROLLBACK');
+        return 'INVALID_STATE';
+      }
+      if (current.row_version !== input.rowVersion) {
+        await client.query('ROLLBACK');
+        return 'VERSION_CONFLICT';
+      }
+
+      await client.query(
+        `UPDATE com.purchase_orders
+         SET
+           po_number = COALESCE($3, po_number),
+           rc_number = CASE WHEN $4::text = '__UNSET__' THEN rc_number WHEN $4 IS NULL THEN NULL ELSE $4 END,
+           issue_date = CASE WHEN $5::text = '__UNSET__' THEN issue_date WHEN $5 IS NULL THEN NULL ELSE $5::date END,
+           buyer_contact = COALESCE($6::jsonb, buyer_contact),
+           service_manager = CASE WHEN $7::text = '__UNSET__' THEN service_manager WHEN $7 IS NULL THEN NULL ELSE $7 END,
+           delivery_location = COALESCE($8::jsonb, delivery_location),
+           billing_location = COALESCE($9::jsonb, billing_location),
+           currency_code = COALESCE($10, currency_code),
+           pricing_structure = COALESCE($11::com.purchase_order_pricing_structure, pricing_structure),
+           total_amount = CASE WHEN $12::text = '__UNSET__' THEN total_amount WHEN $12 IS NULL THEN NULL ELSE $12::numeric END,
+           payment_terms = CASE WHEN $13::text = '__UNSET__' THEN payment_terms WHEN $13 IS NULL THEN NULL ELSE $13 END,
+           payment_method = CASE WHEN $14::text = '__UNSET__' THEN payment_method WHEN $14 IS NULL THEN NULL ELSE $14 END,
+           original_document_id = CASE WHEN $15::text = '__UNSET__' THEN original_document_id WHEN $15 IS NULL THEN NULL ELSE $15::uuid END,
+           updated_by_identity_id = $16,
+           updated_at = NOW(),
+           row_version = row_version + 1
+         WHERE id = $1 AND row_version = $2`,
+        [
+          input.purchaseOrderId,
+          input.rowVersion,
+          input.poNumber ?? null,
+          input.rcNumber === undefined ? '__UNSET__' : input.rcNumber,
+          input.issueDate === undefined ? '__UNSET__' : input.issueDate,
+          input.buyerContact ? JSON.stringify(input.buyerContact) : null,
+          input.serviceManager === undefined ? '__UNSET__' : input.serviceManager,
+          input.deliveryLocation ? JSON.stringify(input.deliveryLocation) : null,
+          input.billingLocation ? JSON.stringify(input.billingLocation) : null,
+          input.currencyCode ?? null,
+          input.pricingStructure ?? null,
+          input.totalAmount === undefined ? '__UNSET__' : input.totalAmount,
+          input.paymentTerms === undefined ? '__UNSET__' : input.paymentTerms,
+          input.paymentMethod === undefined ? '__UNSET__' : input.paymentMethod,
+          input.originalDocumentId === undefined ? '__UNSET__' : input.originalDocumentId,
+          input.actorIdentityId,
+        ],
+      );
+
+      let items: PurchaseOrderItemRow[];
+      if (input.items) {
+        items = await this.replaceItems(client, input.purchaseOrderId, input.items);
+      } else {
+        items = await this.listItems(input.purchaseOrderId);
+      }
+
+      let billingRules: PurchaseOrderBillingRuleRow[];
+      if (input.billingRules) {
+        billingRules = await this.replaceBillingRules(
+          client,
+          input.purchaseOrderId,
+          input.billingRules,
+          input.actorIdentityId,
+        );
+      } else {
+        billingRules = await this.listBillingRules(input.purchaseOrderId);
+      }
+
+      await client.query('COMMIT');
+
+      const purchaseOrder = await this.findById(input.purchaseOrderId);
+      if (!purchaseOrder) {
+        throw new Error('PURCHASE_ORDER_LOAD_FAILED');
+      }
+      return { purchaseOrder, items, billingRules };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async register(
+    input: RegisterPurchaseOrderPersistenceInput,
+  ): Promise<PurchaseOrderRow | 'VERSION_CONFLICT' | 'INVALID_STATE'> {
+    const client = await this.pool().connect();
+    try {
+      await client.query('BEGIN');
+
+      const lock = await client.query<PurchaseOrderRow>(
+        `${PO_SELECT} WHERE id = $1 FOR UPDATE`,
+        [input.purchaseOrderId],
+      );
+      const current = lock.rows[0];
+      if (!current) {
+        await client.query('ROLLBACK');
+        return 'VERSION_CONFLICT';
+      }
+      if (current.status !== PURCHASE_ORDER_STATUSES.Draft) {
+        await client.query('ROLLBACK');
+        return 'INVALID_STATE';
+      }
+      if (current.row_version !== input.rowVersion) {
+        await client.query('ROLLBACK');
+        return 'VERSION_CONFLICT';
+      }
+
+      for (const snapshot of input.itemSnapshots) {
+        if (!snapshot.serviceSnapshot) {
+          continue;
+        }
+        await client.query(
+          `UPDATE com.purchase_order_items
+           SET service_snapshot = $3::jsonb
+           WHERE purchase_order_id = $1 AND line_number = $2`,
+          [input.purchaseOrderId, snapshot.lineNumber, JSON.stringify(snapshot.serviceSnapshot)],
+        );
+      }
+
+      const result = await client.query<PurchaseOrderRow>(
+        `UPDATE com.purchase_orders
+         SET
+           status = 'REGISTERED'::com.purchase_order_status,
+           client_snapshot = $3::jsonb,
+           registered_at = NOW(),
+           registered_by_identity_id = $4,
+           updated_by_identity_id = $4,
+           updated_at = NOW(),
+           row_version = row_version + 1
+         WHERE id = $1 AND row_version = $2
+         RETURNING
+           id, internal_code, client_id, unit_id, po_number, rc_number,
+           issue_date::text AS issue_date, buyer_contact, service_manager,
+           delivery_location, billing_location, currency_code,
+           pricing_structure::text AS pricing_structure,
+           total_amount::text AS total_amount, payment_terms, payment_method,
+           client_snapshot, original_document_id, status::text AS status,
+           registered_at, registered_by_identity_id, cancelled_at,
+           cancelled_by_identity_id, cancellation_reason, row_version, created_at, updated_at`,
+        [
+          input.purchaseOrderId,
+          input.rowVersion,
+          JSON.stringify(input.clientSnapshot),
+          input.actorIdentityId,
+        ],
+      );
+
+      await client.query('COMMIT');
+      return result.rows[0] ?? 'VERSION_CONFLICT';
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async cancel(
+    purchaseOrderId: string,
+    rowVersion: number,
+    actorIdentityId: string,
+    cancellationReason?: string,
+  ): Promise<PurchaseOrderRow | 'VERSION_CONFLICT' | 'INVALID_STATE'> {
+    const result = await this.pool().query<PurchaseOrderRow>(
+      `UPDATE com.purchase_orders
+       SET
+         status = 'CANCELLED'::com.purchase_order_status,
+         cancelled_at = NOW(),
+         cancelled_by_identity_id = $3,
+         cancellation_reason = $4,
+         updated_by_identity_id = $3,
+         updated_at = NOW(),
+         row_version = row_version + 1
+       WHERE id = $1
+         AND row_version = $2
+         AND status IN ('DRAFT'::com.purchase_order_status, 'REGISTERED'::com.purchase_order_status)
+       RETURNING
+         id, internal_code, client_id, unit_id, po_number, rc_number,
+         issue_date::text AS issue_date, buyer_contact, service_manager,
+         delivery_location, billing_location, currency_code,
+         pricing_structure::text AS pricing_structure,
+         total_amount::text AS total_amount, payment_terms, payment_method,
+         client_snapshot, original_document_id, status::text AS status,
+         registered_at, registered_by_identity_id, cancelled_at,
+         cancelled_by_identity_id, cancellation_reason, row_version, created_at, updated_at`,
+      [purchaseOrderId, rowVersion, actorIdentityId, cancellationReason ?? null],
+    );
+    if ((result.rowCount ?? 0) === 0) {
+      const current = await this.findById(purchaseOrderId);
+      if (!current) {
+        return 'VERSION_CONFLICT';
+      }
+      if (current.status === PURCHASE_ORDER_STATUSES.Cancelled) {
+        return 'INVALID_STATE';
+      }
+      return current.row_version !== rowVersion ? 'VERSION_CONFLICT' : 'INVALID_STATE';
+    }
+    return result.rows[0]!;
+  }
+
+  async linkDocument(
+    purchaseOrderId: string,
+    documentId: string,
+    linkPurpose: string,
+    actorIdentityId: string,
+  ): Promise<PurchaseOrderDocumentLinkRow> {
+    const result = await this.pool().query<PurchaseOrderDocumentLinkRow>(
+      `INSERT INTO com.purchase_order_document_links (
+         purchase_order_id, document_id, link_purpose, created_by_identity_id
+       )
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (purchase_order_id, document_id, link_purpose) DO UPDATE
+         SET created_at = com.purchase_order_document_links.created_at
+       RETURNING id, purchase_order_id, document_id, link_purpose, created_at`,
+      [purchaseOrderId, documentId, linkPurpose, actorIdentityId],
+    );
+    const row = result.rows[0];
+    if (!row) {
+      throw new Error('DOCUMENT_LINK_FAILED');
+    }
+    return row;
+  }
+
+  private async replaceItems(
+    client: PoolClient,
+    purchaseOrderId: string,
+    items: PurchaseOrderItemInput[],
+  ): Promise<PurchaseOrderItemRow[]> {
+    await client.query(`DELETE FROM com.purchase_order_items WHERE purchase_order_id = $1`, [
+      purchaseOrderId,
+    ]);
+    const rows: PurchaseOrderItemRow[] = [];
+    for (const item of items) {
+      const result = await client.query<PurchaseOrderItemRow>(
+        `INSERT INTO com.purchase_order_items (
+           purchase_order_id, line_number, description,
+           service_definition_id, service_definition_version_id,
+           quantity, unit_code, unit_price_amount, line_total_amount, rc_line_reference
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         RETURNING
+           id, purchase_order_id, line_number, description,
+           service_definition_id, service_definition_version_id, service_snapshot,
+           quantity::text AS quantity, unit_code,
+           unit_price_amount::text AS unit_price_amount,
+           line_total_amount::text AS line_total_amount, rc_line_reference`,
+        [
+          purchaseOrderId,
+          item.lineNumber,
+          item.description,
+          item.serviceDefinitionId ?? null,
+          item.serviceDefinitionVersionId ?? null,
+          item.quantity ?? null,
+          item.unitCode ?? null,
+          item.unitPrice ?? null,
+          item.lineTotal ?? null,
+          item.rcLineReference ?? null,
+        ],
+      );
+      const row = result.rows[0];
+      if (row) {
+        rows.push(row);
+      }
+    }
+    return rows;
+  }
+
+  private async replaceBillingRules(
+    client: PoolClient,
+    purchaseOrderId: string,
+    rules: Array<{ ruleType: string; ruleConfig?: Record<string, unknown> }>,
+    actorIdentityId: string,
+  ): Promise<PurchaseOrderBillingRuleRow[]> {
+    await client.query(`DELETE FROM com.purchase_order_billing_rules WHERE purchase_order_id = $1`, [
+      purchaseOrderId,
+    ]);
+    const rows: PurchaseOrderBillingRuleRow[] = [];
+    for (const rule of rules) {
+      const result = await client.query<PurchaseOrderBillingRuleRow>(
+        `INSERT INTO com.purchase_order_billing_rules (
+           purchase_order_id, rule_type, rule_config, precedence_tier, created_by_identity_id
+         )
+         VALUES ($1, $2::com.purchase_order_rule_type, $3, 'PURCHASE_ORDER', $4)
+         RETURNING id, purchase_order_id, rule_type::text AS rule_type, rule_config, precedence_tier, created_at`,
+        [purchaseOrderId, rule.ruleType, JSON.stringify(rule.ruleConfig ?? {}), actorIdentityId],
+      );
+      const row = result.rows[0];
+      if (row) {
+        rows.push(row);
+      }
+    }
+    return rows;
+  }
+
+  isDuplicatePoViolation(error: unknown): boolean {
+    if (!error || typeof error !== 'object') {
+      return false;
+    }
+    const pgError = error as { code?: string; constraint?: string };
+    return (
+      pgError.code === '23505' &&
+      (pgError.constraint?.includes('client_po_number') ?? false)
+    );
+  }
+}

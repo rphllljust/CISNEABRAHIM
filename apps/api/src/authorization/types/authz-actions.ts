@@ -63,6 +63,12 @@ export const AUTHZ_ACTIONS = {
   CommercialProposalReject: 'commercial:proposal:reject',
   CommercialProposalExpire: 'commercial:proposal:expire',
   CommercialProposalCancel: 'commercial:proposal:cancel',
+  CommercialPurchaseOrderCreate: 'commercial:purchase-order:create',
+  CommercialPurchaseOrderRead: 'commercial:purchase-order:read',
+  CommercialPurchaseOrderList: 'commercial:purchase-order:list',
+  CommercialPurchaseOrderUpdate: 'commercial:purchase-order:update',
+  CommercialPurchaseOrderRegister: 'commercial:purchase-order:register',
+  CommercialPurchaseOrderCancel: 'commercial:purchase-order:cancel',
 } as const;
 
 export type AuthzAction = (typeof AUTHZ_ACTIONS)[keyof typeof AUTHZ_ACTIONS];

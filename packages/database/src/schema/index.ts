@@ -66,6 +66,15 @@ export {
   proposals,
 } from './commercial-proposals';
 export {
+  purchaseOrderBillingRules,
+  purchaseOrderDocumentLinks,
+  purchaseOrderItems,
+  purchaseOrderPricingStructureEnum,
+  purchaseOrderRuleTypeEnum,
+  purchaseOrders,
+  purchaseOrderStatusEnum,
+} from './commercial-purchase-orders';
+export {
   catSchema,
   evidenceKindEnum,
   legalClassificationSchemeEnum,

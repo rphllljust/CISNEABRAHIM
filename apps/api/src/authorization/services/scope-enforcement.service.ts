@@ -159,6 +159,14 @@ export class ScopeEnforcementService {
   }
 
   buildProposalListFilter(grants: GrantRow[]): ScopeSqlPredicate {
+    return this.buildCommercialRecordListFilter(grants);
+  }
+
+  buildPurchaseOrderListFilter(grants: GrantRow[]): ScopeSqlPredicate {
+    return this.buildCommercialRecordListFilter(grants);
+  }
+
+  private buildCommercialRecordListFilter(grants: GrantRow[]): ScopeSqlPredicate {
     const hasGlobal = grants.some(
       (grant) => grant.scope_type === AUTHZ_SCOPES.Global && grant.resource_id === null,
     );
