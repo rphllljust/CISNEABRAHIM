@@ -2569,3 +2569,73 @@ Resumo:
 - [x] Prompt 43 não executado
 
 ---
+
+## Prompt 43 — Ativos físicos e veículos (backend)
+
+| Campo | Valor |
+| ----- | ----- |
+| ID | 43 |
+| Título | Ativos físicos e veículos: backend |
+| Status | PASS |
+| Commit | feat(resources): implement physical asset registry |
+| Executado em | 2026-08-29 |
+
+```
+Resumo:
+  Schema ast.physical_assets + ast.vehicle_profiles (extensão VEHICLE).
+  API CRUD com lifecycle/allocation separados, optimistic locking,
+  authz resources:asset:* com escopo UNIT, auditoria de mutações.
+  Prompt 44 não executado.
+```
+
+## Quality gate Prompt 43 (evidência)
+
+- [x] Create vehicle e create machine
+- [x] Duplicate assetCode e duplicate plate
+- [x] Inactive resource type rejeitado
+- [x] Update stale (VERSION_CONFLICT)
+- [x] Deactivate / activate lifecycle
+- [x] Histórico em security_audit_events
+- [x] Authorization e cross-unit scope
+- [x] DTO sem campos internos (normalized_plate, created_by)
+- [x] Migration 0014 + persistence test
+- [x] E2E HTTP
+- [x] lint, typecheck, test:integration, test:e2e — PASS
+- [x] Prompt 44 não executado
+
+---
+
+## Prompt 43 — Ativos físicos e veículos (backend)
+
+| Campo | Valor |
+| ----- | ----- |
+| ID | 43 |
+| Título | Ativos físicos e veículos: backend |
+| Status | PASS |
+| Commit | feat(resources): implement physical asset registry |
+| Executado em | 2026-08-29 |
+
+```
+Resumo:
+  Schema ast.physical_assets + ast.vehicle_profiles (extensão VEHICLE).
+  API CRUD com lifecycle/allocation separados, optimistic locking,
+  authz resources:asset:* com escopo UNIT, auditoria de mutações.
+  Prompt 44 não executado.
+```
+
+## Quality gate Prompt 43 (evidência)
+
+- [x] Create vehicle e create machine
+- [x] Duplicate assetCode e duplicate plate
+- [x] Inactive resource type rejeitado
+- [x] Update stale (VERSION_CONFLICT)
+- [x] Deactivate / activate lifecycle
+- [x] Histórico em security_audit_events
+- [x] Authorization e cross-unit scope
+- [x] DTO sem campos internos (normalized_plate, created_by)
+- [x] Migration 0014 + persistence test
+- [x] E2E HTTP
+- [x] lint, typecheck, test:integration, test:e2e — PASS
+- [x] Prompt 44 não executado
+
+---

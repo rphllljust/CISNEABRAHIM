@@ -35,3 +35,4 @@ export {
   type BuiltCatalogVersion,
 } from './catalog-builders';
 export { truncateAllOperationalTables, truncateClientTables } from './client-builders';
+export { truncatePhysicalAssetTables } from './asset-builders';

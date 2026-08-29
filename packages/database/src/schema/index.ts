@@ -42,6 +42,13 @@ export {
   type CatalogRequirementConfigV1,
 } from './catalog-json-contracts';
 export {
+  astSchema,
+  assetAllocationStatusEnum,
+  assetLifecycleStatusEnum,
+  physicalAssets,
+  vehicleProfiles,
+} from './physical-assets';
+export {
   catSchema,
   evidenceKindEnum,
   legalClassificationSchemeEnum,

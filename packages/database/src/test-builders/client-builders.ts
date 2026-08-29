@@ -23,6 +23,8 @@ export async function truncateAllOperationalTables(client: DbClient): Promise<vo
       cat.service_definition_versions,
       cat.service_definitions,
       cat.service_categories,
+      ast.vehicle_profiles,
+      ast.physical_assets,
       audit.security_audit_events,
       pty.client_addresses,
       pty.client_contacts,

@@ -128,6 +128,11 @@ export default async function ensureMigrations(): Promise<void> {
     if (!hasObservationEvidenceKind.rows[0]?.exists) {
       await applySqlFile(pool, '0013_execution_requirements.sql');
     }
+
+    const hasPhysicalAssets = await tableExists(pool, 'ast.physical_assets');
+    if (!hasPhysicalAssets) {
+      await applySqlFile(pool, '0014_physical_assets_baseline.sql');
+    }
   } finally {
     await pool.end();
   }

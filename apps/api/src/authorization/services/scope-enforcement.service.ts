@@ -92,6 +92,30 @@ export class ScopeEnforcementService {
     return { clause: 'FALSE', params: [] };
   }
 
+  buildPhysicalAssetListFilter(grants: GrantRow[]): ScopeSqlPredicate {
+    const hasGlobal = grants.some(
+      (grant) => grant.scope_type === AUTHZ_SCOPES.Global && grant.resource_id === null,
+    );
+    if (hasGlobal) {
+      return { clause: 'TRUE', params: [] };
+    }
+
+    const unitIds = grants
+      .filter(
+        (grant) => grant.scope_type === AUTHZ_SCOPES.Unit && grant.resource_id !== null,
+      )
+      .map((grant) => grant.resource_id as string);
+
+    if (unitIds.length === 0) {
+      return { clause: 'FALSE', params: [] };
+    }
+
+    return {
+      clause: 'a.unit_id = ANY($1::text[])',
+      params: [unitIds],
+    };
+  }
+
   canAccessRecord(
     grants: GrantRow[],
     identityId: string,

@@ -31,6 +31,10 @@ export const SECURITY_AUDIT_ACTIONS = {
   ResourcesLaborTypeUpdate: 'security:resources:labor-type:update',
   ResourcesLaborTypeDeactivate: 'security:resources:labor-type:deactivate',
   ResourcesLaborTypeActivate: 'security:resources:labor-type:activate',
+  ResourcesAssetCreate: 'security:resources:asset:create',
+  ResourcesAssetUpdate: 'security:resources:asset:update',
+  ResourcesAssetDeactivate: 'security:resources:asset:deactivate',
+  ResourcesAssetActivate: 'security:resources:asset:activate',
 } as const;
 
 export type SecurityAuditAction =
@@ -64,6 +68,7 @@ export const SECURITY_AUDIT_RESOURCE_TYPES = {
   CatalogUnit: 'security:catalog:unit',
   ResourcesResourceType: 'security:resources:resource-type',
   ResourcesLaborType: 'security:resources:labor-type',
+  ResourcesAsset: 'security:resources:asset',
 } as const;
 
 export type SecurityAuditResourceType =

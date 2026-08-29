@@ -11,6 +11,7 @@ export const AUTHZ_RESOURCE_TYPES = {
   CatalogUnit: 'catalog:unit',
   ResourcesResourceType: 'resources:resource-type',
   ResourcesLaborType: 'resources:labor-type',
+  ResourcesAsset: 'resources:asset',
   CommercialPolicy: 'commercial:policy',
 } as const;
 

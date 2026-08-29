@@ -42,6 +42,12 @@ export const AUTHZ_ACTIONS = {
   ResourcesLaborTypeUpdate: 'resources:labor-type:update',
   ResourcesLaborTypeDeactivate: 'resources:labor-type:deactivate',
   ResourcesLaborTypeActivate: 'resources:labor-type:activate',
+  ResourcesAssetCreate: 'resources:asset:create',
+  ResourcesAssetRead: 'resources:asset:read',
+  ResourcesAssetList: 'resources:asset:list',
+  ResourcesAssetUpdate: 'resources:asset:update',
+  ResourcesAssetDeactivate: 'resources:asset:deactivate',
+  ResourcesAssetActivate: 'resources:asset:activate',
   CommercialPolicyRead: 'commercial:policy:read',
 } as const;
 
