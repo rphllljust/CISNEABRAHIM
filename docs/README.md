@@ -20,7 +20,8 @@
 14. `12-domain-model/` contém modelo conceitual e aggregates candidatos do Prompt 11.
 15. `13-data-model/` contém modelo lógico relacional e constraints candidatas do Prompt 12.
 16. `14-transaction-design/` contém transações, concorrência e idempotência do Prompt 13.
-17. `templates/` define a forma dos registros futuros.
+17. `15-security/` contém threat model e arquitetura de segurança do Prompt 14.
+18. `templates/` define a forma dos registros futuros.
 
 Agentes devem seguir [`../AGENTS.md`](../AGENTS.md) e o protocolo em [`00-governance/execution-protocol.md`](00-governance/execution-protocol.md).
 
@@ -216,6 +217,19 @@ Transações, concorrência e idempotência (Prompt 13). Índice: [14-transactio
 | [outbox-pattern-assessment.md](14-transaction-design/outbox-pattern-assessment.md) | Outbox PROPOSED |
 | [financial-race-analysis.md](14-transaction-design/financial-race-analysis.md) | FINANCIAL_RACE |
 | [prompt-13-completeness-report.md](14-transaction-design/prompt-13-completeness-report.md) | Relatório |
+
+## 15-security
+
+Threat model e segurança (Prompt 14). Índice: [15-security/README.md](15-security/README.md).
+
+| Arquivo | Conteúdo |
+| --- | --- |
+| [threat-model-stride.md](15-security/threat-model-stride.md) | 36 SEC-THR |
+| [abuse-case-catalog.md](15-security/abuse-case-catalog.md) | 16 SEC-ABU |
+| [authorization-architecture.md](15-security/authorization-architecture.md) | AuthZ backend |
+| [security-decisions.md](15-security/security-decisions.md) | 16 SEC-DEC |
+| [residual-risks.md](15-security/residual-risks.md) | 14 SEC-RISK |
+| [prompt-14-completeness-report.md](15-security/prompt-14-completeness-report.md) | Relatório |
 
 ## inputs
 

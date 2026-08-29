@@ -976,3 +976,45 @@ NOTES:
 - [x] Prompt 14 não executado
 
 ---
+
+```text
+PROMPT: 14
+TITLE: Security architecture e threat model
+STARTED_AT: 2026-08-29T03:20:00-04:00
+FINISHED_AT: 2026-08-29T03:55:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED:
+  docs/15-security/ (25 artefatos — ver README.md)
+FILES_CHANGED:
+  docs/01-foundation/requirements-traceability.md
+  docs/00-governance/prompt-execution-log.md
+  docs/README.md
+QUALITY_GATE: PASS_WITH_RESTRICTIONS
+SEC_AST_COUNT: 18
+SEC_THR_COUNT: 36
+SEC_ABU_COUNT: 16
+SEC_DEC_COUNT: 16
+SEC_RISK_COUNT: 14
+SEC_TEST_COUNT: 22
+DFD_FLOWS: 8
+CODE_CREATED: NO
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  STRIDE por fluxo; AuthZ backend obrigatório. Custo/margem/doc protegidos.
+  Sem conformidade jurídica inventada. IdP/MFA Prompt 20. Prompt 15 não executado.
+```
+
+## Quality gate Prompt 14 (evidência)
+
+- [x] pasta `15-security/` com 25 artefatos não vazios
+- [x] 8 fluxos e 7 trust boundaries modelados
+- [x] 36 ameaças STRIDE com campos completos
+- [x] 16 casos abuso empresarial
+- [x] custo/margem/documentos com controles explícitos
+- [x] autorização não depende do frontend (SEC-DEC-005)
+- [x] 14 riscos residuais explícitos
+- [x] 0 código
+- [x] rastreabilidade atualizada
+- [x] Prompt 15 não executado
+
+---

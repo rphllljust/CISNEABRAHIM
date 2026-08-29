@@ -295,3 +295,24 @@ Cadeia Prompt 13:
 ```text
 CMD → boundary → isolation/lock → idempotency → external effect → reconcile
 ```
+
+## Resumo Prompt 14
+
+| Métrica | Valor |
+| --- | --- |
+| Ativos (SEC-AST) | 18 |
+| Ameaças STRIDE (SEC-THR) | 36 |
+| Casos de abuso (SEC-ABU) | 16 |
+| Decisões (SEC-DEC) | 16 |
+| Riscos residuais (SEC-RISK) | 14 |
+| Cenários teste (SEC-TEST) | 22 |
+| Fluxos modelados | 8 |
+| Código | **0** |
+| Índice | [`../15-security/README.md`](../15-security/README.md) |
+| Relatório | [`../15-security/prompt-14-completeness-report.md`](../15-security/prompt-14-completeness-report.md) |
+
+Cadeia Prompt 14:
+
+```text
+SEC-AST → boundary → STRIDE → SEC-CTL → SEC-TEST → SEC-RISK residual
+```
