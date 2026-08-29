@@ -39,6 +39,7 @@ export type ServiceRequestResponse = {
   convertedAt: string | null;
   convertedServiceOrderId: string | null;
   rowVersion: number;
+  createdByIdentityId: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -87,6 +88,7 @@ export function toServiceRequestResponse(row: ServiceRequestRow): ServiceRequest
     convertedAt: row.converted_at,
     convertedServiceOrderId: row.converted_service_order_id,
     rowVersion: row.row_version,
+    createdByIdentityId: row.created_by_identity_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

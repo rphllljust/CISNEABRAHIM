@@ -1,0 +1,120 @@
+import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState, type FormEvent } from 'react';
+import { ClientsApiError, listClients } from '../../clients/api/clients-api';
+import { createServiceRequest, ServiceRequestsApiError } from '../api/service-requests-api';
+import { mapRequestErrorToMessage } from '../api/request-error-messages';
+import { ServiceRequestForm } from '../components/ServiceRequestForm';
+import { useServiceRequestCapabilities } from '../hooks/useServiceRequestCapabilities';
+import {
+  buildCreatePayload,
+  EMPTY_SERVICE_REQUEST_FORM,
+  validateServiceRequestForm,
+  type ServiceRequestFormFieldErrors,
+  type ServiceRequestFormValues,
+} from '../utils/service-request-form-validation';
+
+export function ServiceRequestCreatePage() {
+  const navigate = useNavigate();
+  const { capabilities, loading: capabilitiesLoading } = useServiceRequestCapabilities();
+  const [values, setValues] = useState<ServiceRequestFormValues>(EMPTY_SERVICE_REQUEST_FORM);
+  const [fieldErrors, setFieldErrors] = useState<ServiceRequestFormFieldErrors>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [clients, setClients] = useState<{ id: string; label: string }[]>([]);
+  const [clientsLoading, setClientsLoading] = useState(true);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void listClients({ limit: 100, offset: 0 }, controller.signal)
+      .then((response) => {
+        setClients(
+          response.items.map((client) => ({
+            id: client.id,
+            label: client.tradeName || client.legalName,
+          })),
+        );
+      })
+      .catch(() => {
+        setClients([]);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setClientsLoading(false);
+        }
+      });
+    return () => controller.abort();
+  }, []);
+
+  if (capabilitiesLoading) {
+    return (
+      <main id="main-content" className="shell-page">
+        <p aria-busy="true" aria-live="polite">
+          Verificando permissões…
+        </p>
+      </main>
+    );
+  }
+
+  if (!capabilities.canCreate) {
+    return (
+      <main id="main-content" className="shell-page">
+        <h1>Nova solicitação</h1>
+        <p role="alert">Você não tem permissão para registrar solicitações.</p>
+        <Link to="/app/requests">Voltar à lista</Link>
+      </main>
+    );
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (submitting) {
+      return;
+    }
+
+    const errors = validateServiceRequestForm(values, 'create');
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setSubmitError(null);
+      return;
+    }
+
+    setFieldErrors({});
+    setSubmitError(null);
+    setSubmitting(true);
+
+    try {
+      const created = await createServiceRequest(buildCreatePayload(values));
+      void navigate(`/app/requests/${created.serviceRequest.id}`, { replace: true });
+    } catch (error) {
+      if (error instanceof ServiceRequestsApiError) {
+        setSubmitError(mapRequestErrorToMessage(error.code, error.status));
+      } else if (error instanceof ClientsApiError) {
+        setSubmitError('Não foi possível validar Clientes autorizados.');
+      } else {
+        setSubmitError('Não foi possível registrar a solicitação.');
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <main id="main-content" className="shell-page requests-page">
+      <header className="requests-page__header">
+        <h1>Nova solicitação</h1>
+      </header>
+      <ServiceRequestForm
+        mode="create"
+        values={values}
+        clients={clients}
+        clientsLoading={clientsLoading}
+        fieldErrors={fieldErrors}
+        submitError={submitError}
+        submitting={submitting}
+        onChange={setValues}
+        onSubmit={(event) => void handleSubmit(event)}
+        cancelHref="/app/requests"
+      />
+    </main>
+  );
+}

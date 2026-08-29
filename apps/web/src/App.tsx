@@ -22,6 +22,11 @@ import { PhysicalAssetDetailPage } from './assets/pages/PhysicalAssetDetailPage'
 import { PhysicalAssetEditPage } from './assets/pages/PhysicalAssetEditPage';
 import { PhysicalAssetsListPage } from './assets/pages/PhysicalAssetsListPage';
 import { AssetsRoute } from './assets/AssetsRoute';
+import { RequestsRoute } from './requests/RequestsRoute';
+import { ServiceRequestCreatePage } from './requests/pages/ServiceRequestCreatePage';
+import { ServiceRequestDetailPage } from './requests/pages/ServiceRequestDetailPage';
+import { ServiceRequestEditPage } from './requests/pages/ServiceRequestEditPage';
+import { ServiceRequestsListPage } from './requests/pages/ServiceRequestsListPage';
 import { AppHomePage } from './pages/AppHomePage';
 import { LoginPage } from './pages/LoginPage';
 import { PlatformDiagnosticsPage } from './pages/PlatformDiagnosticsPage';
@@ -167,6 +172,38 @@ export function App() {
                   <AssetsRoute>
                     <PhysicalAssetDetailPage />
                   </AssetsRoute>
+                }
+              />
+              <Route
+                path="/app/requests"
+                element={
+                  <RequestsRoute>
+                    <ServiceRequestsListPage />
+                  </RequestsRoute>
+                }
+              />
+              <Route
+                path="/app/requests/new"
+                element={
+                  <RequestsRoute>
+                    <ServiceRequestCreatePage />
+                  </RequestsRoute>
+                }
+              />
+              <Route
+                path="/app/requests/:serviceRequestId/edit"
+                element={
+                  <RequestsRoute>
+                    <ServiceRequestEditPage />
+                  </RequestsRoute>
+                }
+              />
+              <Route
+                path="/app/requests/:serviceRequestId"
+                element={
+                  <RequestsRoute>
+                    <ServiceRequestDetailPage />
+                  </RequestsRoute>
                 }
               />
               <Route path="/app/no-access" element={<ShellAccessDeniedPage />} />

@@ -2860,3 +2860,42 @@ NOTES:
 - [x] Prompt 49 não executado
 
 ---
+
+## Prompt 49 — Solicitação de serviço: frontend
+
+```
+PROMPT_ID: 49
+PROMPT_TITLE: Solicitação de serviço — frontend
+EXECUTED_AT: 2026-08-29
+EXECUTION_STATUS: PASS
+COMMIT: feat(web): implement service request interface
+ARTIFACTS:
+  apps/web/src/requests/
+  apps/web/src/test/requests-fetch-mock.ts
+  apps/web/src/App.tsx
+  apps/web/src/shell/nav-config.ts
+  apps/web/src/shell/useNavAccess.ts
+  apps/web/src/index.css
+  apps/api/src/requests/serializers/service-requests-response.serializer.ts
+  docs/implementation/49-service-requests-frontend.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  UI consome contratos reais; transições via POST endpoints com rowVersion.
+  Origem da solicitação separada de Registrado por; Cliente opcional via seletor.
+  Sem botão de conversão para OS; capabilities apenas UX.
+  createdByIdentityId exposto no serializer para exibir registrante.
+  Prompt 50 não executado.
+```
+
+## Quality gate Prompt 49 (evidência)
+
+- [x] create, edit, submit, approve, reject, cancel
+- [x] forbidden, stale version, loading, empty, error, accessibility
+- [x] E2E service-requests
+- [x] lint, typecheck, test (@cisne/web) — PASS
+- [x] Prompt 50 não executado
+
+---

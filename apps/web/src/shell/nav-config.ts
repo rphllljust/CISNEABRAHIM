@@ -39,6 +39,13 @@ export const SHELL_NAV_ITEMS: ShellNavItem[] = [
     capabilityId: 'resources:asset:list',
     accessCheck: 'asset-list',
   },
+  {
+    id: 'requests',
+    label: 'Solicitações',
+    path: '/app/requests',
+    capabilityId: 'requests:service-request:list',
+    accessCheck: 'request-list',
+  },
 ];
 
 export function findNavItemByPath(pathname: string): ShellNavItem | undefined {
