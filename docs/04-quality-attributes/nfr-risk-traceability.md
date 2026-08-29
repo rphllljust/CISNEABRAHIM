@@ -1,11 +1,11 @@
-# QATTR-TRACE-001
+﻿# QATTR-NFR-RISK-TRACE-001
 
 | Campo | Valor |
 | --- | --- |
-| Document ID | Rastreabilidade não funcional |
+| Document ID | Rastreabilidade NFR, cenários e riscos |
 | Fonte | SRC-001 |
-| Prompt | 03 |
-| Cadeia | SOURCE → EVIDENCE → BR → FR → NFR → QA-SC → RISK → DDP |
+| Prompt | 03 (revisão estrutural) |
+| Cadeia | SOURCE → EV → BR → FR/UC → NFR/QA-SC → RISK → FUTURE TEST (TBD) |
 
 ## Resumo
 
@@ -53,4 +53,6 @@
 
 - Registro completo: [non-functional-requirements-register.md](./non-functional-requirements-register.md)
 - Cenários: [quality-attribute-scenarios.md](./quality-attribute-scenarios.md)
+- SLOs pendentes: [service-level-objectives-pending.md](./service-level-objectives-pending.md)
+- Mapa de dependências: [../03-requirements/requirement-dependency-map.md](../03-requirements/requirement-dependency-map.md)
 - Matriz funcional: [../01-foundation/requirements-traceability.md](../01-foundation/requirements-traceability.md)

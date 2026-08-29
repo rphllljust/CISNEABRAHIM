@@ -73,9 +73,12 @@ Requisitos não funcionais e cenários de qualidade (Prompt 03). Índice: [04-qu
 
 | Arquivo | Conteúdo |
 | --- | --- |
+| [nfr-method.md](04-quality-attributes/nfr-method.md) | Método e classificação NFR |
 | [non-functional-requirements-register.md](04-quality-attributes/non-functional-requirements-register.md) | 40 NFRs NFR-001..NFR-040 |
 | [quality-attribute-scenarios.md](04-quality-attributes/quality-attribute-scenarios.md) | 28 cenários QA-SC-001..QA-SC-028 |
 | [security-requirements.md](04-quality-attributes/security-requirements.md) | 24 SEC-REQ |
+| [service-level-objectives-pending.md](04-quality-attributes/service-level-objectives-pending.md) | SLOs pendentes (sem valores) |
+| [nfr-risk-traceability.md](04-quality-attributes/nfr-risk-traceability.md) | Rastreabilidade NFR ↔ risco |
 | [prompt-03-completeness-report.md](04-quality-attributes/prompt-03-completeness-report.md) | Relatório de completude |
 
 ## 05-ubiquitous-language

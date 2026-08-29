@@ -1,4 +1,4 @@
-# QATTR-CONC-001
+﻿# QATTR-CONC-001
 
 | Campo | Valor |
 | --- | --- |
@@ -35,7 +35,7 @@
 | IDEM-REQ-002 | Converter solicitação | UNIQUE_BUSINESS_OPERATION | Uma conversão efetiva por solicitação | PENDING_SOURCE_VALIDATION |
 | IDEM-REQ-003 | Comandos financeiros | IDEMPOTENCY_REQUIRED | Reenvio não deve duplicar cobrança ou pagamento candidato | PENDING_BUSINESS_DECISION |
 | IDEM-REQ-004 | Integração externa | IDEMPOTENCY_REQUIRED | Retentativas não devem duplicar efeito externo | PENDING_SOURCE_VALIDATION |
-| IDEM-REQ-005 | Upload de evidência | SAFE_REPEAT | Reenvio pode exigir deduplicação por hash — a definir | PENDING_TARGET_DEFINITION |
+| IDEM-REQ-005 | Upload de evidência | SAFE_REPEAT | Reenvio pode exigir deduplicação por hash — a definir | PENDING_MEASUREMENT |
 
 **Total IDEM-REQ:** 5
 

@@ -1,4 +1,4 @@
-# QATTR-PERF-001
+﻿# QATTR-PERF-001
 
 | Campo | Valor |
 | --- | --- |
@@ -28,20 +28,20 @@
 
 | Classe | Exemplos FR/UC | Target |
 | --- | --- | --- |
-| OP-CLASS-READ | Consulta OS, histórico, relatórios | TARGET_PENDING |
-| OP-CLASS-WRITE | Registrar solicitação, alocar recurso | TARGET_PENDING |
-| OP-CLASS-WORKFLOW | Liberar, converter, decidir medição | TARGET_PENDING |
-| OP-CLASS-UPLOAD | Anexar evidência, versão documental | TARGET_PENDING |
-| OP-CLASS-INTEGRATION | Sincronizar referência comercial | TARGET_PENDING |
-| OP-CLASS-REPORT | UC-026, RPT-REQ-* | TARGET_PENDING |
+| OP-CLASS-READ | Consulta OS, histórico, relatórios | TARGET_NOT_DEFINED |
+| OP-CLASS-WRITE | Registrar solicitação, alocar recurso | TARGET_NOT_DEFINED |
+| OP-CLASS-WORKFLOW | Liberar, converter, decidir medição | TARGET_NOT_DEFINED |
+| OP-CLASS-UPLOAD | Anexar evidência, versão documental | TARGET_NOT_DEFINED |
+| OP-CLASS-INTEGRATION | Sincronizar referência comercial | TARGET_NOT_DEFINED |
+| OP-CLASS-REPORT | UC-026, RPT-REQ-* | TARGET_NOT_DEFINED |
 
 ## Requisitos PERF
 
 | ID | Declaração | NFR | Status |
 | --- | --- | --- | --- |
-| PERF-REQ-001 | Baseline de latência por classe antes de fixar SLO | NFR-032 | PENDING_TARGET_DEFINITION |
-| PERF-REQ-002 | Capacidade dimensionada após levantamento de volume | NFR-033 | PENDING_TARGET_DEFINITION |
-| PERF-REQ-003 | Limites de upload definidos após inventário de arquivos | NFR-034 | PENDING_TARGET_DEFINITION |
-| PERF-REQ-004 | Integrações mensuráveis após contrato técnico | NFR-035 | PENDING_TARGET_DEFINITION |
+| PERF-REQ-001 | Baseline de latência por classe antes de fixar SLO | NFR-032 | PENDING_MEASUREMENT |
+| PERF-REQ-002 | Capacidade dimensionada após levantamento de volume | NFR-033 | PENDING_MEASUREMENT |
+| PERF-REQ-003 | Limites de upload definidos após inventário de arquivos | NFR-034 | PENDING_MEASUREMENT |
+| PERF-REQ-004 | Integrações mensuráveis após contrato técnico | NFR-035 | PENDING_MEASUREMENT |
 
 **Total PERF-REQ:** 4

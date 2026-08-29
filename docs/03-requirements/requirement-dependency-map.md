@@ -6,9 +6,13 @@
 | Fonte | SRC-001 |
 | Status documental | CANDIDATE — sem fonte primária |
 | Gerado em | 2026-08-28 |
-| Prompt | 02 |
+| Prompt | 02, 03 (atualizado) |
+| Última revisão | Prompt 03 — cadeia NFR |
 
 > Requisitos derivados exclusivamente de SRC-001 (contexto reconstruído). Nenhum item `CONFIRMED`.
+
+## Dependências funcionais (FR)
+
 | Origem | Relação | Destino | Justificativa |
 | --- | --- | --- | --- |
 | FR-009 | REQUIRES | FR-001 | Conversão exige solicitação registrada |
@@ -35,3 +39,34 @@
 | FR-028 | ENABLES | FR-025 | Detecção de conflito suporta alocação segura |
 | FR-034 | ENABLES | FR-033 | Divergência pode afetar consumo de PO |
 | FR-022 | ENABLES | FR-011 | Histórico suporta auditoria de alterações de conteúdo |
+
+## Dependências não funcionais (NFR)
+
+| Origem | Relação | Destino | Justificativa |
+| --- | --- | --- | --- |
+| FR-001 | QUALITY_REQUIRES | NFR-002 | Idempotência na criação de solicitação |
+| FR-009 | QUALITY_REQUIRES | NFR-003 | Idempotência na conversão solicitação → OS |
+| FR-014 | QUALITY_REQUIRES | NFR-004, NFR-007 | Integridade e autorização na liberação |
+| FR-022 | QUALITY_REQUIRES | NFR-001, NFR-006 | Concorrência e histórico de OS |
+| FR-025 | QUALITY_REQUIRES | NFR-005 | Alocação exclusiva de recurso |
+| FR-032 | QUALITY_REQUIRES | NFR-008 | Proteção de custo e margem |
+| FR-038, FR-039 | QUALITY_REQUIRES | NFR-011 | Integridade financeira e idempotência |
+| FR-037 | QUALITY_REQUIRES | NFR-013 | SoD em decisão de medição |
+| FR-030 | QUALITY_REQUIRES | NFR-012 | Integração sem sucesso local falso |
+| FR-042 | QUALITY_REQUIRES | NFR-009, NFR-010 | Versão documental e acesso restrito |
+| NFR-023 | DEPENDS_ON | DDP-040 | Disponibilidade — janela operacional pendente |
+| NFR-027, NFR-028 | BLOCKED_BY | DDP-016 | RPO/RTO sem fonte primária |
+| NFR-032..035 | BLOCKED_BY | DDP-036, DDP-017 | Performance sem baseline |
+| NFR-037..039 | BLOCKED_BY | DDP-019, DDP-039 | Retenção e privacidade pendentes |
+| NFR-001..005 | TRACE_TO | QA-SC-001..005 | Cenários de concorrência e idempotência |
+| NFR-025..028 | TRACE_TO | QA-SC-021, QA-SC-022 | Recuperação e restore |
+| RISK-003 | MITIGATED_BY | NFR-001, NFR-006 | Lost update e histórico |
+| RISK-004 | MITIGATED_BY | NFR-002, NFR-003, NFR-011 | Duplicidade operacional e financeira |
+| RISK-010 | MITIGATED_BY | NFR-012, NFR-024 | Falha de integração |
+| RISK-011 | MITIGATED_BY | NFR-025..028 | Continuidade e backup |
+| RISK-020 | MITIGATED_BY | NFR-008, NFR-021 | Vazamento de custo/margem |
+| RISK-024 | MITIGATED_BY | NFR-029 | Trilha de segurança vs log técnico |
+
+Índice NFR: [`../04-quality-attributes/non-functional-requirements-register.md`](../04-quality-attributes/non-functional-requirements-register.md).
+
+Cadeia completa: [`../04-quality-attributes/nfr-risk-traceability.md`](../04-quality-attributes/nfr-risk-traceability.md).

@@ -1,4 +1,4 @@
-# QATTR-QA-SC-001
+﻿# QATTR-QA-SC-001
 
 | Campo | Valor |
 | --- | --- |
@@ -20,11 +20,11 @@
 | Environment | Operação normal; múltiplos atores |
 | Artifact | Ordem de Serviço |
 | Response | O sistema deverá impedir sobrescrita silenciosa e apresentar resultado determinístico conforme política ainda a definir |
-| Response Measure | TARGET_PENDING — taxa de lost update em teste futuro |
+| Response Measure | TARGET_NOT_DEFINED — taxa de lost update em teste futuro |
 | Business Impact | Perda de decisão autorizada; disputa operacional |
 | Related NFR | NFR-001 |
 | Related Risk | RISK-003 |
-| Status | PENDING_TARGET_DEFINITION |
+| Status | PENDING_MEASUREMENT |
 
 ## QA-SC-002 — Reenvio de registro de solicitação
 
@@ -35,7 +35,7 @@
 | Environment | Canal instável |
 | Artifact | Solicitação de serviço |
 | Response | O sistema deverá evitar duplicidade não autorizada ou sinalizar duplicidade candidata |
-| Response Measure | TARGET_PENDING |
+| Response Measure | TARGET_NOT_DEFINED |
 | Business Impact | Solicitações duplicadas; retrabalho |
 | Related NFR | NFR-002 |
 | Related Risk | RISK-004 |
@@ -50,7 +50,7 @@
 | Environment | Após aprovação candidata |
 | Artifact | Solicitação; OS |
 | Response | O sistema deverá impedir múltiplas OS da mesma solicitação |
-| Response Measure | TARGET_PENDING |
+| Response Measure | TARGET_NOT_DEFINED |
 | Business Impact | OS duplicadas; cobrança incorreta |
 | Related NFR | NFR-003 |
 | Related Risk | RISK-004 |
@@ -65,7 +65,7 @@
 | Environment | Preparação incompleta |
 | Artifact | Ordem de Serviço |
 | Response | O sistema deverá impedir liberação |
-| Response Measure | TARGET_PENDING — liberações inválidas |
+| Response Measure | TARGET_NOT_DEFINED — liberações inválidas |
 | Business Impact | OS não autorizada em campo |
 | Related NFR | NFR-004 |
 | Related Risk | RISK-022 |
@@ -80,7 +80,7 @@
 | Environment | Múltiplas execuções |
 | Artifact | Alocação de recurso |
 | Response | O sistema deverá sinalizar conflito |
-| Response Measure | TARGET_PENDING |
+| Response Measure | TARGET_NOT_DEFINED |
 | Business Impact | Dupla alocação; conflito operacional |
 | Related NFR | NFR-005 |
 | Related Risk | RISK-006 |
@@ -95,7 +95,7 @@
 | Environment | Pós-operação |
 | Artifact | Histórico da OS (AUDIT_TRAIL) |
 | Response | O sistema deverá apresentar sequência de alterações relevantes |
-| Response Measure | TARGET_PENDING — completude do histórico |
+| Response Measure | TARGET_NOT_DEFINED — completude do histórico |
 | Business Impact | Impossibilidade de auditoria |
 | Related NFR | NFR-006 |
 | Related Risk | RISK-008 |
@@ -110,7 +110,7 @@
 | Environment | Qualquer canal |
 | Artifact | Operação autorizada |
 | Response | O sistema deverá impedir ação |
-| Response Measure | TARGET_PENDING |
+| Response Measure | TARGET_NOT_DEFINED |
 | Business Impact | Violação de governança |
 | Related NFR | NFR-007 |
 | Related Risk | RISK-007, RISK-013 |
@@ -125,7 +125,7 @@
 | Environment | Tela ou relatório |
 | Artifact | Dados restritos |
 | Response | O sistema deverá ocultar ou negar acesso |
-| Response Measure | TARGET_PENDING |
+| Response Measure | TARGET_NOT_DEFINED |
 | Business Impact | Exposição de margem |
 | Related NFR | NFR-008 |
 | Related Risk | RISK-020 |
@@ -140,7 +140,7 @@
 | Environment | Gestão documental |
 | Artifact | Versões documentais |
 | Response | O sistema deverá preservar versão anterior |
-| Response Measure | TARGET_PENDING |
+| Response Measure | TARGET_NOT_DEFINED |
 | Business Impact | Perda de evidência |
 | Related NFR | NFR-009 |
 | Related Risk | RISK-008 |
@@ -155,7 +155,7 @@
 | Environment | Operação |
 | Artifact | Documento lógico |
 | Response | O sistema deverá negar ou registrar tentativa |
-| Response Measure | TARGET_PENDING |
+| Response Measure | TARGET_NOT_DEFINED |
 | Business Impact | Vazamento documental |
 | Related NFR | NFR-010 |
 | Related Risk | RISK-007 |
@@ -170,7 +170,7 @@
 | Environment | Fluxo de faturamento candidato |
 | Artifact | Item faturável |
 | Response | O sistema deverá impedir ou sinalizar ausência de origem |
-| Response Measure | TARGET_PENDING |
+| Response Measure | TARGET_NOT_DEFINED |
 | Business Impact | Cobrança contestada |
 | Related NFR | NFR-011 |
 | Related Risk | RISK-005 |
@@ -185,7 +185,7 @@
 | Environment | Integração ativa |
 | Artifact | Referência comercial |
 | Response | O sistema deverá registrar falha sem sucesso falso local |
-| Response Measure | TARGET_PENDING |
+| Response Measure | TARGET_NOT_DEFINED |
 | Business Impact | Divergência comercial |
 | Related NFR | NFR-012 |
 | Related Risk | RISK-010 |
@@ -200,7 +200,7 @@
 | Environment | Fluxo de medição |
 | Artifact | Medição |
 | Response | O sistema deverá aplicar segregação candidata |
-| Response Measure | TARGET_PENDING |
+| Response Measure | TARGET_NOT_DEFINED |
 | Business Impact | Fraude ou erro não detectado |
 | Related NFR | NFR-013, NFR-019 |
 | Related Risk | RISK-013 |
@@ -215,7 +215,7 @@
 | Environment | Vínculo comercial |
 | Artifact | Saldo de PO |
 | Response | O sistema deverá sinalizar ou bloquear conforme DDP-009 |
-| Response Measure | TARGET_PENDING |
+| Response Measure | TARGET_NOT_DEFINED |
 | Business Impact | Excedente comercial |
 | Related NFR | NFR-014 |
 | Related Risk | RISK-009 |
@@ -230,7 +230,7 @@
 | Environment | Campo |
 | Artifact | Evidência |
 | Response | O sistema deverá rejeitar vínculo inválido candidato |
-| Response Measure | TARGET_PENDING |
+| Response Measure | TARGET_NOT_DEFINED |
 | Business Impact | Comprovação inválida |
 | Related NFR | NFR-015 |
 | Related Risk | RISK-008 |
@@ -245,11 +245,11 @@
 | Environment | Anexo |
 | Artifact | Arquivo |
 | Response | O sistema deverá rejeitar ou isolar sem execução |
-| Response Measure | TARGET_PENDING |
+| Response Measure | TARGET_NOT_DEFINED |
 | Business Impact | Comprometimento de segurança |
 | Related NFR | NFR-017 |
 | Related Risk | RISK-016 |
-| Status | PENDING_TARGET_DEFINITION |
+| Status | PENDING_MEASUREMENT |
 
 ## QA-SC-017 — Preparador libera própria OS
 
@@ -260,7 +260,7 @@
 | Environment | Fluxo de liberação |
 | Artifact | OS |
 | Response | O sistema deverá aplicar segregação candidata preparação ≠ liberação |
-| Response Measure | TARGET_PENDING |
+| Response Measure | TARGET_NOT_DEFINED |
 | Business Impact | Controle interno enfraquecido |
 | Related NFR | NFR-019 |
 | Related Risk | RISK-013, RISK-022 |
@@ -275,7 +275,7 @@
 | Environment | Relatórios |
 | Artifact | Exportação |
 | Response | O sistema deverá exigir autorização e registrar exportação |
-| Response Measure | TARGET_PENDING |
+| Response Measure | TARGET_NOT_DEFINED |
 | Business Impact | Vazamento de informação comercial |
 | Related NFR | NFR-021 |
 | Related Risk | RISK-020 |
@@ -290,11 +290,11 @@
 | Environment | Horário de operação |
 | Artifact | Serviço |
 | Response | O sistema deverá comunicar indisponibilidade ou degradar funcionalidades não críticas conforme política |
-| Response Measure | TARGET_PENDING |
+| Response Measure | TARGET_NOT_DEFINED |
 | Business Impact | Parada operacional |
 | Related NFR | NFR-023 |
 | Related Risk | RISK-002 |
-| Status | PENDING_TARGET_DEFINITION |
+| Status | PENDING_MEASUREMENT |
 
 ## QA-SC-020 — Falha parcial de integração
 
@@ -305,7 +305,7 @@
 | Environment | Falha parcial |
 | Artifact | Operação mista |
 | Response | Registro empresarial preservado; notificação pendente ou falha explícita |
-| Response Measure | TARGET_PENDING |
+| Response Measure | TARGET_NOT_DEFINED |
 | Business Impact | Inconsistência percebida pelo usuário |
 | Related NFR | NFR-024 |
 | Related Risk | RISK-010 |
@@ -320,11 +320,11 @@
 | Environment | DR |
 | Artifact | Backup |
 | Response | Restauração conforme RPO futuro |
-| Response Measure | TARGET_PENDING (RPO: DDP-016) |
+| Response Measure | TARGET_NOT_DEFINED (RPO: DDP-016) |
 | Business Impact | Perda irreversível de histórico |
 | Related NFR | NFR-025, NFR-027 |
 | Related Risk | RISK-011 |
-| Status | PENDING_TARGET_DEFINITION |
+| Status | PENDING_MEASUREMENT |
 
 ## QA-SC-022 — Teste de restore
 
@@ -335,11 +335,11 @@
 | Environment | Ambiente isolado |
 | Artifact | Backup |
 | Response | Restore completo verificável |
-| Response Measure | TARGET_PENDING |
+| Response Measure | TARGET_NOT_DEFINED |
 | Business Impact | Backup inútil em desastre real |
 | Related NFR | NFR-026 |
 | Related Risk | RISK-011 |
-| Status | PENDING_TARGET_DEFINITION |
+| Status | PENDING_MEASUREMENT |
 
 ## QA-SC-023 — Evento de liberação registrado
 
@@ -350,7 +350,7 @@
 | Environment | Operação |
 | Artifact | AUDIT_TRAIL |
 | Response | Evento de liberação registrado com contexto mínimo |
-| Response Measure | TARGET_PENDING |
+| Response Measure | TARGET_NOT_DEFINED |
 | Business Impact | Impossibilidade de provar quem liberou |
 | Related NFR | NFR-029 |
 | Related Risk | RISK-024 |
@@ -365,11 +365,11 @@
 | Environment | Investigação |
 | Artifact | Cadeia transacional |
 | Response | Correlação entre solicitação, OS, medição e faturamento candidato |
-| Response Measure | TARGET_PENDING — tempo de reconstrução |
+| Response Measure | TARGET_NOT_DEFINED — tempo de reconstrução |
 | Business Impact | Disputa comercial prolongada |
 | Related NFR | NFR-030 |
 | Related Risk | RISK-005 |
-| Status | PENDING_TARGET_DEFINITION |
+| Status | PENDING_MEASUREMENT |
 
 ## QA-SC-025 — Alerta de divergência comercial
 
@@ -380,11 +380,11 @@
 | Environment | Operação |
 | Artifact | ALERT |
 | Response | Responsável candidato notificado ou evento registrado |
-| Response Measure | TARGET_PENDING |
+| Response Measure | TARGET_NOT_DEFINED |
 | Business Impact | Divergência não tratada |
 | Related NFR | NFR-031 |
 | Related Risk | RISK-009 |
-| Status | PENDING_TARGET_DEFINITION |
+| Status | PENDING_MEASUREMENT |
 
 ## QA-SC-026 — Relatório sob carga
 
@@ -395,11 +395,11 @@
 | Environment | Pico |
 | Artifact | Consultas analíticas |
 | Response | Tempo de resposta mensurável; degradação aceitável a definir |
-| Response Measure | TARGET_PENDING |
+| Response Measure | TARGET_NOT_DEFINED |
 | Business Impact | Lentidão operacional |
 | Related NFR | NFR-032 |
 | Related Risk | RISK-002 |
-| Status | PENDING_TARGET_DEFINITION |
+| Status | PENDING_MEASUREMENT |
 
 ## QA-SC-027 — Log técnico com dado pessoal
 
@@ -410,7 +410,7 @@
 | Environment | Operação |
 | Artifact | TECHNICAL_LOG |
 | Response | Redação ou exclusão de PII desnecessária conforme política futura |
-| Response Measure | TARGET_PENDING |
+| Response Measure | TARGET_NOT_DEFINED |
 | Business Impact | Exposição de dados pessoais |
 | Related NFR | NFR-039 |
 | Related Risk | RISK-024 |
@@ -425,7 +425,7 @@
 | Environment | Evolução |
 | Artifact | Histórico empresarial |
 | Response | Histórico pré-existente permanece consultável ou migrado documentadamente |
-| Response Measure | TARGET_PENDING |
+| Response Measure | TARGET_NOT_DEFINED |
 | Business Impact | Perda de auditoria histórica |
 | Related NFR | NFR-040 |
 | Related Risk | RISK-014 |

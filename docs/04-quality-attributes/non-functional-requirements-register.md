@@ -1,15 +1,15 @@
-# QATTR-NFR-REG-001
+﻿# QATTR-NFR-REG-001
 
 | Campo | Valor |
 | --- | --- |
 | Document ID | Registro de requisitos não funcionais |
 | Fonte | SRC-001 |
 | Total NFRs | 40 (NFR-001..NFR-040) |
-| Status dominante | PENDING_SOURCE_VALIDATION / PENDING_TARGET_DEFINITION |
+| Status dominante | PENDING_SOURCE_VALIDATION / PENDING_MEASUREMENT |
 | CONFIRMED | 0 |
 | Prompt | 03 |
 
-> Nenhuma meta numérica inventada. Targets não definidos: `TARGET_PENDING`. Medição: `MEASUREMENT_METHOD_PENDING`.
+> Nenhuma meta numérica inventada. Targets não definidos: `TARGET_NOT_DEFINED`. Medição: `MEASUREMENT_METHOD_PENDING`.
 
 ## Índice por categoria
 
@@ -45,11 +45,11 @@
 | Artefato afetado | Ordem de Serviço e entidades vinculadas |
 | Resposta esperada | Detecção de conflito; preservação de histórico; sem perda silenciosa |
 | Medida da resposta | Taxa de lost update em cenários de teste futuro |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-037 |
-| Status | PENDING_TARGET_DEFINITION |
+| Status | PENDING_MEASUREMENT |
 | Critérios de validação | QA-SC-001; cenário de concorrência documentado sem escolha de mecanismo |
 
 ## NFR-002 — Idempotência na criação de solicitação
@@ -71,8 +71,8 @@
 | Artefato afetado | Solicitação de serviço |
 | Resposta esperada | Uma solicitação lógica ou sinalização explícita de duplicidade |
 | Medida da resposta | Contagem de duplicatas não intencionais em teste futuro |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-037 |
 | Status | PENDING_SOURCE_VALIDATION |
@@ -97,8 +97,8 @@
 | Artefato afetado | Solicitação; OS |
 | Resposta esperada | Uma OS por solicitação ou bloqueio determinístico |
 | Medida da resposta | Zero conversões duplicadas em cenário de teste |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-002, DDP-037 |
 | Status | PENDING_SOURCE_VALIDATION |
@@ -123,8 +123,8 @@
 | Artefato afetado | Ordem de Serviço |
 | Resposta esperada | Liberação somente quando regras futuras permitirem |
 | Medida da resposta | Taxa de liberações inválidas em auditoria futura |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-003, DDP-029 |
 | Status | PENDING_BUSINESS_DECISION |
@@ -149,8 +149,8 @@
 | Artefato afetado | Alocação de recurso |
 | Resposta esperada | Sinalização de conflito; sem alocação silenciosa dupla |
 | Medida da resposta | Conflitos detectados vs não detectados em teste |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-007 |
 | Status | PENDING_SOURCE_VALIDATION |
@@ -175,8 +175,8 @@
 | Artefato afetado | Histórico da OS |
 | Resposta esperada | Registro de alteração com contexto mínimo a definir |
 | Medida da resposta | Completude do histórico em revisão de auditoria |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-015 |
 | Status | PENDING_SOURCE_VALIDATION |
@@ -201,8 +201,8 @@
 | Artefato afetado | Operações autorizadas |
 | Resposta esperada | Bloqueio ou registro de tentativa conforme política |
 | Medida da resposta | Taxa de ações não autorizadas bem-sucedidas |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-015 |
 | Status | PENDING_BUSINESS_DECISION |
@@ -227,8 +227,8 @@
 | Artefato afetado | Valores restritos |
 | Resposta esperada | Ocultação ou negação para não autorizados |
 | Medida da resposta | Vazamentos em teste de autorização futuro |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-030 |
 | Status | PENDING_BUSINESS_DECISION |
@@ -253,8 +253,8 @@
 | Artefato afetado | Versões documentais |
 | Resposta esperada | Versão anterior preservada ou conflito explícito |
 | Medida da resposta | Integridade de versões em auditoria |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-013, DDP-033 |
 | Status | PENDING_SOURCE_VALIDATION |
@@ -279,8 +279,8 @@
 | Artefato afetado | Documento lógico / arquivo |
 | Resposta esperada | Acesso negado ou registrado para não autorizados |
 | Medida da resposta | Tentativas indevidas detectadas |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-033 |
 | Status | PENDING_BUSINESS_DECISION |
@@ -305,8 +305,8 @@
 | Artefato afetado | Item faturável |
 | Resposta esperada | Bloqueio ou sinalização de origem ausente |
 | Medida da resposta | Itens sem origem em auditoria |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-010, DDP-011 |
 | Status | PENDING_SOURCE_VALIDATION |
@@ -331,8 +331,8 @@
 | Artefato afetado | Sincronização comercial/fiscal |
 | Resposta esperada | Estado local honesto; reconciliação candidata |
 | Medida da resposta | Inconsistências não detectadas |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-014, DDP-020 |
 | Status | PENDING_SOURCE_VALIDATION |
@@ -357,8 +357,8 @@
 | Artefato afetado | Medição |
 | Resposta esperada | Decisão somente por ator autorizado |
 | Medida da resposta | Violações de SoD em revisão |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-010 |
 | Status | PENDING_BUSINESS_DECISION |
@@ -383,8 +383,8 @@
 | Artefato afetado | Saldo de PO |
 | Resposta esperada | Sinalização ou bloqueio conforme DDP-009 |
 | Medida da resposta | Excedentes não detectados |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-009 |
 | Status | PENDING_BUSINESS_DECISION |
@@ -409,8 +409,8 @@
 | Artefato afetado | Evidência de execução |
 | Resposta esperada | Vínculo válido ou rejeição |
 | Medida da resposta | Evidências órfãs ou trocadas |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-013 |
 | Status | PENDING_SOURCE_VALIDATION |
@@ -435,11 +435,11 @@
 | Artefato afetado | Sessão |
 | Resposta esperada | Expiração ou revogação conforme política |
 | Medida da resposta | MEASUREMENT_METHOD_PENDING |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-015 |
-| Status | PENDING_TARGET_DEFINITION |
+| Status | PENDING_MEASUREMENT |
 | Critérios de validação | SEC-REQ-011; NFNQ-003 |
 
 ## NFR-017 — Segurança de upload de arquivos
@@ -461,11 +461,11 @@
 | Artefato afetado | Arquivo associado |
 | Resposta esperada | Rejeição ou quarentena sem execução |
 | Medida da resposta | Incidentes de upload malicioso |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-033 |
-| Status | PENDING_TARGET_DEFINITION |
+| Status | PENDING_MEASUREMENT |
 | Critérios de validação | QA-SC-016; SEC-REQ-012 |
 
 ## NFR-018 — Proteção de segredos e credenciais
@@ -487,11 +487,11 @@
 | Artefato afetado | Segredos |
 | Resposta esperada | Armazenamento e acesso conforme política futura |
 | Medida da resposta | Vazamentos em auditoria de segurança |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-014 |
-| Status | PENDING_TARGET_DEFINITION |
+| Status | PENDING_MEASUREMENT |
 | Critérios de validação | SEC-REQ-013 |
 
 ## NFR-019 — Segregação de funções em ações sensíveis
@@ -513,8 +513,8 @@
 | Artefato afetado | Fluxos sensíveis |
 | Resposta esperada | Bloqueio ou alerta conforme matriz SoD futura |
 | Medida da resposta | Violações SoD detectadas |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-015, DDP-022 |
 | Status | PENDING_BUSINESS_DECISION |
@@ -539,11 +539,11 @@
 | Artefato afetado | Consultas |
 | Resposta esperada | Resposta uniforme ou limitação de taxa conforme decisão |
 | Medida da resposta | MEASUREMENT_METHOD_PENDING |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-015 |
-| Status | PENDING_TARGET_DEFINITION |
+| Status | PENDING_MEASUREMENT |
 | Critérios de validação | SEC-REQ-015 |
 
 ## NFR-021 — Controle de exportação de dados restritos
@@ -565,8 +565,8 @@
 | Artefato afetado | Dados exportados |
 | Resposta esperada | Autorização e trilha |
 | Medida da resposta | Exportações não autorizadas |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-030 |
 | Status | PENDING_BUSINESS_DECISION |
@@ -591,11 +591,11 @@
 | Artefato afetado | Identidade de ator |
 | Resposta esperada | Decisão de IdP e fluxo em prompt futuro |
 | Medida da resposta | N/A nesta etapa |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-015 |
-| Status | PENDING_TARGET_DEFINITION |
+| Status | PENDING_MEASUREMENT |
 | Critérios de validação | SEC-REQ-017; OPEN_SECURITY_DECISION |
 
 ## NFR-023 — Disponibilidade operacional candidata
@@ -617,11 +617,11 @@
 | Artefato afetado | Serviço como um todo |
 | Resposta esperada | Degradação controlada ou indisponibilidade explícita |
 | Medida da resposta | Tempo de indisponibilidade |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-016, DDP-040 |
-| Status | PENDING_TARGET_DEFINITION |
+| Status | PENDING_MEASUREMENT |
 | Critérios de validação | QA-SC-019 |
 
 ## NFR-024 — Degradação graciosa sob falha parcial
@@ -643,8 +643,8 @@
 | Artefato afetado | Operações em andamento |
 | Resposta esperada | Falha isolada; reconciliação posterior |
 | Medida da resposta | Corrupção de dados em teste de caos futuro |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-014 |
 | Status | PENDING_SOURCE_VALIDATION |
@@ -669,11 +669,11 @@
 | Artefato afetado | Dados persistidos |
 | Resposta esperada | Restauração conforme RPO futuro |
 | Medida da resposta | Sucesso de restore em teste |
-| Target | TARGET_PENDING (RPO: DDP-016) |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED (RPO: DDP-016) |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-016, DDP-017 |
-| Status | PENDING_TARGET_DEFINITION |
+| Status | PENDING_MEASUREMENT |
 | Critérios de validação | QA-SC-021 |
 
 ## NFR-026 — Teste periódico de restauração
@@ -695,11 +695,11 @@
 | Artefato afetado | Backup |
 | Resposta esperada | Evidência de restore bem-sucedido |
 | Medida da resposta | Frequência e sucesso de testes |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-016 |
-| Status | PENDING_TARGET_DEFINITION |
+| Status | PENDING_MEASUREMENT |
 | Critérios de validação | QA-SC-022 |
 
 ## NFR-027 — RPO empresarial
@@ -721,11 +721,11 @@
 | Artefato afetado | Política de backup |
 | Resposta esperada | Valor RPO autorizado |
 | Medida da resposta | RPO em horas/minutos |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-016 |
-| Status | PENDING_TARGET_DEFINITION |
+| Status | PENDING_MEASUREMENT |
 | Critérios de validação | NFNQ-001 |
 
 ## NFR-028 — RTO empresarial
@@ -747,11 +747,11 @@
 | Artefato afetado | Plano de continuidade |
 | Resposta esperada | Valor RTO autorizado |
 | Medida da resposta | RTO em horas/minutos |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-016 |
-| Status | PENDING_TARGET_DEFINITION |
+| Status | PENDING_MEASUREMENT |
 | Critérios de validação | NFNQ-002 |
 
 ## NFR-029 — Registro de eventos de negócio relevantes
@@ -773,8 +773,8 @@
 | Artefato afetado | AUDIT_TRAIL / DOMAIN_HISTORY |
 | Resposta esperada | Registro consultável com contexto mínimo |
 | Medida da resposta | Completude em auditoria |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-038 |
 | Status | PENDING_SOURCE_VALIDATION |
@@ -799,11 +799,11 @@
 | Artefato afetado | TRACE / correlação |
 | Resposta esperada | Identificador de correlação transversal |
 | Medida da resposta | Tempo para reconstruir cadeia |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-038 |
-| Status | PENDING_TARGET_DEFINITION |
+| Status | PENDING_MEASUREMENT |
 | Critérios de validação | QA-SC-024 |
 
 ## NFR-031 — Alertas para condições operacionais críticas
@@ -825,11 +825,11 @@
 | Artefato afetado | ALERT |
 | Resposta esperada | Notificação a responsável candidato |
 | Medida da resposta | Tempo até reconhecimento |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-038, DDP-024 |
-| Status | PENDING_TARGET_DEFINITION |
+| Status | PENDING_MEASUREMENT |
 | Critérios de validação | QA-SC-025 |
 
 ## NFR-032 — Medição de tempo de resposta por classe de operação
@@ -851,11 +851,11 @@
 | Artefato afetado | METRIC |
 | Resposta esperada | Baseline medido |
 | Medida da resposta | Latência por classe |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-036, DDP-017 |
-| Status | PENDING_TARGET_DEFINITION |
+| Status | PENDING_MEASUREMENT |
 | Critérios de validação | QA-SC-026; NFNQ-004 |
 
 ## NFR-033 — Capacidade de usuários simultâneos
@@ -877,11 +877,11 @@
 | Artefato afetado | Capacidade |
 | Resposta esperada | Estimativa empresarial |
 | Medida da resposta | Usuários simultâneos |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-017 |
-| Status | PENDING_TARGET_DEFINITION |
+| Status | PENDING_MEASUREMENT |
 | Critérios de validação | NFNQ-005 |
 
 ## NFR-034 — Medição de volume e tamanho de arquivos
@@ -903,11 +903,11 @@
 | Artefato afetado | Armazenamento |
 | Resposta esperada | Inventário de volumes |
 | Medida da resposta | Tamanho médio e pico |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-017 |
-| Status | PENDING_TARGET_DEFINITION |
+| Status | PENDING_MEASUREMENT |
 | Critérios de validação | NFNQ-006 |
 
 ## NFR-035 — Medição de desempenho de integrações
@@ -929,11 +929,11 @@
 | Artefato afetado | METRIC de integração |
 | Resposta esperada | Baseline sem meta inventada |
 | Medida da resposta | Latência e erro |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-014, DDP-036 |
-| Status | PENDING_TARGET_DEFINITION |
+| Status | PENDING_MEASUREMENT |
 | Critérios de validação | NFNQ-007 |
 
 ## NFR-036 — Minimização de dados pessoais candidata
@@ -955,8 +955,8 @@
 | Artefato afetado | Dados pessoais |
 | Resposta esperada | Campos mínimos |
 | Medida da resposta | Revisão de minimização |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-039 |
 | Status | PENDING_LEGAL_VALIDATION |
@@ -981,8 +981,8 @@
 | Artefato afetado | Dados e documentos |
 | Resposta esperada | Política autorizada |
 | Medida da resposta | Prazo de retenção |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-019 |
 | Status | PENDING_LEGAL_VALIDATION |
@@ -1007,8 +1007,8 @@
 | Artefato afetado | Dados descartados |
 | Resposta esperada | Evidência de descarte |
 | Medida da resposta | Registros de descarte |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-019 |
 | Status | PENDING_LEGAL_VALIDATION |
@@ -1033,8 +1033,8 @@
 | Artefato afetado | TECHNICAL_LOG, TRACE |
 | Resposta esperada | Redação ou exclusão de PII desnecessária |
 | Medida da resposta | Auditoria de logs |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-039 |
 | Status | PENDING_LEGAL_VALIDATION |
@@ -1059,8 +1059,8 @@
 | Artefato afetado | Histórico e auditoria |
 | Resposta esperada | Migração rastreável |
 | Medida da resposta | Integridade pós-migração |
-| Target | TARGET_PENDING |
-| Método de medição | MEASUREMENT_METHOD_PENDING |
+| Valor-alvo | TARGET_NOT_DEFINED |
+| Método futuro de verificação | MEASUREMENT_METHOD_PENDING |
 | Owner | UNKNOWN |
 | DDPs | DDP-038 |
 | Status | PENDING_SOURCE_VALIDATION |

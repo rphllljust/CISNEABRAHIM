@@ -75,7 +75,7 @@ Implementação, modelo de domínio, ADR operacionais e testes: **não iniciados
 | Questões abertas NFR (NFNQ) | 18 |
 | NFR CONFIRMED | **0** |
 | NFR com target numérico | **0** |
-| RPO / RTO | TARGET_PENDING (DDP-016) |
+| RPO / RTO | TARGET_NOT_DEFINED (DDP-016) |
 | Índice completo | [`../04-quality-attributes/README.md`](../04-quality-attributes/README.md) |
 | Relatório de completude | [`../04-quality-attributes/prompt-03-completeness-report.md`](../04-quality-attributes/prompt-03-completeness-report.md) |
 
@@ -89,7 +89,7 @@ Implementação, modelo de domínio, ADR operacionais e testes: **não iniciados
 | SRC-001 | EV-083 | — | NFR-025..028 | QA-SC-021 | RISK-011 | DDP-016 |
 | SRC-001 | EV-077 | FR-030 | NFR-012 | QA-SC-012 | RISK-010 | DDP-014 |
 
-Matriz completa: [`../04-quality-attributes/non-functional-traceability.md`](../04-quality-attributes/non-functional-traceability.md).
+Matriz completa: [`../04-quality-attributes/nfr-risk-traceability.md`](../04-quality-attributes/nfr-risk-traceability.md).
 
 ## Resumo Prompt 04
 

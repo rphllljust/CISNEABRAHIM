@@ -396,6 +396,83 @@ NOTES:
 ---
 
 ```text
+PROMPT: 03-REVISED
+TITLE: Requisitos não funcionais — revisão estrutural (nomenclatura e rastreabilidade)
+STARTED_AT: 2026-08-28T23:15:00-04:00
+FINISHED_AT: 2026-08-28T23:35:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED:
+  docs/04-quality-attributes/nfr-method.md
+  docs/04-quality-attributes/scalability-requirements.md
+  docs/04-quality-attributes/service-level-objectives-pending.md
+  docs/04-quality-attributes/reliability-and-resilience.md
+  docs/04-quality-attributes/performance-and-capacity.md
+  docs/04-quality-attributes/data-integrity-and-consistency.md
+  docs/04-quality-attributes/concurrency-and-idempotency-quality.md
+  docs/04-quality-attributes/auditability-and-accountability.md
+  docs/04-quality-attributes/recoverability-and-continuity.md
+  docs/04-quality-attributes/privacy-and-data-protection.md
+  docs/04-quality-attributes/retention-and-disposal.md
+  docs/04-quality-attributes/maintainability-and-evolvability.md
+  docs/04-quality-attributes/usability-and-accessibility.md
+  docs/04-quality-attributes/compatibility-and-deployment.md
+  docs/04-quality-attributes/nfr-risk-traceability.md
+  docs/04-quality-attributes/nfr-open-questions.md
+FILES_CHANGED:
+  docs/04-quality-attributes/README.md
+  docs/04-quality-attributes/non-functional-requirements-register.md
+  docs/04-quality-attributes/quality-attribute-scenarios.md
+  docs/04-quality-attributes/security-requirements.md
+  docs/04-quality-attributes/availability-requirements.md
+  docs/04-quality-attributes/observability-requirements.md
+  docs/04-quality-attributes/testability-requirements.md
+  docs/04-quality-attributes/prompt-03-completeness-report.md
+  docs/01-foundation/requirements-traceability.md
+  docs/03-requirements/requirement-dependency-map.md
+  docs/README.md
+  docs/00-governance/prompt-execution-log.md
+FILES_REMOVED:
+  docs/04-quality-attributes/quality-attribute-method.md
+  docs/04-quality-attributes/*-requirements.md (15 arquivos com nomenclatura anterior)
+  docs/04-quality-attributes/non-functional-traceability.md
+  docs/04-quality-attributes/non-functional-open-questions.md
+  docs/04-quality-attributes/quality-attribute-tradeoffs.md
+QUALITY_GATE: PASS_WITH_RESTRICTIONS
+FUNCTIONAL_CODE_CREATED: NO
+NFR_COUNT: 40
+QA_SC_COUNT: 28
+SEC_REQ_COUNT: 24
+NFNQ_COUNT: 18
+NFR_NUMERIC_TARGETS: 0
+TARGETS_PENDING: 40
+NFR_CRITICAL: 5
+INVENTED_METRICS: 0
+NFR_CONFIRMED: 0
+ARTIFACT_COUNT_04: 24
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Revisão estrutural do Prompt 03 conforme spec atualizada.
+  TARGET_PENDING → TARGET_NOT_DEFINED; PENDING_TARGET_DEFINITION → PENDING_MEASUREMENT.
+  requirement-dependency-map.md atualizado com cadeia NFR.
+  Prompt 04 (glossário) já existia no repositório — não reexecutado nesta rodada.
+  0 scripts; working tree limpo após commit.
+```
+
+## Quality gate Prompt 03 revisado (evidência)
+
+- [x] pasta `04-quality-attributes/` com 24 artefatos não vazios
+- [x] 40 NFRs com proveniência preservada
+- [x] 28 cenários QA-SC
+- [x] 24 SEC-REQ
+- [x] SLOs pendentes sem valores inventados
+- [x] rastreabilidade NFR em requirement-dependency-map.md
+- [x] 0 tecnologias escolhidas
+- [x] 0 scripts ou código
+- [x] Prompt 04 não executado nesta rodada
+
+---
+
+```text
 PROMPT: 04
 TITLE: Glossário empresarial e linguagem ubíqua
 STARTED_AT: 2026-08-28T22:44:00-04:00
