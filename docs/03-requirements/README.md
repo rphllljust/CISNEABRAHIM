@@ -1,15 +1,16 @@
 # REQ-INDEX-001
 
-| Campo | Valor |
-| --- | --- |
-| Document ID | Requisitos — índice |
-| Fonte | SRC-001 |
+| Campo             | Valor                          |
+| ----------------- | ------------------------------ |
+| Document ID       | Requisitos — índice            |
+| Fonte             | SRC-001                        |
 | Status documental | CANDIDATE — sem fonte primária |
-| Gerado em | 2026-08-28 |
-| Prompt | 02 |
-| Escopo | Prompt 02 |
+| Gerado em         | 2026-08-28                     |
+| Prompt            | 02                             |
+| Escopo            | Prompt 02                      |
 
 > Requisitos derivados exclusivamente de SRC-001 (contexto reconstruído). Nenhum item `CONFIRMED`.
+
 ## Arquivos desta pasta
 
 - [`requirements-method.md`](./requirements-method.md) — Método e classificação de requisitos

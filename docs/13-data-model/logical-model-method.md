@@ -1,9 +1,9 @@
 # DM-LM-METHOD-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                                 |
+| ----------- | ------------------------------------- |
 | Document ID | Método de modelagem lógica relacional |
-| Prompt | 12 |
+| Prompt      | 12                                    |
 
 ## Objetivos
 
@@ -14,12 +14,12 @@
 
 ## Identificadores
 
-| Tipo | Padrão |
-| --- | --- |
-| Tabela | TBL-CAND-NNN |
-| Unicidade | UNQ-CAND-NNN |
-| Check | CHK-CAND-NNN |
-| Índice hipótese | IDX-HYP-NNN |
+| Tipo            | Padrão       |
+| --------------- | ------------ |
+| Tabela          | TBL-CAND-NNN |
+| Unicidade       | UNQ-CAND-NNN |
+| Check           | CHK-CAND-NNN |
+| Índice hipótese | IDX-HYP-NNN  |
 
 ## Status tabela
 

@@ -1,21 +1,21 @@
 # UL-MB-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo   | Valor                 |
+| ------- | --------------------- |
 | Domínio | Medição e faturamento |
-| Prompt | 04 |
+| Prompt  | 04                    |
 
 ## Termos
 
-| TERM | Papel |
-| --- | --- |
-| TERM-016 | Medição (processo) |
-| TERM-047 | Decisão sobre medição |
-| TERM-040 | Item faturável |
-| TERM-041 | Origem faturável |
-| TERM-017 | Faturamento (registro) |
+| TERM     | Papel                              |
+| -------- | ---------------------------------- |
+| TERM-016 | Medição (processo)                 |
+| TERM-047 | Decisão sobre medição              |
+| TERM-040 | Item faturável                     |
+| TERM-041 | Origem faturável                   |
+| TERM-017 | Faturamento (registro)             |
 | TERM-018 | Documento de faturamento informado |
-| TERM-019 | Pagamento (registro) |
+| TERM-019 | Pagamento (registro)               |
 
 ## Cadeia lexical candidata
 

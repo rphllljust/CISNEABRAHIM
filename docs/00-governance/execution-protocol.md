@@ -1,10 +1,10 @@
 # Execution protocol
 
-| Campo | Valor |
-| --- | --- |
-| Document ID | PROTO-001 |
-| Applies to | Todos os prompts deste repositório |
-| Source | SRC-000 |
+| Campo       | Valor                              |
+| ----------- | ---------------------------------- |
+| Document ID | PROTO-001                          |
+| Applies to  | Todos os prompts deste repositório |
+| Source      | SRC-000                            |
 
 ## Sequência obrigatória de cada prompt
 
@@ -35,15 +35,15 @@ BLOCKED
 SUPERSEDED
 ```
 
-| Estado | Significado |
-| --- | --- |
-| `NOT_STARTED` | Prompt no roadmap, não iniciado |
-| `IN_PROGRESS` | Execução em andamento |
-| `PASS` | Gates obrigatórios atendidos; restrições residuais inexistentes ou apenas observações não bloqueantes documentadas |
-| `PASS_WITH_RESTRICTIONS` | Entrega da etapa aceitável com débitos explícitos que não autorizam implementação indevida |
-| `FAIL` | Requisito obrigatório da etapa não atendido |
-| `BLOCKED` | Impossível concluir por dependência externa, fonte ausente crítica ou decisão bloqueante |
-| `SUPERSEDED` | Registro histórico substituído por execução posterior do mesmo prompt; o registro antigo permanece |
+| Estado                   | Significado                                                                                                        |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| `NOT_STARTED`            | Prompt no roadmap, não iniciado                                                                                    |
+| `IN_PROGRESS`            | Execução em andamento                                                                                              |
+| `PASS`                   | Gates obrigatórios atendidos; restrições residuais inexistentes ou apenas observações não bloqueantes documentadas |
+| `PASS_WITH_RESTRICTIONS` | Entrega da etapa aceitável com débitos explícitos que não autorizam implementação indevida                         |
+| `FAIL`                   | Requisito obrigatório da etapa não atendido                                                                        |
+| `BLOCKED`                | Impossível concluir por dependência externa, fonte ausente crítica ou decisão bloqueante                           |
+| `SUPERSEDED`             | Registro histórico substituído por execução posterior do mesmo prompt; o registro antigo permanece                 |
 
 ## Regras de transição
 

@@ -2,17 +2,17 @@
 
 ## Campos obrigatórios
 
-| Campo | Obrigatório |
-| --- | --- |
-| ID (`BR-NNN`) | Sim |
-| Title | Sim |
-| Statement (texto normativo candidato ou confirmado) | Sim |
-| Status | Sim |
-| SOURCE-ID + localizador | Sim para `CONFIRMED`; para `CANDIDATE` pode ser SRC de governança com aviso |
-| Actor / contexto | Sim quando conhecido; senão `TBD` |
-| Exceptions | Sim ou `TBD` |
-| Financial / external effects | Sim ou `N/A` / `TBD` |
-| Blocks implementation? | Sim |
+| Campo                                               | Obrigatório                                                                 |
+| --------------------------------------------------- | --------------------------------------------------------------------------- |
+| ID (`BR-NNN`)                                       | Sim                                                                         |
+| Title                                               | Sim                                                                         |
+| Statement (texto normativo candidato ou confirmado) | Sim                                                                         |
+| Status                                              | Sim                                                                         |
+| SOURCE-ID + localizador                             | Sim para `CONFIRMED`; para `CANDIDATE` pode ser SRC de governança com aviso |
+| Actor / contexto                                    | Sim quando conhecido; senão `TBD`                                           |
+| Exceptions                                          | Sim ou `TBD`                                                                |
+| Financial / external effects                        | Sim ou `N/A` / `TBD`                                                        |
+| Blocks implementation?                              | Sim                                                                         |
 
 ## Status permitidos
 

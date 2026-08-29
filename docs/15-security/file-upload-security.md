@@ -1,11 +1,11 @@
 # SEC-UPLOAD-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                           |
+| ----------- | ------------------------------- |
 | Document ID | Segurança de upload de arquivos |
-| SEC-REQ | SEC-REQ-012 |
-| CMD | CMD-016, CMD-022 |
-| Prompt | 14 |
+| SEC-REQ     | SEC-REQ-012                     |
+| CMD         | CMD-016, CMD-022                |
+| Prompt      | 14                              |
 
 ## Fluxo seguro candidato
 
@@ -21,29 +21,29 @@
 
 ## Limites
 
-| Limite | Valor candidato |
-| --- | --- |
-| Max size | 25–50 MB evidência — TBD stakeholder |
-| Tipos permitidos | PDF, JPEG, PNG, XLSX whitelist |
-| Extensão | Não confiar — validar magic bytes |
-| Filename | Sanitize; UUID storage key |
+| Limite           | Valor candidato                      |
+| ---------------- | ------------------------------------ |
+| Max size         | 25–50 MB evidência — TBD stakeholder |
+| Tipos permitidos | PDF, JPEG, PNG, XLSX whitelist       |
+| Extensão         | Não confiar — validar magic bytes    |
+| Filename         | Sanitize; UUID storage key           |
 
 ## Controles
 
-| ID | Controle |
-| --- | --- |
-| SEC-CTL-020 | Antivirus scan async |
-| SEC-CTL-025 | Reject oversized |
+| ID          | Controle                         |
+| ----------- | -------------------------------- |
+| SEC-CTL-020 | Antivirus scan async             |
+| SEC-CTL-025 | Reject oversized                 |
 | SEC-CTL-019 | Private bucket + signed download |
-| SEC-CTL-037 | Checksum SHA-256 INV-013 |
+| SEC-CTL-037 | Checksum SHA-256 INV-013         |
 
 ## Download
 
-| Regra | Detalhe |
-| --- | --- |
-| AuthZ | document-access-policy.md |
-| URL | Presigned TTL 5–15 min |
-| Log | SECURITY_AUDIT download RESTRICTED |
+| Regra | Detalhe                            |
+| ----- | ---------------------------------- |
+| AuthZ | document-access-policy.md          |
+| URL   | Presigned TTL 5–15 min             |
+| Log   | SECURITY_AUDIT download RESTRICTED |
 
 ## Ameaças
 

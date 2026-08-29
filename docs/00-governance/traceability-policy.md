@@ -1,10 +1,10 @@
 # Traceability policy
 
-| Campo | Valor |
-| --- | --- |
-| Document ID | TRACE-POL-001 |
-| Source | SRC-000 |
-| Matrix | [`../01-foundation/requirements-traceability.md`](../01-foundation/requirements-traceability.md) |
+| Campo       | Valor                                                                                            |
+| ----------- | ------------------------------------------------------------------------------------------------ |
+| Document ID | TRACE-POL-001                                                                                    |
+| Source      | SRC-000                                                                                          |
+| Matrix      | [`../01-foundation/requirements-traceability.md`](../01-foundation/requirements-traceability.md) |
 
 ## Cadeia obrigatória
 
@@ -35,17 +35,17 @@ Nenhum elo posterior pode ser marcado como completo se o anterior exigido estive
 
 ## Identificadores
 
-| Artefato | Prefixo | Registro |
-| --- | --- | --- |
-| Fonte | SRC- / SOURCE- | source-registry.md |
-| Evidência | EVD- | na ingestão futura / matriz |
-| Regra | BR- | business-rules-register.md |
-| Requisito funcional | FR- | TBD até Prompt 02 |
-| Caso de uso | UC- | TBD até Prompt 02 |
-| Decisão de domínio | DDP- | domain-decisions-pending.md |
-| Decisão de engenharia | ED- | engineering-decisions-register.md |
-| Risco | RISK- | risk-register.md |
-| Conflito | SC- | source-conflicts.md |
+| Artefato              | Prefixo        | Registro                          |
+| --------------------- | -------------- | --------------------------------- |
+| Fonte                 | SRC- / SOURCE- | source-registry.md                |
+| Evidência             | EVD-           | na ingestão futura / matriz       |
+| Regra                 | BR-            | business-rules-register.md        |
+| Requisito funcional   | FR-            | TBD até Prompt 02                 |
+| Caso de uso           | UC-            | TBD até Prompt 02                 |
+| Decisão de domínio    | DDP-           | domain-decisions-pending.md       |
+| Decisão de engenharia | ED-            | engineering-decisions-register.md |
+| Risco                 | RISK-          | risk-register.md                  |
+| Conflito              | SC-            | source-conflicts.md               |
 
 Não reutilizar IDs. Itens inválidos recebem `REJECTED`, `DEPRECATED` ou `SUPERSEDED` e permanecem visíveis.
 

@@ -1,10 +1,10 @@
 # UL-NAMING-002
 
-| Campo | Valor |
-| --- | --- |
-| Document ID | Política de nomes |
-| Prompt | 04 (revisão estrutural) |
-| Status | CANDIDATE — **não** congela API nem classes |
+| Campo       | Valor                                       |
+| ----------- | ------------------------------------------- |
+| Document ID | Política de nomes                           |
+| Prompt      | 04 (revisão estrutural)                     |
+| Status      | CANDIDATE — **não** congela API nem classes |
 
 ## Regras gerais
 
@@ -20,34 +20,34 @@
 
 ## Prefixos de identificador (preservados)
 
-| Prefixo | Domínio |
-| --- | --- |
-| FR- / NFR- / UC- / AC- | Requisitos |
-| TERM- | Glossário |
-| EV- / BR- / DDP- / RISK- | Análise e governança |
-| GLQ- | Questões de glossário |
+| Prefixo                  | Domínio               |
+| ------------------------ | --------------------- |
+| FR- / NFR- / UC- / AC-   | Requisitos            |
+| TERM-                    | Glossário             |
+| EV- / BR- / DDP- / RISK- | Análise e governança  |
+| GLQ-                     | Questões de glossário |
 
 ## Termos proibidos (PROHIBITED)
 
-| Termo | Motivo | Usar em vez de |
-| --- | --- | --- |
-| Usuário (ator de negócio) | Confunde login com papel | Solicitante, Executor, Autorizador |
-| Admin | Role técnica indefinida | Autorizador empresarial (TERM-007) |
-| CRUD | Jargão prematuro | Verbo empresarial do FR |
-| Tabela / entidade / enum | Antecipação de implementação | TERM-* |
-| CONFIRMED (regra) | Sem fonte primária | ACCEPTED_FOR_DOCUMENTATION |
-| NF-e emitida pelo sistema | Não afirmado em SRC-001 | TERM-018 |
+| Termo                     | Motivo                       | Usar em vez de                     |
+| ------------------------- | ---------------------------- | ---------------------------------- |
+| Usuário (ator de negócio) | Confunde login com papel     | Solicitante, Executor, Autorizador |
+| Admin                     | Role técnica indefinida      | Autorizador empresarial (TERM-007) |
+| CRUD                      | Jargão prematuro             | Verbo empresarial do FR            |
+| Tabela / entidade / enum  | Antecipação de implementação | TERM-*                             |
+| CONFIRMED (regra)         | Sem fonte primária           | ACCEPTED_FOR_DOCUMENTATION         |
+| NF-e emitida pelo sistema | Não afirmado em SRC-001      | TERM-018                           |
 
 ## Termos desaconselhados (DISCOURAGED)
 
-| Termo | Motivo | Preferência |
-| --- | --- | --- |
-| Gestão | Ator vago (EV-080) | Cargo ou TERM-007 |
-| Pedido (sozinho) | Homônimo | TERM-001 ou TERM-012 |
-| Fatura / Nota (sozinho) | Fiscal ambíguo | TERM-018 |
-| Serviço (sozinho) | Escopo amplo | TERM-003 qualificado |
-| Draft / Ticket / Job | Não usados na fonte | TERM-001, TERM-002 |
-| RC (sem definição) | Não evidenciado | Aguardar fonte |
+| Termo                   | Motivo              | Preferência          |
+| ----------------------- | ------------------- | -------------------- |
+| Gestão                  | Ator vago (EV-080)  | Cargo ou TERM-007    |
+| Pedido (sozinho)        | Homônimo            | TERM-001 ou TERM-012 |
+| Fatura / Nota (sozinho) | Fiscal ambíguo      | TERM-018             |
+| Serviço (sozinho)       | Escopo amplo        | TERM-003 qualificado |
+| Draft / Ticket / Job    | Não usados na fonte | TERM-001, TERM-002   |
+| RC (sem definição)      | Não evidenciado     | Aguardar fonte       |
 
 ## Candidatos técnicos (referência — não API)
 

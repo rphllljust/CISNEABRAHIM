@@ -1,9 +1,9 @@
 # TECH-METHOD-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                         |
+| ----------- | ----------------------------- |
 | Document ID | Método de seleção tecnológica |
-| Prompt | 10 |
+| Prompt      | 10                            |
 
 ## Processo
 
@@ -16,31 +16,31 @@
 
 ## Critérios do scorecard (pesos)
 
-| Critério | Peso | Justificativa |
-| --- | --- | --- |
-| Integridade / transações | 15% | ARCH-DRV-003/004, financeiro |
-| Segurança | 12% | SEC-REQ, authZ backend |
-| Testabilidade | 12% | EP-022, modular monolith |
-| Manutenção / maturidade | 10% | Equipe UNKNOWN — favorece ecossistema estável |
-| Produtividade | 10% | Velocidade sem sacrificar integridade |
-| Compatibilidade arquitetural | 10% | ADR-001..006 |
-| Operação / deploy | 8% | TOPO-002 |
-| Documentação | 8% | Onboarding futuro |
-| Curva aprendizado | 7% | Equipe não formalizada |
-| Risco lock-in | 5% | Portabilidade |
-| Custo | 3% | OSS preferido |
+| Critério                     | Peso | Justificativa                                 |
+| ---------------------------- | ---- | --------------------------------------------- |
+| Integridade / transações     | 15%  | ARCH-DRV-003/004, financeiro                  |
+| Segurança                    | 12%  | SEC-REQ, authZ backend                        |
+| Testabilidade                | 12%  | EP-022, modular monolith                      |
+| Manutenção / maturidade      | 10%  | Equipe UNKNOWN — favorece ecossistema estável |
+| Produtividade                | 10%  | Velocidade sem sacrificar integridade         |
+| Compatibilidade arquitetural | 10%  | ADR-001..006                                  |
+| Operação / deploy            | 8%   | TOPO-002                                      |
+| Documentação                 | 8%   | Onboarding futuro                             |
+| Curva aprendizado            | 7%   | Equipe não formalizada                        |
+| Risco lock-in                | 5%   | Portabilidade                                 |
+| Custo                        | 3%   | OSS preferido                                 |
 
 **Total:** 100%. Pesos definidos **antes** de pontuar opções.
 
 ## Escala de pontuação
 
-| Score | Significado |
-| --- | --- |
-| 5 | Excelente para este projeto |
-| 4 | Adequado |
-| 3 | Neutro / trade-offs |
-| 2 | Fraco |
-| 1 | Inadequado |
+| Score | Significado                 |
+| ----- | --------------------------- |
+| 5     | Excelente para este projeto |
+| 4     | Adequado                    |
+| 3     | Neutro / trade-offs         |
+| 2     | Fraco                       |
+| 1     | Inadequado                  |
 
 ## Status ADR tecnológico
 

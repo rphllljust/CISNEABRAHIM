@@ -1,0 +1,27 @@
+{
+  "name": "cisne-rondonia",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=24.0.0 <25.0.0",
+    "pnpm": ">=9.0.0 <10.0.0"
+  },
+  "scripts": {
+    "install:deps": "pnpm install",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"apps/**\" \"packages/**\" \"docs/17-bootstrap/**\" \"*.{json,mjs,md}\"",
+    "format:check": "prettier --check \"apps/**\" \"packages/**\" \"docs/17-bootstrap/**\" \"*.{json,mjs,md}\"",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel"
+  },
+  "devDependencies": {
+    "@cisne/eslint-config": "workspace:*",
+    "@cisne/tsconfig": "workspace:*",
+    "prettier": "^3.5.3",
+    "turbo": "^2.5.4",
+    "typescript": "^5.8.3"
+  }
+}

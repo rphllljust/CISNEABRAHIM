@@ -1,10 +1,10 @@
 # ADR-TECH-007 — Ferramentas de teste
 
-| Campo | Valor |
-| --- | --- |
-| ID | ADR-TECH-007 |
+| Campo  | Valor        |
+| ------ | ------------ |
+| ID     | ADR-TECH-007 |
 | Status | **ACCEPTED** |
-| Data | 2026-08-28 |
+| Data   | 2026-08-28   |
 
 ## Contexto
 
@@ -27,11 +27,11 @@ ARCH-DRV-019; QA-SC; scorecard 4.25.
 
 ## Alternativas
 
-| Alternativa | Resultado |
-| --- | --- |
-| Jest + Cypress | Rejeitado — score menor |
-| Jest + Playwright | Alternativa viável |
-| Node test runner only | Rejeitado |
+| Alternativa           | Resultado               |
+| --------------------- | ----------------------- |
+| Jest + Cypress        | Rejeitado — score menor |
+| Jest + Playwright     | Alternativa viável      |
+| Node test runner only | Rejeitado               |
 
 ## Benefícios
 

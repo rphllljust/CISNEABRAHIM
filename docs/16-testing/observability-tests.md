@@ -1,31 +1,31 @@
 # QA-OBS-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                  |
+| ----------- | ---------------------- |
 | Document ID | Testes observabilidade |
-| Prompt | 15 |
+| Prompt      | 15                     |
 
 ## O que validar (futuro L4)
 
-| Sinal | Teste candidato |
-| --- | --- |
-| `correlation_id` em response header | contract |
-| TECHNICAL_LOG sem Authorization | 014 redaction smoke |
-| Métrica `http_request_duration` | integration hook |
-| Trace span CMD name | OpenTelemetry candidato |
-| SECURITY_AUDIT em DENY | 052 |
+| Sinal                               | Teste candidato         |
+| ----------------------------------- | ----------------------- |
+| `correlation_id` em response header | contract                |
+| TECHNICAL_LOG sem Authorization     | 014 redaction smoke     |
+| Métrica `http_request_duration`     | integration hook        |
+| Trace span CMD name                 | OpenTelemetry candidato |
+| SECURITY_AUDIT em DENY              | 052                     |
 
 ## Logs negativos
 
-| Assert | TEST |
-| --- | --- |
+| Assert                         | TEST                  |
+| ------------------------------ | --------------------- |
 | Custo não aparece em log error | fixture + log capture |
-| PII mascarado tax_id | backlog |
+| PII mascarado tax_id           | backlog               |
 
 ## Health checks
 
 | Endpoint | `/health` liveness, `/ready` PG |
-| --- | --- |
+| -------- | ------------------------------- |
 
 ## Alertas (manual)
 

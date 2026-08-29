@@ -1,9 +1,9 @@
 # Change governance
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor   |
+| ----------- | ------- |
 | Document ID | CHG-001 |
-| Source | SRC-000 |
+| Source      | SRC-000 |
 
 ## Política de mudança
 

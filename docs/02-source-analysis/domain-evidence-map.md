@@ -1,9 +1,9 @@
 # Mapa domínio → evidências
 
-| Campo | Valor |
-| --- | --- |
-| Document ID | DEM-001 |
-| Legenda | `---->` evidência direta · `--?-->` evidência parcial ou hipótese |
+| Campo       | Valor                                                             |
+| ----------- | ----------------------------------------------------------------- |
+| Document ID | DEM-001                                                           |
+| Legenda     | `---->` evidência direta · `--?-->` evidência parcial ou hipótese |
 
 ```
 CLIENT ------------------------?----> EV-047 (campo OS, não entidade confirmada)
@@ -31,9 +31,9 @@ DISCOVERY / GOVERNANCE ----> EV-026, EV-071, EV-072
 
 ## Domínios sem trilha forte
 
-| Domínio | Situação |
-| --- | --- |
-| CLIENT | Apenas menção como campo; cadastro não descrito |
-| NOTIFICATION | Apenas integrações candidatas |
-| PAYMENT | Encadeado a faturamento sem processo |
-| CONTRACT | Conceito na cadeia sem detalhe |
+| Domínio      | Situação                                        |
+| ------------ | ----------------------------------------------- |
+| CLIENT       | Apenas menção como campo; cadastro não descrito |
+| NOTIFICATION | Apenas integrações candidatas                   |
+| PAYMENT      | Encadeado a faturamento sem processo            |
+| CONTRACT     | Conceito na cadeia sem detalhe                  |

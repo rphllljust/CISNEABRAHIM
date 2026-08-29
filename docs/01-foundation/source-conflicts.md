@@ -1,9 +1,9 @@
 # Source conflicts
 
-| Campo | Valor |
-| --- | --- |
-| Document ID | SC-REG-001 |
-| Conflicts registered | **0** |
+| Campo                | Valor      |
+| -------------------- | ---------- |
+| Document ID          | SC-REG-001 |
+| Conflicts registered | **0**      |
 
 ## Instruções
 

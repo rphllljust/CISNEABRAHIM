@@ -1,45 +1,46 @@
 # REQ-DR-001
 
-| Campo | Valor |
-| --- | --- |
-| Document ID | Requisitos de dados |
-| Fonte | SRC-001 |
+| Campo             | Valor                          |
+| ----------------- | ------------------------------ |
+| Document ID       | Requisitos de dados            |
+| Fonte             | SRC-001                        |
 | Status documental | CANDIDATE — sem fonte primária |
-| Gerado em | 2026-08-28 |
-| Prompt | 02 |
-| Total DRs | 28 |
+| Gerado em         | 2026-08-28                     |
+| Prompt            | 02                             |
+| Total DRs         | 28                             |
 
 > Requisitos derivados exclusivamente de SRC-001 (contexto reconstruído). Nenhum item `CONFIRMED`.
-| ID | Conceito | Finalidade | FR | Sensibilidade | Obrigatoriedade | SoT | Status |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| DR-001 | Identificador interno da solicitação | Rastrear solicitação unicamente | FR-001 | INTERNAL | CONDITIONAL | Sistema candidato | PENDING_SOURCE_VALIDATION |
-| DR-002 | Origem e canal da solicitação | Rastrear proveniência | FR-002 | INTERNAL | CAPABILITY_ONLY | UNKNOWN | PENDING_BUSINESS_DECISION |
-| DR-003 | Solicitante candidato | Identificar quem solicitou | FR-003 | INTERNAL | UNKNOWN | UNKNOWN | PENDING_SOURCE_VALIDATION |
-| DR-004 | Estado de processamento da solicitação | Acompanhamento | FR-005 | INTERNAL | CONDITIONAL | Sistema candidato | PENDING_SOURCE_VALIDATION |
-| DR-005 | Identificador interno da OS | Rastrear OS unicamente | FR-010 | INTERNAL | CONDITIONAL | Sistema candidato | PENDING_SOURCE_VALIDATION |
-| DR-006 | Conteúdo operacional da OS | Descrever serviço a executar | FR-011 | INTERNAL | CONDITIONAL | Sistema candidato | PENDING_SOURCE_VALIDATION |
-| DR-007 | Itens planejados da OS | Detalhar escopo planejado | FR-012 | INTERNAL | CONDITIONAL | Sistema candidato | PENDING_SOURCE_VALIDATION |
-| DR-008 | Recursos planejados (tipo e quantidade) | Planejamento operacional | FR-013 | INTERNAL | CONDITIONAL | Sistema candidato | PENDING_SOURCE_VALIDATION |
-| DR-009 | Responsável atribuído à OS | Accountability operacional | FR-015 | INTERNAL | CONDITIONAL | Sistema candidato | PENDING_SOURCE_VALIDATION |
-| DR-010 | Registro de execução e progresso | Acompanhar realização | FR-018 | INTERNAL | CONDITIONAL | Sistema candidato | PENDING_SOURCE_VALIDATION |
-| DR-011 | Alocação de recurso específico | Vincular ativo ou pessoa ao item | FR-025 | INTERNAL | CONDITIONAL | Sistema candidato | PENDING_SOURCE_VALIDATION |
-| DR-012 | Quantidade efetivamente utilizada | Distinguir planejado de realizado | FR-027 | INTERNAL | CONDITIONAL | Sistema candidato | PENDING_SOURCE_VALIDATION |
-| DR-013 | Referência comercial externa | Vínculo com proposta, pedido, contrato ou PO | FR-029 | COMMERCIAL | CONDITIONAL | UNKNOWN — pode ser externo | PENDING_SOURCE_VALIDATION |
-| DR-014 | Identificador externo comercial | Preservar ID do cliente ou ERP | FR-030 | COMMERCIAL | CONDITIONAL | Externo candidato | PENDING_SOURCE_VALIDATION |
-| DR-015 | Custo interno | Gestão de margem | FR-031 | RESTRICTED | CONDITIONAL | Sistema candidato | PENDING_SOURCE_VALIDATION |
-| DR-016 | Preço comercial | Cobrança e proposta | FR-031 | COMMERCIAL | CONDITIONAL | Sistema ou externo candidato | PENDING_SOURCE_VALIDATION |
-| DR-017 | Saldo e consumo de PO | Controle de limite comercial | FR-033 | COMMERCIAL | CONDITIONAL | UNKNOWN | PENDING_BUSINESS_DECISION |
-| DR-018 | Medição preparada | Base para faturamento candidato | FR-035 | COMMERCIAL | CONDITIONAL | Sistema candidato | PENDING_BUSINESS_DECISION |
-| DR-019 | Documento de faturamento ou nota informada | Registrar cobrança sem emissão fiscal pelo sistema | FR-039 | COMMERCIAL | CONDITIONAL | Externo candidato | PENDING_BUSINESS_DECISION |
-| DR-020 | Evidência de execução | Comprovar realização | FR-040 | INTERNAL | CONDITIONAL | Sistema candidato | PENDING_SOURCE_VALIDATION |
-| DR-021 | Documento lógico | Entidade documental de negócio | FR-041 | INTERNAL | CONDITIONAL | Sistema candidato | PENDING_SOURCE_VALIDATION |
-| DR-022 | Versão documental e arquivo associado | Preservar histórico documental | FR-041 | INTERNAL | CONDITIONAL | Sistema candidato | PENDING_SOURCE_VALIDATION |
-| DR-023 | Histórico de alterações da OS | Auditoria empresarial | FR-022 | INTERNAL | REQUIRED | Sistema candidato | PENDING_SOURCE_VALIDATION |
-| DR-024 | Decisão sobre solicitação | Registro de aprovação ou rejeição | FR-006 | INTERNAL | CONDITIONAL | Sistema candidato | PENDING_BUSINESS_DECISION |
-| DR-025 | Motivo de rejeição | Justificativa empresarial | FR-007 | INTERNAL | CONDITIONAL | Sistema candidato | PENDING_BUSINESS_DECISION |
-| DR-026 | Divergência comercial registrada | Tratamento de inconsistências | FR-034 | COMMERCIAL | CONDITIONAL | Sistema candidato | PENDING_SOURCE_VALIDATION |
-| DR-027 | Substituição de recurso alocado | Rastrear mudanças em campo | FR-026 | INTERNAL | CONDITIONAL | Sistema candidato | PENDING_BUSINESS_DECISION |
-| DR-028 | Confirmação de recebimento pelo responsável | Handoff operacional | FR-016 | INTERNAL | CONDITIONAL | Sistema candidato | PENDING_BUSINESS_DECISION |
+>
+> | ID     | Conceito                                    | Finalidade                                         | FR     | Sensibilidade | Obrigatoriedade | SoT                          | Status                    |
+> | ------ | ------------------------------------------- | -------------------------------------------------- | ------ | ------------- | --------------- | ---------------------------- | ------------------------- |
+> | DR-001 | Identificador interno da solicitação        | Rastrear solicitação unicamente                    | FR-001 | INTERNAL      | CONDITIONAL     | Sistema candidato            | PENDING_SOURCE_VALIDATION |
+> | DR-002 | Origem e canal da solicitação               | Rastrear proveniência                              | FR-002 | INTERNAL      | CAPABILITY_ONLY | UNKNOWN                      | PENDING_BUSINESS_DECISION |
+> | DR-003 | Solicitante candidato                       | Identificar quem solicitou                         | FR-003 | INTERNAL      | UNKNOWN         | UNKNOWN                      | PENDING_SOURCE_VALIDATION |
+> | DR-004 | Estado de processamento da solicitação      | Acompanhamento                                     | FR-005 | INTERNAL      | CONDITIONAL     | Sistema candidato            | PENDING_SOURCE_VALIDATION |
+> | DR-005 | Identificador interno da OS                 | Rastrear OS unicamente                             | FR-010 | INTERNAL      | CONDITIONAL     | Sistema candidato            | PENDING_SOURCE_VALIDATION |
+> | DR-006 | Conteúdo operacional da OS                  | Descrever serviço a executar                       | FR-011 | INTERNAL      | CONDITIONAL     | Sistema candidato            | PENDING_SOURCE_VALIDATION |
+> | DR-007 | Itens planejados da OS                      | Detalhar escopo planejado                          | FR-012 | INTERNAL      | CONDITIONAL     | Sistema candidato            | PENDING_SOURCE_VALIDATION |
+> | DR-008 | Recursos planejados (tipo e quantidade)     | Planejamento operacional                           | FR-013 | INTERNAL      | CONDITIONAL     | Sistema candidato            | PENDING_SOURCE_VALIDATION |
+> | DR-009 | Responsável atribuído à OS                  | Accountability operacional                         | FR-015 | INTERNAL      | CONDITIONAL     | Sistema candidato            | PENDING_SOURCE_VALIDATION |
+> | DR-010 | Registro de execução e progresso            | Acompanhar realização                              | FR-018 | INTERNAL      | CONDITIONAL     | Sistema candidato            | PENDING_SOURCE_VALIDATION |
+> | DR-011 | Alocação de recurso específico              | Vincular ativo ou pessoa ao item                   | FR-025 | INTERNAL      | CONDITIONAL     | Sistema candidato            | PENDING_SOURCE_VALIDATION |
+> | DR-012 | Quantidade efetivamente utilizada           | Distinguir planejado de realizado                  | FR-027 | INTERNAL      | CONDITIONAL     | Sistema candidato            | PENDING_SOURCE_VALIDATION |
+> | DR-013 | Referência comercial externa                | Vínculo com proposta, pedido, contrato ou PO       | FR-029 | COMMERCIAL    | CONDITIONAL     | UNKNOWN — pode ser externo   | PENDING_SOURCE_VALIDATION |
+> | DR-014 | Identificador externo comercial             | Preservar ID do cliente ou ERP                     | FR-030 | COMMERCIAL    | CONDITIONAL     | Externo candidato            | PENDING_SOURCE_VALIDATION |
+> | DR-015 | Custo interno                               | Gestão de margem                                   | FR-031 | RESTRICTED    | CONDITIONAL     | Sistema candidato            | PENDING_SOURCE_VALIDATION |
+> | DR-016 | Preço comercial                             | Cobrança e proposta                                | FR-031 | COMMERCIAL    | CONDITIONAL     | Sistema ou externo candidato | PENDING_SOURCE_VALIDATION |
+> | DR-017 | Saldo e consumo de PO                       | Controle de limite comercial                       | FR-033 | COMMERCIAL    | CONDITIONAL     | UNKNOWN                      | PENDING_BUSINESS_DECISION |
+> | DR-018 | Medição preparada                           | Base para faturamento candidato                    | FR-035 | COMMERCIAL    | CONDITIONAL     | Sistema candidato            | PENDING_BUSINESS_DECISION |
+> | DR-019 | Documento de faturamento ou nota informada  | Registrar cobrança sem emissão fiscal pelo sistema | FR-039 | COMMERCIAL    | CONDITIONAL     | Externo candidato            | PENDING_BUSINESS_DECISION |
+> | DR-020 | Evidência de execução                       | Comprovar realização                               | FR-040 | INTERNAL      | CONDITIONAL     | Sistema candidato            | PENDING_SOURCE_VALIDATION |
+> | DR-021 | Documento lógico                            | Entidade documental de negócio                     | FR-041 | INTERNAL      | CONDITIONAL     | Sistema candidato            | PENDING_SOURCE_VALIDATION |
+> | DR-022 | Versão documental e arquivo associado       | Preservar histórico documental                     | FR-041 | INTERNAL      | CONDITIONAL     | Sistema candidato            | PENDING_SOURCE_VALIDATION |
+> | DR-023 | Histórico de alterações da OS               | Auditoria empresarial                              | FR-022 | INTERNAL      | REQUIRED        | Sistema candidato            | PENDING_SOURCE_VALIDATION |
+> | DR-024 | Decisão sobre solicitação                   | Registro de aprovação ou rejeição                  | FR-006 | INTERNAL      | CONDITIONAL     | Sistema candidato            | PENDING_BUSINESS_DECISION |
+> | DR-025 | Motivo de rejeição                          | Justificativa empresarial                          | FR-007 | INTERNAL      | CONDITIONAL     | Sistema candidato            | PENDING_BUSINESS_DECISION |
+> | DR-026 | Divergência comercial registrada            | Tratamento de inconsistências                      | FR-034 | COMMERCIAL    | CONDITIONAL     | Sistema candidato            | PENDING_SOURCE_VALIDATION |
+> | DR-027 | Substituição de recurso alocado             | Rastrear mudanças em campo                         | FR-026 | INTERNAL      | CONDITIONAL     | Sistema candidato            | PENDING_BUSINESS_DECISION |
+> | DR-028 | Confirmação de recebimento pelo responsável | Handoff operacional                                | FR-016 | INTERNAL      | CONDITIONAL     | Sistema candidato            | PENDING_BUSINESS_DECISION |
 
 ## Detalhamento
 

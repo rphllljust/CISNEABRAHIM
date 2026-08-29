@@ -1,10 +1,10 @@
 # DBND-DDP-REG-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                           |
+| ----------- | ------------------------------- |
 | Document ID | Decisões de fronteira pendentes |
-| Total | 12 (DBND-001..DBND-012) |
-| Prompt | 05 |
+| Total       | 12 (DBND-001..DBND-012)         |
+| Prompt      | 05                              |
 
 ## DBND-001 — Service Order Planning como BC separado?
 

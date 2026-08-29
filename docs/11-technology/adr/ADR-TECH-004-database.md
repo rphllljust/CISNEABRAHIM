@@ -1,10 +1,10 @@
 # ADR-TECH-004 — Banco de dados
 
-| Campo | Valor |
-| --- | --- |
-| ID | ADR-TECH-004 |
-| Status | **ACCEPTED** |
-| Data | 2026-08-28 |
+| Campo       | Valor                                                                        |
+| ----------- | ---------------------------------------------------------------------------- |
+| ID          | ADR-TECH-004                                                                 |
+| Status      | **ACCEPTED**                                                                 |
+| Data        | 2026-08-28                                                                   |
 | Verificação | PostgreSQL 18.6 — 2026-08-13 ([postgresql.org](https://www.postgresql.org/)) |
 
 ## Contexto
@@ -21,11 +21,11 @@ ARCH-DRV-003, 004; ADR-006 candidato PG; scorecard 4.55.
 
 ## Alternativas
 
-| Alternativa | Resultado |
-| --- | --- |
-| MySQL | Rejeitado |
-| MongoDB | Rejeitado — transações |
-| SQLite | Rejeitado — produção multi-user |
+| Alternativa | Resultado                       |
+| ----------- | ------------------------------- |
+| MySQL       | Rejeitado                       |
+| MongoDB     | Rejeitado — transações          |
+| SQLite      | Rejeitado — produção multi-user |
 
 ## Benefícios
 

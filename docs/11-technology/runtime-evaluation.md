@@ -1,30 +1,30 @@
 # TECH-RUN-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                         |
+| ----------- | ----------------------------- |
 | Document ID | Avaliação runtime e linguagem |
-| Prompt | 10 |
+| Prompt      | 10                            |
 
 ## Opções
 
-| Opção | Descrição |
-| --- | --- |
-| A | **TypeScript + Node.js** |
-| B | Go |
-| C | Deno + TypeScript |
-| D | .NET / C# |
+| Opção | Descrição                |
+| ----- | ------------------------ |
+| A     | **TypeScript + Node.js** |
+| B     | Go                       |
+| C     | Deno + TypeScript        |
+| D     | .NET / C#                |
 
 ## TypeScript + Node.js — selecionado
 
-| Aspecto | Avaliação |
-| --- | --- |
-| Integridade | Tipagem estática; strict mode reduz erros |
-| Segurança | Ecossistema maduro; depende de disciplina |
-| Transações | Adequado com PostgreSQL drivers |
-| Produtividade | Stack unificada FE+BE |
-| Testabilidade | Vitest, ferramentas maduras |
-| Arquitetura | NestJS modular monolith natural |
-| Operação | Node 24 LTS — suporte até 2028-04-30 |
+| Aspecto       | Avaliação                                 |
+| ------------- | ----------------------------------------- |
+| Integridade   | Tipagem estática; strict mode reduz erros |
+| Segurança     | Ecossistema maduro; depende de disciplina |
+| Transações    | Adequado com PostgreSQL drivers           |
+| Produtividade | Stack unificada FE+BE                     |
+| Testabilidade | Vitest, ferramentas maduras               |
+| Arquitetura   | NestJS modular monolith natural           |
+| Operação      | Node 24 LTS — suporte até 2028-04-30      |
 
 **Versão Node recomendada:** 24.x Active LTS (fonte: [nodejs/Release](https://github.com/nodejs/release), verificado 2026-08-28).
 
@@ -32,11 +32,11 @@
 
 ## Alternativas rejeitadas
 
-| Opção | Motivo |
-| --- | --- |
-| Go | Duas linguagens; equipe UNKNOWN; menos alinhamento React |
-| Deno | Ecossistema Nest/ORM menor; lock-in runtime |
-| .NET | Sem evidência de equipe; split stack |
+| Opção | Motivo                                                   |
+| ----- | -------------------------------------------------------- |
+| Go    | Duas linguagens; equipe UNKNOWN; menos alinhamento React |
+| Deno  | Ecossistema Nest/ORM menor; lock-in runtime              |
+| .NET  | Sem evidência de equipe; split stack                     |
 
 ## Node 26
 

@@ -1,41 +1,41 @@
 # ARCH-OPT-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                           |
+| ----------- | ------------------------------- |
 | Document ID | Análise de opções arquiteturais |
-| Prompt | 09 |
+| Prompt      | 09                              |
 
 ## Opções avaliadas
 
-| Opção | Descrição |
-| --- | --- |
-| A | Monólito desestruturado (big ball of mud) |
-| B | **Modular monolith** |
-| C | Microservices |
-| D | Arquitetura distribuída orientada a eventos |
-| E | Híbrido (núcleo monolítico + serviços de borda) |
+| Opção | Descrição                                       |
+| ----- | ----------------------------------------------- |
+| A     | Monólito desestruturado (big ball of mud)       |
+| B     | **Modular monolith**                            |
+| C     | Microservices                                   |
+| D     | Arquitetura distribuída orientada a eventos     |
+| E     | Híbrido (núcleo monolítico + serviços de borda) |
 
 ## Matriz de comparação
 
 Legenda: ++ favorável · + adequado · 0 neutro · − desfavorável · ? desconhecido
 
-| Critério | A | B | C | D | E |
-| --- | --- | --- | --- | --- | --- |
-| Estágio descoberta | − | **++** | − | − | + |
-| Equipe (UNKNOWN) | + | **++** | − | − | 0 |
-| Custo operacional | + | **++** | − | − | 0 |
-| Consistência transacional | 0 | **++** | − | − | + |
-| Transações WF-001..006 | 0 | **++** | − | 0 | + |
-| Isolamento de falha | − | 0 | **++** | + | + |
-| Isolamento de deploy | − | 0 | **++** | + | + |
-| Implantação inicial | **++** | **++** | − | − | 0 |
-| Observabilidade | − | + | 0 | + | 0 |
-| Testes integrados | + | **++** | − | 0 | + |
-| Evolução/refatoração BC | − | **++** | + | + | + |
-| Integrações ACL | 0 | + | + | + | **++** |
-| Recuperação / DR | ? | + | 0 | 0 | 0 |
-| Segurança (authZ central) | − | **++** | + | 0 | + |
-| Risco big ball of mud | **−−** | 0* | + | + | 0 |
+| Critério                  | A      | B      | C      | D   | E      |
+| ------------------------- | ------ | ------ | ------ | --- | ------ |
+| Estágio descoberta        | −      | **++** | −      | −   | +      |
+| Equipe (UNKNOWN)          | +      | **++** | −      | −   | 0      |
+| Custo operacional         | +      | **++** | −      | −   | 0      |
+| Consistência transacional | 0      | **++** | −      | −   | +      |
+| Transações WF-001..006    | 0      | **++** | −      | 0   | +      |
+| Isolamento de falha       | −      | 0      | **++** | +   | +      |
+| Isolamento de deploy      | −      | 0      | **++** | +   | +      |
+| Implantação inicial       | **++** | **++** | −      | −   | 0      |
+| Observabilidade           | −      | +      | 0      | +   | 0      |
+| Testes integrados         | +      | **++** | −      | 0   | +      |
+| Evolução/refatoração BC   | −      | **++** | +      | +   | +      |
+| Integrações ACL           | 0      | +      | +      | +   | **++** |
+| Recuperação / DR          | ?      | +      | 0      | 0   | 0      |
+| Segurança (authZ central) | −      | **++** | +      | 0   | +      |
+| Risco big ball of mud     | **−−** | 0*     | +      | +   | 0      |
 
 \* Mitigável com enforcement de módulos (modularity-strategy.md)
 

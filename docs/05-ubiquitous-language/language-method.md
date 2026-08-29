@@ -1,11 +1,11 @@
 # UL-METHOD-002
 
-| Campo | Valor |
-| --- | --- |
-| Document ID | Método de linguagem ubíqua |
-| Fonte | SRC-001, SRC-000 |
-| Prompt | 04 (revisão estrutural) |
-| Supersedes | `glossary-method.md` (histórico preservado no Git) |
+| Campo       | Valor                                              |
+| ----------- | -------------------------------------------------- |
+| Document ID | Método de linguagem ubíqua                         |
+| Fonte       | SRC-001, SRC-000                                   |
+| Prompt      | 04 (revisão estrutural)                            |
+| Supersedes  | `glossary-method.md` (histórico preservado no Git) |
 
 ## Princípios
 
@@ -22,15 +22,15 @@
 
 ## Status de termo
 
-| Status | Significado |
-| --- | --- |
-| CANDIDATE | Uso preliminar; campos incompletos ou baixa confiança |
-| PENDING_SOURCE_VALIDATION | Aguarda fonte primária ou evidência adicional |
-| PENDING_BUSINESS_DECISION | Aguarda decisão empresarial (DDP) |
+| Status                     | Significado                                                 |
+| -------------------------- | ----------------------------------------------------------- |
+| CANDIDATE                  | Uso preliminar; campos incompletos ou baixa confiança       |
+| PENDING_SOURCE_VALIDATION  | Aguarda fonte primária ou evidência adicional               |
+| PENDING_BUSINESS_DECISION  | Aguarda decisão empresarial (DDP)                           |
 | ACCEPTED_FOR_DOCUMENTATION | Termo documentado para uso em artefatos; **não** confirmado |
-| AMBIGUOUS | Colisão ou múltiplos significados; não resolver sem fonte |
-| REJECTED | Termo descartado para documentação futura |
-| SUPERSEDED | Substituído por outro TERM-* |
+| AMBIGUOUS                  | Colisão ou múltiplos significados; não resolver sem fonte   |
+| REJECTED                   | Termo descartado para documentação futura                   |
+| SUPERSEDED                 | Substituído por outro TERM-*                                |
 
 **Proibido nesta fase:** promover termo a regra confirmada sem fonte primária.
 

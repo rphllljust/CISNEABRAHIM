@@ -1,9 +1,9 @@
 # ARCH-DEP-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                 |
+| ----------- | --------------------- |
 | Document ID | Regras de dependência |
-| Prompt | 09 |
+| Prompt      | 09                    |
 
 ## Regra de ouro
 
@@ -17,16 +17,16 @@ PRESENTATION → APPLICATION → DOMAIN ← INFRASTRUCTURE
 
 ## Regras por camada
 
-| # | Regra | Violação típica |
-| --- | --- | --- |
-| DR-001 | Presentation importa apenas Application (facades/DTOs) | Entity no React/Vue |
-| DR-002 | Application importa Domain | Lógica de negócio só em service anêmico |
-| DR-003 | Domain define ports (interfaces); Infrastructure implementa | ORM entity no Domain |
-| DR-004 | Integration implementa ports de saída; não importa Presentation | ERP DTO no controller |
-| DR-005 | Módulo BC-A não importa internals de BC-B | Repository cross-module direto |
-| DR-006 | Comunicação cross-BC via API pública do módulo ou evento | Import circular |
-| DR-007 | Shared kernel mínimo — apenas tipos/IDs estáveis | Utils dumping ground |
-| DR-008 | Reporting (BC-016) só leitura; sem write em outros BCs | Update via relatório |
+| #      | Regra                                                           | Violação típica                         |
+| ------ | --------------------------------------------------------------- | --------------------------------------- |
+| DR-001 | Presentation importa apenas Application (facades/DTOs)          | Entity no React/Vue                     |
+| DR-002 | Application importa Domain                                      | Lógica de negócio só em service anêmico |
+| DR-003 | Domain define ports (interfaces); Infrastructure implementa     | ORM entity no Domain                    |
+| DR-004 | Integration implementa ports de saída; não importa Presentation | ERP DTO no controller                   |
+| DR-005 | Módulo BC-A não importa internals de BC-B                       | Repository cross-module direto          |
+| DR-006 | Comunicação cross-BC via API pública do módulo ou evento        | Import circular                         |
+| DR-007 | Shared kernel mínimo — apenas tipos/IDs estáveis                | Utils dumping ground                    |
+| DR-008 | Reporting (BC-016) só leitura; sem write em outros BCs          | Update via relatório                    |
 
 ## Dependências entre módulos (direção candidata)
 
@@ -45,11 +45,11 @@ Setas = dependência de **aplicação** ou leitura de contrato — não de persi
 
 ## Anti-padrões
 
-| Padrão | Consequência |
-| --- | --- |
-| Domain → Infrastructure | Testes acoplados; EP-024 violado |
-| BC compartilhando tabela sem owner | ADR-003 violado |
-| Integration → Domain internals | ACL inútil |
+| Padrão                             | Consequência                     |
+| ---------------------------------- | -------------------------------- |
+| Domain → Infrastructure            | Testes acoplados; EP-024 violado |
+| BC compartilhando tabela sem owner | ADR-003 violado                  |
+| Integration → Domain internals     | ACL inútil                       |
 
 ## Enforcement futuro
 

@@ -1,13 +1,13 @@
 # QATTR-RPT-COMPLETE-003-REV
 
-| Campo | Valor |
-| --- | --- |
-| Document ID | Relatório de completude — Prompt 03 (revisão estrutural) |
-| Fonte | SRC-001 |
-| Status documental | CANDIDATE — sem fonte primária |
-| Gerado em | 2026-08-28 |
-| Prompt | 03 |
-| Resultado | PASS_WITH_RESTRICTIONS |
+| Campo             | Valor                                                    |
+| ----------------- | -------------------------------------------------------- |
+| Document ID       | Relatório de completude — Prompt 03 (revisão estrutural) |
+| Fonte             | SRC-001                                                  |
+| Status documental | CANDIDATE — sem fonte primária                           |
+| Gerado em         | 2026-08-28                                               |
+| Prompt            | 03                                                       |
+| Resultado         | PASS_WITH_RESTRICTIONS                                   |
 
 > Nenhum NFR `CONFIRMED`. Nenhuma meta numérica inventada.
 
@@ -19,23 +19,23 @@ Revisão estrutural do Prompt 03: nomenclatura de artefatos alinhada ao protocol
 
 ## Contagens (recalculadas)
 
-| Item | Quantidade |
-| --- | --- |
-| NFR (NFR-001..NFR-040) | 40 |
-| Cenários de qualidade (QA-SC-001..028) | 28 |
-| Requisitos de segurança (SEC-REQ-001..024) | 24 |
-| Integridade (DI-REQ) | 6 |
-| Recuperação (REC-REQ) | 6 |
-| Questões abertas (NFNQ-001..018) | 18 |
-| NFR com target numérico definido | **0** |
-| NFR com targets pendentes | **40** |
-| NFR CRITICAL | **5** |
-| Métricas inventadas | **0** |
-| NFR CONFIRMED | **0** |
-| Arquivos em `04-quality-attributes/` | **24** |
-| FR (Prompt 02) | 42 |
-| Riscos | 24 |
-| DDPs | 40 |
+| Item                                       | Quantidade |
+| ------------------------------------------ | ---------- |
+| NFR (NFR-001..NFR-040)                     | 40         |
+| Cenários de qualidade (QA-SC-001..028)     | 28         |
+| Requisitos de segurança (SEC-REQ-001..024) | 24         |
+| Integridade (DI-REQ)                       | 6          |
+| Recuperação (REC-REQ)                      | 6          |
+| Questões abertas (NFNQ-001..018)           | 18         |
+| NFR com target numérico definido           | **0**      |
+| NFR com targets pendentes                  | **40**     |
+| NFR CRITICAL                               | **5**      |
+| Métricas inventadas                        | **0**      |
+| NFR CONFIRMED                              | **0**      |
+| Arquivos em `04-quality-attributes/`       | **24**     |
+| FR (Prompt 02)                             | 42         |
+| Riscos                                     | 24         |
+| DDPs                                       | 40         |
 
 ## Restrições conhecidas
 
@@ -49,19 +49,19 @@ Revisão estrutural do Prompt 03: nomenclatura de artefatos alinhada ao protocol
 
 ## Quality gate Prompt 03
 
-| Critério | Resultado |
-| --- | --- |
-| Todos os NFRs com proveniência | PASS |
-| Nenhum número inventado | PASS |
-| RPO/RTO pendentes | PASS |
-| Segurança ≠ apenas login | PASS |
-| AUDIT_TRAIL ≠ TECHNICAL_LOG | PASS |
-| Concorrência e idempotência classificadas | PASS |
-| Trade-offs visíveis | PASS |
-| Nenhuma tecnologia escolhida | PASS |
-| Nenhum script ou código | PASS |
-| `requirement-dependency-map.md` atualizado | PASS |
-| Estrutura de 24 arquivos conforme spec | PASS |
+| Critério                                   | Resultado |
+| ------------------------------------------ | --------- |
+| Todos os NFRs com proveniência             | PASS      |
+| Nenhum número inventado                    | PASS      |
+| RPO/RTO pendentes                          | PASS      |
+| Segurança ≠ apenas login                   | PASS      |
+| AUDIT_TRAIL ≠ TECHNICAL_LOG                | PASS      |
+| Concorrência e idempotência classificadas  | PASS      |
+| Trade-offs visíveis                        | PASS      |
+| Nenhuma tecnologia escolhida               | PASS      |
+| Nenhum script ou código                    | PASS      |
+| `requirement-dependency-map.md` atualizado | PASS      |
+| Estrutura de 24 arquivos conforme spec     | PASS      |
 
 **Resultado:** PASS_WITH_RESTRICTIONS
 

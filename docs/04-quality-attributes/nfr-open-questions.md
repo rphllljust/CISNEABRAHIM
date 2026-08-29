@@ -1,11 +1,11 @@
 ﻿# QATTR-NFNQ-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                                        |
+| ----------- | -------------------------------------------- |
 | Document ID | Questões abertas — requisitos não funcionais |
-| Fonte | SRC-001 |
-| Total | 18 (NFNQ-001..NFNQ-018) |
-| Prompt | 03 |
+| Fonte       | SRC-001                                      |
+| Total       | 18 (NFNQ-001..NFNQ-018)                      |
+| Prompt      | 03                                           |
 
 ---
 

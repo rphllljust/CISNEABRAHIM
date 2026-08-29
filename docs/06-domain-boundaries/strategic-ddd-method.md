@@ -1,27 +1,27 @@
 # DBND-METHOD-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                  |
+| ----------- | ---------------------- |
 | Document ID | Método DDD estratégico |
-| Fonte | SRC-001, governança |
-| Prompt | 05 |
+| Fonte       | SRC-001, governança    |
+| Prompt      | 05                     |
 
 ## Separação obrigatória
 
-| Espaço | Contém | Não contém |
-| --- | --- | --- |
-| **PROBLEM_SPACE** | Subdomínios, capacidades empresariais, diferenciação, riscos de negócio | Pastas, APIs, bancos, deployables |
-| **SOLUTION_SPACE** | Bounded contexts **candidatos**, ownership, relações, mapa | Microserviços confirmados, aggregates, máquinas de estado |
+| Espaço             | Contém                                                                  | Não contém                                                |
+| ------------------ | ----------------------------------------------------------------------- | --------------------------------------------------------- |
+| **PROBLEM_SPACE**  | Subdomínios, capacidades empresariais, diferenciação, riscos de negócio | Pastas, APIs, bancos, deployables                         |
+| **SOLUTION_SPACE** | Bounded contexts **candidatos**, ownership, relações, mapa              | Microserviços confirmados, aggregates, máquinas de estado |
 
 Subdomínio ≠ bounded context. Um subdomínio pode mapear para um ou mais contextos candidatos; um contexto pode atender partes de vários subdomínios apenas com justificativa explícita.
 
 ## Identificadores
 
-| Tipo | Padrão |
-| --- | --- |
-| Subdomínio | SUBD-NNN |
-| Bounded context candidato | BC-CAND-NNN |
-| Decisão de fronteira pendente | DBND-NNN |
+| Tipo                          | Padrão      |
+| ----------------------------- | ----------- |
+| Subdomínio                    | SUBD-NNN    |
+| Bounded context candidato     | BC-CAND-NNN |
+| Decisão de fronteira pendente | DBND-NNN    |
 
 ## Classificação de subdomínio (candidata)
 
@@ -43,15 +43,15 @@ Subdomínio ≠ bounded context. Um subdomínio pode mapear para um ou mais cont
 
 ## Ownership (tipos)
 
-| Tipo | Significado |
-| --- | --- |
-| Concept owner | Dono semântico do conceito |
-| Write owner | Única escrita autoritativa |
-| Decision owner | Dono da decisão empresarial |
-| Consumer | Lê referência; não altera origem |
-| Replica | Cópia derivada com política de sync |
-| External reference | SoT fora do sistema candidato |
-| Source of Truth | Sistema ou contexto autoritativo externo/interno |
+| Tipo               | Significado                                      |
+| ------------------ | ------------------------------------------------ |
+| Concept owner      | Dono semântico do conceito                       |
+| Write owner        | Única escrita autoritativa                       |
+| Decision owner     | Dono da decisão empresarial                      |
+| Consumer           | Lê referência; não altera origem                 |
+| Replica            | Cópia derivada com política de sync              |
+| External reference | SoT fora do sistema candidato                    |
+| Source of Truth    | Sistema ou contexto autoritativo externo/interno |
 
 Nenhum dado com dois write owners sem política de conflito registrada.
 

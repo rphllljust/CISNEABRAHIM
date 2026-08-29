@@ -1,13 +1,13 @@
 # Project Charter — SISTEMA CISNE RONDÔNIA
 
-| Campo | Valor |
-| --- | --- |
-| Document ID | CHARTER-001 |
-| System name | SISTEMA CISNE RONDÔNIA |
-| Version | 0.1.0-foundation |
-| Status | `DISCOVERY_NOT_STARTED` |
-| Source | SRC-000 (governança do Prompt 00) |
-| Last updated | 2026-08-28 |
+| Campo        | Valor                             |
+| ------------ | --------------------------------- |
+| Document ID  | CHARTER-001                       |
+| System name  | SISTEMA CISNE RONDÔNIA            |
+| Version      | 0.1.0-foundation                  |
+| Status       | `DISCOVERY_NOT_STARTED`           |
+| Source       | SRC-000 (governança do Prompt 00) |
+| Last updated | 2026-08-28                        |
 
 ## Patrocinador / owner
 
@@ -59,13 +59,13 @@ Critério de sucesso **desta fase de governança**: quality gates do Prompt 00 a
 
 ## Restrições conhecidas
 
-| Restrição | Tipo | Evidência |
-| --- | --- | --- |
-| Sede informada: Porto Velho, Rondônia | Contexto inicial | SRC-000 (declaração do responsável no Prompt 00); não é prova operacional |
-| Empresa privada | Contexto inicial | SRC-000 |
-| Sem fontes empresariais anexadas | Fato de repositório | [`../01-foundation/source-registry.md`](../01-foundation/source-registry.md) |
-| Sem stack, arquitetura ou domínio finalizados | Decisão de engenharia desta etapa | ED-001 a ED-004 |
-| Proibição de implementação nesta fase | Governança | SRC-000, [`execution-protocol.md`](execution-protocol.md) |
+| Restrição                                     | Tipo                              | Evidência                                                                    |
+| --------------------------------------------- | --------------------------------- | ---------------------------------------------------------------------------- |
+| Sede informada: Porto Velho, Rondônia         | Contexto inicial                  | SRC-000 (declaração do responsável no Prompt 00); não é prova operacional    |
+| Empresa privada                               | Contexto inicial                  | SRC-000                                                                      |
+| Sem fontes empresariais anexadas              | Fato de repositório               | [`../01-foundation/source-registry.md`](../01-foundation/source-registry.md) |
+| Sem stack, arquitetura ou domínio finalizados | Decisão de engenharia desta etapa | ED-001 a ED-004                                                              |
+| Proibição de implementação nesta fase         | Governança                        | SRC-000, [`execution-protocol.md`](execution-protocol.md)                    |
 
 ## Áreas que exigirão validação
 

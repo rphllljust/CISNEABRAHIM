@@ -1,9 +1,9 @@
 # Quality gates
 
-| Campo | Valor |
-| --- | --- |
-| Document ID | QG-001 |
-| Source | SRC-000 |
+| Campo       | Valor   |
+| ----------- | ------- |
+| Document ID | QG-001  |
+| Source      | SRC-000 |
 
 Gates são evidência, não opinião. Um gate não marcado não pode ser assumido como passado.
 

@@ -1,11 +1,11 @@
 # ADR-006 — Baseline de implantação
 
-| Campo | Valor |
-| --- | --- |
-| ID | ADR-006 |
+| Campo  | Valor        |
+| ------ | ------------ |
+| ID     | ADR-006      |
 | Status | **PROPOSED** |
-| Data | 2026-08-28 |
-| Prompt | 09 |
+| Data   | 2026-08-28   |
+| Prompt | 09           |
 
 ## Contexto
 
@@ -27,12 +27,12 @@ ARCH-DRV-003, 014; deployment-topology-candidates.md.
 
 ## Alternativas
 
-| Alternativa | Resultado |
-| --- | --- |
-| TOPO-001 tudo em um processo | Candidato alternativo |
-| TOPO-004 microservices | Rejeitado início |
-| Serverless-only | Rejeitado |
-| TOPO-002 FE/BE + monolith API | **Proposto** |
+| Alternativa                   | Resultado             |
+| ----------------------------- | --------------------- |
+| TOPO-001 tudo em um processo  | Candidato alternativo |
+| TOPO-004 microservices        | Rejeitado início      |
+| Serverless-only               | Rejeitado             |
+| TOPO-002 FE/BE + monolith API | **Proposto**          |
 
 ## Benefícios
 

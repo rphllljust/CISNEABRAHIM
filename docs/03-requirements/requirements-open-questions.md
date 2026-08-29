@@ -1,15 +1,16 @@
 # REQ-RQ-001
 
-| Campo | Valor |
-| --- | --- |
-| Document ID | Questões abertas |
-| Fonte | SRC-001 |
+| Campo             | Valor                          |
+| ----------------- | ------------------------------ |
+| Document ID       | Questões abertas               |
+| Fonte             | SRC-001                        |
 | Status documental | CANDIDATE — sem fonte primária |
-| Gerado em | 2026-08-28 |
-| Prompt | 02 |
-| Total | 25 |
+| Gerado em         | 2026-08-28                     |
+| Prompt            | 02                             |
+| Total             | 25                             |
 
 > Requisitos derivados exclusivamente de SRC-001 (contexto reconstruído). Nenhum item `CONFIRMED`.
+
 ## Direção
 
 ### RQ-QUESTION-001
@@ -361,17 +362,17 @@
 
 Referência completa: [`../05-ubiquitous-language/terms-pending-business-validation.md`](../05-ubiquitous-language/terms-pending-business-validation.md).
 
-| GLQ | Pergunta resumida | TERM | DDP |
-| --- | --- | --- | --- |
-| GLQ-001 | Tipos formais de OS | TERM-002 | DDP-001 |
-| GLQ-002 | Taxonomia mão de obra | TERM-028 | DDP-006 |
-| GLQ-003 | Pedido, proposta, contrato, PO | TERM-011..014 | DDP-009 |
-| GLQ-004 | Medição: entidade ou fase | TERM-016 | DDP-010 |
-| GLQ-005 | Nota fiscal vs informado | TERM-018 | DDP-023 |
-| GLQ-006 | Responsável vs executor vs autorizador | TERM-006..008 | DDP-015, DDP-022 |
-| GLQ-007 | ASSIGNED / VIEWED / ACKNOWLEDGED | TERM-008 | DDP-032 |
-| GLQ-008 | Equipamento vs veículo | TERM-025, TERM-026 | DDP-007, DDP-034 |
-| GLQ-009 | Fórmula de margem | TERM-022 | DDP-031 |
-| GLQ-010 | WhatsApp obrigatório | TERM-036 | DDP-021 |
-| GLQ-011 | Source of Truth integrações | TERM-037 | DDP-020 |
-| GLQ-012 | Nome legal OS vs sigla | TERM-002 | — |
+| GLQ     | Pergunta resumida                      | TERM               | DDP              |
+| ------- | -------------------------------------- | ------------------ | ---------------- |
+| GLQ-001 | Tipos formais de OS                    | TERM-002           | DDP-001          |
+| GLQ-002 | Taxonomia mão de obra                  | TERM-028           | DDP-006          |
+| GLQ-003 | Pedido, proposta, contrato, PO         | TERM-011..014      | DDP-009          |
+| GLQ-004 | Medição: entidade ou fase              | TERM-016           | DDP-010          |
+| GLQ-005 | Nota fiscal vs informado               | TERM-018           | DDP-023          |
+| GLQ-006 | Responsável vs executor vs autorizador | TERM-006..008      | DDP-015, DDP-022 |
+| GLQ-007 | ASSIGNED / VIEWED / ACKNOWLEDGED       | TERM-008           | DDP-032          |
+| GLQ-008 | Equipamento vs veículo                 | TERM-025, TERM-026 | DDP-007, DDP-034 |
+| GLQ-009 | Fórmula de margem                      | TERM-022           | DDP-031          |
+| GLQ-010 | WhatsApp obrigatório                   | TERM-036           | DDP-021          |
+| GLQ-011 | Source of Truth integrações            | TERM-037           | DDP-020          |
+| GLQ-012 | Nome legal OS vs sigla                 | TERM-002           | —                |

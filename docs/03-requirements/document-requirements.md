@@ -1,15 +1,16 @@
 # REQ-DOC-001
 
-| Campo | Valor |
-| --- | --- |
-| Document ID | Requisitos documentais |
-| Fonte | SRC-001 |
+| Campo             | Valor                          |
+| ----------------- | ------------------------------ |
+| Document ID       | Requisitos documentais         |
+| Fonte             | SRC-001                        |
 | Status documental | CANDIDATE — sem fonte primária |
-| Gerado em | 2026-08-28 |
-| Prompt | 02 |
-| Total | 14 |
+| Gerado em         | 2026-08-28                     |
+| Prompt            | 02                             |
+| Total             | 14                             |
 
 > Requisitos derivados exclusivamente de SRC-001 (contexto reconstruído). Nenhum item `CONFIRMED`.
+
 ## DOC-REQ-001 — Documento lógico
 
 O sistema deverá permitir registrar documento lógico distinto de versão e arquivo.

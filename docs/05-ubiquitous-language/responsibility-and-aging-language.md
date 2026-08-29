@@ -1,16 +1,16 @@
 # UL-RESP-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo   | Valor            |
+| ------- | ---------------- |
 | Domínio | Responsabilidade |
-| Prompt | 04 |
+| Prompt  | 04               |
 
 ## Termos
 
-| TERM | Papel |
-| --- | --- |
-| TERM-008 | Responsável pela OS |
-| TERM-006 | Executor (realização) |
+| TERM     | Papel                  |
+| -------- | ---------------------- |
+| TERM-008 | Responsável pela OS    |
+| TERM-006 | Executor (realização)  |
 | TERM-007 | Autorizador (decisões) |
 
 ## Handoff candidato
@@ -19,10 +19,10 @@ Estados ASSIGNED / VIEWED / ACKNOWLEDGED citados em EV-084 — **classificação
 
 ## Distinção
 
-| Papel | Accountability | Execução física |
-| --- | --- | --- |
-| Responsável (TERM-008) | Sim | Nem sempre |
-| Executor (TERM-006) | Parcial | Sim |
+| Papel                  | Accountability | Execução física |
+| ---------------------- | -------------- | --------------- |
+| Responsável (TERM-008) | Sim            | Nem sempre      |
+| Executor (TERM-006)    | Parcial        | Sim             |
 
 ## FRs
 

@@ -1,39 +1,39 @@
 # REQ-AUTH-001
 
-| Campo | Valor |
-| --- | --- |
-| Document ID | Requisitos de autorização empresarial |
-| Fonte | SRC-001 |
-| Status documental | CANDIDATE — sem fonte primária |
-| Gerado em | 2026-08-28 |
-| Prompt | 02 |
-| Total | 20 |
+| Campo             | Valor                                 |
+| ----------------- | ------------------------------------- |
+| Document ID       | Requisitos de autorização empresarial |
+| Fonte             | SRC-001                               |
+| Status documental | CANDIDATE — sem fonte primária        |
+| Gerado em         | 2026-08-28                            |
+| Prompt            | 02                                    |
+| Total             | 20                                    |
 
 > Requisitos derivados exclusivamente de SRC-001 (contexto reconstruído). Nenhum item `CONFIRMED`.
 > Autorização empresarial — **não** RBAC técnico. Sem nomes de roles técnicas.
 
-| ID | Ação | Ator candidato | Escopo | FR | SoD candidata | Status |
-| --- | --- | --- | --- | --- | --- | --- |
-| AUTH-REQ-001 | Registrar e consultar solicitação | Solicitante candidato | GLOBAL | FR-001 | UNKNOWN | PENDING_SOURCE_VALIDATION |
-| AUTH-REQ-002 | Decidir aprovação ou rejeição de solicitação | Autorizador empresarial candidato | UNKNOWN | FR-006 | Candidata — solicitante ≠ autorizador | PENDING_BUSINESS_DECISION |
-| AUTH-REQ-003 | Converter solicitação em OS | Autorizador empresarial candidato | GLOBAL | FR-009 | Candidata | PENDING_SOURCE_VALIDATION |
-| AUTH-REQ-004 | Criar rascunho de OS | Operacional candidato | GLOBAL | FR-010 | UNKNOWN | PENDING_SOURCE_VALIDATION |
-| AUTH-REQ-005 | Editar conteúdo, itens, recursos e referências comerciais da OS | Operacional candidato | SERVICE_TYPE | FR-011 | Candidata — separar preparação e liberação | PENDING_SOURCE_VALIDATION |
-| AUTH-REQ-006 | Liberar OS | Autorizador empresarial candidato | GLOBAL | FR-014 | Candidata — quem prepara ≠ quem libera | PENDING_SOURCE_VALIDATION |
-| AUTH-REQ-007 | Atribuir responsável e alocar recursos | Operacional candidato | GLOBAL | FR-015 | UNKNOWN | PENDING_SOURCE_VALIDATION |
-| AUTH-REQ-008 | Executar OS e registrar progresso, substituições e evidências | Executor candidato | GLOBAL | FR-017 | Candidata | PENDING_SOURCE_VALIDATION |
-| AUTH-REQ-009 | Concluir OS | Executor ou autorizador candidato | GLOBAL | FR-019 | UNKNOWN | PENDING_BUSINESS_DECISION |
-| AUTH-REQ-010 | Cancelar OS | Autorizador empresarial candidato | GLOBAL | FR-020 | Candidata | PENDING_BUSINESS_DECISION |
-| AUTH-REQ-011 | Reabrir OS concluída | Autorizador empresarial candidato | UNKNOWN | FR-021 | Candidata | PENDING_BUSINESS_DECISION |
-| AUTH-REQ-012 | Visualizar custo e margem | Financeiro ou direção candidatos | GLOBAL | FR-032 | Candidata | PENDING_BUSINESS_DECISION |
-| AUTH-REQ-013 | Preparar medição | Analista de medição candidato | UNKNOWN | FR-035 | UNKNOWN | PENDING_BUSINESS_DECISION |
-| AUTH-REQ-014 | Decidir sobre medição | Autorizador empresarial candidato | UNKNOWN | FR-037 | Candidata — quem mede ≠ quem aprova | PENDING_BUSINESS_DECISION |
-| AUTH-REQ-015 | Registrar documento de faturamento ou nota informada | Financeiro candidato | UNKNOWN | FR-039 | Candidata | PENDING_BUSINESS_DECISION |
-| AUTH-REQ-016 | Registrar e versionar documentos lógicos | Responsável documental candidato | GLOBAL | FR-041 | UNKNOWN | PENDING_SOURCE_VALIDATION |
-| AUTH-REQ-017 | Substituir documento e controlar acesso | Responsável documental ou gestão candidatos | GLOBAL | FR-042 | Candidata | PENDING_SOURCE_VALIDATION |
-| AUTH-REQ-018 | Anexar evidências à solicitação | Solicitante candidato | UNKNOWN | FR-004 | NOT_APPLICABLE | PENDING_BUSINESS_DECISION |
-| AUTH-REQ-019 | Registrar adicional não planejado em execução | Executor com autorização candidata | SERVICE_TYPE | FR-018 | Candidata | PENDING_BUSINESS_DECISION |
-| AUTH-REQ-020 | Alterar preço comercial após liberação | Autorizador comercial candidato | CONTRACT | FR-031 | Candidata | PENDING_BUSINESS_DECISION |
+| ID           | Ação                                                            | Ator candidato                              | Escopo       | FR     | SoD candidata                              | Status                    |
+| ------------ | --------------------------------------------------------------- | ------------------------------------------- | ------------ | ------ | ------------------------------------------ | ------------------------- |
+| AUTH-REQ-001 | Registrar e consultar solicitação                               | Solicitante candidato                       | GLOBAL       | FR-001 | UNKNOWN                                    | PENDING_SOURCE_VALIDATION |
+| AUTH-REQ-002 | Decidir aprovação ou rejeição de solicitação                    | Autorizador empresarial candidato           | UNKNOWN      | FR-006 | Candidata — solicitante ≠ autorizador      | PENDING_BUSINESS_DECISION |
+| AUTH-REQ-003 | Converter solicitação em OS                                     | Autorizador empresarial candidato           | GLOBAL       | FR-009 | Candidata                                  | PENDING_SOURCE_VALIDATION |
+| AUTH-REQ-004 | Criar rascunho de OS                                            | Operacional candidato                       | GLOBAL       | FR-010 | UNKNOWN                                    | PENDING_SOURCE_VALIDATION |
+| AUTH-REQ-005 | Editar conteúdo, itens, recursos e referências comerciais da OS | Operacional candidato                       | SERVICE_TYPE | FR-011 | Candidata — separar preparação e liberação | PENDING_SOURCE_VALIDATION |
+| AUTH-REQ-006 | Liberar OS                                                      | Autorizador empresarial candidato           | GLOBAL       | FR-014 | Candidata — quem prepara ≠ quem libera     | PENDING_SOURCE_VALIDATION |
+| AUTH-REQ-007 | Atribuir responsável e alocar recursos                          | Operacional candidato                       | GLOBAL       | FR-015 | UNKNOWN                                    | PENDING_SOURCE_VALIDATION |
+| AUTH-REQ-008 | Executar OS e registrar progresso, substituições e evidências   | Executor candidato                          | GLOBAL       | FR-017 | Candidata                                  | PENDING_SOURCE_VALIDATION |
+| AUTH-REQ-009 | Concluir OS                                                     | Executor ou autorizador candidato           | GLOBAL       | FR-019 | UNKNOWN                                    | PENDING_BUSINESS_DECISION |
+| AUTH-REQ-010 | Cancelar OS                                                     | Autorizador empresarial candidato           | GLOBAL       | FR-020 | Candidata                                  | PENDING_BUSINESS_DECISION |
+| AUTH-REQ-011 | Reabrir OS concluída                                            | Autorizador empresarial candidato           | UNKNOWN      | FR-021 | Candidata                                  | PENDING_BUSINESS_DECISION |
+| AUTH-REQ-012 | Visualizar custo e margem                                       | Financeiro ou direção candidatos            | GLOBAL       | FR-032 | Candidata                                  | PENDING_BUSINESS_DECISION |
+| AUTH-REQ-013 | Preparar medição                                                | Analista de medição candidato               | UNKNOWN      | FR-035 | UNKNOWN                                    | PENDING_BUSINESS_DECISION |
+| AUTH-REQ-014 | Decidir sobre medição                                           | Autorizador empresarial candidato           | UNKNOWN      | FR-037 | Candidata — quem mede ≠ quem aprova        | PENDING_BUSINESS_DECISION |
+| AUTH-REQ-015 | Registrar documento de faturamento ou nota informada            | Financeiro candidato                        | UNKNOWN      | FR-039 | Candidata                                  | PENDING_BUSINESS_DECISION |
+| AUTH-REQ-016 | Registrar e versionar documentos lógicos                        | Responsável documental candidato            | GLOBAL       | FR-041 | UNKNOWN                                    | PENDING_SOURCE_VALIDATION |
+| AUTH-REQ-017 | Substituir documento e controlar acesso                         | Responsável documental ou gestão candidatos | GLOBAL       | FR-042 | Candidata                                  | PENDING_SOURCE_VALIDATION |
+| AUTH-REQ-018 | Anexar evidências à solicitação                                 | Solicitante candidato                       | UNKNOWN      | FR-004 | NOT_APPLICABLE                             | PENDING_BUSINESS_DECISION |
+| AUTH-REQ-019 | Registrar adicional não planejado em execução                   | Executor com autorização candidata          | SERVICE_TYPE | FR-018 | Candidata                                  | PENDING_BUSINESS_DECISION |
+| AUTH-REQ-020 | Alterar preço comercial após liberação                          | Autorizador comercial candidato             | CONTRACT     | FR-031 | Candidata                                  | PENDING_BUSINESS_DECISION |
 
 ## Detalhamento
 

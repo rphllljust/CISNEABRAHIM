@@ -1,23 +1,23 @@
 # DBND-MONO-001
 
-| Campo | Valor |
-| --- | --- |
-| Document ID | Avaliação de modular monolith |
-| Prompt | 05 |
-| Resultado | **CANDIDATO ADEQUADO PARA INÍCIO** — não decisão final |
+| Campo       | Valor                                                  |
+| ----------- | ------------------------------------------------------ |
+| Document ID | Avaliação de modular monolith                          |
+| Prompt      | 05                                                     |
+| Resultado   | **CANDIDATO ADEQUADO PARA INÍCIO** — não decisão final |
 
 ## Contexto de avaliação
 
-| Fator | Estado atual | Implicação |
-| --- | --- | --- |
-| Estágio de descoberta | FOUNDATION; 40 DDP abertos | Distribuição prematura = alto risco |
-| Fonte primária | Ausente (SRC-001 isolada) | Fronteiras ainda movem |
-| Equipe | UNKNOWN | Autonomia por contexto não demonstrada |
-| Volume / escala | TARGET_NOT_DEFINED | Sem driver de split |
-| Transações cross-OS→medição→faturamento | Candidatas STRONG | Favorecem processo único transacional inicial |
-| Consistência | NFR-003, NFR-011 financeiros | Distribuíção exigiria sagas — custo alto |
-| Deployment | NOT STARTED | Um deploy inicial reduz complexidade |
-| NFR disponibilidade | TARGET_NOT_DEFINED | Sem requisito multi-região |
+| Fator                                   | Estado atual                 | Implicação                                    |
+| --------------------------------------- | ---------------------------- | --------------------------------------------- |
+| Estágio de descoberta                   | FOUNDATION; 40 DDP abertos   | Distribuição prematura = alto risco           |
+| Fonte primária                          | Ausente (SRC-001 isolada)    | Fronteiras ainda movem                        |
+| Equipe                                  | UNKNOWN                      | Autonomia por contexto não demonstrada        |
+| Volume / escala                         | TARGET_NOT_DEFINED           | Sem driver de split                           |
+| Transações cross-OS→medição→faturamento | Candidatas STRONG            | Favorecem processo único transacional inicial |
+| Consistência                            | NFR-003, NFR-011 financeiros | Distribuíção exigiria sagas — custo alto      |
+| Deployment                              | NOT STARTED                  | Um deploy inicial reduz complexidade          |
+| NFR disponibilidade                     | TARGET_NOT_DEFINED           | Sem requisito multi-região                    |
 
 ## Por que modular monolith é **candidato** (não decisão)
 
@@ -28,12 +28,12 @@
 
 ## Riscos do modular monolith mal feito
 
-| Risco | Mitigação candidata |
-| --- | --- |
-| Monólito sem módulos (big ball of mud) | Enforce ownership por BC; sem import circular |
-| Módulos viram pastas CRUD | Organizar por capacidade/linguagem, não por entidade |
-| SHARED_KERNEL acidental | Ver shared-concept-analysis.md |
-| Deploy único esconde acoplamento | Métricas de dependência entre módulos (futuro) |
+| Risco                                  | Mitigação candidata                                  |
+| -------------------------------------- | ---------------------------------------------------- |
+| Monólito sem módulos (big ball of mud) | Enforce ownership por BC; sem import circular        |
+| Módulos viram pastas CRUD              | Organizar por capacidade/linguagem, não por entidade |
+| SHARED_KERNEL acidental                | Ver shared-concept-analysis.md                       |
+| Deploy único esconde acoplamento       | Métricas de dependência entre módulos (futuro)       |
 
 ## O que **não** afirmar
 

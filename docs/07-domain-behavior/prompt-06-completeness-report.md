@@ -1,11 +1,11 @@
 # DBEH-RPT-COMPLETE-006
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                               |
+| ----------- | ----------------------------------- |
 | Document ID | Relatório de completude — Prompt 06 |
-| Gerado em | 2026-08-28 |
-| Prompt | 06 |
-| Resultado | PASS_WITH_RESTRICTIONS |
+| Gerado em   | 2026-08-28                          |
+| Prompt      | 06                                  |
+| Resultado   | PASS_WITH_RESTRICTIONS              |
 
 ## Resumo
 
@@ -13,36 +13,36 @@ Formalização candidata de invariantes, comandos, eventos, rejeições, predica
 
 ## Contagens
 
-| Item | Quantidade |
-| --- | --- |
-| Invariantes (INV) | 22 |
-| Comandos (CMD) | 22 |
-| Eventos domínio (DE) | 20 |
-| Rejeições (REJ) | 18 |
-| Predicados (PRED) | 12 |
-| Políticas (POL) | 8 |
-| DSVC candidatos aceitos | 2 |
-| Consistency boundaries (CB) | 12 |
-| Integration events (IE) | 6 |
-| Decisões abertas (BOD) | 14 |
-| INV CONFIRMED | **0** |
-| Aggregates definidos | **0** |
-| Estados definitivos | **0** |
-| Código / scripts | **0** |
+| Item                        | Quantidade |
+| --------------------------- | ---------- |
+| Invariantes (INV)           | 22         |
+| Comandos (CMD)              | 22         |
+| Eventos domínio (DE)        | 20         |
+| Rejeições (REJ)             | 18         |
+| Predicados (PRED)           | 12         |
+| Políticas (POL)             | 8          |
+| DSVC candidatos aceitos     | 2          |
+| Consistency boundaries (CB) | 12         |
+| Integration events (IE)     | 6          |
+| Decisões abertas (BOD)      | 14         |
+| INV CONFIRMED               | **0**      |
+| Aggregates definidos        | **0**      |
+| Estados definitivos         | **0**      |
+| Código / scripts            | **0**      |
 
 ## Quality gate
 
-| Critério | Resultado |
-| --- | --- |
-| Nenhuma INV CONFIRMED sem fonte | PASS |
-| Comandos agnósticos de tecnologia | PASS |
-| Eventos no passado e relevantes | PASS |
-| REJ separadas de erros técnicos | PASS |
-| Concorrência e idempotência classificadas | PASS |
-| Histórico/audit/log separados | PASS |
-| Nenhum aggregate ou máquina definitiva | PASS |
-| Nenhum código ou script | PASS |
-| Prompt 07 não executado | PASS |
+| Critério                                  | Resultado |
+| ----------------------------------------- | --------- |
+| Nenhuma INV CONFIRMED sem fonte           | PASS      |
+| Comandos agnósticos de tecnologia         | PASS      |
+| Eventos no passado e relevantes           | PASS      |
+| REJ separadas de erros técnicos           | PASS      |
+| Concorrência e idempotência classificadas | PASS      |
+| Histórico/audit/log separados             | PASS      |
+| Nenhum aggregate ou máquina definitiva    | PASS      |
+| Nenhum código ou script                   | PASS      |
+| Prompt 07 não executado                   | PASS      |
 
 **Resultado:** PASS_WITH_RESTRICTIONS
 

@@ -1,9 +1,9 @@
 # TECH-MONO-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor              |
+| ----------- | ------------------ |
 | Document ID | Avaliação monorepo |
-| Prompt | 10 |
+| Prompt      | 10                 |
 
 ## Estrutura candidata
 
@@ -22,13 +22,13 @@ cisne-rondonia/
 
 ## Opções
 
-| Opção | Score | Resultado |
-| --- | --- | --- |
-| **pnpm + Turborepo** | 4.12 | **Selecionado** |
-| pnpm simples | 4.05 | Alternativa se Turbo excesso |
-| npm workspaces | 3.70 | Rejeitado — performance |
-| Nx | 3.95 | Rejeitado — complexidade early |
-| Polirepo | 3.20 | Rejeitado — tipos duplicados |
+| Opção                | Score | Resultado                      |
+| -------------------- | ----- | ------------------------------ |
+| **pnpm + Turborepo** | 4.12  | **Selecionado**                |
+| pnpm simples         | 4.05  | Alternativa se Turbo excesso   |
+| npm workspaces       | 3.70  | Rejeitado — performance        |
+| Nx                   | 3.95  | Rejeitado — complexidade early |
+| Polirepo             | 3.20  | Rejeitado — tipos duplicados   |
 
 ## pnpm
 

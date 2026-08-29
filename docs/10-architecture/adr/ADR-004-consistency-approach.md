@@ -1,11 +1,11 @@
 # ADR-004 — Abordagem de consistência
 
-| Campo | Valor |
-| --- | --- |
-| ID | ADR-004 |
+| Campo  | Valor        |
+| ------ | ------------ |
+| ID     | ADR-004      |
 | Status | **PROPOSED** |
-| Data | 2026-08-28 |
-| Prompt | 09 |
+| Data   | 2026-08-28   |
+| Prompt | 09           |
 
 ## Contexto
 
@@ -27,12 +27,12 @@ ARCH-DRV-003, 004, 011; NFR-003, NFR-011; AP-006.
 
 ## Alternativas
 
-| Alternativa | Resultado |
-| --- | --- |
-| Saga distribuída desde início | Rejeitado |
-| 2PC distribuído | Rejeitado |
-| Eventual everywhere | Rejeitado — financeiro |
-| ACID local + eventual borda | **Proposto** |
+| Alternativa                   | Resultado              |
+| ----------------------------- | ---------------------- |
+| Saga distribuída desde início | Rejeitado              |
+| 2PC distribuído               | Rejeitado              |
+| Eventual everywhere           | Rejeitado — financeiro |
+| ACID local + eventual borda   | **Proposto**           |
 
 ## Benefícios
 

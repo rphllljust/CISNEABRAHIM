@@ -1,10 +1,10 @@
 # Scope register
 
-| Campo | Valor |
-| --- | --- |
-| Document ID | SCOPE-001 |
-| Source | SRC-000; **atualizado** SRC-001 (Prompt 01) |
-| Last updated | 2026-08-28 (Prompt 01) |
+| Campo        | Valor                                       |
+| ------------ | ------------------------------------------- |
+| Document ID  | SCOPE-001                                   |
+| Source       | SRC-000; **atualizado** SRC-001 (Prompt 01) |
+| Last updated | 2026-08-28 (Prompt 01)                      |
 
 Separação rigorosa. Não declarar MVP funcional.
 

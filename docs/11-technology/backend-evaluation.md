@@ -1,30 +1,30 @@
 # TECH-BE-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                       |
+| ----------- | --------------------------- |
 | Document ID | Avaliação backend framework |
-| Prompt | 10 |
+| Prompt      | 10                          |
 
 ## Opções
 
-| Opção | Score | Resultado |
-| --- | --- | --- |
-| **NestJS** (HTTP: Fastify) | 4.28 | **Selecionado** |
-| Fastify + estrutura manual | 3.85 | Alternativa viável |
-| Express + manual | 3.45 | Rejeitado — módulos fracos |
-| Hono / Elysia | 3.60 | Rejeitado — maturidade modular menor |
+| Opção                      | Score | Resultado                            |
+| -------------------------- | ----- | ------------------------------------ |
+| **NestJS** (HTTP: Fastify) | 4.28  | **Selecionado**                      |
+| Fastify + estrutura manual | 3.85  | Alternativa viável                   |
+| Express + manual           | 3.45  | Rejeitado — módulos fracos           |
+| Hono / Elysia              | 3.60  | Rejeitado — maturidade modular menor |
 
 ## NestJS — justificativa
 
-| Critério | Notas |
-| --- | --- |
-| Modular monolith | `@Module()` mapeia BC-CAND |
-| Camadas | Controllers → Application → Domain |
-| AuthZ futura | Guards, pipes — sem implementar agora |
-| DI | Testabilidade, ports/adapters |
-| Fastify adapter | Performance vs Express default |
-| Transações | Unit of Work via providers |
-| Documentação | Extensa; padrão enterprise TS |
+| Critério         | Notas                                 |
+| ---------------- | ------------------------------------- |
+| Modular monolith | `@Module()` mapeia BC-CAND            |
+| Camadas          | Controllers → Application → Domain    |
+| AuthZ futura     | Guards, pipes — sem implementar agora |
+| DI               | Testabilidade, ports/adapters         |
+| Fastify adapter  | Performance vs Express default        |
+| Transações       | Unit of Work via providers            |
+| Documentação     | Extensa; padrão enterprise TS         |
 
 ## Fastify estruturado — por que não vencedor
 

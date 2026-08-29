@@ -1,23 +1,23 @@
 # AUTHZ-CTX-001
 
-| Campo | Valor |
-| --- | --- |
-| Document ID | Regras de autorização contextual |
+| Campo        | Valor                                       |
+| ------------ | ------------------------------------------- |
+| Document ID  | Regras de autorização contextual            |
 | Total regras | 14 (AUTHZ-029..042) — complemento funcional |
-| Prompt | 08 |
+| Prompt       | 08                                          |
 
 > Autorização **contextual** depende de estado, vínculo, escopo ou atributo do recurso — além do papel funcional.
 
 ## AUTHZ-029 — Liberar OS somente em PREPARADA
 
-| Campo | Valor |
-| --- | --- |
-| Ação | Liberar OS |
-| Condição | STATE-CAND-007 PREPARADA; INV-002 |
-| Papel | ROLE-CAND-002 |
-| Transição | TR-CAND-007 |
-| Rejeição | REJ-002 |
-| Status | CANDIDATE |
+| Campo     | Valor                             |
+| --------- | --------------------------------- |
+| Ação      | Liberar OS                        |
+| Condição  | STATE-CAND-007 PREPARADA; INV-002 |
+| Papel     | ROLE-CAND-002                     |
+| Transição | TR-CAND-007                       |
+| Rejeição  | REJ-002                           |
+| Status    | CANDIDATE                         |
 
 ## AUTHZ-030 — Executor só em OS atribuída/liberada
 
@@ -103,9 +103,9 @@
 
 ## Separação funcional vs contextual
 
-| Tipo | Pergunta respondida |
-| --- | --- |
-| Funcional | O papel pode, em tese, executar CMD-X? |
+| Tipo       | Pergunta respondida                                   |
+| ---------- | ----------------------------------------------------- |
+| Funcional  | O papel pode, em tese, executar CMD-X?                |
 | Contextual | Neste recurso, neste estado, com este vínculo, agora? |
 
 Ambas devem passar — falha em qualquer uma → DENY-*.

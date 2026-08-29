@@ -1,10 +1,10 @@
 # ADR-TECH-005 — Acesso a dados
 
-| Campo | Valor |
-| --- | --- |
-| ID | ADR-TECH-005 |
+| Campo  | Valor        |
+| ------ | ------------ |
+| ID     | ADR-TECH-005 |
 | Status | **ACCEPTED** |
-| Data | 2026-08-28 |
+| Data   | 2026-08-28   |
 
 ## Contexto
 
@@ -22,12 +22,12 @@ ARCH-DRV-004; ADR-003; scorecard 4.18.
 
 ## Alternativas
 
-| Alternativa | Resultado |
-| --- | --- |
-| Prisma | Rejeitado — abstração alta, schema central |
-| TypeORM | Rejeitado — decorators, manutenção |
-| Kysely only | Rejeitado — verboso CRUD |
-| Raw pg only | Rejeitado — produtividade migrations |
+| Alternativa | Resultado                                  |
+| ----------- | ------------------------------------------ |
+| Prisma      | Rejeitado — abstração alta, schema central |
+| TypeORM     | Rejeitado — decorators, manutenção         |
+| Kysely only | Rejeitado — verboso CRUD                   |
+| Raw pg only | Rejeitado — produtividade migrations       |
 
 ## Benefícios
 

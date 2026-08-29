@@ -1,12 +1,12 @@
 # Business context
 
-| Campo | Valor |
-| --- | --- |
-| Document ID | CTX-001 |
-| Source | SRC-000; **detalhado por** SRC-001 (EV-001–EV-084) |
-| Classification | Contexto inicial **não validado** como requisito |
-| Status | PRELIMINARY |
-| Last updated | 2026-08-28 (Prompt 01) |
+| Campo          | Valor                                              |
+| -------------- | -------------------------------------------------- |
+| Document ID    | CTX-001                                            |
+| Source         | SRC-000; **detalhado por** SRC-001 (EV-001–EV-084) |
+| Classification | Contexto inicial **não validado** como requisito   |
+| Status         | PRELIMINARY                                        |
+| Last updated   | 2026-08-28 (Prompt 01)                             |
 
 ## Organização
 
@@ -18,19 +18,19 @@ Patrocinador/owner: **não formalizado**.
 
 As atividades abaixo foram **citadas** no contexto inicial (SRC-000, reforçado por SRC-001 EV-002). Não estão confirmadas como módulos do sistema.
 
-| ID | Atividade citada | Status no produto |
-| --- | --- | --- |
-| ACT-CAND-001 | Representação comercial | `UNDECIDED_SCOPE` / candidato |
-| ACT-CAND-002 | Prestação de serviços logísticos | `UNDECIDED_SCOPE` / candidato |
-| ACT-CAND-003 | Transporte rodoviário de cargas | `UNDECIDED_SCOPE` / candidato |
-| ACT-CAND-004 | Transporte municipal, intermunicipal, interestadual e internacional | `UNDECIDED_SCOPE` / candidato |
-| ACT-CAND-005 | Transporte coletivo de passageiros por fretamento | `UNDECIDED_SCOPE` / candidato |
-| ACT-CAND-006 | Locação de automóveis | `UNDECIDED_SCOPE` / candidato |
-| ACT-CAND-007 | Locação de máquinas e equipamentos comerciais | `UNDECIDED_SCOPE` / candidato |
-| ACT-CAND-008 | Locação de máquinas e equipamentos industriais | `UNDECIDED_SCOPE` / candidato |
-| ACT-CAND-009 | Locação de equipamentos para construção sem operador | `UNDECIDED_SCOPE` / candidato |
-| ACT-CAND-010 | Gestão de serviços executados com veículos, equipamentos e mão de obra | `UNDECIDED_SCOPE` / candidato |
-| ACT-CAND-011 | Controle de solicitações e Ordens de Serviço | `UNDECIDED_SCOPE` / candidato |
+| ID           | Atividade citada                                                                                 | Status no produto                                                          |
+| ------------ | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| ACT-CAND-001 | Representação comercial                                                                          | `UNDECIDED_SCOPE` / candidato                                              |
+| ACT-CAND-002 | Prestação de serviços logísticos                                                                 | `UNDECIDED_SCOPE` / candidato                                              |
+| ACT-CAND-003 | Transporte rodoviário de cargas                                                                  | `UNDECIDED_SCOPE` / candidato                                              |
+| ACT-CAND-004 | Transporte municipal, intermunicipal, interestadual e internacional                              | `UNDECIDED_SCOPE` / candidato                                              |
+| ACT-CAND-005 | Transporte coletivo de passageiros por fretamento                                                | `UNDECIDED_SCOPE` / candidato                                              |
+| ACT-CAND-006 | Locação de automóveis                                                                            | `UNDECIDED_SCOPE` / candidato                                              |
+| ACT-CAND-007 | Locação de máquinas e equipamentos comerciais                                                    | `UNDECIDED_SCOPE` / candidato                                              |
+| ACT-CAND-008 | Locação de máquinas e equipamentos industriais                                                   | `UNDECIDED_SCOPE` / candidato                                              |
+| ACT-CAND-009 | Locação de equipamentos para construção sem operador                                             | `UNDECIDED_SCOPE` / candidato                                              |
+| ACT-CAND-010 | Gestão de serviços executados com veículos, equipamentos e mão de obra                           | `UNDECIDED_SCOPE` / candidato                                              |
+| ACT-CAND-011 | Controle de solicitações e Ordens de Serviço                                                     | `UNDECIDED_SCOPE` / candidato                                              |
 | ACT-CAND-012 | Possível encadeamento proposta → pedido → PO → OS → execução → medição → faturamento → pagamento | Hipótese de fluxo; **não** confirmado como único, obrigatório ou universal |
 
 ## Problemas operacionais candidatos (SRC-001)

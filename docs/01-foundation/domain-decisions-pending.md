@@ -1,9 +1,9 @@
 # Domain decisions pending
 
-| Campo | Valor |
-| --- | --- |
-| Document ID | DDP-REG-001 |
-| Last updated | 2026-08-28 (Prompt 03) |
+| Campo             | Valor                                                   |
+| ----------------- | ------------------------------------------------------- |
+| Document ID       | DDP-REG-001                                             |
+| Last updated      | 2026-08-28 (Prompt 03)                                  |
 | Status of answers | **NONE** — perguntas abertas; respostas não autorizadas |
 
 Status típicos: `OPEN`, `BLOCKING`, `ANSWERED`, `SUPERSEDED`. Todas as entradas abaixo estão `OPEN` e `BLOCKING` para implementação do tema.

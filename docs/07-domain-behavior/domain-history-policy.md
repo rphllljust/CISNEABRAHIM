@@ -1,18 +1,18 @@
 # DBEH-DH-POL-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                            |
+| ----------- | -------------------------------- |
 | Document ID | Política de histórico de domínio |
-| Prompt | 06 |
+| Prompt      | 06                               |
 
 ## DOMAIN_HISTORY vs outros registros
 
-| Aspecto | DOMAIN_HISTORY | AUDIT_TRAIL | DE (evento) |
-| --- | --- | --- | --- |
-| Propósito | Evolução consultável do negócio | Accountability de ações | Fato para integração interna |
-| Exemplo | Status OS, histórico alterações FR-022 | Quem liberou, quando | ServiceOrderReleased |
-| Mutabilidade | Append-only candidato (INV-014) | Append-only | Imutável após publicação |
-| Consumidor | UI operacional, relatórios | Auditoria, disputas | Outros BCs |
+| Aspecto      | DOMAIN_HISTORY                         | AUDIT_TRAIL             | DE (evento)                  |
+| ------------ | -------------------------------------- | ----------------------- | ---------------------------- |
+| Propósito    | Evolução consultável do negócio        | Accountability de ações | Fato para integração interna |
+| Exemplo      | Status OS, histórico alterações FR-022 | Quem liberou, quando    | ServiceOrderReleased         |
+| Mutabilidade | Append-only candidato (INV-014)        | Append-only             | Imutável após publicação     |
+| Consumidor   | UI operacional, relatórios             | Auditoria, disputas     | Outros BCs                   |
 
 ## Eventos que alimentam DOMAIN_HISTORY
 

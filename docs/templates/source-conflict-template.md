@@ -2,19 +2,19 @@
 
 ## Campos obrigatórios
 
-| Campo | Obrigatório |
-| --- | --- |
-| ID (`SC-NNN`) | Sim |
-| Title | Sim |
-| SOURCE-ID A | Sim |
-| Claim A + localizador | Sim |
-| SOURCE-ID B | Sim |
-| Claim B + localizador | Sim |
-| Status | Sim |
-| Impacted BR / DDP / FR | Sim ou `TBD` |
-| Resolution | Somente quando resolvido |
+| Campo                   | Obrigatório              |
+| ----------------------- | ------------------------ |
+| ID (`SC-NNN`)           | Sim                      |
+| Title                   | Sim                      |
+| SOURCE-ID A             | Sim                      |
+| Claim A + localizador   | Sim                      |
+| SOURCE-ID B             | Sim                      |
+| Claim B + localizador   | Sim                      |
+| Status                  | Sim                      |
+| Impacted BR / DDP / FR  | Sim ou `TBD`             |
+| Resolution              | Somente quando resolvido |
 | Authority that resolved | Obrigatório na resolução |
-| Date | Sim |
+| Date                    | Sim                      |
 
 ## Status permitidos
 

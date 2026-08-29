@@ -1,10 +1,10 @@
 # ARCH-DATA-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                               |
+| ----------- | ----------------------------------- |
 | Document ID | Visão geral de arquitetura de dados |
-| Base | context-data-ownership.md, ADR-003 |
-| Prompt | 09 |
+| Base        | context-data-ownership.md, ADR-003  |
+| Prompt      | 09                                  |
 
 ## Princípios
 
@@ -15,32 +15,32 @@
 
 ## Categorias de dados
 
-| Categoria | Exemplos | Owner BC | Persistência candidata |
-| --- | --- | --- | --- |
-| Operacional | OS, solicitação, execução | 005, 006, 008 | PostgreSQL |
-| Recursos | Alocação, planejamento | 007 | PostgreSQL |
-| Financeiro | Medição, faturamento, nota, pagamento | 010..013 | PostgreSQL |
-| Comercial | Preço, custo, margem, PO | 003, 004 | PostgreSQL + ACL externo |
-| Documental | Lógico, versão, binário | 014 | PostgreSQL meta + object storage |
-| Identidade | Ator, sessão futura | 001 | PostgreSQL / IdP |
-| Auditoria | SECURITY_AUDIT, DOMAIN_HISTORY | 017 | Append-only store |
-| Integração | Staging sync, dead letter | 018 | PostgreSQL + fila? |
+| Categoria   | Exemplos                              | Owner BC      | Persistência candidata           |
+| ----------- | ------------------------------------- | ------------- | -------------------------------- |
+| Operacional | OS, solicitação, execução             | 005, 006, 008 | PostgreSQL                       |
+| Recursos    | Alocação, planejamento                | 007           | PostgreSQL                       |
+| Financeiro  | Medição, faturamento, nota, pagamento | 010..013      | PostgreSQL                       |
+| Comercial   | Preço, custo, margem, PO              | 003, 004      | PostgreSQL + ACL externo         |
+| Documental  | Lógico, versão, binário               | 014           | PostgreSQL meta + object storage |
+| Identidade  | Ator, sessão futura                   | 001           | PostgreSQL / IdP                 |
+| Auditoria   | SECURITY_AUDIT, DOMAIN_HISTORY        | 017           | Append-only store                |
+| Integração  | Staging sync, dead letter             | 018           | PostgreSQL + fila?               |
 
 ## SoT externos (pendentes)
 
-| Dado | SoT candidato | DDP |
-| --- | --- | --- |
+| Dado      | SoT candidato     | DDP     |
+| --------- | ----------------- | ------- |
 | Pagamento | Externo ou BC-013 | DDP-012 |
-| PO | Externo ou BC-004 | DDP-009 |
-| Cliente | Interno ou ERP | DDP-020 |
+| PO        | Externo ou BC-004 | DDP-009 |
+| Cliente   | Interno ou ERP    | DDP-020 |
 
 ## Consistência de dados
 
-| Padrão | Uso |
-| --- | --- |
-| Transação local ACID | CMD-003, CMD-019, conversões |
-| Read model eventual | BC-016 reporting |
-| Reconciliação | CMD-021 pagamento, sync BC-018 |
+| Padrão               | Uso                            |
+| -------------------- | ------------------------------ |
+| Transação local ACID | CMD-003, CMD-019, conversões   |
+| Read model eventual  | BC-016 reporting               |
+| Reconciliação        | CMD-021 pagamento, sync BC-018 |
 
 ## Migrations (futuro)
 

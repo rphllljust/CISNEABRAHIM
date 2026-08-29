@@ -1,20 +1,20 @@
 # DM-EXT-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                          |
+| ----------- | ------------------------------ |
 | Document ID | Modelagem referências externas |
-| TERM | TERM-048, TERM-013, TERM-018 |
-| Prompt | 11 |
+| TERM        | TERM-048, TERM-013, TERM-018   |
+| Prompt      | 11                             |
 
 ## EXTERNAL_RECORD vs AGGREGATE
 
-| Sistema | Modelo | Mutável localmente? |
-| --- | --- | --- |
-| ERP referência comercial | EXT-REC + sync → AGG-011 | Parcial via ACL |
-| PO externo | EXT-REC → AGG-010? | DDP-009 |
-| NF fiscal emitida fora | AGG-008 registro informado | CMD-020 |
-| Pagamento banco | EXT-REC ou AGG-009 | DDP-012 |
-| IdP usuário | BC-001 — fora core AGG | — |
+| Sistema                  | Modelo                     | Mutável localmente? |
+| ------------------------ | -------------------------- | ------------------- |
+| ERP referência comercial | EXT-REC + sync → AGG-011   | Parcial via ACL     |
+| PO externo               | EXT-REC → AGG-010?         | DDP-009             |
+| NF fiscal emitida fora   | AGG-008 registro informado | CMD-020             |
+| Pagamento banco          | EXT-REC ou AGG-009         | DDP-012             |
+| IdP usuário              | BC-001 — fora core AGG     | —                   |
 
 ## VO ExternalSystemId (VO-CAND-015)
 

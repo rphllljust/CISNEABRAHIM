@@ -1,20 +1,20 @@
 # SM-SDD-001
 
-| Campo | Valor |
-| --- | --- |
-| Document ID | Decisões pendentes de máquinas de estado |
-| Total | 8 (SDD-001..008) + 8 reabertura (SDD-R01..R08) |
-| Prompt | 07 |
+| Campo       | Valor                                          |
+| ----------- | ---------------------------------------------- |
+| Document ID | Decisões pendentes de máquinas de estado       |
+| Total       | 8 (SDD-001..008) + 8 reabertura (SDD-R01..R08) |
+| Prompt      | 07                                             |
 
 ## SDD-001 — “Convertida” é estado, evento ou vínculo?
 
-| Campo | Valor |
-| --- | --- |
-| Opções | Estado terminal / Evento DE-003 / Atributo vínculo OS |
-| Recomendação engenharia | Atributo + evento (hipótese) |
-| Fonte | CMD-003 |
-| Status | OPEN |
-| DDP relacionado | — |
+| Campo                   | Valor                                                 |
+| ----------------------- | ----------------------------------------------------- |
+| Opções                  | Estado terminal / Evento DE-003 / Atributo vínculo OS |
+| Recomendação engenharia | Atributo + evento (hipótese)                          |
+| Fonte                   | CMD-003                                               |
+| Status                  | OPEN                                                  |
+| DDP relacionado         | —                                                     |
 
 ## SDD-002 — Estado INTERROMPIDA na OS
 

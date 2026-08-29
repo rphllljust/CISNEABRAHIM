@@ -1,18 +1,18 @@
 # UL-EXEC-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo   | Valor    |
+| ------- | -------- |
 | Domínio | Execução |
-| Prompt | 04 |
+| Prompt  | 04       |
 
 ## Termos
 
-| TERM | Papel |
-| --- | --- |
-| TERM-006 | Executor |
-| TERM-024 | Quantidade utilizada |
+| TERM     | Papel                 |
+| -------- | --------------------- |
+| TERM-006 | Executor              |
+| TERM-024 | Quantidade utilizada  |
 | TERM-034 | Evidência de execução |
-| TERM-002 | OS em execução |
+| TERM-002 | OS em execução        |
 
 ## Verbos empresariais (não comandos de API)
 

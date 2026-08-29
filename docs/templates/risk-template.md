@@ -2,19 +2,19 @@
 
 ## Campos obrigatórios
 
-| Campo | Obrigatório |
-| --- | --- |
-| ID (`RISK-NNN`) | Sim |
-| Title | Sim |
-| Description | Sim |
-| Status | Sim |
-| Probability | Sim — usar `UNKNOWN` sem evidência |
-| Impact | Qualitativo se não houver dado; não inventar % |
-| Affected assets | Sim ou `TBD` |
-| Related BR / DDP / ED | Se houver |
-| Nearby controls | Sim ou `NONE_YET` |
-| Residual risk | `TBD` até avaliação |
-| Date identified | Sim |
+| Campo                 | Obrigatório                                    |
+| --------------------- | ---------------------------------------------- |
+| ID (`RISK-NNN`)       | Sim                                            |
+| Title                 | Sim                                            |
+| Description           | Sim                                            |
+| Status                | Sim                                            |
+| Probability           | Sim — usar `UNKNOWN` sem evidência             |
+| Impact                | Qualitativo se não houver dado; não inventar % |
+| Affected assets       | Sim ou `TBD`                                   |
+| Related BR / DDP / ED | Se houver                                      |
+| Nearby controls       | Sim ou `NONE_YET`                              |
+| Residual risk         | `TBD` até avaliação                            |
+| Date identified       | Sim                                            |
 
 ## Status permitidos
 

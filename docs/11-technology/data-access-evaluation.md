@@ -1,31 +1,31 @@
 # TECH-DA-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                    |
+| ----------- | ------------------------ |
 | Document ID | Avaliação acesso a dados |
-| Prompt | 10 |
+| Prompt      | 10                       |
 
 ## Opções comparadas
 
-| Opção | Migrations | Constraints | Transações | Locking | Introspecção | Testabilidade | Abstração |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| Prisma | ✓✓ | ✓ | ✓ | Médio | ✓✓ | ✓✓ | Alta — risco |
-| **Drizzle** | ✓✓ | ✓✓ | ✓✓ | ✓ | ✓ | ✓✓ | Média-baixa |
-| TypeORM | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Alta — decorators |
-| Kysely | Manual | ✓✓ | ✓✓ | ✓✓ | ✓ | ✓✓ | Baixa |
-| Híbrido | ✓ | ✓✓ | ✓✓ | ✓✓ | ✓ | ✓✓ | Controlada |
+| Opção       | Migrations | Constraints | Transações | Locking | Introspecção | Testabilidade | Abstração         |
+| ----------- | ---------- | ----------- | ---------- | ------- | ------------ | ------------- | ----------------- |
+| Prisma      | ✓✓         | ✓           | ✓          | Médio   | ✓✓           | ✓✓            | Alta — risco      |
+| **Drizzle** | ✓✓         | ✓✓          | ✓✓         | ✓       | ✓            | ✓✓            | Média-baixa       |
+| TypeORM     | ✓          | ✓           | ✓          | ✓       | ✓            | ✓             | Alta — decorators |
+| Kysely      | Manual     | ✓✓          | ✓✓         | ✓✓      | ✓            | ✓✓            | Baixa             |
+| Híbrido     | ✓          | ✓✓          | ✓✓         | ✓✓      | ✓            | ✓✓            | Controlada        |
 
 ## Seleção: Drizzle ORM + SQL explícito pontual
 
-| Razão | Detalhe |
-| --- | --- |
-| Domínio rico | Schema ≠ domain model (EP-024) — Drizzle schema em infrastructure |
-| SQL visível | Queries complexas e relatórios em SQL/Kysely opcional |
-| Migrations | drizzle-kit versionado |
-| Transações | `db.transaction()` explícito |
-| Constraints | DDL reflete INV no banco |
-| Testabilidade | In-memory PG ou testcontainers futuro |
-| Lock-in | Menor que Prisma schema proprietário |
+| Razão         | Detalhe                                                           |
+| ------------- | ----------------------------------------------------------------- |
+| Domínio rico  | Schema ≠ domain model (EP-024) — Drizzle schema em infrastructure |
+| SQL visível   | Queries complexas e relatórios em SQL/Kysely opcional             |
+| Migrations    | drizzle-kit versionado                                            |
+| Transações    | `db.transaction()` explícito                                      |
+| Constraints   | DDL reflete INV no banco                                          |
+| Testabilidade | In-memory PG ou testcontainers futuro                             |
+| Lock-in       | Menor que Prisma schema proprietário                              |
 
 ## Prisma — rejeitado como padrão
 

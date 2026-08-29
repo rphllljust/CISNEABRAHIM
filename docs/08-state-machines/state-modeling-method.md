@@ -1,9 +1,9 @@
 # SM-METHOD-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                          |
+| ----------- | ------------------------------ |
 | Document ID | Método de modelagem de estados |
-| Prompt | 07 |
+| Prompt      | 07                             |
 
 ## Princípios
 
@@ -15,14 +15,14 @@
 
 ## Identificadores
 
-| Tipo | Padrão |
-| --- | --- |
-| Máquina candidata | SM-CAND-NNN |
-| Estado candidato | STATE-CAND-NNN |
-| Transição candidata | TR-CAND-NNN |
-| Guarda | GUARD-NNN |
-| Transição inválida | INV-TR-NNN |
-| Decisão pendente | SDD-NNN |
+| Tipo                | Padrão         |
+| ------------------- | -------------- |
+| Máquina candidata   | SM-CAND-NNN    |
+| Estado candidato    | STATE-CAND-NNN |
+| Transição candidata | TR-CAND-NNN    |
+| Guarda              | GUARD-NNN      |
+| Transição inválida  | INV-TR-NNN     |
+| Decisão pendente    | SDD-NNN        |
 
 ## Status de máquina (SM)
 

@@ -1,10 +1,10 @@
 # SM-TR-REG-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                             |
+| ----------- | --------------------------------- |
 | Document ID | Registro de transições candidatas |
-| Total | 48 (TR-CAND-001..048) |
-| Prompt | 07 |
+| Total       | 48 (TR-CAND-001..048)             |
+| Prompt      | 07                                |
 
 > Transição sem evidência: `PENDING_SOURCE_VALIDATION`.
 
@@ -12,17 +12,17 @@
 
 ### TR-CAND-001
 
-| Campo | Valor |
-| --- | --- |
-| Máquina | SM-CAND-001 |
-| Origem | STATE-CAND-001 REGISTRADA |
-| Destino | STATE-CAND-002 EM_ANALISE |
-| Comando | CMD-002 |
-| Ator | Decisor candidato |
-| Guardas | GUARD-001 |
-| Invariantes | INV-001 |
-| Eventos | DE-002 (PENDING) |
-| Status | PENDING_BUSINESS_DECISION |
+| Campo       | Valor                     |
+| ----------- | ------------------------- |
+| Máquina     | SM-CAND-001               |
+| Origem      | STATE-CAND-001 REGISTRADA |
+| Destino     | STATE-CAND-002 EM_ANALISE |
+| Comando     | CMD-002                   |
+| Ator        | Decisor candidato         |
+| Guardas     | GUARD-001                 |
+| Invariantes | INV-001                   |
+| Eventos     | DE-002 (PENDING)          |
+| Status      | PENDING_BUSINESS_DECISION |
 
 ### TR-CAND-002
 

@@ -1,9 +1,9 @@
 # DM-ID-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                    |
+| ----------- | ------------------------ |
 | Document ID | Estratégia de identidade |
-| Prompt | 11 |
+| Prompt      | 11                       |
 
 ## Princípios
 
@@ -13,22 +13,22 @@
 
 ## Estratégia candidata
 
-| Tipo | Formato candidato | Gerador | Status |
-| --- | --- | --- | --- |
-| IDs de domínio | UUID v7 (time-ordered) | Aplicação | CANDIDATE |
-| IDs humanos | Número OS exibível? | Sequência segregada | CARD-DDP-011 |
-| External ref | VO-CAND-015 + sistema | Integração | CANDIDATE |
-| Correlation id | UUID v4 | Comandos idempotentes | CANDIDATE |
+| Tipo           | Formato candidato      | Gerador               | Status       |
+| -------------- | ---------------------- | --------------------- | ------------ |
+| IDs de domínio | UUID v7 (time-ordered) | Aplicação             | CANDIDATE    |
+| IDs humanos    | Número OS exibível?    | Sequência segregada   | CARD-DDP-011 |
+| External ref   | VO-CAND-015 + sistema  | Integração            | CANDIDATE    |
+| Correlation id | UUID v4                | Comandos idempotentes | CANDIDATE    |
 
 ## Por aggregate
 
-| AGG | ID interno | ID externo opcional |
-| --- | --- | --- |
-| 001 | ServiceRequestId | Canal message id? |
-| 002 | ServiceOrderId | Número OS candidato |
-| 010 | PurchaseOrderId | PO number EXT |
-| 008 | InvoiceId | Chave NF fiscal? |
-| 013 | DocumentId | — |
+| AGG | ID interno       | ID externo opcional |
+| --- | ---------------- | ------------------- |
+| 001 | ServiceRequestId | Canal message id?   |
+| 002 | ServiceOrderId   | Número OS candidato |
+| 010 | PurchaseOrderId  | PO number EXT       |
+| 008 | InvoiceId        | Chave NF fiscal?    |
+| 013 | DocumentId       | —                   |
 
 ## Regras
 

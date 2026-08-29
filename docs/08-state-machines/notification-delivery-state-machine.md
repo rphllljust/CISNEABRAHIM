@@ -1,12 +1,12 @@
 # SM-CAND-010 — NOTIFICATION_DELIVERY
 
-| Campo | Valor |
-| --- | --- |
-| ID | SM-CAND-010 |
-| Ciclo | NOTIFICATION_DELIVERY |
-| BC owner | BC-CAND-015 |
-| Fonte | SRC-001 (EV-045 fraco) |
-| Status | PARTIALLY_SUPPORTED |
+| Campo    | Valor                  |
+| -------- | ---------------------- |
+| ID       | SM-CAND-010            |
+| Ciclo    | NOTIFICATION_DELIVERY  |
+| BC owner | BC-CAND-015            |
+| Fonte    | SRC-001 (EV-045 fraco) |
+| Status   | PARTIALLY_SUPPORTED    |
 
 ## Diagrama candidato
 
@@ -18,64 +18,64 @@
 
 ## Separação crítica
 
-| Provedor diz | Humano faz |
-| --- | --- |
+| Provedor diz              | Humano faz                                        |
+| ------------------------- | ------------------------------------------------- |
 | ENTREGUE (STATE-CAND-049) | VIEWED / ACKNOWLEDGED = timestamp/audit (DDP-032) |
-| Não promove OS | Não é aceite empresarial |
+| Não promove OS            | Não é aceite empresarial                          |
 
 ## Estados
 
 ### STATE-CAND-046 — CRIADA
 
-| Campo | Valor |
-| --- | --- |
-| Nome | Criada |
+| Campo     | Valor                              |
+| --------- | ---------------------------------- |
+| Nome      | Criada                             |
 | Definição | Notificação instanciada no sistema |
-| Status | CANDIDATE |
+| Status    | CANDIDATE                          |
 
 ### STATE-CAND-047 — PENDENTE
 
-| Campo | Valor |
-| --- | --- |
-| Nome | Pendente |
+| Campo     | Valor                     |
+| --------- | ------------------------- |
+| Nome      | Pendente                  |
 | Definição | Aguardando envio ao canal |
-| Status | CANDIDATE |
+| Status    | CANDIDATE                 |
 
 ### STATE-CAND-048 — ENVIADA
 
-| Campo | Valor |
-| --- | --- |
-| Nome | Enviada |
+| Campo     | Valor                        |
+| --------- | ---------------------------- |
+| Nome      | Enviada                      |
 | Definição | Handoff ao provedor de canal |
-| Status | CANDIDATE |
+| Status    | CANDIDATE                    |
 
 ### STATE-CAND-049 — ENTREGUE
 
-| Campo | Valor |
-| --- | --- |
-| Nome | Entregue |
-| Definição | Confirmação de entrega pelo provedor |
-| Terminal | Sim (candidato) |
-| Não implica | Visualizada ou aceita |
-| Status | CANDIDATE |
+| Campo       | Valor                                |
+| ----------- | ------------------------------------ |
+| Nome        | Entregue                             |
+| Definição   | Confirmação de entrega pelo provedor |
+| Terminal    | Sim (candidato)                      |
+| Não implica | Visualizada ou aceita                |
+| Status      | CANDIDATE                            |
 
 ### STATE-CAND-050 — FALHOU
 
-| Campo | Valor |
-| --- | --- |
-| Nome | Falhou |
-| Definição | Envio ou entrega não concluídos |
-| Reversível | Retry candidato — SDD-006 |
-| Status | CANDIDATE |
+| Campo      | Valor                           |
+| ---------- | ------------------------------- |
+| Nome       | Falhou                          |
+| Definição  | Envio ou entrega não concluídos |
+| Reversível | Retry candidato — SDD-006       |
+| Status     | CANDIDATE                       |
 
 ### STATE-CAND-051 — DESCARTADA
 
-| Campo | Valor |
-| --- | --- |
-| Nome | Descartada |
+| Campo     | Valor                              |
+| --------- | ---------------------------------- |
+| Nome      | Descartada                         |
 | Definição | Notificação abandonada sem entrega |
-| Terminal | Sim (candidato) |
-| Status | CANDIDATE |
+| Terminal  | Sim (candidato)                    |
+| Status    | CANDIDATE                          |
 
 ## Transições
 

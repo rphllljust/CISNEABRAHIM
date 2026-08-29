@@ -1,18 +1,18 @@
 # UL-SO-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo   | Valor            |
+| ------- | ---------------- |
 | Domínio | Ordem de Serviço |
-| Prompt | 04 |
+| Prompt  | 04               |
 
 ## Termos
 
-| TERM | Papel |
-| --- | --- |
-| TERM-002 | OS — artefato central |
-| TERM-009 | Rascunho |
-| TERM-010 | Liberação |
-| TERM-044 | Histórico |
+| TERM     | Papel                  |
+| -------- | ---------------------- |
+| TERM-002 | OS — artefato central  |
+| TERM-009 | Rascunho               |
+| TERM-010 | Liberação              |
+| TERM-044 | Histórico              |
 | TERM-003 | Serviço descrito na OS |
 
 ## Ciclo de vida lexical (candidato, não máquina de estados)

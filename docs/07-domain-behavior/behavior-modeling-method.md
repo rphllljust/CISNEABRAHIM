@@ -1,9 +1,9 @@
 # DBEH-METHOD-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                                |
+| ----------- | ------------------------------------ |
 | Document ID | Método de modelagem de comportamento |
-| Prompt | 06 |
+| Prompt      | 06                                   |
 
 ## Objetivo
 
@@ -11,13 +11,13 @@ Formalizar comportamento empresarial **candidato** antes de aggregates (Prompt 0
 
 ## Identificadores
 
-| Tipo | Padrão |
-| --- | --- |
-| Invariante | INV-NNN |
-| Comando | CMD-NNN |
-| Evento de domínio | DE-NNN |
-| Rejeição | REJ-NNN |
-| Predicado | PRED-NNN |
+| Tipo              | Padrão   |
+| ----------------- | -------- |
+| Invariante        | INV-NNN  |
+| Comando           | CMD-NNN  |
+| Evento de domínio | DE-NNN   |
+| Rejeição          | REJ-NNN  |
+| Predicado         | PRED-NNN |
 
 ## Status de invariante
 
@@ -39,24 +39,24 @@ Formalizar comportamento empresarial **candidato** antes de aggregates (Prompt 0
 
 ## Separação conceitual
 
-| Conceito | Significado |
-| --- | --- |
-| INVARIANT | Regra que deve sempre valer |
-| POLICY | Regra condicional com decisão empresarial |
-| DOMAIN_SERVICE_CANDIDATE | Operação sem estado próprio; usar com parcimônia |
-| APPLICATION_ORCHESTRATION | Coordenação entre contextos — não domínio puro |
-| INTEGRATION_CONCERN | Tradução/adaptação externa |
+| Conceito                  | Significado                                      |
+| ------------------------- | ------------------------------------------------ |
+| INVARIANT                 | Regra que deve sempre valer                      |
+| POLICY                    | Regra condicional com decisão empresarial        |
+| DOMAIN_SERVICE_CANDIDATE  | Operação sem estado próprio; usar com parcimônia |
+| APPLICATION_ORCHESTRATION | Coordenação entre contextos — não domínio puro   |
+| INTEGRATION_CONCERN       | Tradução/adaptação externa                       |
 
 ## Separação de registros
 
-| Registro | Propósito |
-| --- | --- |
-| Evento de domínio (DE) | Fato passado relevante ao negócio |
-| DOMAIN_HISTORY | Evolução consultável de estado empresarial |
-| AUDIT_TRAIL | Quem fez o quê, quando |
-| SECURITY_AUDIT | Acesso negado, exportação sensível |
-| Integration event | Fato na fronteira externa |
-| TECHNICAL_LOG | Diagnóstico — não domínio |
+| Registro               | Propósito                                  |
+| ---------------------- | ------------------------------------------ |
+| Evento de domínio (DE) | Fato passado relevante ao negócio          |
+| DOMAIN_HISTORY         | Evolução consultável de estado empresarial |
+| AUDIT_TRAIL            | Quem fez o quê, quando                     |
+| SECURITY_AUDIT         | Acesso negado, exportação sensível         |
+| Integration event      | Fato na fronteira externa                  |
+| TECHNICAL_LOG          | Diagnóstico — não domínio                  |
 
 Um fato pode alimentar vários registros; não são o mesmo conceito.
 

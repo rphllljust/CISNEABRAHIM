@@ -1,19 +1,19 @@
 # QA-PERF-001
 
-| Campo | Valor |
-| --- | --- |
-| Document ID | Plano testes performance |
-| Status | **FUTURE** — TARGET_NOT_DEFINED |
-| Prompt | 15 |
+| Campo       | Valor                           |
+| ----------- | ------------------------------- |
+| Document ID | Plano testes performance        |
+| Status      | **FUTURE** — TARGET_NOT_DEFINED |
+| Prompt      | 15                              |
 
 ## Escopo futuro
 
-| Área | Hipótese | Ferramenta |
-| --- | --- | --- |
-| API p95 latency | < 500ms read OS | k6 |
-| Conversão TX throughput | 50 TPS? TBD | k6 |
-| Concurrent allocations | sem deadlock | k6 + PG |
-| Report BC-016 | heavy query | explain analyze |
+| Área                    | Hipótese        | Ferramenta      |
+| ----------------------- | --------------- | --------------- |
+| API p95 latency         | < 500ms read OS | k6              |
+| Conversão TX throughput | 50 TPS? TBD     | k6              |
+| Concurrent allocations  | sem deadlock    | k6 + PG         |
+| Report BC-016           | heavy query     | explain analyze |
 
 ## NFR pendentes
 
@@ -33,7 +33,7 @@ PERF não bloqueia MVP; bloqueia scale release quando SLAs definidos.
 
 ## PERF-CAND backlog
 
-| ID | Cenário |
-| --- | --- |
+| ID            | Cenário               |
+| ------------- | --------------------- |
 | PERF-CAND-001 | List 10k OS paginated |
-| PERF-CAND-002 | Burst CMD-001 intake |
+| PERF-CAND-002 | Burst CMD-001 intake  |

@@ -1,20 +1,20 @@
 # UL-RES-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo   | Valor    |
+| ------- | -------- |
 | Domínio | Recursos |
-| Prompt | 04 |
+| Prompt  | 04       |
 
 ## Termos
 
-| TERM | Tipo |
-| --- | --- |
-| TERM-029 | Guarda-chuva |
-| TERM-028 | Mão de obra |
-| TERM-025 | Equipamento |
-| TERM-026 | Veículo |
-| TERM-027 | Máquina |
-| TERM-030 | Alocação |
+| TERM     | Tipo                           |
+| -------- | ------------------------------ |
+| TERM-029 | Guarda-chuva                   |
+| TERM-028 | Mão de obra                    |
+| TERM-025 | Equipamento                    |
+| TERM-026 | Veículo                        |
+| TERM-027 | Máquina                        |
+| TERM-030 | Alocação                       |
 | TERM-023 | Quantidade planejada (recurso) |
 
 ## Substituição

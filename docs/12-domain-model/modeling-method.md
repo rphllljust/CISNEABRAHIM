@@ -1,21 +1,21 @@
 # DM-METHOD-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                          |
+| ----------- | ------------------------------ |
 | Document ID | Método de modelagem de domínio |
-| Prompt | 11 |
+| Prompt      | 11                             |
 
 ## Tipos de artefato
 
-| Tipo | ID | Significado |
-| --- | --- | --- |
-| ENTITY | ENTITY-CAND-NNN | Identidade estável; mutável |
-| VALUE_OBJECT | VO-CAND-NNN | Igualdade por valor; imutável candidato |
-| AGGREGATE | AGG-CAND-NNN | Cluster transacional |
-| AGGREGATE_ROOT | Root de AGG-CAND | Único ponto de entrada mutação |
-| REFERENCE | REF por ID | Ligação entre aggregates |
-| READ_MODEL_CANDIDATE | RM-CAND | Projeção BC-016 — sem write |
-| EXTERNAL_RECORD | EXT-REC | SoT externo; ACL BC-018 |
+| Tipo                 | ID               | Significado                             |
+| -------------------- | ---------------- | --------------------------------------- |
+| ENTITY               | ENTITY-CAND-NNN  | Identidade estável; mutável             |
+| VALUE_OBJECT         | VO-CAND-NNN      | Igualdade por valor; imutável candidato |
+| AGGREGATE            | AGG-CAND-NNN     | Cluster transacional                    |
+| AGGREGATE_ROOT       | Root de AGG-CAND | Único ponto de entrada mutação          |
+| REFERENCE            | REF por ID       | Ligação entre aggregates                |
+| READ_MODEL_CANDIDATE | RM-CAND          | Projeção BC-016 — sem write             |
+| EXTERNAL_RECORD      | EXT-REC          | SoT externo; ACL BC-018                 |
 
 ## Status
 

@@ -1,18 +1,18 @@
 # DM-VER-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                                   |
+| ----------- | --------------------------------------- |
 | Document ID | Versionamento e colunas de concorrência |
-| Prompt | 12 |
+| Prompt      | 12                                      |
 
 ## Concorrência otimista
 
-| Tabela | Coluna | Tipo candidato | INV |
-| --- | --- | --- | --- |
-| so.service_order | row_version | bigint NOT NULL DEFAULT 0 | INV-019 |
-| po.purchase_order | row_version | bigint | INV-012 saldo |
-| msr.measurement | row_version | bigint | INV-009 |
-| com.commercial_reference | row_version | bigint | INV-022 |
+| Tabela                   | Coluna      | Tipo candidato            | INV           |
+| ------------------------ | ----------- | ------------------------- | ------------- |
+| so.service_order         | row_version | bigint NOT NULL DEFAULT 0 | INV-019       |
+| po.purchase_order        | row_version | bigint                    | INV-012 saldo |
+| msr.measurement          | row_version | bigint                    | INV-009       |
+| com.commercial_reference | row_version | bigint                    | INV-022       |
 
 ## Padrão de uso (aplicação)
 
@@ -22,19 +22,19 @@
 
 ## Versionamento documental
 
-| Entidade | Mecanismo |
-| --- | --- |
-| logical_document | Identidade estável |
+| Entidade         | Mecanismo                                                |
+| ---------------- | -------------------------------------------------------- |
+| logical_document | Identidade estável                                       |
 | document_version | `version_number` monotônico por documento (UNQ-CAND-009) |
-| superseded_at | Marca versão anterior — não DELETE |
+| superseded_at    | Marca versão anterior — não DELETE                       |
 
 ## Versionamento de domínio vs audit
 
-| Tipo | Onde |
-| --- | --- |
-| Versão de arquivo | doc.document_version |
+| Tipo                   | Onde                          |
+| ---------------------- | ----------------------------- |
+| Versão de arquivo      | doc.document_version          |
 | Histórico de estado OS | aud.domain_history_entry + SM |
-| row_version | Lost update prevention |
+| row_version            | Lost update prevention        |
 
 ## Não usar
 

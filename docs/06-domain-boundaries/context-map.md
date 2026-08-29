@@ -1,9 +1,9 @@
 # DBND-CTX-MAP-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                        |
+| ----------- | ---------------------------- |
 | Document ID | Mapa de contextos candidatos |
-| Prompt | 05 |
+| Prompt      | 05                           |
 
 > Diagrama **candidato**. Setas indicam dependência de informação, não deploy.
 

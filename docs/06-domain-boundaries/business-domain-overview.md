@@ -1,10 +1,10 @@
 # DBND-OVERVIEW-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                        |
+| ----------- | ---------------------------- |
 | Document ID | Visão do domínio empresarial |
-| Fonte | SRC-001 |
-| Prompt | 05 |
+| Fonte       | SRC-001                      |
+| Prompt      | 05                           |
 
 ## Problema empresarial (PROBLEM_SPACE)
 
@@ -31,12 +31,12 @@ Cada seta é **candidata**; handoffs detalhados em [cross-context-workflows.md](
 
 ## Diferenciação empresarial (hipótese a validar)
 
-| Área | Por que pode ser core candidato | Confiança |
-| --- | --- | --- |
-| Controle OS ponta a ponta | Citado como unidade central em SRC-001 | MEDIUM |
-| Medição → faturamento com origem rastreável | EV-062, EV-074; distinção fiscal pendente | MEDIUM |
-| Alocação com detecção de conflito | EV-053; diferenciação operacional | MEDIUM |
-| Integração comercial sem duplicar ERP | EV-058; risco de SoT | LOW |
+| Área                                        | Por que pode ser core candidato           | Confiança |
+| ------------------------------------------- | ----------------------------------------- | --------- |
+| Controle OS ponta a ponta                   | Citado como unidade central em SRC-001    | MEDIUM    |
+| Medição → faturamento com origem rastreável | EV-062, EV-074; distinção fiscal pendente | MEDIUM    |
+| Alocação com detecção de conflito           | EV-053; diferenciação operacional         | MEDIUM    |
+| Integração comercial sem duplicar ERP       | EV-058; risco de SoT                      | LOW       |
 
 ## Atores candidatos (sem papéis fechados)
 

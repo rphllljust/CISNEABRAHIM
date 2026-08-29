@@ -1,31 +1,31 @@
 # TXN-DEDUP-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                  |
+| ----------- | ---------------------- |
 | Document ID | Detecção de duplicatas |
-| Prompt | 13 |
+| Prompt      | 13                     |
 
 ## Estratégias em camadas
 
-| Camada | Mecanismo | Comandos |
-| --- | --- | --- |
-| Constraint UNQ | PostgreSQL unique violation | 003, 020, 021 |
-| UNQ parcial | Alocação ativa | 015 |
-| Idempotency record | Resposta cacheada | 001, 017 |
-| Inbox message_id | BC-018 | Integração |
-| Hash conteúdo | Evidência upload | 016 (PENDING) |
+| Camada             | Mecanismo                   | Comandos      |
+| ------------------ | --------------------------- | ------------- |
+| Constraint UNQ     | PostgreSQL unique violation | 003, 020, 021 |
+| UNQ parcial        | Alocação ativa              | 015           |
+| Idempotency record | Resposta cacheada           | 001, 017      |
+| Inbox message_id   | BC-018                      | Integração    |
+| Hash conteúdo      | Evidência upload            | 016 (PENDING) |
 
 ## Mapeamento UNQ-CAND → detecção
 
-| UNQ-CAND | Duplicata detectada | Ação app |
-| --- | --- | --- |
-| 001 | Solicitação reenviada | Retornar SR existente |
-| 004 | Segunda OS mesma SR | Retornar OS existente |
-| 005 | Recurso duplo | REJ-005 |
-| 006 | Medição dup | REJ-008 |
-| 007 | NF dup | REJ-010 |
-| 008 | Pagamento dup | REJ pagamento |
-| 011 | External id dup | Reconciliar INV-022 |
+| UNQ-CAND | Duplicata detectada   | Ação app              |
+| -------- | --------------------- | --------------------- |
+| 001      | Solicitação reenviada | Retornar SR existente |
+| 004      | Segunda OS mesma SR   | Retornar OS existente |
+| 005      | Recurso duplo         | REJ-005               |
+| 006      | Medição dup           | REJ-008               |
+| 007      | NF dup                | REJ-010               |
+| 008      | Pagamento dup         | REJ pagamento         |
+| 011      | External id dup       | Reconciliar INV-022   |
 
 ## Tratamento de violação UNQ
 
@@ -40,11 +40,11 @@ catch UniqueViolation
 
 ## Duplicata vs reconciliação
 
-| Tipo | Significado |
-| --- | --- |
-| Duplicata maliciosa/erro | Bloquear |
-| Duplicata legítima retry | Retornar mesmo resultado |
-| Divergência externa | Reconciliação — valores diferentes mesma key |
+| Tipo                     | Significado                                  |
+| ------------------------ | -------------------------------------------- |
+| Duplicata maliciosa/erro | Bloquear                                     |
+| Duplicata legítima retry | Retornar mesmo resultado                     |
+| Divergência externa      | Reconciliação — valores diferentes mesma key |
 
 ## Solicitação intake (CMD-001)
 

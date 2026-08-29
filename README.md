@@ -5,17 +5,20 @@ Repositório de governança e engenharia do **SISTEMA CISNE RONDÔNIA**, sistema
 ## Estágio atual
 
 ```text
-PROJECT PHASE: FOUNDATION
-FUNCTIONAL CODE: NOT STARTED
-DATABASE: NOT STARTED
-BACKEND: NOT STARTED
-FRONTEND: NOT STARTED
+PROJECT PHASE: FOUNDATION → TECHNICAL BOOTSTRAP
+FUNCTIONAL CODE: NOT STARTED (domínio empresarial)
+TECHNICAL SCAFFOLD: STARTED (Prompt 16)
+DATABASE: NOT STARTED (Prompt 17)
+BACKEND SHELL: @cisne/api — health check only
+FRONTEND SHELL: @cisne/web — bootstrap UI only
 AUTHENTICATION: NOT STARTED
 DOMAIN MODEL: NOT FINALIZED
 BUSINESS SOURCES: PENDING
 ```
 
-Não existe implementação funcional neste repositório. Não há aplicação executável, banco de dados, API ou interface.
+O monorepo técnico (`apps/`, `packages/`) existe desde o Prompt 16. **Não** há módulos empresariais, CRUD, autenticação nem banco de domínio.
+
+Documentação de execução local: [`docs/17-bootstrap/local-development.md`](docs/17-bootstrap/local-development.md).
 
 ## Objetivo geral
 
@@ -43,16 +46,18 @@ Detalhes: [`docs/00-governance/engineering-principles.md`](docs/00-governance/en
 
 ## Estrutura documental
 
-| Caminho | Função |
-| --- | --- |
-| [`AGENTS.md`](AGENTS.md) | Instruções vinculantes para agentes |
-| [`docs/README.md`](docs/README.md) | Índice da documentação |
-| [`docs/00-governance/`](docs/00-governance/) | Carta, protocolo, DoR, DoD, gates, roadmap |
+| Caminho                                      | Função                                                    |
+| -------------------------------------------- | --------------------------------------------------------- |
+| [`AGENTS.md`](AGENTS.md)                     | Instruções vinculantes para agentes                       |
+| [`docs/README.md`](docs/README.md)           | Índice da documentação                                    |
+| [`docs/00-governance/`](docs/00-governance/) | Carta, protocolo, DoR, DoD, gates, roadmap                |
 | [`docs/01-foundation/`](docs/01-foundation/) | Fontes, escopo, regras, decisões, riscos, rastreabilidade |
-| [`docs/inputs/`](docs/inputs/) | Área segura para fontes empresariais futuras |
-| [`docs/templates/`](docs/templates/) | Modelos de registro |
+| [`docs/inputs/`](docs/inputs/)               | Área segura para fontes empresariais futuras              |
+| [`docs/templates/`](docs/templates/)         | Modelos de registro                                       |
+| [`apps/`](apps/)                             | Aplicações (`api`, `web`) — Prompt 16                     |
+| [`packages/`](packages/)                     | Tooling compartilhado (`tsconfig`, `eslint-config`)       |
 
-Não existem pastas `src`, `apps`, `backend`, `frontend` ou `database` nesta fase.
+Existem pastas `apps/` e `packages/` desde o Prompt 16 (scaffold técnico). Não há `database/` nem módulos de domínio empresarial.
 
 ## Como adicionar fontes empresariais
 

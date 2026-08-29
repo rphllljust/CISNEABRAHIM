@@ -1,20 +1,20 @@
 # TECH-QUAL-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                         |
+| ----------- | ----------------------------- |
 | Document ID | Avaliação qualidade e tooling |
-| Prompt | 10 |
+| Prompt      | 10                            |
 
 ## Stack de qualidade selecionada
 
-| Ferramenta | Função | Momento |
-| --- | --- | --- |
-| **TypeScript** `strict` | Type checking | Implementação |
-| **ESLint** (flat config) | Lint | Implementação |
-| **Prettier** | Formatação | Implementação |
-| **Husky** + **lint-staged** | Pre-commit | Implementação |
-| **Turborepo** | Lint/test/build pipeline | Monorepo |
-| **GitHub Actions** (ou equivalente) | CI futura | TECH-DDP-006 |
+| Ferramenta                          | Função                   | Momento       |
+| ----------------------------------- | ------------------------ | ------------- |
+| **TypeScript** `strict`             | Type checking            | Implementação |
+| **ESLint** (flat config)            | Lint                     | Implementação |
+| **Prettier**                        | Formatação               | Implementação |
+| **Husky** + **lint-staged**         | Pre-commit               | Implementação |
+| **Turborepo**                       | Lint/test/build pipeline | Monorepo      |
+| **GitHub Actions** (ou equivalente) | CI futura                | TECH-DDP-006  |
 
 ## ESLint
 

@@ -1,9 +1,9 @@
 # QA-STRAT-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                |
+| ----------- | -------------------- |
 | Document ID | Estratégia de testes |
-| Prompt | 15 |
+| Prompt      | 15                   |
 
 ## Missão
 
@@ -11,12 +11,12 @@ Proteger **regras empresariais confirmadas ou candidatas** contra regressão —
 
 ## Não é objetivo
 
-| Anti-meta | Motivo |
-| --- | --- |
-| 80% line coverage como meta | Não prova invariantes |
-| Mockar PostgreSQL para UNQ/CHK | Falso positivo |
-| E2E só happy path | Miss negativo e corrida |
-| Dados prod em CI | SEC-RISK-010 |
+| Anti-meta                      | Motivo                  |
+| ------------------------------ | ----------------------- |
+| 80% line coverage como meta    | Não prova invariantes   |
+| Mockar PostgreSQL para UNQ/CHK | Falso positivo          |
+| E2E só happy path              | Miss negativo e corrida |
+| Dados prod em CI               | SEC-RISK-010            |
 
 ## Pirâmide adaptada (regras críticas)
 
@@ -43,13 +43,13 @@ Proteger **regras empresariais confirmadas ou candidatas** contra regressão —
 
 ## Ferramentas (ADR-TECH-007)
 
-| Nível | Ferramenta |
-| --- | --- |
-| Unit domínio | Vitest |
-| Integração API+PG | Vitest + Supertest + Testcontainers |
-| E2E | Playwright |
-| Security SAST | Semgrep/CodeQL CI candidato |
-| Contract | OpenAPI snapshot + Pact candidato TBD |
+| Nível             | Ferramenta                            |
+| ----------------- | ------------------------------------- |
+| Unit domínio      | Vitest                                |
+| Integração API+PG | Vitest + Supertest + Testcontainers   |
+| E2E               | Playwright                            |
+| Security SAST     | Semgrep/CodeQL CI candidato           |
+| Contract          | OpenAPI snapshot + Pact candidato TBD |
 
 ## Definition of Test Ready (candidato)
 

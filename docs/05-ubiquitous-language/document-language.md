@@ -1,9 +1,9 @@
 # UL-DOC-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo   | Valor      |
+| ------- | ---------- |
 | Domínio | Documentos |
-| Prompt | 04 |
+| Prompt  | 04         |
 
 ## Modelo lexical (3 camadas)
 
@@ -15,11 +15,11 @@ Documento lógico (TERM-031)
 
 ## Termos adicionais
 
-| TERM | Uso |
-| --- | --- |
-| TERM-043 | Substituição documental |
+| TERM     | Uso                                                           |
+| -------- | ------------------------------------------------------------- |
+| TERM-043 | Substituição documental                                       |
 | TERM-035 | Evidência na solicitação (pode ou não virar documento lógico) |
-| TERM-034 | Evidência de execução |
+| TERM-034 | Evidência de execução                                         |
 
 ## FRs / DOC-REQ
 

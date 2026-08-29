@@ -1,10 +1,10 @@
 # AUTHZ-FIN-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                               |
+| ----------- | ----------------------------------- |
 | Document ID | Política de visibilidade financeira |
-| TERM | TERM-020, TERM-021, TERM-022 |
-| Prompt | 08 |
+| TERM        | TERM-020, TERM-021, TERM-022        |
+| Prompt      | 08                                  |
 
 ## Princípio
 
@@ -12,25 +12,25 @@ Dados financeiros são **camadas** sobre recursos operacionais — não campos p
 
 ## Matriz de visibilidade
 
-| Papel candidato | Custo | Preço | Margem | Nota | Pagamento |
-| --- | --- | --- | --- | --- | --- |
-| ROLE-CAND-001 Solicitante | Oculto | Parcial? | Oculto | Oculto | Oculto |
-| ROLE-CAND-003 Preparador | Oculto default | Ver/editar candidato | Oculto | Oculto | Oculto |
-| ROLE-CAND-004 Executor | **Oculto** | Oculto | **Oculto** | Oculto | Oculto |
-| ROLE-CAND-005 Responsável | **Oculto** | Operacional? | **Oculto** | Oculto | Oculto |
-| ROLE-CAND-012 Comercial | Candidato | Sim | Candidato | Parcial | Oculto |
-| ROLE-CAND-013 Financeiro restrito | Sim | Sim | Sim | Sim | Sim |
-| ROLE-CAND-015 Admin técnico | **Oculto** | **Oculto** | **Oculto** | **Oculto** | **Oculto** |
+| Papel candidato                   | Custo          | Preço                | Margem     | Nota       | Pagamento  |
+| --------------------------------- | -------------- | -------------------- | ---------- | ---------- | ---------- |
+| ROLE-CAND-001 Solicitante         | Oculto         | Parcial?             | Oculto     | Oculto     | Oculto     |
+| ROLE-CAND-003 Preparador          | Oculto default | Ver/editar candidato | Oculto     | Oculto     | Oculto     |
+| ROLE-CAND-004 Executor            | **Oculto**     | Oculto               | **Oculto** | Oculto     | Oculto     |
+| ROLE-CAND-005 Responsável         | **Oculto**     | Operacional?         | **Oculto** | Oculto     | Oculto     |
+| ROLE-CAND-012 Comercial           | Candidato      | Sim                  | Candidato  | Parcial    | Oculto     |
+| ROLE-CAND-013 Financeiro restrito | Sim            | Sim                  | Sim        | Sim        | Sim        |
+| ROLE-CAND-015 Admin técnico       | **Oculto**     | **Oculto**           | **Oculto** | **Oculto** | **Oculto** |
 
 `?` = PENDING_SOURCE_VALIDATION
 
 ## Alteração de preço (SEC-REQ-007)
 
-| Estado OS | Quem altera | Quem aprova |
-| --- | --- | --- |
-| Rascunho/Preparada | 003, 012 candidato | — |
-| Liberada+ | 012 candidato | 002 (alçada) — SOD-006 |
-| Pós-faturamento | ADP-008 | — |
+| Estado OS          | Quem altera        | Quem aprova            |
+| ------------------ | ------------------ | ---------------------- |
+| Rascunho/Preparada | 003, 012 candidato | —                      |
+| Liberada+          | 012 candidato      | 002 (alçada) — SOD-006 |
+| Pós-faturamento    | ADP-008            | —                      |
 
 ## Cadeia financeira e autorização
 

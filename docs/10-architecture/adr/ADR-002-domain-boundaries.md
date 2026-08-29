@@ -1,11 +1,11 @@
 # ADR-002 — Fronteiras de domínio
 
-| Campo | Valor |
-| --- | --- |
-| ID | ADR-002 |
+| Campo  | Valor        |
+| ------ | ------------ |
+| ID     | ADR-002      |
 | Status | **ACCEPTED** |
-| Data | 2026-08-28 |
-| Prompt | 09 |
+| Data   | 2026-08-28   |
+| Prompt | 09           |
 
 ## Contexto
 
@@ -21,12 +21,12 @@ ARCH-DRV-005, 006, 016, 020; AP-002.
 
 ## Alternativas
 
-| Alternativa | Resultado |
-| --- | --- |
-| Organização por camada técnica apenas | Rejeitado |
-| Organização por tela/CRUD | Rejeitado |
-| 18 microservices imediatos | Rejeitado |
-| 18 módulos em monolith | **Aceito** |
+| Alternativa                           | Resultado  |
+| ------------------------------------- | ---------- |
+| Organização por camada técnica apenas | Rejeitado  |
+| Organização por tela/CRUD             | Rejeitado  |
+| 18 microservices imediatos            | Rejeitado  |
+| 18 módulos em monolith                | **Aceito** |
 
 ## Benefícios
 

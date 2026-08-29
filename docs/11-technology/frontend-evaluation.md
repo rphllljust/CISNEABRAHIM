@@ -1,27 +1,27 @@
 # TECH-FE-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor              |
+| ----------- | ------------------ |
 | Document ID | Avaliação frontend |
-| Prompt | 10 |
+| Prompt      | 10                 |
 
 ## Opções
 
-| Opção | Score | Resultado |
-| --- | --- | --- |
-| **React + Vite** | 4.22 | **Selecionado** |
-| React + Next.js | 3.95 | Rejeitado para MVP |
-| Vue 3 + Vite | 3.75 | Rejeitado |
-| Angular | 3.50 | Rejeitado — curva |
+| Opção            | Score | Resultado          |
+| ---------------- | ----- | ------------------ |
+| **React + Vite** | 4.22  | **Selecionado**    |
+| React + Next.js  | 3.95  | Rejeitado para MVP |
+| Vue 3 + Vite     | 3.75  | Rejeitado          |
+| Angular          | 3.50  | Rejeitado — curva  |
 
 ## SSR — necessidade real
 
-| Fator | Avaliação |
-| --- | --- |
-| SEO público | Baixa prioridade candidata — app operacional |
-| Auth | Client-side + API; IdP futuro |
-| Performance inicial | Vite code-splitting suficiente |
-| Field/mobile | PWA **pendente** (TECH-DDP-003) |
+| Fator               | Avaliação                                    |
+| ------------------- | -------------------------------------------- |
+| SEO público         | Baixa prioridade candidata — app operacional |
+| Auth                | Client-side + API; IdP futuro                |
+| Performance inicial | Vite code-splitting suficiente               |
+| Field/mobile        | PWA **pendente** (TECH-DDP-003)              |
 
 **Conclusão:** SSR **não exigido** na seleção inicial. Next.js adiciona complexidade sem driver claro.
 

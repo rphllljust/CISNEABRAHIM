@@ -1,10 +1,10 @@
 # ADR-TECH-002 — Framework backend
 
-| Campo | Valor |
-| --- | --- |
-| ID | ADR-TECH-002 |
+| Campo  | Valor        |
+| ------ | ------------ |
+| ID     | ADR-TECH-002 |
 | Status | **ACCEPTED** |
-| Data | 2026-08-28 |
+| Data   | 2026-08-28   |
 
 ## Contexto
 
@@ -20,11 +20,11 @@ ARCH-DRV-005, 020; ADR-001, ADR-002; scorecard 4.28.
 
 ## Alternativas
 
-| Alternativa | Resultado |
-| --- | --- |
+| Alternativa                | Resultado                           |
+| -------------------------- | ----------------------------------- |
 | Fastify estruturado manual | Rejeitado — menos convenção modular |
-| Express | Rejeitado |
-| Hono/Elysia | Rejeitado — maturidade |
+| Express                    | Rejeitado                           |
+| Hono/Elysia                | Rejeitado — maturidade              |
 
 ## Benefícios
 

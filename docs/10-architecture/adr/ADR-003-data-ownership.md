@@ -1,11 +1,11 @@
 # ADR-003 — Ownership de dados
 
-| Campo | Valor |
-| --- | --- |
-| ID | ADR-003 |
+| Campo  | Valor        |
+| ------ | ------------ |
+| ID     | ADR-003      |
 | Status | **ACCEPTED** |
-| Data | 2026-08-28 |
-| Prompt | 09 |
+| Data   | 2026-08-28   |
+| Prompt | 09           |
 
 ## Contexto
 
@@ -23,12 +23,12 @@ ARCH-DRV-004, 011; AP-003; ADR-002.
 
 ## Alternativas
 
-| Alternativa | Resultado |
-| --- | --- |
-| Banco único compartilhado sem ownership | Rejeitado |
-| Replicação write em múltiplos BCs | Rejeitado |
-| Single write owner + referência | **Aceito** |
-| Database per service (microservices) | Rejeitado nesta fase |
+| Alternativa                             | Resultado            |
+| --------------------------------------- | -------------------- |
+| Banco único compartilhado sem ownership | Rejeitado            |
+| Replicação write em múltiplos BCs       | Rejeitado            |
+| Single write owner + referência         | **Aceito**           |
+| Database per service (microservices)    | Rejeitado nesta fase |
 
 ## Benefícios
 

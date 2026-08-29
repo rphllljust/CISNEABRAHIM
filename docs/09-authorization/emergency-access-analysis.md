@@ -1,10 +1,10 @@
 # AUTHZ-EMERG-001
 
-| Campo | Valor |
-| --- | --- |
-| Document ID | Acesso emergencial (break-glass) |
-| Prompt | 08 |
-| Status | PENDING_BUSINESS_DECISION — ADP-009 |
+| Campo       | Valor                               |
+| ----------- | ----------------------------------- |
+| Document ID | Acesso emergencial (break-glass)    |
+| Prompt      | 08                                  |
+| Status      | PENDING_BUSINESS_DECISION — ADP-009 |
 
 ## Situação
 
@@ -18,11 +18,11 @@ Necessidade operacional de bypass temporário de SoD ou escopo — **sem** inven
 
 ## Cenários hipotéticos
 
-| Cenário | Ator | Risco | Controle candidato |
-| --- | --- | --- | --- |
-| Autorizador indisponível | Gestão ADP-009 | Paralisação | Delegação formal preferível |
-| Falha integração nota | ACT-011 | Dados inconsistentes | Manual com dupla validação |
-| Incidente segurança | ACT-010 | Revogação contas | Sem acesso a dados financeiros |
+| Cenário                  | Ator           | Risco                | Controle candidato             |
+| ------------------------ | -------------- | -------------------- | ------------------------------ |
+| Autorizador indisponível | Gestão ADP-009 | Paralisação          | Delegação formal preferível    |
+| Falha integração nota    | ACT-011        | Dados inconsistentes | Manual com dupla validação     |
+| Incidente segurança      | ACT-010        | Revogação contas     | Sem acesso a dados financeiros |
 
 ## Proibições
 

@@ -1,10 +1,10 @@
 # ADR-TECH-006 — Monorepo e tooling
 
-| Campo | Valor |
-| --- | --- |
-| ID | ADR-TECH-006 |
+| Campo  | Valor        |
+| ------ | ------------ |
+| ID     | ADR-TECH-006 |
 | Status | **ACCEPTED** |
-| Data | 2026-08-28 |
+| Data   | 2026-08-28   |
 
 ## Contexto
 
@@ -20,12 +20,12 @@ ADR-002 modularity; scorecard 4.12.
 
 ## Alternativas
 
-| Alternativa | Resultado |
-| --- | --- |
-| npm workspaces | Rejeitado |
-| Nx | Rejeitado — complexidade early |
+| Alternativa    | Resultado                              |
+| -------------- | -------------------------------------- |
+| npm workspaces | Rejeitado                              |
+| Nx             | Rejeitado — complexidade early         |
 | pnpm sem Turbo | Alternativa aceitável — menor cache CI |
-| Polirepo | Rejeitado |
+| Polirepo       | Rejeitado                              |
 
 ## Benefícios
 

@@ -1,11 +1,11 @@
 # ADR-001 — Estilo arquitetural inicial
 
-| Campo | Valor |
-| --- | --- |
-| ID | ADR-001 |
+| Campo  | Valor        |
+| ------ | ------------ |
+| ID     | ADR-001      |
 | Status | **PROPOSED** |
-| Data | 2026-08-28 |
-| Prompt | 09 |
+| Data   | 2026-08-28   |
+| Prompt | 09           |
 
 ## Contexto
 
@@ -23,12 +23,12 @@ ARCH-DRV-001, 002, 003, 004, 005, 012, 013, 020.
 
 ## Alternativas consideradas
 
-| Alternativa | Resultado |
-| --- | --- |
-| Monólito desestruturado | Rejeitado — risco big ball of mud |
-| Microservices | Rejeitado para início — custo, sagas, equipe |
-| Event-driven distribuído | Rejeitado como primário — complexidade |
-| Híbrido | Candidato futuro pós-validação |
+| Alternativa              | Resultado                                    |
+| ------------------------ | -------------------------------------------- |
+| Monólito desestruturado  | Rejeitado — risco big ball of mud            |
+| Microservices            | Rejeitado para início — custo, sagas, equipe |
+| Event-driven distribuído | Rejeitado como primário — complexidade       |
+| Híbrido                  | Candidato futuro pós-validação               |
 
 Ver [architecture-options-analysis.md](../architecture-options-analysis.md).
 

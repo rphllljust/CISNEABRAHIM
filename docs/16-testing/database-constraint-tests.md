@@ -1,10 +1,10 @@
 # QA-DB-001
 
-| Campo | Valor |
-| --- | --- |
-| Document ID | Testes constraints banco |
-| SGBD | PostgreSQL 18 real (Testcontainers) |
-| Prompt | 15 |
+| Campo       | Valor                               |
+| ----------- | ----------------------------------- |
+| Document ID | Testes constraints banco            |
+| SGBD        | PostgreSQL 18 real (Testcontainers) |
+| Prompt      | 15                                  |
 
 ## Regra
 
@@ -12,32 +12,32 @@
 
 ## UNQ-CAND → TEST
 
-| UNQ-CAND | TEST-CAND | Assert |
-| --- | --- | --- |
-| UNQ-CAND-001 | 036 | UniqueViolation intake |
-| UNQ-CAND-004 | 001,003 | segunda OS mesma SR |
-| UNQ-CAND-005 | 020 | alocação ativa dup |
-| UNQ-CAND-006 | 017 | medição dup |
-| UNQ-CAND-007 | 011 | NF dup |
-| UNQ-CAND-008 | 012 | pagamento dup |
-| UNQ-CAND-009 | 035 | versão doc |
-| UNQ-CAND-011 | 043 | external mapping |
+| UNQ-CAND     | TEST-CAND | Assert                 |
+| ------------ | --------- | ---------------------- |
+| UNQ-CAND-001 | 036       | UniqueViolation intake |
+| UNQ-CAND-004 | 001,003   | segunda OS mesma SR    |
+| UNQ-CAND-005 | 020       | alocação ativa dup     |
+| UNQ-CAND-006 | 017       | medição dup            |
+| UNQ-CAND-007 | 011       | NF dup                 |
+| UNQ-CAND-008 | 012       | pagamento dup          |
+| UNQ-CAND-009 | 035       | versão doc             |
+| UNQ-CAND-011 | 043       | external mapping       |
 
 ## CHK-CAND → TEST
 
-| CHK-CAND | TEST-CAND |
-| --- | --- |
-| CHK-CAND-001 | 033 |
-| CHK-CAND-004 | 034 |
-| CHK-CAND-007 | 038 |
-| CHK-CAND-009 | 029 |
+| CHK-CAND     | TEST-CAND |
+| ------------ | --------- |
+| CHK-CAND-001 | 033       |
+| CHK-CAND-004 | 034       |
+| CHK-CAND-007 | 038       |
+| CHK-CAND-009 | 029       |
 
 ## FK → TEST
 
-| FK | TEST-CAND |
-| --- | --- |
-| service_request_id | 037 |
-| orphan insert | negativo — REJ rollback |
+| FK                 | TEST-CAND               |
+| ------------------ | ----------------------- |
+| service_request_id | 037                     |
+| orphan insert      | negativo — REJ rollback |
 
 ## row_version
 

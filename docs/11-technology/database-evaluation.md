@@ -1,9 +1,9 @@
 # TECH-DB-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                    |
+| ----------- | ------------------------ |
 | Document ID | Avaliação banco de dados |
-| Prompt | 10 |
+| Prompt      | 10                       |
 
 ## Opção selecionada
 
@@ -13,26 +13,26 @@ Fonte: [postgresql.org](https://www.postgresql.org/) — 18.6 released 2026-08-1
 
 ## Adequação aos requisitos
 
-| Requisito | PostgreSQL |
-| --- | --- |
-| Transações ACID | ✓ nativo |
-| Constraints avançadas | ✓ FK, CHECK, EXCLUDE |
-| Concorrência | ✓ MVCC, `SELECT FOR UPDATE`, advisory locks |
-| Locking otimista | ✓ xmin / version column pattern |
-| Documentos JSON | ✓ JSONB para metadados; binário em object storage |
-| Relatórios | ✓ SQL; BC-016 read models |
-| Idempotência | ✓ unique constraints |
-| Audit append-only | ✓ tabelas particionadas candidatas |
-| Módulos/schema | ✓ schemas por BC candidato |
+| Requisito             | PostgreSQL                                        |
+| --------------------- | ------------------------------------------------- |
+| Transações ACID       | ✓ nativo                                          |
+| Constraints avançadas | ✓ FK, CHECK, EXCLUDE                              |
+| Concorrência          | ✓ MVCC, `SELECT FOR UPDATE`, advisory locks       |
+| Locking otimista      | ✓ xmin / version column pattern                   |
+| Documentos JSON       | ✓ JSONB para metadados; binário em object storage |
+| Relatórios            | ✓ SQL; BC-016 read models                         |
+| Idempotência          | ✓ unique constraints                              |
+| Audit append-only     | ✓ tabelas particionadas candidatas                |
+| Módulos/schema        | ✓ schemas por BC candidato                        |
 
 ## Alternativas avaliadas e rejeitadas
 
-| DB | Motivo rejeição |
-| --- | --- |
+| DB            | Motivo rejeição                                   |
+| ------------- | ------------------------------------------------- |
 | MySQL/MariaDB | Menor expressividade constraints; não driver arch |
-| SQL Server | Licenciamento/custo; sem equipe |
-| MongoDB | Fraco para transações financeiras cross-aggregate |
-| SQLite | Não adequado multi-usuário produção |
+| SQL Server    | Licenciamento/custo; sem equipe                   |
+| MongoDB       | Fraco para transações financeiras cross-aggregate |
+| SQLite        | Não adequado multi-usuário produção               |
 
 ## Versão
 

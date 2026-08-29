@@ -1,29 +1,29 @@
 # DM-TEMP-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor              |
+| ----------- | ------------------ |
 | Document ID | Modelagem temporal |
-| Prompt | 11 |
+| Prompt      | 11                 |
 
 ## Tipos de tempo
 
-| Tipo | VO / atributo | Uso |
-| --- | --- | --- |
-| Business timestamp | VO-CAND-018 | Liberado em, concluído em |
-| Audit timestamp | Sistema | SECURITY_AUDIT |
-| Technical timestamp | Infra | created_at DB — **não** substituir business |
-| Validity period | Pendente | Delegação, contrato |
+| Tipo                | VO / atributo | Uso                                         |
+| ------------------- | ------------- | ------------------------------------------- |
+| Business timestamp  | VO-CAND-018   | Liberado em, concluído em                   |
+| Audit timestamp     | Sistema       | SECURITY_AUDIT                              |
+| Technical timestamp | Infra         | created_at DB — **não** substituir business |
+| Validity period     | Pendente      | Delegação, contrato                         |
 
 ## Por conceito
 
-| Conceito | Timestamps candidatos | SM / DE |
-| --- | --- | --- |
-| Solicitação | registradoEm, decididoEm | DE-001, DE-002 |
-| OS | liberadoEm, concluídoEm, canceladoEm | DE-004, DE-011 |
-| Execução | iniciadoEm, progressoEm | DE-009, DE-010 |
-| Medição | submetidoEm, decididoEm | DE-014, DE-015 |
-| Documento versão | publicadoEm, substituídoEm | DE-019 |
-| Pagamento | registradoEm | DE-018 |
+| Conceito         | Timestamps candidatos                | SM / DE        |
+| ---------------- | ------------------------------------ | -------------- |
+| Solicitação      | registradoEm, decididoEm             | DE-001, DE-002 |
+| OS               | liberadoEm, concluídoEm, canceladoEm | DE-004, DE-011 |
+| Execução         | iniciadoEm, progressoEm              | DE-009, DE-010 |
+| Medição          | submetidoEm, decididoEm              | DE-014, DE-015 |
+| Documento versão | publicadoEm, substituídoEm           | DE-019         |
+| Pagamento        | registradoEm                         | DE-018         |
 
 ## VIEWED / ACKNOWLEDGED
 

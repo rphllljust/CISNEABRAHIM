@@ -1,12 +1,12 @@
 # QATTR-METHOD-002
 
-| Campo | Valor |
-| --- | --- |
-| Document ID | Método de requisitos não funcionais |
-| Fonte | SRC-001, SRC-000 (governança) |
-| Status documental | CANDIDATE |
-| Prompt | 03 (revisão estrutural) |
-| Supersedes | `quality-attribute-method.md` (histórico preservado no Git) |
+| Campo             | Valor                                                       |
+| ----------------- | ----------------------------------------------------------- |
+| Document ID       | Método de requisitos não funcionais                         |
+| Fonte             | SRC-001, SRC-000 (governança)                               |
+| Status documental | CANDIDATE                                                   |
+| Prompt            | 03 (revisão estrutural)                                     |
+| Supersedes        | `quality-attribute-method.md` (histórico preservado no Git) |
 
 > Nenhum NFR promovido a `CONFIRMED` sem fonte primária e validação empresarial.
 
@@ -21,12 +21,12 @@
 
 ## Identificadores
 
-| Tipo | Padrão | Exemplo |
-| --- | --- | --- |
-| Requisito não funcional | NFR-NNN | NFR-001 |
-| Cenário de qualidade | QA-SC-NNN | QA-SC-001 |
-| Requisito de segurança | SEC-REQ-NNN | SEC-REQ-001 |
-| Questão aberta NFR | NFNQ-NNN | NFNQ-001 |
+| Tipo                    | Padrão      | Exemplo     |
+| ----------------------- | ----------- | ----------- |
+| Requisito não funcional | NFR-NNN     | NFR-001     |
+| Cenário de qualidade    | QA-SC-NNN   | QA-SC-001   |
+| Requisito de segurança  | SEC-REQ-NNN | SEC-REQ-001 |
+| Questão aberta NFR      | NFNQ-NNN    | NFNQ-001    |
 
 ## Status de NFR
 
@@ -36,27 +36,27 @@
 
 ## Campos obrigatórios por NFR
 
-| Campo | Descrição |
-| --- | --- |
-| ID e título | Identificador imutável |
-| Categoria | Segurança, integridade, disponibilidade, etc. |
-| Declaração normativa | O que o sistema deverá garantir |
-| Razão empresarial | Por que o controle importa (risco, FR, operação) |
-| Fontes e EV-IDs | Proveniência |
-| BRs, FRs, UCs e riscos relacionados | Rastreabilidade |
-| Ativo ou operação protegida | Artefato ou fluxo empresarial |
-| Criticidade | CRITICAL, HIGH, MEDIUM, LOW |
-| Escopo | GLOBAL, módulo ou entidade candidata |
-| Condição de aplicação | Quando o requisito se aplica |
-| Medida | O que será medido |
-| Unidade | Unidade de medida — `TARGET_NOT_DEFINED` se ausente |
-| Valor-alvo | Meta — `TARGET_NOT_DEFINED` se ausente |
-| Método futuro de verificação | `MEASUREMENT_METHOD_PENDING` se ausente |
-| Ambiente de verificação | `TBD` até existir ambiente de teste |
-| Tolerância | `TARGET_NOT_DEFINED` se ausente |
-| Owner | Responsável — `UNKNOWN` se ausente |
-| DDPs | Decisões pendentes |
-| Status | Conforme tabela acima |
+| Campo                               | Descrição                                           |
+| ----------------------------------- | --------------------------------------------------- |
+| ID e título                         | Identificador imutável                              |
+| Categoria                           | Segurança, integridade, disponibilidade, etc.       |
+| Declaração normativa                | O que o sistema deverá garantir                     |
+| Razão empresarial                   | Por que o controle importa (risco, FR, operação)    |
+| Fontes e EV-IDs                     | Proveniência                                        |
+| BRs, FRs, UCs e riscos relacionados | Rastreabilidade                                     |
+| Ativo ou operação protegida         | Artefato ou fluxo empresarial                       |
+| Criticidade                         | CRITICAL, HIGH, MEDIUM, LOW                         |
+| Escopo                              | GLOBAL, módulo ou entidade candidata                |
+| Condição de aplicação               | Quando o requisito se aplica                        |
+| Medida                              | O que será medido                                   |
+| Unidade                             | Unidade de medida — `TARGET_NOT_DEFINED` se ausente |
+| Valor-alvo                          | Meta — `TARGET_NOT_DEFINED` se ausente              |
+| Método futuro de verificação        | `MEASUREMENT_METHOD_PENDING` se ausente             |
+| Ambiente de verificação             | `TBD` até existir ambiente de teste                 |
+| Tolerância                          | `TARGET_NOT_DEFINED` se ausente                     |
+| Owner                               | Responsável — `UNKNOWN` se ausente                  |
+| DDPs                                | Decisões pendentes                                  |
+| Status                              | Conforme tabela acima                               |
 
 Quando campos opcionais de medição não existem na fonte: `TARGET_NOT_DEFINED` e `MEASUREMENT_METHOD_PENDING`.
 
@@ -94,18 +94,18 @@ Validações LGPD, jurídico, fiscal e contabilidade: **pendentes** — sem base
 
 ## Trade-offs explícitos (sem vencedor imposto)
 
-| Trade-off | Polo A | Polo B | Contexto | DDP | Status |
-| --- | --- | --- | --- | --- | --- |
-| TO-001 | Segurança (autorização, SoD) | Usabilidade (agilidade) | Liberação rápida vs controle | DDP-003, DDP-022 | OPEN |
-| TO-002 | Consistência forte | Disponibilidade | Integração síncrona com ERP | DDP-014, DDP-020 | OPEN |
-| TO-003 | Auditoria completa | Privacidade / minimização | Logs e histórico com PII | DDP-039, DDP-019 | OPEN |
-| TO-004 | Retenção longa | Minimização de dados | Documentos e histórico | DDP-019 | OPEN |
-| TO-005 | Rastreabilidade total | Custo de armazenamento | Histórico OS, versões | DDP-019 | OPEN |
-| TO-006 | Performance (relatórios) | Validação rigorosa | Consultas pesadas vs regras em tempo real | DDP-036 | OPEN |
-| TO-007 | Flexibilidade operacional | Integridade financeira | Adicionais em campo vs autorização | DDP-004 | OPEN |
-| TO-008 | Operação offline | Consistência central | DDP-018 | OPEN |
-| TO-009 | Integração síncrona | Resiliência | Falha externa vs latência | DDP-014 | OPEN |
-| TO-010 | Notificação ativa (WhatsApp) | Registro mínimo de evento | CAPABILITY_ONLY vs EVENT_MUST_BE_RECORDED | DDP-021 | OPEN |
+| Trade-off | Polo A                       | Polo B                    | Contexto                                  | DDP              | Status |
+| --------- | ---------------------------- | ------------------------- | ----------------------------------------- | ---------------- | ------ |
+| TO-001    | Segurança (autorização, SoD) | Usabilidade (agilidade)   | Liberação rápida vs controle              | DDP-003, DDP-022 | OPEN   |
+| TO-002    | Consistência forte           | Disponibilidade           | Integração síncrona com ERP               | DDP-014, DDP-020 | OPEN   |
+| TO-003    | Auditoria completa           | Privacidade / minimização | Logs e histórico com PII                  | DDP-039, DDP-019 | OPEN   |
+| TO-004    | Retenção longa               | Minimização de dados      | Documentos e histórico                    | DDP-019          | OPEN   |
+| TO-005    | Rastreabilidade total        | Custo de armazenamento    | Histórico OS, versões                     | DDP-019          | OPEN   |
+| TO-006    | Performance (relatórios)     | Validação rigorosa        | Consultas pesadas vs regras em tempo real | DDP-036          | OPEN   |
+| TO-007    | Flexibilidade operacional    | Integridade financeira    | Adicionais em campo vs autorização        | DDP-004          | OPEN   |
+| TO-008    | Operação offline             | Consistência central      | DDP-018                                   | OPEN             |
+| TO-009    | Integração síncrona          | Resiliência               | Falha externa vs latência                 | DDP-014          | OPEN   |
+| TO-010    | Notificação ativa (WhatsApp) | Registro mínimo de evento | CAPABILITY_ONLY vs EVENT_MUST_BE_RECORDED | DDP-021          | OPEN   |
 
 ## Proibições
 

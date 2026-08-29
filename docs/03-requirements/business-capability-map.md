@@ -1,44 +1,45 @@
 # REQ-CAP-001
 
-| Campo | Valor |
-| --- | --- |
-| Document ID | Mapa de capacidades empresariais |
-| Fonte | SRC-001 |
-| Status documental | CANDIDATE — sem fonte primária |
-| Gerado em | 2026-08-28 |
-| Prompt | 02 |
-| Capacidades | 27 |
+| Campo             | Valor                            |
+| ----------------- | -------------------------------- |
+| Document ID       | Mapa de capacidades empresariais |
+| Fonte             | SRC-001                          |
+| Status documental | CANDIDATE — sem fonte primária   |
+| Gerado em         | 2026-08-28                       |
+| Prompt            | 02                               |
+| Capacidades       | 27                               |
 
 > Requisitos derivados exclusivamente de SRC-001 (contexto reconstruído). Nenhum item `CONFIRMED`.
-| ID | Domínio | Título | Confiança | 1º release | Status | Evidências | BR | DDP |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| CAP-001 | IDENTITY_AND_ACCESS | Identidade e acesso empresarial | LOW | UNKNOWN | CANDIDATE | EV-078, EV-079 | BR-023 | DDP-014 |
-| CAP-002 | CLIENT_MANAGEMENT | Gestão de clientes | LOW | UNKNOWN | CANDIDATE | EV-029, EV-030 | BR-024 | DDP-002 |
-| CAP-003 | COMMERCIAL_MANAGEMENT | Gestão comercial | MEDIUM | UNKNOWN | CANDIDATE | EV-055, EV-056, EV-059 | BR-002, BR-008 | DDP-009, DDP-030 |
-| CAP-004 | PROPOSAL_MANAGEMENT | Gestão de propostas | LOW | UNKNOWN | CANDIDATE | EV-055, EV-056 | BR-002 | DDP-030 |
-| CAP-005 | CONTRACT_MANAGEMENT | Gestão de contratos | LOW | UNKNOWN | CANDIDATE | EV-055, EV-059 | BR-002 | DDP-030 |
-| CAP-006 | PURCHASE_ORDER_CONTROL | Controle de Purchase Order | MEDIUM | UNKNOWN | CANDIDATE | EV-059, EV-060, EV-072 | BR-008, BR-018 | DDP-009, DDP-030 |
-| CAP-007 | SERVICE_REQUEST_MANAGEMENT | Gestão de solicitações | MEDIUM | UNKNOWN | CANDIDATE | EV-027, EV-028, EV-030, EV-033 | BR-001, BR-004, BR-005, BR-024 | DDP-002, DDP-021 |
-| CAP-008 | SERVICE_ORDER_MANAGEMENT | Gestão de Ordens de Serviço | MEDIUM | UNKNOWN | CANDIDATE | EV-036, EV-039, EV-045, EV-047 | BR-006, BR-007, BR-025 | DDP-003, DDP-004, DDP-005, DDP-022 |
-| CAP-009 | RESOURCE_PLANNING | Planejamento de recursos | MEDIUM | UNKNOWN | CANDIDATE | EV-049, EV-050, EV-054 | BR-011, BR-012 | DDP-006, DDP-007 |
-| CAP-010 | LABOR_MANAGEMENT | Gestão de mão de obra | MEDIUM | UNKNOWN | CANDIDATE | EV-054, EV-055, EV-056, EV-057 | BR-012 | DDP-006 |
-| CAP-011 | EQUIPMENT_MANAGEMENT | Gestão de equipamentos | MEDIUM | UNKNOWN | CANDIDATE | EV-049, EV-051, EV-052 | BR-011 | DDP-007, DDP-027 |
-| CAP-012 | VEHICLE_MANAGEMENT | Gestão de veículos | MEDIUM | UNKNOWN | CANDIDATE | EV-039, EV-041, EV-049 | BR-011 | DDP-007, DDP-027 |
-| CAP-013 | RESOURCE_ALLOCATION | Alocação de recursos | MEDIUM | UNKNOWN | CANDIDATE | EV-051, EV-053, EV-057 | BR-011, BR-017 | DDP-007 |
-| CAP-014 | EXECUTION_CONTROL | Controle de execução | MEDIUM | UNKNOWN | CANDIDATE | EV-044, EV-045, EV-046 | BR-006, BR-024 | DDP-003 |
-| CAP-015 | EVIDENCE_MANAGEMENT | Gestão de evidências | MEDIUM | UNKNOWN | CANDIDATE | EV-046, EV-067 | BR-024 | DDP-002 |
-| CAP-016 | MEASUREMENT_MANAGEMENT | Gestão de medição | LOW | UNKNOWN | CANDIDATE | EV-062, EV-063 | BR-009 | DDP-011 |
-| CAP-017 | BILLING_PREPARATION | Preparação de faturamento | MEDIUM | UNKNOWN | CANDIDATE | EV-017, EV-058, EV-062 | BR-014 | DDP-010, DDP-023 |
-| CAP-018 | INVOICE_CONTROL | Controle de notas e faturas | LOW | UNKNOWN | CANDIDATE | EV-064, EV-065, EV-066 | BR-010, BR-015 | DDP-023 |
-| CAP-019 | PAYMENT_TRACKING | Acompanhamento de pagamento | LOW | UNKNOWN | CANDIDATE | EV-066 | BR-024 | DDP-024 |
-| CAP-020 | DOCUMENT_MANAGEMENT | Gestão documental | MEDIUM | UNKNOWN | CANDIDATE | EV-067, EV-068, EV-069, EV-070 | BR-016 | DDP-012, DDP-013 |
-| CAP-021 | NOTIFICATION_MANAGEMENT | Gestão de notificações | LOW | UNKNOWN | CANDIDATE | EV-077 | BR-005 | DDP-021, DDP-033 |
-| CAP-022 | RESPONSIBILITY_TRACKING | Rastreamento de responsabilidade | MEDIUM | UNKNOWN | CANDIDATE | EV-071, EV-072, EV-073 | BR-019 | DDP-015 |
-| CAP-023 | REPORTING | Relatórios operacionais | LOW | UNKNOWN | CANDIDATE | EV-074, EV-075, EV-076 | BR-022 | DDP-016 |
-| CAP-024 | AUDIT | Auditoria empresarial | MEDIUM | UNKNOWN | CANDIDATE | EV-078, EV-079 | BR-023 | DDP-015 |
-| CAP-025 | INTEGRATION | Integração com sistemas externos | LOW | UNKNOWN | CANDIDATE | EV-077 | BR-005 | DDP-019, DDP-020 |
-| CAP-026 | BACKUP_AND_RECOVERY | Backup e recuperação | LOW | UNKNOWN | CANDIDATE | EV-083 | BR-024 | DDP-017, DDP-018 |
-| CAP-027 | PRICING_AND_MARGIN | Preço, custo e margem | MEDIUM | UNKNOWN | CANDIDATE | EV-058, EV-059, EV-060, EV-061 | BR-013, BR-018 | DDP-009 |
+>
+> | ID      | Domínio                    | Título                           | Confiança | 1º release | Status    | Evidências                     | BR                             | DDP                                |
+> | ------- | -------------------------- | -------------------------------- | --------- | ---------- | --------- | ------------------------------ | ------------------------------ | ---------------------------------- |
+> | CAP-001 | IDENTITY_AND_ACCESS        | Identidade e acesso empresarial  | LOW       | UNKNOWN    | CANDIDATE | EV-078, EV-079                 | BR-023                         | DDP-014                            |
+> | CAP-002 | CLIENT_MANAGEMENT          | Gestão de clientes               | LOW       | UNKNOWN    | CANDIDATE | EV-029, EV-030                 | BR-024                         | DDP-002                            |
+> | CAP-003 | COMMERCIAL_MANAGEMENT      | Gestão comercial                 | MEDIUM    | UNKNOWN    | CANDIDATE | EV-055, EV-056, EV-059         | BR-002, BR-008                 | DDP-009, DDP-030                   |
+> | CAP-004 | PROPOSAL_MANAGEMENT        | Gestão de propostas              | LOW       | UNKNOWN    | CANDIDATE | EV-055, EV-056                 | BR-002                         | DDP-030                            |
+> | CAP-005 | CONTRACT_MANAGEMENT        | Gestão de contratos              | LOW       | UNKNOWN    | CANDIDATE | EV-055, EV-059                 | BR-002                         | DDP-030                            |
+> | CAP-006 | PURCHASE_ORDER_CONTROL     | Controle de Purchase Order       | MEDIUM    | UNKNOWN    | CANDIDATE | EV-059, EV-060, EV-072         | BR-008, BR-018                 | DDP-009, DDP-030                   |
+> | CAP-007 | SERVICE_REQUEST_MANAGEMENT | Gestão de solicitações           | MEDIUM    | UNKNOWN    | CANDIDATE | EV-027, EV-028, EV-030, EV-033 | BR-001, BR-004, BR-005, BR-024 | DDP-002, DDP-021                   |
+> | CAP-008 | SERVICE_ORDER_MANAGEMENT   | Gestão de Ordens de Serviço      | MEDIUM    | UNKNOWN    | CANDIDATE | EV-036, EV-039, EV-045, EV-047 | BR-006, BR-007, BR-025         | DDP-003, DDP-004, DDP-005, DDP-022 |
+> | CAP-009 | RESOURCE_PLANNING          | Planejamento de recursos         | MEDIUM    | UNKNOWN    | CANDIDATE | EV-049, EV-050, EV-054         | BR-011, BR-012                 | DDP-006, DDP-007                   |
+> | CAP-010 | LABOR_MANAGEMENT           | Gestão de mão de obra            | MEDIUM    | UNKNOWN    | CANDIDATE | EV-054, EV-055, EV-056, EV-057 | BR-012                         | DDP-006                            |
+> | CAP-011 | EQUIPMENT_MANAGEMENT       | Gestão de equipamentos           | MEDIUM    | UNKNOWN    | CANDIDATE | EV-049, EV-051, EV-052         | BR-011                         | DDP-007, DDP-027                   |
+> | CAP-012 | VEHICLE_MANAGEMENT         | Gestão de veículos               | MEDIUM    | UNKNOWN    | CANDIDATE | EV-039, EV-041, EV-049         | BR-011                         | DDP-007, DDP-027                   |
+> | CAP-013 | RESOURCE_ALLOCATION        | Alocação de recursos             | MEDIUM    | UNKNOWN    | CANDIDATE | EV-051, EV-053, EV-057         | BR-011, BR-017                 | DDP-007                            |
+> | CAP-014 | EXECUTION_CONTROL          | Controle de execução             | MEDIUM    | UNKNOWN    | CANDIDATE | EV-044, EV-045, EV-046         | BR-006, BR-024                 | DDP-003                            |
+> | CAP-015 | EVIDENCE_MANAGEMENT        | Gestão de evidências             | MEDIUM    | UNKNOWN    | CANDIDATE | EV-046, EV-067                 | BR-024                         | DDP-002                            |
+> | CAP-016 | MEASUREMENT_MANAGEMENT     | Gestão de medição                | LOW       | UNKNOWN    | CANDIDATE | EV-062, EV-063                 | BR-009                         | DDP-011                            |
+> | CAP-017 | BILLING_PREPARATION        | Preparação de faturamento        | MEDIUM    | UNKNOWN    | CANDIDATE | EV-017, EV-058, EV-062         | BR-014                         | DDP-010, DDP-023                   |
+> | CAP-018 | INVOICE_CONTROL            | Controle de notas e faturas      | LOW       | UNKNOWN    | CANDIDATE | EV-064, EV-065, EV-066         | BR-010, BR-015                 | DDP-023                            |
+> | CAP-019 | PAYMENT_TRACKING           | Acompanhamento de pagamento      | LOW       | UNKNOWN    | CANDIDATE | EV-066                         | BR-024                         | DDP-024                            |
+> | CAP-020 | DOCUMENT_MANAGEMENT        | Gestão documental                | MEDIUM    | UNKNOWN    | CANDIDATE | EV-067, EV-068, EV-069, EV-070 | BR-016                         | DDP-012, DDP-013                   |
+> | CAP-021 | NOTIFICATION_MANAGEMENT    | Gestão de notificações           | LOW       | UNKNOWN    | CANDIDATE | EV-077                         | BR-005                         | DDP-021, DDP-033                   |
+> | CAP-022 | RESPONSIBILITY_TRACKING    | Rastreamento de responsabilidade | MEDIUM    | UNKNOWN    | CANDIDATE | EV-071, EV-072, EV-073         | BR-019                         | DDP-015                            |
+> | CAP-023 | REPORTING                  | Relatórios operacionais          | LOW       | UNKNOWN    | CANDIDATE | EV-074, EV-075, EV-076         | BR-022                         | DDP-016                            |
+> | CAP-024 | AUDIT                      | Auditoria empresarial            | MEDIUM    | UNKNOWN    | CANDIDATE | EV-078, EV-079                 | BR-023                         | DDP-015                            |
+> | CAP-025 | INTEGRATION                | Integração com sistemas externos | LOW       | UNKNOWN    | CANDIDATE | EV-077                         | BR-005                         | DDP-019, DDP-020                   |
+> | CAP-026 | BACKUP_AND_RECOVERY        | Backup e recuperação             | LOW       | UNKNOWN    | CANDIDATE | EV-083                         | BR-024                         | DDP-017, DDP-018                   |
+> | CAP-027 | PRICING_AND_MARGIN         | Preço, custo e margem            | MEDIUM    | UNKNOWN    | CANDIDATE | EV-058, EV-059, EV-060, EV-061 | BR-013, BR-018                 | DDP-009                            |
 
 ## Detalhamento por capacidade
 

@@ -1,11 +1,11 @@
 # TXN-EXCL-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                    |
+| ----------- | ------------------------ |
 | Document ID | Design recurso exclusivo |
-| Prompt | 13 |
-| INV | INV-004 |
-| CMD | CMD-015 |
+| Prompt      | 13                       |
+| INV         | INV-004                  |
+| CMD         | CMD-015                  |
 
 ## Problema
 
@@ -13,12 +13,12 @@ Dois operadores alocam o mesmo recurso físico/lógico simultaneamente. Check-th
 
 ## Modelo candidato
 
-| Elemento | Detalhe |
-| --- | --- |
+| Elemento       | Detalhe                                 |
+| -------------- | --------------------------------------- |
 | Chave exclusão | `(resource_type_code, resource_ref_id)` |
-| Estado ativo | `status_code = 'ACTIVE'` |
-| UNQ parcial | UNQ-CAND-005 (Prompt 12) |
-| Lock | **PESS** na verificação + insert |
+| Estado ativo   | `status_code = 'ACTIVE'`                |
+| UNQ parcial    | UNQ-CAND-005 (Prompt 12)                |
+| Lock           | **PESS** na verificação + insert        |
 
 ## Fluxo transacional
 
@@ -38,11 +38,11 @@ Planejamento **não** exige exclusividade (resource-exclusivity-rules.md). Apena
 
 ## Conflito exposto
 
-| Resultado | Comportamento |
-| --- | --- |
-| Sucesso | DE-007 |
-| Conflito | REJ-005 — mensagem empresarial, não retry cego |
-| Retry cliente | Idempotente se mesma OS+item+recurso |
+| Resultado     | Comportamento                                  |
+| ------------- | ---------------------------------------------- |
+| Sucesso       | DE-007                                         |
+| Conflito      | REJ-005 — mensagem empresarial, não retry cego |
+| Retry cliente | Idempotente se mesma OS+item+recurso           |
 
 ## Desalocação (futuro)
 
@@ -54,8 +54,8 @@ TARGET_NOT_DEFINED — índice parcial IDX-HYP-007.
 
 ## Não confundir com
 
-| Conceito | Diferença |
-| --- | --- |
-| EXCLUSIVE_RESOURCE (NFR) | Classificação operação |
-| OS lock | OPT row_version — não exclusão física |
-| Serializable global | Overkill se PESS local |
+| Conceito                 | Diferença                             |
+| ------------------------ | ------------------------------------- |
+| EXCLUSIVE_RESOURCE (NFR) | Classificação operação                |
+| OS lock                  | OPT row_version — não exclusão física |
+| Serializable global      | Overkill se PESS local                |

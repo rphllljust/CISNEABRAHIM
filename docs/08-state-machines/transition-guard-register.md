@@ -1,24 +1,24 @@
 # SM-GUARD-REG-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                            |
+| ----------- | -------------------------------- |
 | Document ID | Registro de guardas de transição |
-| Total | 28 (GUARD-001..028) |
-| Prompt | 07 |
+| Total       | 28 (GUARD-001..028)              |
+| Prompt      | 07                               |
 
 > Sem pseudocódigo. Predicados referenciam PRED-* do Prompt 06.
 
 ## GUARD-001 — Iniciar análise de solicitação
 
-| Campo | Valor |
-| --- | --- |
-| Transição | TR-CAND-001 |
-| Predicado | PRED-004 (solicitação identificável) |
-| Invariantes | INV-001 |
-| Autorização | Decisor candidato |
-| Rejeição | REJ-001 |
-| Fonte | SRC-001 |
-| Status | CANDIDATE |
+| Campo       | Valor                                |
+| ----------- | ------------------------------------ |
+| Transição   | TR-CAND-001                          |
+| Predicado   | PRED-004 (solicitação identificável) |
+| Invariantes | INV-001                              |
+| Autorização | Decisor candidato                    |
+| Rejeição    | REJ-001                              |
+| Fonte       | SRC-001                              |
+| Status      | CANDIDATE                            |
 
 ## GUARD-002 — Aprovar solicitação
 

@@ -1,11 +1,11 @@
 # ADR-005 — Abordagem de integração
 
-| Campo | Valor |
-| --- | --- |
-| ID | ADR-005 |
+| Campo  | Valor        |
+| ------ | ------------ |
+| ID     | ADR-005      |
 | Status | **PROPOSED** |
-| Data | 2026-08-28 |
-| Prompt | 09 |
+| Data   | 2026-08-28   |
+| Prompt | 09           |
 
 ## Contexto
 
@@ -28,12 +28,12 @@ ARCH-DRV-011; SEC-REQ-021; EP-018; WF com ERP.
 
 ## Alternativas
 
-| Alternativa | Resultado |
-| --- | --- |
-| Cada módulo chama ERP diretamente | Rejeitado |
-| ESB enterprise genérico | Rejeitado — over-engineering |
-| BC-018 ACL único | **Proposto** |
-| iPaaS sem ACL | Rejeitado |
+| Alternativa                       | Resultado                    |
+| --------------------------------- | ---------------------------- |
+| Cada módulo chama ERP diretamente | Rejeitado                    |
+| ESB enterprise genérico           | Rejeitado — over-engineering |
+| BC-018 ACL único                  | **Proposto**                 |
+| iPaaS sem ACL                     | Rejeitado                    |
 
 ## Benefícios
 

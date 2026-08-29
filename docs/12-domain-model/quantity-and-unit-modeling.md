@@ -1,10 +1,10 @@
 # DM-QTY-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                          |
+| ----------- | ------------------------------ |
 | Document ID | Modelagem quantidade e unidade |
-| TERM | TERM-023, TERM-024 |
-| Prompt | 11 |
+| TERM        | TERM-023, TERM-024             |
+| Prompt      | 11                             |
 
 ## Value object QuantityWithUnit (VO-CAND-008)
 
@@ -16,12 +16,12 @@ QuantityWithUnit
 
 ## Distinção EP-011..013
 
-| Fase | VO / entidade | AGG |
-| --- | --- | --- |
-| Planejado | VO-CAND-010 PlannedQuantity | AGG-002 ItemPlanejado |
-| Alocado | atributo recurso/qty? | AGG-003 |
-| Realizado | VO-CAND-011 RealizedQuantity | AGG-004 progresso |
-| Medido | VO em LinhaMedição | AGG-006 |
+| Fase      | VO / entidade                | AGG                   |
+| --------- | ---------------------------- | --------------------- |
+| Planejado | VO-CAND-010 PlannedQuantity  | AGG-002 ItemPlanejado |
+| Alocado   | atributo recurso/qty?        | AGG-003               |
+| Realizado | VO-CAND-011 RealizedQuantity | AGG-004 progresso     |
+| Medido    | VO em LinhaMedição           | AGG-006               |
 
 **Proibido** comparar quantidades de unidades diferentes sem conversão explícita (MDDP-009).
 

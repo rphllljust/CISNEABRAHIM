@@ -1058,3 +1058,67 @@ NOTES:
 - [x] Prompt 16 não executado
 
 ---
+
+```text
+PROMPT: 16
+TITLE: Bootstrap técnico do repositório
+STARTED_AT: 2026-08-29T00:00:00-04:00
+FINISHED_AT: 2026-08-29T00:15:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED:
+  .env.example
+  .node-version
+  .nvmrc
+  .prettierignore
+  package.json
+  pnpm-workspace.yaml
+  pnpm-lock.yaml
+  prettier.config.mjs
+  turbo.json
+  apps/api/ (NestJS 11 + Fastify — health only)
+  apps/web/ (React 19 + Vite 7 — bootstrap shell)
+  packages/tsconfig/
+  packages/eslint-config/
+  docs/17-bootstrap/ (6 artefatos)
+FILES_CHANGED:
+  README.md
+  docs/README.md
+  docs/01-foundation/requirements-traceability.md
+  docs/00-governance/prompt-execution-log.md
+  docs/** (formatação incidental Prettier em tentativa inicial — conteúdo preservado)
+QUALITY_GATE: PASS_WITH_RESTRICTIONS
+LINT: PASS
+TYPECHECK: PASS
+TEST: PASS (2)
+BUILD: PASS
+FORMAT_CHECK: PASS
+AUDIT_CRITICAL: 0
+BUSINESS_MODULES: 0
+BUSINESS_TABLES: 0
+SECRETS_COMMITTED: 0
+LOCKFILE_PACKAGES: 1199
+CODE_CREATED: YES (foundation only)
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Stack ADR-TECH-001..003, 006, 007. Drizzle/PG adiado Prompt 17.
+  pnpm global EPERM — npx pnpm@9.15.9 documentado.
+  format:check escopado a código + docs/17-bootstrap (BOOT-DEC-011).
+  Prompt 17 não executado.
+```
+
+## Quality gate Prompt 16 (evidência)
+
+- [x] monorepo pnpm + Turborepo conforme ADR-TECH-006
+- [x] apps/api NestJS + Fastify com GET /health técnico
+- [x] apps/web React 19 + Vite 7 shell
+- [x] TypeScript strict + ESLint (no-explicit-any)
+- [x] Vitest — 2 testes fundação passando
+- [x] lint, format:check, typecheck, test, build — PASS
+- [x] pnpm-lock.yaml presente; 0 vulnerabilidades críticas (audit)
+- [x] .env.example sem segredos reais
+- [x] 0 módulos empresariais, 0 tabelas, 0 auth, 0 CRUD
+- [x] docs/17-bootstrap/ com 6 artefatos
+- [x] rastreabilidade atualizada
+- [x] Prompt 17 não executado
+
+---

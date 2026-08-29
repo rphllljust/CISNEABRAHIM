@@ -1,27 +1,27 @@
 # AUTHZ-DOC-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                           |
+| ----------- | ------------------------------- |
 | Document ID | Política de acesso a documentos |
-| BC | BC-CAND-014 |
-| Prompt | 08 |
+| BC          | BC-CAND-014                     |
+| Prompt      | 08                              |
 
 ## Níveis documentais (SM-CAND-006)
 
-| Nível | Controle de acesso candidato |
-| --- | --- |
-| Documento lógico | DOCUMENT_SCOPE; vínculo a OS/execução |
+| Nível             | Controle de acesso candidato                                  |
+| ----------------- | ------------------------------------------------------------- |
+| Documento lógico  | DOCUMENT_SCOPE; vínculo a OS/execução                         |
 | Versão documental | Herda lógico; versão substituída = leitura histórica restrita |
-| Arquivo binário | Download separado de metadados |
+| Arquivo binário   | Download separado de metadados                                |
 
 ## Classificações candidatas (não confirmadas)
 
-| Classe | Exemplos | ROLE-CAND leitura | ROLE-CAND escrita |
-| --- | --- | --- | --- |
-| OPERACIONAL | Evidência campo, foto | 004, 005, 003 | 004, 014 |
-| RESTRITO | Contrato, PO | 002, 012, 014 | 014 |
-| FINANCEIRO | Nota, boleto | 010, 011, 013 | 010 |
-| PESSOAL | Dados identificáveis | Mínimo necessário | ADP-005 |
+| Classe      | Exemplos              | ROLE-CAND leitura | ROLE-CAND escrita |
+| ----------- | --------------------- | ----------------- | ----------------- |
+| OPERACIONAL | Evidência campo, foto | 004, 005, 003     | 004, 014          |
+| RESTRITO    | Contrato, PO          | 002, 012, 014     | 014               |
+| FINANCEIRO  | Nota, boleto          | 010, 011, 013     | 010               |
+| PESSOAL     | Dados identificáveis  | Mínimo necessário | ADP-005           |
 
 ## CMD-016 — Anexar evidência
 

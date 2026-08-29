@@ -1,12 +1,12 @@
 # DBND-RPT-COMPLETE-005
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                               |
+| ----------- | ----------------------------------- |
 | Document ID | Relatório de completude — Prompt 05 |
-| Fonte | SRC-001 |
-| Gerado em | 2026-08-28 |
-| Prompt | 05 |
-| Resultado | PASS_WITH_RESTRICTIONS |
+| Fonte       | SRC-001                             |
+| Gerado em   | 2026-08-28                          |
+| Prompt      | 05                                  |
+| Resultado   | PASS_WITH_RESTRICTIONS              |
 
 ## Resumo
 
@@ -14,37 +14,37 @@ Decomposição estratégica em **12 subdomínios** (PROBLEM_SPACE) e **18 bounde
 
 ## Contagens
 
-| Item | Quantidade |
-| --- | --- |
-| Subdomínios (SUBD) | 12 |
-| Bounded contexts (BC-CAND) | 18 |
-| CORE_CANDIDATE subdomínios | 4 |
-| SUPPORTING_CANDIDATE | 4 |
-| GENERIC_CANDIDATE | 4 |
-| ACCEPTED_FOR_FURTHER_MODELING (BC) | 2 |
-| PENDING_BUSINESS_VALIDATION (BC) | 4 |
-| Capacidades mapeadas | 27/27 |
-| Fluxos transversais (WF) | 8 |
-| Conflitos fronteira (BND-CFL) | 10 |
-| Decisões pendentes (DBND) | 12 |
-| Riscos fronteira (DBND-R) | 10 |
-| Relações DDD candidatas | 17 |
-| SHARED_KERNEL aprovado | **0** |
-| Microserviços / código | **0** |
+| Item                               | Quantidade |
+| ---------------------------------- | ---------- |
+| Subdomínios (SUBD)                 | 12         |
+| Bounded contexts (BC-CAND)         | 18         |
+| CORE_CANDIDATE subdomínios         | 4          |
+| SUPPORTING_CANDIDATE               | 4          |
+| GENERIC_CANDIDATE                  | 4          |
+| ACCEPTED_FOR_FURTHER_MODELING (BC) | 2          |
+| PENDING_BUSINESS_VALIDATION (BC)   | 4          |
+| Capacidades mapeadas               | 27/27      |
+| Fluxos transversais (WF)           | 8          |
+| Conflitos fronteira (BND-CFL)      | 10         |
+| Decisões pendentes (DBND)          | 12         |
+| Riscos fronteira (DBND-R)          | 10         |
+| Relações DDD candidatas            | 17         |
+| SHARED_KERNEL aprovado             | **0**      |
+| Microserviços / código             | **0**      |
 
 ## Quality gate
 
-| Critério | Resultado |
-| --- | --- |
-| Problema vs solução separados | PASS |
-| Contextos por linguagem/regras | PASS |
-| Sem divisão por CRUD | PASS |
-| Ownership sem duplicidade silenciosa (conflitos explícitos) | PASS |
-| Fluxos transversais analisados | PASS |
-| Incerteza explícita (DBND/DDP) | PASS |
-| Nenhum microserviço | PASS |
-| Nenhum código/script | PASS |
-| Prompt 06 não executado | PASS |
+| Critério                                                    | Resultado |
+| ----------------------------------------------------------- | --------- |
+| Problema vs solução separados                               | PASS      |
+| Contextos por linguagem/regras                              | PASS      |
+| Sem divisão por CRUD                                        | PASS      |
+| Ownership sem duplicidade silenciosa (conflitos explícitos) | PASS      |
+| Fluxos transversais analisados                              | PASS      |
+| Incerteza explícita (DBND/DDP)                              | PASS      |
+| Nenhum microserviço                                         | PASS      |
+| Nenhum código/script                                        | PASS      |
+| Prompt 06 não executado                                     | PASS      |
 
 **Resultado:** PASS_WITH_RESTRICTIONS
 

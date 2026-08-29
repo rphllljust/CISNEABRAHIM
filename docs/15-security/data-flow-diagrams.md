@@ -1,10 +1,10 @@
 # SEC-DFD-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                       |
+| ----------- | --------------------------- |
 | Document ID | Diagramas de fluxo de dados |
-| Fluxos | 8 |
-| Prompt | 14 |
+| Fluxos      | 8                           |
+| Prompt      | 14                          |
 
 ## DFD-01 — Login (candidato)
 

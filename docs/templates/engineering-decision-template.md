@@ -2,18 +2,18 @@
 
 ## Campos obrigatórios
 
-| Campo | Obrigatório |
-| --- | --- |
-| ID (`ED-NNN`) | Sim |
-| Title | Sim |
-| Status | Sim |
-| Decision | Sim |
-| Why | Sim |
-| Consequences | Sim |
-| Alternatives rejected | Se houver |
-| SOURCE / prompt | Sim |
-| Date | Sim |
-| Revisit when | Sim ou `TBD` |
+| Campo                 | Obrigatório  |
+| --------------------- | ------------ |
+| ID (`ED-NNN`)         | Sim          |
+| Title                 | Sim          |
+| Status                | Sim          |
+| Decision              | Sim          |
+| Why                   | Sim          |
+| Consequences          | Sim          |
+| Alternatives rejected | Se houver    |
+| SOURCE / prompt       | Sim          |
+| Date                  | Sim          |
+| Revisit when          | Sim ou `TBD` |
 
 ## Status permitidos
 

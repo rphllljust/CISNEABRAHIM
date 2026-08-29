@@ -2,17 +2,17 @@
 
 ## Campos obrigatórios
 
-| Campo | Obrigatório |
-| --- | --- |
-| ID (`DDP-NNN`) | Sim |
-| Question | Sim |
-| Context | Sim |
-| Status | Sim |
-| Blocking for implementation? | Sim |
-| Options considered | Opcional; **não** escolher sem fonte |
-| Answer | Somente quando `ANSWERED` |
-| SOURCE-ID da resposta | Obrigatório se `ANSWERED` |
-| Date | Sim |
+| Campo                        | Obrigatório                          |
+| ---------------------------- | ------------------------------------ |
+| ID (`DDP-NNN`)               | Sim                                  |
+| Question                     | Sim                                  |
+| Context                      | Sim                                  |
+| Status                       | Sim                                  |
+| Blocking for implementation? | Sim                                  |
+| Options considered           | Opcional; **não** escolher sem fonte |
+| Answer                       | Somente quando `ANSWERED`            |
+| SOURCE-ID da resposta        | Obrigatório se `ANSWERED`            |
+| Date                         | Sim                                  |
 
 ## Status permitidos
 

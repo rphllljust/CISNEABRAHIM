@@ -1,36 +1,36 @@
 # SEC-DEP-001
 
-| Campo | Valor |
-| --- | --- |
-| Document ID | Segurança de dependências |
-| Stack | pnpm + Turborepo (ADR-TECH) |
-| Prompt | 14 |
+| Campo       | Valor                       |
+| ----------- | --------------------------- |
+| Document ID | Segurança de dependências   |
+| Stack       | pnpm + Turborepo (ADR-TECH) |
+| Prompt      | 14                          |
 
 ## Política candidata
 
-| # | Regra |
-| --- | --- |
-| 1 | Lockfile `pnpm-lock.yaml` commitado |
-| 2 | `pnpm audit` no CI — fail on critical |
-| 3 | Dependabot/Renovate candidato — weekly |
-| 4 | Pin major versions; review minors |
-| 5 | Proibir dependência abandonada (>2y) sem fork plan |
+| #   | Regra                                              |
+| --- | -------------------------------------------------- |
+| 1   | Lockfile `pnpm-lock.yaml` commitado                |
+| 2   | `pnpm audit` no CI — fail on critical              |
+| 3   | Dependabot/Renovate candidato — weekly             |
+| 4   | Pin major versions; review minors                  |
+| 5   | Proibir dependência abandonada (>2y) sem fork plan |
 
 ## Escopo scan
 
-| Pacote | Prioridade |
-| --- | --- |
-| nestjs, fastify, drizzle | HIGH |
-| react, vite | HIGH |
-| transitive | audit tree |
+| Pacote                   | Prioridade |
+| ------------------------ | ---------- |
+| nestjs, fastify, drizzle | HIGH       |
+| react, vite              | HIGH       |
+| transitive               | audit tree |
 
 ## CVE response
 
-| Severidade | SLA candidato |
-| --- | --- |
-| Critical | 72h patch ou mitigação |
-| High | 2 semanas |
-| Medium | próximo sprint |
+| Severidade | SLA candidato          |
+| ---------- | ---------------------- |
+| Critical   | 72h patch ou mitigação |
+| High       | 2 semanas              |
+| Medium     | próximo sprint         |
 
 ## Licenças
 

@@ -1,9 +1,9 @@
 # Semântica de quantidades
 
-| Campo | Valor |
-| --- | --- |
-| Document ID | QS-001 |
-| Evidências | EV-051, EV-064, EV-065 |
+| Campo       | Valor                  |
+| ----------- | ---------------------- |
+| Document ID | QS-001                 |
+| Evidências  | EV-051, EV-064, EV-065 |
 
 ## Definições preliminares por fase
 
@@ -43,11 +43,11 @@ Quantidade ou valor considerado quitado. Conciliação: DDP-012.
 
 ## Equipamentos — três quantidades paralelas
 
-| Semântica | Evidência |
-| --- | --- |
-| Quantidade planejada | EV-051 |
-| Quantidade alocada | EV-051 |
-| Quantidade efetivamente utilizada | EV-051 |
+| Semântica                         | Evidência |
+| --------------------------------- | --------- |
+| Quantidade planejada              | EV-051    |
+| Quantidade alocada                | EV-051    |
+| Quantidade efetivamente utilizada | EV-051    |
 
 ## Proibição
 
@@ -55,6 +55,6 @@ Não criar propriedade genérica `quantity` representando todas as fases — EV-
 
 ## Riscos
 
-| Risco | Motivo |
-| --- | --- |
+| Risco    | Motivo                                |
+| -------- | ------------------------------------- |
 | RISK-019 | Conflação de fases em um único número |

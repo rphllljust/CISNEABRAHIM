@@ -1,15 +1,16 @@
 # REQ-AC-001
 
-| Campo | Valor |
-| --- | --- |
-| Document ID | Catálogo de critérios de aceite |
-| Fonte | SRC-001 |
-| Status documental | CANDIDATE — sem fonte primária |
-| Gerado em | 2026-08-28 |
-| Prompt | 02 |
-| Total ACs | 52 |
+| Campo             | Valor                           |
+| ----------------- | ------------------------------- |
+| Document ID       | Catálogo de critérios de aceite |
+| Fonte             | SRC-001                         |
+| Status documental | CANDIDATE — sem fonte primária  |
+| Gerado em         | 2026-08-28                      |
+| Prompt            | 02                              |
+| Total ACs         | 52                              |
 
 > Requisitos derivados exclusivamente de SRC-001 (contexto reconstruído). Nenhum item `CONFIRMED`.
+
 ## AC-001 — FR-001
 
 **Status:** PENDING_SOURCE_VALIDATION

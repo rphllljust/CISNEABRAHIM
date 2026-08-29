@@ -1,11 +1,11 @@
 # ADR-TECH-001 — Linguagem e runtime
 
-| Campo | Valor |
-| --- | --- |
-| ID | ADR-TECH-001 |
-| Status | **ACCEPTED** |
-| Data | 2026-08-28 |
-| Verificação versões | 2026-08-28 |
+| Campo               | Valor        |
+| ------------------- | ------------ |
+| ID                  | ADR-TECH-001 |
+| Status              | **ACCEPTED** |
+| Data                | 2026-08-28   |
+| Verificação versões | 2026-08-28   |
 
 ## Contexto
 
@@ -21,12 +21,12 @@ ARCH-DRV-022, ARCH-DRV-013; scorecard runtime 4.35.
 
 ## Alternativas consideradas
 
-| Alternativa | Resultado |
-| --- | --- |
-| Go backend + TS frontend | Rejeitado — duas linguagens |
-| Deno | Rejeitado — ecossistema Nest/ORM |
-| .NET | Rejeitado — sem evidência equipe |
-| JavaScript sem TS | Rejeitado — integridade tipos |
+| Alternativa              | Resultado                        |
+| ------------------------ | -------------------------------- |
+| Go backend + TS frontend | Rejeitado — duas linguagens      |
+| Deno                     | Rejeitado — ecossistema Nest/ORM |
+| .NET                     | Rejeitado — sem evidência equipe |
+| JavaScript sem TS        | Rejeitado — integridade tipos    |
 
 ## Benefícios
 

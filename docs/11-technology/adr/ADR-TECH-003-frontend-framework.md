@@ -1,10 +1,10 @@
 # ADR-TECH-003 — Framework frontend
 
-| Campo | Valor |
-| --- | --- |
-| ID | ADR-TECH-003 |
+| Campo  | Valor        |
+| ------ | ------------ |
+| ID     | ADR-TECH-003 |
 | Status | **ACCEPTED** |
-| Data | 2026-08-28 |
+| Data   | 2026-08-28   |
 
 ## Contexto
 
@@ -22,11 +22,11 @@ TOPO-002; scorecard 4.22; TECH-DDP-001 SSR aberto.
 
 ## Alternativas
 
-| Alternativa | Resultado |
-| --- | --- |
-| Next.js | Rejeitado — SSR desnecessário agora |
-| Vue 3 + Vite | Rejeitado — split stack skills |
-| Angular | Rejeitado |
+| Alternativa  | Resultado                           |
+| ------------ | ----------------------------------- |
+| Next.js      | Rejeitado — SSR desnecessário agora |
+| Vue 3 + Vite | Rejeitado — split stack skills      |
+| Angular      | Rejeitado                           |
 
 ## Benefícios
 

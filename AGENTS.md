@@ -31,15 +31,15 @@ Não executar trabalho sem essa leitura.
 14. Manter rastreabilidade conforme `docs/00-governance/traceability-policy.md`.
 15. Diferenciar, em todo texto produzido:
 
-| Classificação | Significado |
-| --- | --- |
-| Fato empresarial | Informação atribuída a fonte identificada |
-| Requisito confirmado | Requisito com fonte, evidência e status `CONFIRMED` |
-| Desejo | Intenção não validada como requisito |
-| Hipótese | Suposição explícita, não comprovada |
-| Interpretação de engenharia | Leitura técnica de um fato ou requisito |
-| Decisão pendente | Item em `PENDING` / `OPEN` sem resposta autorizada |
-| Conflito de fonte | Divergência entre fontes, registrada em `source-conflicts.md` |
+| Classificação               | Significado                                                   |
+| --------------------------- | ------------------------------------------------------------- |
+| Fato empresarial            | Informação atribuída a fonte identificada                     |
+| Requisito confirmado        | Requisito com fonte, evidência e status `CONFIRMED`           |
+| Desejo                      | Intenção não validada como requisito                          |
+| Hipótese                    | Suposição explícita, não comprovada                           |
+| Interpretação de engenharia | Leitura técnica de um fato ou requisito                       |
+| Decisão pendente            | Item em `PENDING` / `OPEN` sem resposta autorizada            |
+| Conflito de fonte           | Divergência entre fontes, registrada em `source-conflicts.md` |
 
 16. Não afirmar que uma regra está confirmada sem fonte. Ausência de fonte implica `CANDIDATE` ou `PENDING_VALIDATION`.
 

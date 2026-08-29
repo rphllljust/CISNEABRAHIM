@@ -6,18 +6,18 @@ Copiar para anexo ou seção em `docs/01-foundation/` / registro, e atualizar `s
 
 ## Campos obrigatórios
 
-| Campo | Obrigatório | Descrição |
-| --- | --- | --- |
-| SOURCE-ID | Sim | Próximo `SRC-NNN` livre. Nunca reutilizar. Nunca atribuir a arquivo inexistente. |
-| Title | Sim | Nome do artefato |
-| Type | Sim | Ex.: contrato, planilha, transcrição, PO, NF, e-mail, Documento Mestre |
-| Origin | Sim | Quem entregou / sistema de origem |
-| Received at | Sim | Data/hora reais de recebimento |
-| Location | Sim | Caminho em `docs/inputs/` ou URL interna controlada |
-| Status | Sim | Ver abaixo |
-| Integrity | Sim | Hash, número de páginas, ou “não verificado” |
-| Personal / sensitive data | Sim | Sim/Não/Unknown e mitigação |
-| May prove operational rules? | Sim | Sim somente se o conteúdo for normativo empresarial, não só governança de repo |
+| Campo                        | Obrigatório | Descrição                                                                        |
+| ---------------------------- | ----------- | -------------------------------------------------------------------------------- |
+| SOURCE-ID                    | Sim         | Próximo `SRC-NNN` livre. Nunca reutilizar. Nunca atribuir a arquivo inexistente. |
+| Title                        | Sim         | Nome do artefato                                                                 |
+| Type                         | Sim         | Ex.: contrato, planilha, transcrição, PO, NF, e-mail, Documento Mestre           |
+| Origin                       | Sim         | Quem entregou / sistema de origem                                                |
+| Received at                  | Sim         | Data/hora reais de recebimento                                                   |
+| Location                     | Sim         | Caminho em `docs/inputs/` ou URL interna controlada                              |
+| Status                       | Sim         | Ver abaixo                                                                       |
+| Integrity                    | Sim         | Hash, número de páginas, ou “não verificado”                                     |
+| Personal / sensitive data    | Sim         | Sim/Não/Unknown e mitigação                                                      |
+| May prove operational rules? | Sim         | Sim somente se o conteúdo for normativo empresarial, não só governança de repo   |
 
 ## Status permitidos
 

@@ -1,29 +1,29 @@
 # SEC-AUDIT-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                    |
+| ----------- | ------------------------ |
 | Document ID | Segurança do audit trail |
-| SEC-REQ | SEC-REQ-020, SEC-REQ-024 |
-| Prompt | 14 |
+| SEC-REQ     | SEC-REQ-020, SEC-REQ-024 |
+| Prompt      | 14                       |
 
 ## Separação (Prompt 06 + 13)
 
-| Store | Mutabilidade | Quem escreve |
-| --- | --- | --- |
-| aud.domain_history_entry | Append-only empresarial | Domain TX |
-| SECURITY_AUDIT | Append-only **imutável** | Security module |
-| TECHNICAL_LOG | Rotativo | Infra |
+| Store                    | Mutabilidade             | Quem escreve    |
+| ------------------------ | ------------------------ | --------------- |
+| aud.domain_history_entry | Append-only empresarial  | Domain TX       |
+| SECURITY_AUDIT           | Append-only **imutável** | Security module |
+| TECHNICAL_LOG            | Rotativo                 | Infra           |
 
 ## Eventos SECURITY_AUDIT candidatos
 
-| Categoria | Exemplos |
-| --- | --- |
-| AuthN | Login fail/success, logout, MFA |
-| AuthZ deny | DENY-* sensíveis |
-| Admin | Role change, break-glass |
-| Export | AUTHZ-026 financial export |
-| Integração | Webhook reject HMAC |
-| Dados | Download doc RESTRICTED |
+| Categoria  | Exemplos                        |
+| ---------- | ------------------------------- |
+| AuthN      | Login fail/success, logout, MFA |
+| AuthZ deny | DENY-* sensíveis                |
+| Admin      | Role change, break-glass        |
+| Export     | AUTHZ-026 financial export      |
+| Integração | Webhook reject HMAC             |
+| Dados      | Download doc RESTRICTED         |
 
 ## Campos mínimos
 
@@ -31,11 +31,11 @@
 
 ## Imutabilidade
 
-| Opção | Status |
-| --- | --- |
-| DB append-only role | CANDIDATE |
-| WORM storage | ADP-011 OPEN |
-| Hash chain | FUTURE |
+| Opção               | Status       |
+| ------------------- | ------------ |
+| DB append-only role | CANDIDATE    |
+| WORM storage        | ADP-011 OPEN |
+| Hash chain          | FUTURE       |
 
 ## Acesso leitura
 

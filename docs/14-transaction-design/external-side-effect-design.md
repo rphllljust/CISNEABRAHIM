@@ -1,9 +1,9 @@
 # TXN-EXT-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                       |
+| ----------- | --------------------------- |
 | Document ID | Efeitos colaterais externos |
-| Prompt | 13 |
+| Prompt      | 13                          |
 
 ## Regra central
 
@@ -11,14 +11,14 @@
 
 ## Classificação efeitos
 
-| Efeito | Tipo | Timing candidato |
-| --- | --- | --- |
-| Persistência domínio PG | LOCAL | Na TX |
-| domain_history_entry | LOCAL | Na TX |
-| Email/notificação | EXTERNAL | Pós-commit / outbox |
-| Object storage put | EXTERNAL | Staging antes; confirm após |
-| ERP sync pagamento | EXTERNAL | Inbox/outbox BC-018 |
-| Webhook outbound | EXTERNAL | Outbox PROPOSED |
+| Efeito                  | Tipo     | Timing candidato            |
+| ----------------------- | -------- | --------------------------- |
+| Persistência domínio PG | LOCAL    | Na TX                       |
+| domain_history_entry    | LOCAL    | Na TX                       |
+| Email/notificação       | EXTERNAL | Pós-commit / outbox         |
+| Object storage put      | EXTERNAL | Staging antes; confirm após |
+| ERP sync pagamento      | EXTERNAL | Inbox/outbox BC-018         |
+| Webhook outbound        | EXTERNAL | Outbox PROPOSED             |
 
 ## Padrões por comando
 
@@ -56,11 +56,11 @@ COMMIT
 
 ## Falha após commit, antes externo
 
-| Estado | Ação |
-| --- | --- |
-| Domínio consistente | Job retry externo |
-| Externo nunca chamado | Outbox PENDING |
-| Externo falhou | Retry + reconciliação |
+| Estado                | Ação                  |
+| --------------------- | --------------------- |
+| Domínio consistente   | Job retry externo     |
+| Externo nunca chamado | Outbox PENDING        |
+| Externo falhou        | Retry + reconciliação |
 
 ## Falha externo antes commit
 

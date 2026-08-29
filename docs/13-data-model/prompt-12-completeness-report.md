@@ -1,10 +1,10 @@
 # DM-P12-REP-001
 
-| Campo | Valor |
-| --- | --- |
+| Campo       | Valor                               |
+| ----------- | ----------------------------------- |
 | Document ID | Relatório de completude — Prompt 12 |
-| Prompt | 12 |
-| Data | 2026-08-29 |
+| Prompt      | 12                                  |
+| Data        | 2026-08-29                          |
 
 ## Escopo executado
 
@@ -12,39 +12,39 @@ Modelo lógico relacional candidato e proteções PostgreSQL **sem DDL, sem migr
 
 ## Artefatos
 
-| Categoria | Qtd | IDs |
-| --- | --- | --- |
-| Arquivos pasta `13-data-model/` | 25 | README + 24 temas |
-| Tabelas candidatas | 25 | TBL-CAND-001..025 |
-| Unicidade candidata | 16 | UNQ-CAND-001..016 |
-| Check constraints | 14 | CHK-CAND-001..014 |
-| FK candidatas | 32 | foreign-key-strategy.md |
-| INDEX_HYPOTHESIS | 18 | IDX-HYP-001..018 |
-| Cardinalidades pendentes | 12 | CARD-DDP herdadas |
-| Riscos | 12 | DATA-RISK-001..012 |
-| Schemas lógicos | 16 | relational-model-overview.md |
+| Categoria                       | Qtd | IDs                          |
+| ------------------------------- | --- | ---------------------------- |
+| Arquivos pasta `13-data-model/` | 25  | README + 24 temas            |
+| Tabelas candidatas              | 25  | TBL-CAND-001..025            |
+| Unicidade candidata             | 16  | UNQ-CAND-001..016            |
+| Check constraints               | 14  | CHK-CAND-001..014            |
+| FK candidatas                   | 32  | foreign-key-strategy.md      |
+| INDEX_HYPOTHESIS                | 18  | IDX-HYP-001..018             |
+| Cardinalidades pendentes        | 12  | CARD-DDP herdadas            |
+| Riscos                          | 12  | DATA-RISK-001..012           |
+| Schemas lógicos                 | 16  | relational-model-overview.md |
 
 ## Rastreabilidade
 
-| Origem | Destino |
-| --- | --- |
-| 14 AGG-CAND | TBL-CAND mapeadas |
-| 22 INV | UNQ/CHK/FK referenciadas |
-| 12 CARD-DDP | unresolved-cardinalities.md |
-| BC ownership | context-data-ownership (Prompt 06) |
-| Stack PG 18 + Drizzle | migration-principles.md (futuro) |
+| Origem                | Destino                            |
+| --------------------- | ---------------------------------- |
+| 14 AGG-CAND           | TBL-CAND mapeadas                  |
+| 22 INV                | UNQ/CHK/FK referenciadas           |
+| 12 CARD-DDP           | unresolved-cardinalities.md        |
+| BC ownership          | context-data-ownership (Prompt 06) |
+| Stack PG 18 + Drizzle | migration-principles.md (futuro)   |
 
 ## Quality gate
 
-| Critério | Resultado |
-| --- | --- |
-| Modelo rastreável ao domínio | PASS |
-| Nullability justificada | PASS |
-| Constraints → invariantes | PASS (parcial — INV pending) |
-| Histórico e audit separados | PASS |
-| Dados sensíveis classificados | PASS |
-| Nenhuma migration/schema criado | PASS |
-| Prompt 13 não executado | PASS |
+| Critério                        | Resultado                    |
+| ------------------------------- | ---------------------------- |
+| Modelo rastreável ao domínio    | PASS                         |
+| Nullability justificada         | PASS                         |
+| Constraints → invariantes       | PASS (parcial — INV pending) |
+| Histórico e audit separados     | PASS                         |
+| Dados sensíveis classificados   | PASS                         |
+| Nenhuma migration/schema criado | PASS                         |
+| Prompt 13 não executado         | PASS                         |
 
 **Resultado geral: PASS_WITH_RESTRICTIONS**
 
@@ -58,11 +58,11 @@ Modelo lógico relacional candidato e proteções PostgreSQL **sem DDL, sem migr
 
 ## Tabelas por status
 
-| Status | Count |
-| --- | --- |
-| CANDIDATE | 20 |
-| PENDING_CARDINALITY | 3 |
-| PENDING_BUSINESS_DECISION | 2 |
+| Status                    | Count |
+| ------------------------- | ----- |
+| CANDIDATE                 | 20    |
+| PENDING_CARDINALITY       | 3     |
+| PENDING_BUSINESS_DECISION | 2     |
 
 ## Próximo prompt
 
