@@ -12,6 +12,14 @@
     "./schema": {
       "types": "./dist/schema/index.d.ts",
       "default": "./dist/schema/index.js"
+    },
+    "./test-builders": {
+      "types": "./dist/test-builders/index.d.ts",
+      "default": "./dist/test-builders/index.js"
+    },
+    "./seed": {
+      "types": "./dist/seed/index.d.ts",
+      "default": "./dist/seed/index.js"
     }
   },
   "scripts": {
@@ -20,6 +28,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run --passWithNoTests --exclude '**/*.integration.spec.ts'",
     "test:integration": "vitest run --config vitest.integration.config.ts",
+    "seed:dev": "pnpm build && node dist/cli/run-dev-seed.js",
+    "bootstrap:production": "pnpm build && node dist/cli/run-production-bootstrap.js",
     "generate": "drizzle-kit generate",
     "migrate": "drizzle-kit migrate"
   },

@@ -1242,3 +1242,55 @@ NOTES:
 - [x] Prompt 19 não executado
 
 ---
+
+```text
+PROMPT: 19
+TITLE: Seed seguro e bootstrap controlado
+STARTED_AT: 2026-08-29T00:45:00-04:00
+FINISHED_AT: 2026-08-29T00:55:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED:
+  packages/database/src/seed/ (development, production, policy, env)
+  packages/database/src/test-builders/
+  packages/database/src/cli/run-dev-seed.ts
+  packages/database/src/cli/run-production-bootstrap.ts
+  packages/database/src/seed/password-policy.spec.ts
+  packages/database/src/seed.bootstrap.integration.spec.ts
+  docs/implementation/19-seeding.md
+FILES_CHANGED:
+  packages/database/src/index.ts
+  packages/database/package.json
+  packages/database/src/identity.persistence.integration.spec.ts
+  package.json
+  .env.example
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS_WITH_RESTRICTIONS
+SEEDS: DEVELOPMENT_SEED, TEST_DATA_BUILDERS, PRODUCTION_BOOTSTRAP
+IDEMPOTENT_DEV_SEED: YES
+CREDENTIALS_COMMITTED: 0
+DOC_FILES_CREATED: 1
+INTEGRATION_TESTS: PASS
+LINT: PASS
+TYPECHECK: PASS
+TEST: PASS
+BUILD: PASS
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Sem seed em startup. Senha dev via DEV_SEED_PASSWORD ou geração runtime.
+  Prompt 20 não executado.
+```
+
+## Quality gate Prompt 19 (evidência)
+
+- [x] DEVELOPMENT_SEED / TEST_DATA_BUILDERS / PRODUCTION_BOOTSTRAP separados
+- [x] Seed dev idempotente; bloqueado em production NODE_ENV
+- [x] Bootstrap manual com confirmação e política de senha
+- [x] 6 builders de teste com dados `@cisne.invalid`
+- [x] 0 credenciais commitadas; `.env.example` sem segredos
+- [x] testes unitários + integração (seed/bootstrap)
+- [x] lint, typecheck, test, test:integration, build — PASS
+- [x] docs/implementation/19-seeding.md (único doc novo)
+- [x] prompt-execution-log atualizado
+- [x] Prompt 20 não executado
+
+---

@@ -8,3 +8,5 @@ export {
   type PoolOptions,
 } from './client';
 export * from './schema';
+export * from './seed';
+export * from './test-builders';

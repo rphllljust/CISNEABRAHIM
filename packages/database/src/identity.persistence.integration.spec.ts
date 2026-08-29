@@ -9,7 +9,7 @@ import {
   pastIsoTimestamp,
   TEST_PASSWORD_HASH,
   truncateIdentityTables,
-} from './test/identity-test-helpers';
+} from './test-builders/identity-builders';
 
 const BUSINESS_TABLES = [
   'clients',

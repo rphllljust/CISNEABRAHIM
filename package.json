@@ -24,7 +24,9 @@
     "db:migrate": "pnpm db:migrate:dev && pnpm db:migrate:test",
     "db:migrate:dev": "pnpm --filter @cisne/database migrate",
     "db:migrate:test": "node scripts/migrate-test-database.mjs",
-    "db:generate": "pnpm --filter @cisne/database generate"
+    "db:generate": "pnpm --filter @cisne/database generate",
+    "db:seed:dev": "pnpm --filter @cisne/database seed:dev",
+    "bootstrap:first-identity": "pnpm --filter @cisne/database bootstrap:production"
   },
   "devDependencies": {
     "@cisne/eslint-config": "workspace:*",
