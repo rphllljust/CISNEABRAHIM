@@ -18,7 +18,8 @@
 12. `10-architecture/` contém drivers, opções e ADRs fundamentais do Prompt 09.
 13. `11-technology/` contém seleção de stack e ADRs tecnológicos do Prompt 10.
 14. `12-domain-model/` contém modelo conceitual e aggregates candidatos do Prompt 11.
-15. `templates/` define a forma dos registros futuros.
+15. `13-data-model/` contém modelo lógico relacional e constraints candidatas do Prompt 12.
+16. `templates/` define a forma dos registros futuros.
 
 Agentes devem seguir [`../AGENTS.md`](../AGENTS.md) e o protocolo em [`00-governance/execution-protocol.md`](00-governance/execution-protocol.md).
 
@@ -189,6 +190,19 @@ Modelo conceitual e aggregates (Prompt 11). Índice: [12-domain-model/README.md]
 | [aggregate-invariant-matrix.md](12-domain-model/aggregate-invariant-matrix.md) | INV × AGG |
 | [cardinality-decisions-pending.md](12-domain-model/cardinality-decisions-pending.md) | 12 CARD-DDP |
 | [prompt-11-completeness-report.md](12-domain-model/prompt-11-completeness-report.md) | Relatório |
+
+## 13-data-model
+
+Modelo lógico relacional e constraints candidatas (Prompt 12). Índice: [13-data-model/README.md](13-data-model/README.md).
+
+| Arquivo | Conteúdo |
+| --- | --- |
+| [table-candidates.md](13-data-model/table-candidates.md) | 25 TBL-CAND |
+| [uniqueness-constraints.md](13-data-model/uniqueness-constraints.md) | 16 UNQ-CAND |
+| [check-constraints.md](13-data-model/check-constraints.md) | 14 CHK-CAND |
+| [erd-candidate.md](13-data-model/erd-candidate.md) | ERD Mermaid |
+| [unresolved-cardinalities.md](13-data-model/unresolved-cardinalities.md) | CARD-DDP → FK |
+| [prompt-12-completeness-report.md](13-data-model/prompt-12-completeness-report.md) | Relatório |
 
 ## inputs
 

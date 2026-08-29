@@ -890,3 +890,47 @@ NOTES:
 - [x] Prompt 12 não executado
 
 ---
+
+```text
+PROMPT: 12
+TITLE: Modelo lógico de dados e constraints candidatas
+STARTED_AT: 2026-08-29T02:00:00-04:00
+FINISHED_AT: 2026-08-29T02:35:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED:
+  docs/13-data-model/ (25 artefatos — ver README.md)
+FILES_CHANGED:
+  docs/01-foundation/requirements-traceability.md
+  docs/00-governance/prompt-execution-log.md
+  docs/README.md
+QUALITY_GATE: PASS_WITH_RESTRICTIONS
+TBL_CAND_COUNT: 25
+UNQ_CAND_COUNT: 16
+CHK_CAND_COUNT: 14
+FK_CAND_COUNT: 32
+INDEX_HYPOTHESIS_COUNT: 18
+CARD_DDP_INHERITED: 12
+DATA_RISK_COUNT: 12
+DDL_CREATED: NO
+MIGRATIONS_CREATED: NO
+DATABASE_CREATED: NO
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Modelo rastreável a 14 AGG-CAND e 22 INV. Cancelamento ≠ delete.
+  12 CARD-DDP abertas; UNQ/FK parciais PENDING. Sem JSON indiscriminado.
+  Prompt 13 não executado.
+```
+
+## Quality gate Prompt 12 (evidência)
+
+- [x] pasta `13-data-model/` com 25 artefatos não vazios
+- [x] 25 TBL-CAND com campos obrigatórios
+- [x] 16 UNQ-CAND e 14 CHK-CAND mapeadas a invariantes
+- [x] nullability justificada; audit separado de domínio
+- [x] dados sensíveis classificados
+- [x] 0 DDL, 0 migrations, 0 schema físico
+- [x] ERD com cardinalidades pendentes marcadas
+- [x] rastreabilidade atualizada
+- [x] Prompt 13 não executado
+
+---

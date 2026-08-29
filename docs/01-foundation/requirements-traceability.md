@@ -254,3 +254,24 @@ Cadeia Prompt 11:
 ```text
 TERM → ENTITY/VO → AGG-CAND → INV → CMD → SM-CAND
 ```
+
+## Resumo Prompt 12
+
+| Métrica | Valor |
+| --- | --- |
+| Tabelas candidatas (TBL-CAND) | 25 |
+| Unicidade candidata (UNQ-CAND) | 16 |
+| Check constraints (CHK-CAND) | 14 |
+| FK candidatas | 32 |
+| INDEX_HYPOTHESIS | 18 |
+| Cardinalidades pendentes (CARD-DDP) | 12 (herdadas) |
+| Riscos (DATA-RISK) | 12 |
+| DDL / migrations / banco | **0** |
+| Índice | [`../13-data-model/README.md`](../13-data-model/README.md) |
+| Relatório | [`../13-data-model/prompt-12-completeness-report.md`](../13-data-model/prompt-12-completeness-report.md) |
+
+Cadeia Prompt 12:
+
+```text
+AGG-CAND → TBL-CAND → UNQ/CHK/FK → INV → INDEX_HYPOTHESIS
+```
