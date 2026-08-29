@@ -22,6 +22,13 @@ export type ServiceOrderRow = {
   rc_number: string | null;
   contract_reference: string | null;
   contract_snapshot: Record<string, unknown> | null;
+  prepared_at: string | null;
+  prepared_by_identity_id: string | null;
+  released_at: string | null;
+  released_by_identity_id: string | null;
+  cancelled_at: string | null;
+  cancelled_by_identity_id: string | null;
+  cancellation_reason: string | null;
   row_version: number;
   created_at: string;
   updated_at: string;
@@ -101,3 +108,36 @@ export type ConvertServiceRequestPersistenceResult =
   | { outcome: 'version_conflict' }
   | { outcome: 'invalid_state' }
   | { outcome: 'already_converted'; serviceOrderId: string };
+
+export type UpdateServiceOrderPersistenceInput = {
+  serviceOrderId: string;
+  rowVersion: number;
+  actorIdentityId: string;
+  description?: string | null;
+  location?: Record<string, unknown>;
+  priority?: string | null;
+  operationalNotes?: string | null;
+  clientId?: string | null;
+  serviceDefinitionId?: string | null;
+  serviceDefinitionVersionId?: string | null;
+  serviceSnapshot?: Record<string, unknown>;
+  clientSnapshot?: Record<string, unknown> | null;
+  proposalId?: string | null;
+  proposalSnapshot?: Record<string, unknown> | null;
+  purchaseOrderId?: string | null;
+  purchaseOrderSnapshot?: Record<string, unknown> | null;
+  rcNumber?: string | null;
+  contractReference?: string | null;
+  contractSnapshot?: Record<string, unknown> | null;
+};
+
+export type TransitionServiceOrderPersistenceInput = {
+  serviceOrderId: string;
+  rowVersion: number;
+  actorIdentityId: string;
+  currentStatus: string;
+  nextStatus: string;
+  transition: 'prepare' | 'release' | 'cancel';
+  clientSnapshot?: Record<string, unknown> | null;
+  cancellationReason?: string | null;
+};

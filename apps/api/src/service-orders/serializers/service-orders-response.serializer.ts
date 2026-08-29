@@ -27,6 +27,10 @@ export type ServiceOrderResponse = {
   rowVersion: number;
   createdAt: string;
   updatedAt: string;
+  preparedAt: string | null;
+  releasedAt: string | null;
+  cancelledAt: string | null;
+  cancellationReason: string | null;
 };
 
 export type ServiceOrderHistoryEventResponse = {
@@ -69,6 +73,10 @@ export function toServiceOrderResponse(row: ServiceOrderRow): ServiceOrderRespon
     rowVersion: row.row_version,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    preparedAt: row.prepared_at,
+    releasedAt: row.released_at,
+    cancelledAt: row.cancelled_at,
+    cancellationReason: row.cancellation_reason,
   };
 }
 

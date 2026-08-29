@@ -158,6 +158,11 @@ export default async function ensureMigrations(): Promise<void> {
     if (!hasServiceOrders) {
       await applySqlFile(pool, '0019_service_orders_baseline.sql');
     }
+
+    const hasPreparedAt = await columnExists(pool, 'so', 'service_orders', 'prepared_at');
+    if (!hasPreparedAt) {
+      await applySqlFile(pool, '0020_service_orders_state_transitions.sql');
+    }
   } finally {
     await pool.end();
   }

@@ -2949,3 +2949,95 @@ NOTES:
 - [x] Prompt 51 não executado
 
 ---
+
+## Prompt 51 — Ordem de serviço: máquina de estados
+
+```
+PROMPT_ID: 51
+PROMPT_TITLE: Ordem de serviço — máquina de estados
+EXECUTED_AT: 2026-08-29
+EXECUTION_STATUS: PASS
+COMMIT: feat(service-orders): enforce service order state machine
+ARTIFACTS:
+  packages/database/migrations/0020_service_orders_state_transitions.sql
+  packages/database/src/schema/service-orders.ts
+  apps/api/src/service-orders/domain/service-order.state-machine.ts
+  apps/api/src/service-orders/domain/service-order-release.ts
+  apps/api/src/service-orders/domain/service-order-mutability.ts
+  apps/api/src/service-orders/services/service-orders-access.service.ts
+  apps/api/src/service-orders/controllers/service-orders.controller.ts
+  apps/api/src/service-orders/repositories/service-orders.repository.ts
+  apps/api/src/authorization/types/authz-actions.ts
+  apps/api/src/audit/types/security-audit.types.ts
+  apps/api/src/test/ensure-migrations.ts
+  docs/implementation/51-service-orders-state-machine.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Transições explícitas prepare/release/cancel (sem PATCH status).
+  Fluxo DRAFT → PREPARED → RELEASED; cancel de DRAFT/PREPARED/RELEASED.
+  Release com assertClientEligibleForServiceOrderRelease (BR-037).
+  Mutabilidade: DRAFT completo; PREPARED só campos operacionais; RELEASED+ imutável.
+  Assign/Acknowledge/Start/Complete não implementados (dependências ausentes).
+  Prompt 52 não executado.
+```
+
+## Quality gate Prompt 51 (evidência)
+
+- [x] DRAFT sem client → release denied
+- [x] Client inexistente/inativo → denied
+- [x] Client ACTIVE + requisitos → release allowed
+- [x] Unauthorized, VERSION_CONFLICT, duplicate release, concurrency races
+- [x] History/audit correctness
+- [x] Unit + integration tests PASS
+- [x] Prompt 52 não executado
+
+---
+
+## Prompt 51 — Ordem de serviço: máquina de estados
+
+```
+PROMPT_ID: 51
+PROMPT_TITLE: Ordem de serviço — máquina de estados
+EXECUTED_AT: 2026-08-29
+EXECUTION_STATUS: PASS
+COMMIT: feat(service-orders): enforce service order state machine
+ARTIFACTS:
+  packages/database/migrations/0020_service_orders_state_transitions.sql
+  packages/database/src/schema/service-orders.ts
+  apps/api/src/service-orders/domain/service-order.state-machine.ts
+  apps/api/src/service-orders/domain/service-order-release.ts
+  apps/api/src/service-orders/domain/service-order-mutability.ts
+  apps/api/src/service-orders/services/service-orders-access.service.ts
+  apps/api/src/service-orders/controllers/service-orders.controller.ts
+  apps/api/src/service-orders/repositories/service-orders.repository.ts
+  apps/api/src/authorization/types/authz-actions.ts
+  apps/api/src/audit/types/security-audit.types.ts
+  apps/api/src/test/ensure-migrations.ts
+  docs/implementation/51-service-orders-state-machine.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Transições explícitas prepare/release/cancel (sem PATCH status).
+  Fluxo DRAFT → PREPARED → RELEASED; cancel de DRAFT/PREPARED/RELEASED.
+  Release com assertClientEligibleForServiceOrderRelease (BR-037).
+  Mutabilidade: DRAFT completo; PREPARED só campos operacionais; RELEASED+ imutável.
+  Assign/Acknowledge/Start/Complete não implementados (dependências ausentes).
+  Prompt 52 não executado.
+```
+
+## Quality gate Prompt 51 (evidência)
+
+- [x] DRAFT sem client → release denied
+- [x] Client inexistente/inativo → denied
+- [x] Client ACTIVE + requisitos → release allowed
+- [x] Unauthorized, VERSION_CONFLICT, duplicate release, concurrency races
+- [x] History/audit correctness
+- [x] Unit + integration tests PASS
+- [x] Prompt 52 não executado
+
+---

@@ -70,6 +70,19 @@ export const serviceOrders = soSchema.table(
     rcNumber: text('rc_number'),
     contractReference: text('contract_reference'),
     contractSnapshot: jsonb('contract_snapshot'),
+    preparedAt: timestamp('prepared_at', { withTimezone: true, mode: 'string' }),
+    preparedByIdentityId: uuid('prepared_by_identity_id').references(() => identities.id, {
+      onDelete: 'restrict',
+    }),
+    releasedAt: timestamp('released_at', { withTimezone: true, mode: 'string' }),
+    releasedByIdentityId: uuid('released_by_identity_id').references(() => identities.id, {
+      onDelete: 'restrict',
+    }),
+    cancelledAt: timestamp('cancelled_at', { withTimezone: true, mode: 'string' }),
+    cancelledByIdentityId: uuid('cancelled_by_identity_id').references(() => identities.id, {
+      onDelete: 'restrict',
+    }),
+    cancellationReason: text('cancellation_reason'),
     rowVersion: integer('row_version').notNull().default(1),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).notNull().defaultNow(),

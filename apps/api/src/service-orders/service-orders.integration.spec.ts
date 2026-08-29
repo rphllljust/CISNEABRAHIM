@@ -57,6 +57,10 @@ async function grantServiceOrderAdmin(pool: Pool, identityId: string, grantedBy:
     AUTHZ_ACTIONS.ServiceOrdersServiceOrderCreate,
     AUTHZ_ACTIONS.ServiceOrdersServiceOrderRead,
     AUTHZ_ACTIONS.ServiceOrdersServiceOrderList,
+    AUTHZ_ACTIONS.ServiceOrdersServiceOrderUpdate,
+    AUTHZ_ACTIONS.ServiceOrdersServiceOrderPrepare,
+    AUTHZ_ACTIONS.ServiceOrdersServiceOrderRelease,
+    AUTHZ_ACTIONS.ServiceOrdersServiceOrderCancel,
     AUTHZ_ACTIONS.RequestsServiceRequestCreate,
     AUTHZ_ACTIONS.RequestsServiceRequestRead,
     AUTHZ_ACTIONS.RequestsServiceRequestUpdate,
@@ -67,6 +71,7 @@ async function grantServiceOrderAdmin(pool: Pool, identityId: string, grantedBy:
     AUTHZ_ACTIONS.RequestsServiceRequestConvert,
     AUTHZ_ACTIONS.ClientCreate,
     AUTHZ_ACTIONS.ClientRead,
+    AUTHZ_ACTIONS.ClientDeactivate,
     AUTHZ_ACTIONS.CatalogServiceCreate,
     AUTHZ_ACTIONS.CatalogServiceRead,
     AUTHZ_ACTIONS.CatalogServicePublish,
@@ -463,5 +468,200 @@ describe('Service orders PostgreSQL integration', () => {
     await expect(
       serviceOrdersAccess.getById({ identityId: otherId, sessionId: 'sid' }, created.id),
     ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.DENIED });
+  });
+
+  async function createDraftWithService(actor: { identityId: string; sessionId: string }) {
+    const client = await seedClient(actor);
+    const publishedService = await seedPublishedService(actor);
+    const created = await serviceOrdersAccess.create(actor, {
+      origin: SERVICE_ORDER_ORIGINS.AuthorizedDirect,
+      unitId: UNIT_A,
+      clientId: client.id,
+      serviceDefinitionId: publishedService.serviceDefinitionId,
+      serviceDefinitionVersionId: publishedService.id,
+      description: 'OS para transição',
+    });
+    return { client, publishedService, created };
+  }
+
+  it('denies release from DRAFT without client after prepare', async () => {
+    const { actor } = await seedActor();
+    const publishedService = await seedPublishedService(actor);
+    const created = await serviceOrdersAccess.create(actor, {
+      origin: SERVICE_ORDER_ORIGINS.AuthorizedDirect,
+      unitId: UNIT_A,
+      serviceDefinitionId: publishedService.serviceDefinitionId,
+      serviceDefinitionVersionId: publishedService.id,
+    });
+    const prepared = await serviceOrdersAccess.prepare(actor, created.id, {
+      rowVersion: created.rowVersion,
+    });
+    await expect(
+      serviceOrdersAccess.release(actor, prepared.id, { rowVersion: prepared.rowVersion }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.CLIENT_REQUIRED });
+  });
+
+  it('denies update with nonexistent client', async () => {
+    const { actor } = await seedActor();
+    const { created } = await createDraftWithService(actor);
+    await expect(
+      serviceOrdersAccess.update(actor, created.id, {
+        rowVersion: created.rowVersion,
+        clientId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.CLIENT_NOT_FOUND });
+  });
+
+  it('denies release for inactive client', async () => {
+    const { actor } = await seedActor();
+    const { client, created } = await createDraftWithService(actor);
+    const prepared = await serviceOrdersAccess.prepare(actor, created.id, {
+      rowVersion: created.rowVersion,
+    });
+    await clientAccess.deactivate(actor, client.id, client.version, 'Inativo');
+    await expect(
+      serviceOrdersAccess.release(actor, prepared.id, { rowVersion: prepared.rowVersion }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.CLIENT_INACTIVE });
+  });
+
+  it('releases PREPARED order with active client and records history and audit', async () => {
+    const { actor } = await seedActor();
+    const { created } = await createDraftWithService(actor);
+    const prepared = await serviceOrdersAccess.prepare(actor, created.id, {
+      rowVersion: created.rowVersion,
+    });
+    const released = await serviceOrdersAccess.release(actor, prepared.id, {
+      rowVersion: prepared.rowVersion,
+    });
+
+    expect(released.status).toBe(SERVICE_ORDER_STATUSES.Released);
+    expect(released.releasedAt).not.toBeNull();
+    expect(released.historyEvents.map((event) => event.eventType)).toEqual(
+      expect.arrayContaining(['CREATED', 'PREPARED', 'RELEASED']),
+    );
+
+    const audit = await pool.query<{ action: string }>(
+      `SELECT action FROM audit.security_audit_events WHERE resource_id = $1`,
+      [released.id],
+    );
+    expect(audit.rows.map((row) => row.action)).toContain(
+      SECURITY_AUDIT_ACTIONS.ServiceOrdersServiceOrderRelease,
+    );
+  });
+
+  it('denies unauthorized release', async () => {
+    const { actor } = await seedActor();
+    const { created } = await createDraftWithService(actor);
+    const prepared = await serviceOrdersAccess.prepare(actor, created.id, {
+      rowVersion: created.rowVersion,
+    });
+    const otherLogin = normalizeLoginIdentifier(`so-release-deny-${crypto.randomUUID()}@cisne.invalid`);
+    const passwordHash = await hashPassword(AUTH_TEST_PASSWORD);
+    const { identityId: otherId } = await insertIdentity(pool, otherLogin, passwordHash);
+
+    await expect(
+      serviceOrdersAccess.release({ identityId: otherId, sessionId: 'sid' }, prepared.id, {
+        rowVersion: prepared.rowVersion,
+      }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.DENIED });
+  });
+
+  it('returns VERSION_CONFLICT on stale row version', async () => {
+    const { actor } = await seedActor();
+    const { created } = await createDraftWithService(actor);
+    await serviceOrdersAccess.update(actor, created.id, {
+      rowVersion: created.rowVersion,
+      description: 'Atualizada',
+    });
+    await expect(
+      serviceOrdersAccess.update(actor, created.id, {
+        rowVersion: created.rowVersion,
+        description: 'Conflito',
+      }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.VERSION_CONFLICT });
+  });
+
+  it('prevents duplicate release effects', async () => {
+    const { actor } = await seedActor();
+    const { created } = await createDraftWithService(actor);
+    const prepared = await serviceOrdersAccess.prepare(actor, created.id, {
+      rowVersion: created.rowVersion,
+    });
+    const released = await serviceOrdersAccess.release(actor, prepared.id, {
+      rowVersion: prepared.rowVersion,
+    });
+    await expect(
+      serviceOrdersAccess.release(actor, released.id, { rowVersion: released.rowVersion }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.INVALID_STATE });
+
+    const history = await pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count
+       FROM so.service_order_history_events
+       WHERE service_order_id = $1 AND event_type = 'RELEASED'`,
+      [released.id],
+    );
+    expect(history.rows[0]?.count).toBe('1');
+  });
+
+  it('resolves release versus cancel race deterministically', async () => {
+    const { actor } = await seedActor();
+    const { created } = await createDraftWithService(actor);
+    const prepared = await serviceOrdersAccess.prepare(actor, created.id, {
+      rowVersion: created.rowVersion,
+    });
+
+    const results = await Promise.allSettled([
+      serviceOrdersAccess.release(actor, prepared.id, { rowVersion: prepared.rowVersion }),
+      serviceOrdersAccess.cancel(actor, prepared.id, {
+        rowVersion: prepared.rowVersion,
+        cancellationReason: 'Concorrência',
+      }),
+    ]);
+
+    const fulfilled = results.filter((result) => result.status === 'fulfilled');
+    const rejected = results.filter((result) => result.status === 'rejected');
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+
+    const row = await pool.query<{ status: string }>(
+      `SELECT status::text AS status FROM so.service_orders WHERE id = $1`,
+      [prepared.id],
+    );
+    expect(['RELEASED', 'CANCELLED']).toContain(row.rows[0]?.status);
+  });
+
+  it('resolves update versus release race deterministically', async () => {
+    const { actor } = await seedActor();
+    const { created } = await createDraftWithService(actor);
+    const prepared = await serviceOrdersAccess.prepare(actor, created.id, {
+      rowVersion: created.rowVersion,
+    });
+
+    const results = await Promise.allSettled([
+      serviceOrdersAccess.release(actor, prepared.id, { rowVersion: prepared.rowVersion }),
+      serviceOrdersAccess.update(actor, prepared.id, {
+        rowVersion: prepared.rowVersion,
+        description: 'Atualização concorrente',
+      }),
+    ]);
+
+    const fulfilled = results.filter((result) => result.status === 'fulfilled');
+    const rejected = results.filter((result) => result.status === 'rejected');
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+  });
+
+  it('blocks critical field updates in PREPARED', async () => {
+    const { actor } = await seedActor();
+    const { client, created } = await createDraftWithService(actor);
+    const prepared = await serviceOrdersAccess.prepare(actor, created.id, {
+      rowVersion: created.rowVersion,
+    });
+    await expect(
+      serviceOrdersAccess.update(actor, prepared.id, {
+        rowVersion: prepared.rowVersion,
+        clientId: client.id,
+      }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.IMMUTABLE_CRITICAL_FIELD });
   });
 });

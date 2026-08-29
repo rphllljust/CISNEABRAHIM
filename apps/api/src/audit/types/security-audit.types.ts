@@ -56,6 +56,10 @@ export const SECURITY_AUDIT_ACTIONS = {
   RequestsServiceRequestCancel: 'security:requests:service-request:cancel',
   RequestsServiceRequestConvert: 'security:requests:service-request:convert',
   ServiceOrdersServiceOrderCreate: 'security:service-orders:service-order:create',
+  ServiceOrdersServiceOrderUpdate: 'security:service-orders:service-order:update',
+  ServiceOrdersServiceOrderPrepare: 'security:service-orders:service-order:prepare',
+  ServiceOrdersServiceOrderRelease: 'security:service-orders:service-order:release',
+  ServiceOrdersServiceOrderCancel: 'security:service-orders:service-order:cancel',
 } as const;
 
 export type SecurityAuditAction =

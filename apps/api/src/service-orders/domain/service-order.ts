@@ -23,6 +23,10 @@ export type ServiceOrderOrigin =
 export const SERVICE_ORDER_HISTORY_EVENTS = {
   Created: 'CREATED',
   ConvertedFromServiceRequest: 'CONVERTED_FROM_SERVICE_REQUEST',
+  Prepared: 'PREPARED',
+  Released: 'RELEASED',
+  Cancelled: 'CANCELLED',
+  Updated: 'UPDATED',
 } as const;
 
 export type ServiceOrderHistoryEventType =

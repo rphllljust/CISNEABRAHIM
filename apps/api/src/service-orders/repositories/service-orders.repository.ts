@@ -10,6 +10,8 @@ import type {
   LockedServiceRequestRow,
   ServiceOrderHistoryEventRow,
   ServiceOrderRow,
+  TransitionServiceOrderPersistenceInput,
+  UpdateServiceOrderPersistenceInput,
 } from './service-orders.repository.types';
 import type {
   ServiceSnapshotAllowedUnit,
@@ -19,6 +21,17 @@ import type {
   ServiceSnapshotSource,
 } from '../domain/service-order-snapshot';
 
+const SO_RETURNING = `
+  id, internal_code, order_number, unit_id, status::text AS status, origin::text AS origin,
+  client_id, client_snapshot, service_definition_id, service_definition_version_id,
+  service_snapshot, description, location, priority, operational_notes,
+  service_request_id, proposal_id, proposal_snapshot, purchase_order_id, purchase_order_snapshot,
+  rc_number, contract_reference, contract_snapshot,
+  prepared_at, prepared_by_identity_id, released_at, released_by_identity_id,
+  cancelled_at, cancelled_by_identity_id, cancellation_reason,
+  row_version, created_at, updated_at, created_by_identity_id, updated_by_identity_id
+`;
+
 const SO_SELECT = `
   SELECT
     id, internal_code, order_number, unit_id, status::text AS status, origin::text AS origin,
@@ -26,6 +39,8 @@ const SO_SELECT = `
     service_snapshot, description, location, priority, operational_notes,
     service_request_id, proposal_id, proposal_snapshot, purchase_order_id, purchase_order_snapshot,
     rc_number, contract_reference, contract_snapshot,
+    prepared_at, prepared_by_identity_id, released_at, released_by_identity_id,
+    cancelled_at, cancelled_by_identity_id, cancellation_reason,
     row_version, created_at, updated_at, created_by_identity_id, updated_by_identity_id
   FROM so.service_orders
 `;
@@ -425,13 +440,7 @@ export class ServiceOrdersRepository {
          $20, $21, $22::jsonb,
          $23, $23
        )
-       RETURNING
-         id, internal_code, order_number, unit_id, status::text AS status, origin::text AS origin,
-         client_id, client_snapshot, service_definition_id, service_definition_version_id,
-         service_snapshot, description, location, priority, operational_notes,
-         service_request_id, proposal_id, proposal_snapshot, purchase_order_id, purchase_order_snapshot,
-         rc_number, contract_reference, contract_snapshot,
-         row_version, created_at, updated_at, created_by_identity_id, updated_by_identity_id`,
+       RETURNING ${SO_RETURNING}`,
       [
         input.internalCode,
         input.orderNumber,
@@ -471,6 +480,231 @@ export class ServiceOrdersRepository {
     });
 
     return row;
+  }
+
+  async update(
+    input: UpdateServiceOrderPersistenceInput,
+  ): Promise<ServiceOrderRow | 'VERSION_CONFLICT' | 'INVALID_STATE'> {
+    const client = await this.pool().connect();
+    try {
+      await client.query('BEGIN');
+      const locked = await client.query<ServiceOrderRow>(
+        `${SO_SELECT} WHERE id = $1 FOR UPDATE`,
+        [input.serviceOrderId],
+      );
+      const current = locked.rows[0];
+      if (!current) {
+        await client.query('ROLLBACK');
+        return 'VERSION_CONFLICT';
+      }
+      if (current.row_version !== input.rowVersion) {
+        await client.query('ROLLBACK');
+        return 'VERSION_CONFLICT';
+      }
+      if (
+        current.status !== SERVICE_ORDER_STATUSES.Draft &&
+        current.status !== SERVICE_ORDER_STATUSES.Prepared
+      ) {
+        await client.query('ROLLBACK');
+        return 'INVALID_STATE';
+      }
+
+      const result = await client.query<ServiceOrderRow>(
+        `UPDATE so.service_orders
+         SET
+           description = CASE WHEN $4::text = '__UNSET__' THEN description WHEN $4 IS NULL THEN NULL ELSE $4 END,
+           location = COALESCE($5::jsonb, location),
+           priority = CASE WHEN $6::text = '__UNSET__' THEN priority WHEN $6 IS NULL THEN NULL ELSE $6 END,
+           operational_notes = CASE WHEN $7::text = '__UNSET__' THEN operational_notes WHEN $7 IS NULL THEN NULL ELSE $7 END,
+           client_id = CASE WHEN $8::text = '__UNSET__' THEN client_id WHEN $8 IS NULL THEN NULL ELSE $8::uuid END,
+           client_snapshot = CASE WHEN $9::text = '__UNSET__' THEN client_snapshot WHEN $9 IS NULL THEN NULL ELSE $9::jsonb END,
+           service_definition_id = CASE WHEN $10::text = '__UNSET__' THEN service_definition_id WHEN $10 IS NULL THEN NULL ELSE $10::uuid END,
+           service_definition_version_id = CASE WHEN $11::text = '__UNSET__' THEN service_definition_version_id WHEN $11 IS NULL THEN NULL ELSE $11::uuid END,
+           service_snapshot = COALESCE($12::jsonb, service_snapshot),
+           proposal_id = CASE WHEN $13::text = '__UNSET__' THEN proposal_id WHEN $13 IS NULL THEN NULL ELSE $13::uuid END,
+           proposal_snapshot = CASE WHEN $14::text = '__UNSET__' THEN proposal_snapshot WHEN $14 IS NULL THEN NULL ELSE $14::jsonb END,
+           purchase_order_id = CASE WHEN $15::text = '__UNSET__' THEN purchase_order_id WHEN $15 IS NULL THEN NULL ELSE $15::uuid END,
+           purchase_order_snapshot = CASE WHEN $16::text = '__UNSET__' THEN purchase_order_snapshot WHEN $16 IS NULL THEN NULL ELSE $16::jsonb END,
+           rc_number = CASE WHEN $17::text = '__UNSET__' THEN rc_number WHEN $17 IS NULL THEN NULL ELSE $17 END,
+           contract_reference = CASE WHEN $18::text = '__UNSET__' THEN contract_reference WHEN $18 IS NULL THEN NULL ELSE $18 END,
+           contract_snapshot = CASE WHEN $19::text = '__UNSET__' THEN contract_snapshot WHEN $19 IS NULL THEN NULL ELSE $19::jsonb END,
+           updated_by_identity_id = $3,
+           updated_at = NOW(),
+           row_version = row_version + 1
+         WHERE id = $1 AND row_version = $2
+         RETURNING ${SO_RETURNING}`,
+        [
+          input.serviceOrderId,
+          input.rowVersion,
+          input.actorIdentityId,
+          input.description === undefined ? '__UNSET__' : input.description,
+          input.location ? JSON.stringify(input.location) : null,
+          input.priority === undefined ? '__UNSET__' : input.priority,
+          input.operationalNotes === undefined ? '__UNSET__' : input.operationalNotes,
+          input.clientId === undefined ? '__UNSET__' : input.clientId,
+          input.clientSnapshot === undefined
+            ? '__UNSET__'
+            : input.clientSnapshot
+              ? JSON.stringify(input.clientSnapshot)
+              : null,
+          input.serviceDefinitionId === undefined ? '__UNSET__' : input.serviceDefinitionId,
+          input.serviceDefinitionVersionId === undefined
+            ? '__UNSET__'
+            : input.serviceDefinitionVersionId,
+          input.serviceSnapshot ? JSON.stringify(input.serviceSnapshot) : null,
+          input.proposalId === undefined ? '__UNSET__' : input.proposalId,
+          input.proposalSnapshot === undefined
+            ? '__UNSET__'
+            : input.proposalSnapshot
+              ? JSON.stringify(input.proposalSnapshot)
+              : null,
+          input.purchaseOrderId === undefined ? '__UNSET__' : input.purchaseOrderId,
+          input.purchaseOrderSnapshot === undefined
+            ? '__UNSET__'
+            : input.purchaseOrderSnapshot
+              ? JSON.stringify(input.purchaseOrderSnapshot)
+              : null,
+          input.rcNumber === undefined ? '__UNSET__' : input.rcNumber,
+          input.contractReference === undefined ? '__UNSET__' : input.contractReference,
+          input.contractSnapshot === undefined
+            ? '__UNSET__'
+            : input.contractSnapshot
+              ? JSON.stringify(input.contractSnapshot)
+              : null,
+        ],
+      );
+      const updated = result.rows[0];
+      if (!updated) {
+        await client.query('ROLLBACK');
+        return 'VERSION_CONFLICT';
+      }
+
+      await this.insertHistoryEvent(client, {
+        serviceOrderId: updated.id,
+        eventType: 'UPDATED',
+        payload: {},
+        actorIdentityId: input.actorIdentityId,
+      });
+      await client.query('COMMIT');
+      return updated;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async transition(
+    input: TransitionServiceOrderPersistenceInput,
+  ): Promise<ServiceOrderRow | 'VERSION_CONFLICT' | 'INVALID_STATE'> {
+    const client = await this.pool().connect();
+    try {
+      await client.query('BEGIN');
+      const locked = await client.query<ServiceOrderRow>(
+        `${SO_SELECT} WHERE id = $1 FOR UPDATE`,
+        [input.serviceOrderId],
+      );
+      const current = locked.rows[0];
+      if (!current) {
+        await client.query('ROLLBACK');
+        return 'VERSION_CONFLICT';
+      }
+      if (current.row_version !== input.rowVersion) {
+        await client.query('ROLLBACK');
+        return 'VERSION_CONFLICT';
+      }
+      if (current.status !== input.currentStatus) {
+        await client.query('ROLLBACK');
+        return 'INVALID_STATE';
+      }
+
+      const transitionFields = this.buildTransitionFields(input);
+      const result = await client.query<ServiceOrderRow>(
+        `UPDATE so.service_orders
+         SET
+           status = $3::so.service_order_status,
+           ${transitionFields.sql},
+           updated_by_identity_id = $4,
+           updated_at = NOW(),
+           row_version = row_version + 1
+         WHERE id = $1
+           AND row_version = $2
+           AND status = $5::so.service_order_status
+         RETURNING ${SO_RETURNING}`,
+        [
+          input.serviceOrderId,
+          input.rowVersion,
+          input.nextStatus,
+          input.actorIdentityId,
+          input.currentStatus,
+          ...transitionFields.params,
+        ],
+      );
+      const updated = result.rows[0];
+      if (!updated) {
+        await client.query('ROLLBACK');
+        return 'INVALID_STATE';
+      }
+
+      await this.insertHistoryEvent(client, {
+        serviceOrderId: updated.id,
+        eventType: this.historyEventForTransition(input.transition),
+        payload: {
+          fromStatus: input.currentStatus,
+          toStatus: input.nextStatus,
+          ...(input.cancellationReason ? { cancellationReason: input.cancellationReason } : {}),
+        },
+        actorIdentityId: input.actorIdentityId,
+      });
+      await client.query('COMMIT');
+      return updated;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  private buildTransitionFields(input: TransitionServiceOrderPersistenceInput): {
+    sql: string;
+    params: unknown[];
+  } {
+    switch (input.transition) {
+      case 'prepare':
+        return {
+          sql: 'prepared_at = NOW(), prepared_by_identity_id = $4',
+          params: [],
+        };
+      case 'release':
+        return {
+          sql: 'released_at = NOW(), released_by_identity_id = $4, client_snapshot = COALESCE($6::jsonb, client_snapshot)',
+          params: [input.clientSnapshot ? JSON.stringify(input.clientSnapshot) : null],
+        };
+      case 'cancel':
+        return {
+          sql: 'cancelled_at = NOW(), cancelled_by_identity_id = $4, cancellation_reason = $6',
+          params: [input.cancellationReason ?? null],
+        };
+      default:
+        return { sql: '', params: [] };
+    }
+  }
+
+  private historyEventForTransition(
+    transition: TransitionServiceOrderPersistenceInput['transition'],
+  ): string {
+    switch (transition) {
+      case 'prepare':
+        return 'PREPARED';
+      case 'release':
+        return 'RELEASED';
+      case 'cancel':
+        return 'CANCELLED';
+      default:
+        return transition;
+    }
   }
 
   private async insertHistoryEvent(

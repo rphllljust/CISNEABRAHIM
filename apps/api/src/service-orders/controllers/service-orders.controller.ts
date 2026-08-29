@@ -1,9 +1,15 @@
-import { Controller, Get, HttpCode, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, HttpCode, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 import { CurrentAuth } from '../../auth/decorators/current-auth.decorator';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import type { AccessTokenClaims } from '../../auth/services/token.service';
-import { parseCreateServiceOrderInput, parseListServiceOrdersQuery } from '../dto/service-orders.dto';
+import {
+  parseCancelServiceOrderInput,
+  parseCreateServiceOrderInput,
+  parseListServiceOrdersQuery,
+  parseRowVersionBody,
+  parseUpdateServiceOrderInput,
+} from '../dto/service-orders.dto';
 import { SERVICE_ORDERS_ERROR_CODES } from '../errors/service-orders-error-codes';
 import { ServiceOrdersHttpException } from '../errors/service-orders-http.exception';
 import { ServiceOrdersAccessService } from '../services/service-orders-access.service';
@@ -40,5 +46,80 @@ export class ServiceOrdersController {
       { identityId: auth.sub, sessionId: auth.sid },
       serviceOrderId,
     );
+  }
+
+  @Patch(':serviceOrderId')
+  update(
+    @CurrentAuth() auth: AccessTokenClaims,
+    @Param('serviceOrderId') serviceOrderId: string,
+    @Req() request: FastifyRequest,
+  ) {
+    try {
+      const input = parseUpdateServiceOrderInput(request.body);
+      return this.serviceOrdersAccess.update(
+        { identityId: auth.sub, sessionId: auth.sid },
+        serviceOrderId,
+        input,
+      );
+    } catch {
+      throw new ServiceOrdersHttpException(
+        400,
+        SERVICE_ORDERS_ERROR_CODES.VALIDATION_FAILED,
+        'Invalid request body.',
+      );
+    }
+  }
+
+  @Post(':serviceOrderId/prepare')
+  @HttpCode(200)
+  prepare(
+    @CurrentAuth() auth: AccessTokenClaims,
+    @Param('serviceOrderId') serviceOrderId: string,
+    @Req() request: FastifyRequest,
+  ) {
+    const body = parseRowVersionBody(request.body);
+    return this.serviceOrdersAccess.prepare(
+      { identityId: auth.sub, sessionId: auth.sid },
+      serviceOrderId,
+      body,
+    );
+  }
+
+  @Post(':serviceOrderId/release')
+  @HttpCode(200)
+  release(
+    @CurrentAuth() auth: AccessTokenClaims,
+    @Param('serviceOrderId') serviceOrderId: string,
+    @Req() request: FastifyRequest,
+  ) {
+    const body = parseRowVersionBody(request.body);
+    return this.serviceOrdersAccess.release(
+      { identityId: auth.sub, sessionId: auth.sid },
+      serviceOrderId,
+      body,
+    );
+  }
+
+  @Post(':serviceOrderId/cancel')
+  @HttpCode(200)
+  cancel(
+    @CurrentAuth() auth: AccessTokenClaims,
+    @Param('serviceOrderId') serviceOrderId: string,
+    @Req() request: FastifyRequest,
+  ) {
+    try {
+      const input = parseCancelServiceOrderInput(request.body);
+      return this.serviceOrdersAccess.cancel(
+        { identityId: auth.sub, sessionId: auth.sid },
+        serviceOrderId,
+        input,
+      );
+    } catch {
+      throw new ServiceOrdersHttpException(
+        400,
+        SERVICE_ORDERS_ERROR_CODES.VALIDATION_FAILED,
+        'Invalid request body.',
+      );
+    }
   }
 }

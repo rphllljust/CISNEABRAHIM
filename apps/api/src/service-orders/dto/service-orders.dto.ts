@@ -1,7 +1,12 @@
-import type { CreateServiceOrderInput } from '../domain/service-order.validation';
-import { isServiceOrderOrigin } from '../domain/service-order';
 import { assertUuid } from '../../catalog/domain/service-catalog.validation';
-import { parseListServiceOrdersQuery, validateCreateStatus } from '../domain/service-order.validation';
+import { isServiceOrderOrigin } from '../domain/service-order';
+import {
+  parseListServiceOrdersQuery,
+  validateCreateStatus,
+  type CancelServiceOrderInput,
+  type CreateServiceOrderInput,
+  type UpdateServiceOrderInput,
+} from '../domain/service-order.validation';
 
 function parseOptionalString(record: Record<string, unknown>, key: string): string | undefined {
   const value = record[key];
@@ -49,6 +54,80 @@ export function parseCreateServiceOrderInput(body: unknown): CreateServiceOrderI
 }
 
 export { parseListServiceOrdersQuery };
+
+export function parseRowVersionBody(body: unknown): { rowVersion: number } {
+  if (!body || typeof body !== 'object') {
+    throw new Error('INVALID_BODY');
+  }
+  const record = body as Record<string, unknown>;
+  const rowVersion = Number(record['rowVersion']);
+  if (!Number.isInteger(rowVersion) || rowVersion < 1) {
+    throw new Error('INVALID_ROW_VERSION');
+  }
+  return { rowVersion };
+}
+
+export function parseUpdateServiceOrderInput(body: unknown): UpdateServiceOrderInput {
+  if (!body || typeof body !== 'object') {
+    throw new Error('INVALID_BODY');
+  }
+  const record = body as Record<string, unknown>;
+  const { rowVersion } = parseRowVersionBody(record);
+  return {
+    rowVersion,
+    description:
+      record['description'] === null
+        ? null
+        : typeof record['description'] === 'string'
+          ? record['description']
+          : undefined,
+    location: parseOptionalObject(record, 'location'),
+    priority:
+      record['priority'] === null
+        ? null
+        : typeof record['priority'] === 'string'
+          ? record['priority']
+          : undefined,
+    operationalNotes:
+      record['operationalNotes'] === null
+        ? null
+        : typeof record['operationalNotes'] === 'string'
+          ? record['operationalNotes']
+          : undefined,
+    clientId:
+      record['clientId'] === null
+        ? null
+        : parseOptionalString(record, 'clientId'),
+    serviceDefinitionId:
+      record['serviceDefinitionId'] === null
+        ? null
+        : parseOptionalString(record, 'serviceDefinitionId'),
+    serviceDefinitionVersionId:
+      record['serviceDefinitionVersionId'] === null
+        ? null
+        : parseOptionalString(record, 'serviceDefinitionVersionId'),
+    proposalId:
+      record['proposalId'] === null ? null : parseOptionalString(record, 'proposalId'),
+    purchaseOrderId:
+      record['purchaseOrderId'] === null ? null : parseOptionalString(record, 'purchaseOrderId'),
+    rcNumber: record['rcNumber'] === null ? null : parseOptionalString(record, 'rcNumber'),
+    contractReference:
+      record['contractReference'] === null
+        ? null
+        : parseOptionalString(record, 'contractReference'),
+  };
+}
+
+export function parseCancelServiceOrderInput(body: unknown): CancelServiceOrderInput {
+  if (!body || typeof body !== 'object') {
+    throw new Error('INVALID_BODY');
+  }
+  const record = body as Record<string, unknown>;
+  const { rowVersion } = parseRowVersionBody(record);
+  const cancellationReason =
+    typeof record['cancellationReason'] === 'string' ? record['cancellationReason'] : '';
+  return { rowVersion, cancellationReason };
+}
 
 export function parseServiceOrderId(serviceOrderId: string): string {
   assertUuid(serviceOrderId, 'serviceOrderId');

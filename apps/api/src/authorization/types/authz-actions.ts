@@ -82,6 +82,10 @@ export const AUTHZ_ACTIONS = {
   ServiceOrdersServiceOrderCreate: 'service-orders:service-order:create',
   ServiceOrdersServiceOrderRead: 'service-orders:service-order:read',
   ServiceOrdersServiceOrderList: 'service-orders:service-order:list',
+  ServiceOrdersServiceOrderUpdate: 'service-orders:service-order:update',
+  ServiceOrdersServiceOrderPrepare: 'service-orders:service-order:prepare',
+  ServiceOrdersServiceOrderRelease: 'service-orders:service-order:release',
+  ServiceOrdersServiceOrderCancel: 'service-orders:service-order:cancel',
 } as const;
 
 export type AuthzAction = (typeof AUTHZ_ACTIONS)[keyof typeof AUTHZ_ACTIONS];
