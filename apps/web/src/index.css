@@ -805,3 +805,288 @@ button:disabled {
   font-size: 0.9rem;
   margin: 0 0 0.75rem;
 }
+
+/* Service order planning */
+.planning-page.shell-page {
+  max-width: 72rem;
+}
+
+.planning-page__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.planning-page__eyebrow {
+  margin: 0 0 0.25rem;
+  font-size: 0.85rem;
+  color: #525252;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.planning-page__meta {
+  margin: 0.35rem 0 0;
+  color: #525252;
+}
+
+.planning-section {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 0.35rem;
+}
+
+.planning-section h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+}
+
+.planning-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: 1rem;
+  margin: 0;
+}
+
+.planning-summary dt {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #525252;
+}
+
+.planning-summary dd {
+  margin: 0.2rem 0 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.planning-hint {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  color: #525252;
+}
+
+.planning-legend {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.planning-legend--requirement {
+  background: #f5f5f5;
+  color: #404040;
+}
+
+.planning-legend--planned {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.planning-legend--allocated {
+  background: #dcfce7;
+  color: #14532d;
+}
+
+.planning-legend--available {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.planning-legend--unavailable {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.planning-empty {
+  margin: 0;
+  color: #525252;
+}
+
+.planning-notice {
+  margin: 0.75rem 0 0;
+  padding: 0.65rem 0.75rem;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 0.35rem;
+  color: #78350f;
+}
+
+.planning-list {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+}
+
+.planning-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.planning-plan-action {
+  margin: 0.35rem 0.5rem 0.35rem 0;
+}
+
+.planning-table-wrap {
+  overflow-x: auto;
+}
+
+.planning-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.planning-table th,
+.planning-table td {
+  padding: 0.65rem 0.5rem;
+  border-bottom: 1px solid #e5e5e5;
+  text-align: left;
+  vertical-align: top;
+}
+
+.planning-table th {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #525252;
+}
+
+.planning-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.planning-coverage-status {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.planning-coverage-status--complete {
+  background: #dcfce7;
+  color: #14532d;
+}
+
+.planning-coverage-status--partial {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.planning-coverage-status--missing {
+  background: #fef9c3;
+  color: #713f12;
+}
+
+.planning-coverage-status--over {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+.planning-asset-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.planning-asset {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.35rem;
+  border: 1px solid #e5e5e5;
+}
+
+.planning-asset--available {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.planning-asset--unavailable {
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+
+.planning-asset__name {
+  font-weight: 600;
+}
+
+.planning-asset__code {
+  font-size: 0.85rem;
+  color: #525252;
+}
+
+.planning-asset__status {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.planning-form {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.planning-asset-option {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  margin-bottom: 0.35rem;
+  cursor: pointer;
+}
+
+.planning-feedback {
+  position: sticky;
+  bottom: 0.75rem;
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.35rem;
+  border: 1px solid transparent;
+}
+
+.planning-feedback--success {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #14532d;
+}
+
+.planning-feedback--error {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #7f1d1d;
+}
+
+.planning-feedback--info {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1e3a8a;
+}
+
+@media (min-width: 48rem) {
+  .planning-asset {
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+  }
+}

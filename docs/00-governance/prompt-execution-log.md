@@ -2996,48 +2996,86 @@ NOTES:
 
 ---
 
-## Prompt 51 — Ordem de serviço: máquina de estados
+## Prompt 52 — Planejamento, alocação e disponibilidade (backend)
 
 ```
-PROMPT_ID: 51
-PROMPT_TITLE: Ordem de serviço — máquina de estados
+PROMPT_ID: 52
+PROMPT_TITLE: Planejamento, alocação e disponibilidade — backend
 EXECUTED_AT: 2026-08-29
 EXECUTION_STATUS: PASS
-COMMIT: feat(service-orders): enforce service order state machine
+COMMIT: feat(service-orders): implement resource planning and allocation
 ARTIFACTS:
-  packages/database/migrations/0020_service_orders_state_transitions.sql
-  packages/database/src/schema/service-orders.ts
-  apps/api/src/service-orders/domain/service-order.state-machine.ts
-  apps/api/src/service-orders/domain/service-order-release.ts
-  apps/api/src/service-orders/domain/service-order-mutability.ts
-  apps/api/src/service-orders/services/service-orders-access.service.ts
-  apps/api/src/service-orders/controllers/service-orders.controller.ts
-  apps/api/src/service-orders/repositories/service-orders.repository.ts
+  packages/database/migrations/0021_planning_allocation_baseline.sql
+  packages/database/src/schema/resource-planning.ts
+  apps/api/src/service-orders/domain/resource-planning.ts
+  apps/api/src/service-orders/domain/resource-compatibility.ts
+  apps/api/src/service-orders/repositories/resource-planning.repository.ts
+  apps/api/src/service-orders/services/service-order-planning-access.service.ts
+  apps/api/src/service-orders/controllers/service-order-planning.controller.ts
   apps/api/src/authorization/types/authz-actions.ts
   apps/api/src/audit/types/security-audit.types.ts
   apps/api/src/test/ensure-migrations.ts
-  docs/implementation/51-service-orders-state-machine.md
+  docs/implementation/52-planning-allocation-backend.md
   docs/00-governance/prompt-execution-log.md
 QUALITY_GATE: PASS
 FUNCTIONAL_CODE_CREATED: YES
 NEXT_PROMPT_EXECUTED: NO
 NOTES:
-  Transições explícitas prepare/release/cancel (sem PATCH status).
-  Fluxo DRAFT → PREPARED → RELEASED; cancel de DRAFT/PREPARED/RELEASED.
-  Release com assertClientEligibleForServiceOrderRelease (BR-037).
-  Mutabilidade: DRAFT completo; PREPARED só campos operacionais; RELEASED+ imutável.
-  Assign/Acknowledge/Start/Complete não implementados (dependências ausentes).
-  Prompt 52 não executado.
+  Separação requirement ≠ planned ≠ allocated; labor allocation a employee bloqueada (HR ausente).
+  Exclusion constraint GiST + FOR UPDATE para concorrência de alocação temporal.
+  Intervalos semiabertos [start, end); disponibilidade derivada, não coluna estática.
+  Prompt 53 não executado.
 ```
 
-## Quality gate Prompt 51 (evidência)
+## Quality gate Prompt 52 (evidência)
 
-- [x] DRAFT sem client → release denied
-- [x] Client inexistente/inativo → denied
-- [x] Client ACTIVE + requisitos → release allowed
-- [x] Unauthorized, VERSION_CONFLICT, duplicate release, concurrency races
-- [x] History/audit correctness
-- [x] Unit + integration tests PASS
-- [x] Prompt 52 não executado
+- [x] Planning by ResourceType/LaborType without concrete asset
+- [x] Physical asset allocation with operational interval
+- [x] Overlap protection (exclusion constraint + half-open intervals)
+- [x] Concurrent allocation test (only one wins)
+- [x] Inactive asset, type mismatch, outside window, authz, version conflict
+- [x] History/audit preserved on remove
+- [x] Regression: Prompt 51 integration tests PASS
+- [x] Prompt 53 não executado
+
+---
+
+## Prompt 53 — Planejamento e alocação (frontend)
+
+```
+PROMPT_ID: 53
+PROMPT_TITLE: Planejamento e alocação — frontend profissional
+EXECUTED_AT: 2026-08-29
+EXECUTION_STATUS: PASS
+COMMIT: feat(web): implement resource planning and allocation experience
+ARTIFACTS:
+  apps/web/src/service-orders/
+  apps/web/src/test/service-orders-fetch-mock.ts
+  apps/web/src/test/render-service-order-routes.tsx
+  apps/web/src/App.tsx
+  apps/web/src/index.css
+  apps/web/src/requests/pages/ServiceRequestDetailPage.tsx
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  UI consome backend real (planned-resources, allocations, physical-assets).
+  Design system existente (CSS compartilhado) — sem Tailwind no monorepo web.
+  Cobertura requirement/planned/allocated/pending; conflito concorrente com substituição.
+  Alocação de pessoas bloqueada com mensagem (HR ausente).
+  Prompt 54 não executado.
+```
+
+## Quality gate Prompt 53 (evidência)
+
+- [x] Hierarquia visual: cabeçalho OS → resumo → requisitos → planejamento → disponibilidade → alocações
+- [x] Estados REQUIREMENT / PLANNED / ALLOCATED / AVAILABLE / UNAVAILABLE distinguíveis (texto + legenda + status)
+- [x] Backend autoridade: disponibilidade/conflito confirmados na alocação; frontend não calcula overlap
+- [x] UX conflito concorrente: erro sem falso sucesso; dialog aberto; ativo marcado; substituto permitido
+- [x] Double submit bloqueado (`submitting` + botão desabilitado)
+- [x] Testes unitários + integração página + e2e (89/89 PASS em apps/web)
+- [x] typecheck + lint PASS
+- [x] Prompt 54 não executado
 
 ---

@@ -333,6 +333,17 @@ export function ServiceRequestDetailPage() {
         </section>
       ) : null}
 
+      {serviceRequest.convertedServiceOrderId ? (
+        <section className="requests-section" aria-labelledby="request-service-order-heading">
+          <h2 id="request-service-order-heading">Ordem de serviço</h2>
+          <p>
+            <Link to={`/app/service-orders/${serviceRequest.convertedServiceOrderId}/planning`}>
+              Abrir planejamento e alocação
+            </Link>
+          </p>
+        </section>
+      ) : null}
+
       <p>
         <Link to="/app/requests">Voltar à lista</Link>
       </p>

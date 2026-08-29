@@ -23,6 +23,8 @@ import { PhysicalAssetEditPage } from './assets/pages/PhysicalAssetEditPage';
 import { PhysicalAssetsListPage } from './assets/pages/PhysicalAssetsListPage';
 import { AssetsRoute } from './assets/AssetsRoute';
 import { RequestsRoute } from './requests/RequestsRoute';
+import { ServiceOrdersRoute } from './service-orders/ServiceOrdersRoute';
+import { ServiceOrderPlanningPage } from './service-orders/pages/ServiceOrderPlanningPage';
 import { ServiceRequestCreatePage } from './requests/pages/ServiceRequestCreatePage';
 import { ServiceRequestDetailPage } from './requests/pages/ServiceRequestDetailPage';
 import { ServiceRequestEditPage } from './requests/pages/ServiceRequestEditPage';
@@ -204,6 +206,14 @@ export function App() {
                   <RequestsRoute>
                     <ServiceRequestDetailPage />
                   </RequestsRoute>
+                }
+              />
+              <Route
+                path="/app/service-orders/:serviceOrderId/planning"
+                element={
+                  <ServiceOrdersRoute>
+                    <ServiceOrderPlanningPage />
+                  </ServiceOrdersRoute>
                 }
               />
               <Route path="/app/no-access" element={<ShellAccessDeniedPage />} />
