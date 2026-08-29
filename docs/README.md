@@ -16,7 +16,8 @@
 10. `08-state-machines/` contém máquinas de estado empresariais candidatas do Prompt 07.
 11. `09-authorization/` contém autorização empresarial e segregação do Prompt 08.
 12. `10-architecture/` contém drivers, opções e ADRs fundamentais do Prompt 09.
-13. `templates/` define a forma dos registros futuros.
+13. `11-technology/` contém seleção de stack e ADRs tecnológicos do Prompt 10.
+14. `templates/` define a forma dos registros futuros.
 
 Agentes devem seguir [`../AGENTS.md`](../AGENTS.md) e o protocolo em [`00-governance/execution-protocol.md`](00-governance/execution-protocol.md).
 
@@ -163,6 +164,18 @@ Drivers, opções e ADRs fundamentais (Prompt 09). Índice: [10-architecture/REA
 | [logical-architecture.md](10-architecture/logical-architecture.md) | Visão lógica |
 | [adr-index.md](10-architecture/adr-index.md) | 6 ADRs |
 | [prompt-09-completeness-report.md](10-architecture/prompt-09-completeness-report.md) | Relatório |
+
+## 11-technology
+
+Seleção de stack (Prompt 10). Índice: [11-technology/README.md](11-technology/README.md).
+
+| Arquivo | Conteúdo |
+| --- | --- |
+| [decision-scorecard.md](11-technology/decision-scorecard.md) | Scorecard ponderado |
+| [version-policy.md](11-technology/version-policy.md) | Versões e política |
+| [compatibility-matrix.md](11-technology/compatibility-matrix.md) | Compatibilidade |
+| [adr/](11-technology/adr/) | ADR-TECH-001..007 |
+| [prompt-10-completeness-report.md](11-technology/prompt-10-completeness-report.md) | Relatório |
 
 ## inputs
 

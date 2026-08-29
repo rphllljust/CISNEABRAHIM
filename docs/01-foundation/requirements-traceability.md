@@ -4,7 +4,7 @@
 | --- | --- |
 | Document ID | RTM-001 |
 | Policy | [`../00-governance/traceability-policy.md`](../00-governance/traceability-policy.md) |
-| Last updated | 2026-08-28 (Prompt 09) |
+| Last updated | 2026-08-28 (Prompt 10) |
 | Rule | Colunas inaplicáveis = `TBD`. Proibido inventar para completar. |
 
 Cadeia:
@@ -209,4 +209,28 @@ Cadeia Prompt 09:
 
 ```text
 NFR/SEC/RISK → ARCH-DRV → OPTIONS → ADR → LOGICAL ARCH → BC MODULES
+```
+
+## Resumo Prompt 10
+
+| Métrica | Valor |
+| --- | --- |
+| ADR-TECH | 7 (todos ACCEPTED) |
+| Drivers scorecard | 11 critérios |
+| TECH-RISK | 12 |
+| TECH-DDP | 9 |
+| package.json / deps instaladas | **0** |
+| Índice | [`../11-technology/README.md`](../11-technology/README.md) |
+| Relatório | [`../11-technology/prompt-10-completeness-report.md`](../11-technology/prompt-10-completeness-report.md) |
+
+Stack documentada:
+
+```text
+Node 24 LTS · TypeScript 5 · NestJS 11 · React 19 · Vite 7 · PostgreSQL 18 · Drizzle · pnpm · Turborepo · Vitest · Playwright
+```
+
+Cadeia Prompt 10:
+
+```text
+ARCH-DRV → SCORECARD → ADR-TECH → COMPATIBILITY / VERSION-POLICY
 ```

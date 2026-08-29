@@ -810,3 +810,43 @@ NOTES:
 - [x] Prompt 10 não executado
 
 ---
+
+```text
+PROMPT: 10
+TITLE: Seleção técnica da stack e ADRs de tecnologia
+STARTED_AT: 2026-08-29T00:50:00-04:00
+FINISHED_AT: 2026-08-29T01:20:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED:
+  docs/11-technology/ (24 artefatos — ver README.md)
+FILES_CHANGED:
+  docs/01-foundation/requirements-traceability.md
+  docs/01-foundation/engineering-decisions-register.md
+  docs/00-governance/prompt-execution-log.md
+  docs/README.md
+QUALITY_GATE: PASS_WITH_RESTRICTIONS
+ADR_TECH_COUNT: 7
+ADR_TECH_ACCEPTED: 7
+TECH_RISK_COUNT: 12
+TECH_DDP_COUNT: 9
+PACKAGE_JSON: NO
+DEPS_INSTALLED: NO
+CODE_CREATED: NO
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Stack: Node 24 LTS, TS 5, NestJS 11+Fastify, React 19+Vite 7, PG 18, Drizzle, pnpm+Turbo, Vitest+Playwright.
+  Versões Node/PG verificadas em fontes oficiais 2026-08-28. Equipe UNKNOWN. Prompt 11 não executado.
+```
+
+## Quality gate Prompt 10 (evidência)
+
+- [x] pasta `11-technology/` com avaliações e 7 ADR-TECH
+- [x] scorecard com pesos pré-definidos
+- [x] stack compatível com arquitetura modular monolith (Prompt 09)
+- [x] PostgreSQL como autoridade transacional
+- [x] 0 package.json, 0 dependências instaladas, 0 código
+- [x] alternativas rejeitadas documentadas
+- [x] rastreabilidade e ED-004 atualizados
+- [x] Prompt 11 não executado
+
+---

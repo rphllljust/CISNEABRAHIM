@@ -5,7 +5,7 @@
 | Document ID | ED-REG-001 |
 | Source | SRC-000 |
 
-Somente decisões **desta etapa** estão `ACCEPTED`. Decisões de stack, arquitetura de runtime, banco e UI permanecem não tomadas.
+Decisões de governança ED-001..004 estão `ACCEPTED`. Stack tecnológica documentada em ADR-TECH (Prompt 10); **implementação** (package.json, deps, infra) permanece NOT STARTED.
 
 Template: [`../templates/engineering-decision-template.md`](../templates/engineering-decision-template.md).
 
@@ -42,16 +42,21 @@ Status: `PROPOSED`, `ACCEPTED`, `DEPRECATED`, `SUPERSEDED`, `REJECTED`.
 | Policy | [`../00-governance/traceability-policy.md`](../00-governance/traceability-policy.md) |
 | Date | 2026-08-28 |
 
-## ED-004 — Ausência de tecnologia definitiva neste momento
+## ED-004 — Stack documentada; implementação não iniciada
 
 | Campo | Valor |
 | --- | --- |
 | ID | ED-004 |
-| Status | `ACCEPTED` |
-| Decision | Não escolher stack, arquitetura de implantação, ORM, banco, broker ou framework de UI nesta fase. `.editorconfig` é neutro. |
-| Why | Tecnologia não deve congelar domínio não descoberto. Escolha remetida ao Prompt 10 (preliminar) ou equivalente futuro. |
-| Date | 2026-08-28 |
+| Status | `ACCEPTED` (atualizado Prompt 10) |
+| Decision | Stack tecnológica **documentada** em ADR-TECH-001..007 (`docs/11-technology/`). Código, `package.json`, dependências instaladas e infra provisionada permanecem **NOT STARTED** até prompt de implementação autorizado. |
+| Why | Prompt 10 seleciona e justifica; não instala. Cloud provider continua não escolhido. |
+| Supersedes parcialmente | Texto original ED-004 que remetia stack ao Prompt 10 sem decisão |
+| Date | 2026-08-28 (atualização) |
+
+## ADRs tecnológicos (Prompt 10)
+
+Ver [`../11-technology/adr/`](../11-technology/adr/) — ADR-TECH-001..007, todos `ACCEPTED`.
 
 ## Não decidido (exemplos explícitos)
 
-Linguagem, monorepo vs polirepo, Postgres vs outro, Nest vs outro, React vs outro: **não decidido**. ADRs fundamentais em [`../10-architecture/adr-index.md`](../10-architecture/adr-index.md) (Prompt 09); stack runtime aguarda prompts posteriores.
+Cloud provider, IdP, object storage, message broker, CI platform: **não decidido** — ver TECH-DDP em [`../11-technology/technology-decisions-pending.md`](../11-technology/technology-decisions-pending.md).
