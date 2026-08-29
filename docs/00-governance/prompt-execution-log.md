@@ -2538,3 +2538,34 @@ Resumo:
 - [x] Prompt 42 não executado
 
 ---
+
+## Prompt 42 — Frontend administrativo do catálogo
+
+| Campo | Valor |
+| ----- | ----- |
+| ID | 42 |
+| Título | Frontend administrativo do catálogo |
+| Status | PASS |
+| Commit | feat(web): implement service catalog administration |
+| Executado em | 2026-08-29 |
+
+```
+Resumo:
+  Módulo web /app/catalog com listagem, CRUD de rascunho, versionamento,
+  comparação client-side, publicação e lifecycle. Capabilities e VERSION_CONFLICT.
+  Prompt 43 não executado.
+```
+
+## Quality gate Prompt 42 (evidência)
+
+- [x] Listagem, paginação, filtros e busca (página atual)
+- [x] Detalhe, criação, edição de DRAFT, nova versão, comparação
+- [x] Publicação, desativação e reativação via API
+- [x] Publicada não editável — UX direciona para nova versão
+- [x] Formulário estruturado (arquétipo, UoM, pricing, requirements)
+- [x] Capabilities controlam UX; conflito de versão tratado
+- [x] Testes component, integration, accessibility, e2e
+- [x] lint, typecheck, test, test:integration, test:e2e — PASS
+- [x] Prompt 43 não executado
+
+---

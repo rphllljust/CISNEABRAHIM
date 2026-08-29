@@ -8,6 +8,14 @@ import { ClientCreatePage } from './clients/pages/ClientCreatePage';
 import { ClientDetailPage } from './clients/pages/ClientDetailPage';
 import { ClientEditPage } from './clients/pages/ClientEditPage';
 import { ClientsListPage } from './clients/pages/ClientsListPage';
+import { CatalogRoute } from './catalog/CatalogRoute';
+import { ServiceDefinitionComparePage } from './catalog/pages/ServiceDefinitionComparePage';
+import { ServiceDefinitionCreatePage } from './catalog/pages/ServiceDefinitionCreatePage';
+import { ServiceDefinitionDetailPage } from './catalog/pages/ServiceDefinitionDetailPage';
+import { ServiceDefinitionDraftEditPage } from './catalog/pages/ServiceDefinitionDraftEditPage';
+import { ServiceDefinitionVersionCreatePage } from './catalog/pages/ServiceDefinitionVersionCreatePage';
+import { ServiceDefinitionVersionDetailPage } from './catalog/pages/ServiceDefinitionVersionDetailPage';
+import { ServiceDefinitionsListPage } from './catalog/pages/ServiceDefinitionsListPage';
 import { AccessDeniedPage } from './pages/AccessDeniedPage';
 import { AppHomePage } from './pages/AppHomePage';
 import { LoginPage } from './pages/LoginPage';
@@ -66,6 +74,62 @@ export function App() {
                   <ClientsRoute>
                     <ClientDetailPage />
                   </ClientsRoute>
+                }
+              />
+              <Route
+                path="/app/catalog"
+                element={
+                  <CatalogRoute>
+                    <ServiceDefinitionsListPage />
+                  </CatalogRoute>
+                }
+              />
+              <Route
+                path="/app/catalog/new"
+                element={
+                  <CatalogRoute>
+                    <ServiceDefinitionCreatePage />
+                  </CatalogRoute>
+                }
+              />
+              <Route
+                path="/app/catalog/:definitionId/compare"
+                element={
+                  <CatalogRoute>
+                    <ServiceDefinitionComparePage />
+                  </CatalogRoute>
+                }
+              />
+              <Route
+                path="/app/catalog/:definitionId/versions/new"
+                element={
+                  <CatalogRoute>
+                    <ServiceDefinitionVersionCreatePage />
+                  </CatalogRoute>
+                }
+              />
+              <Route
+                path="/app/catalog/:definitionId/versions/:versionNumber/edit"
+                element={
+                  <CatalogRoute>
+                    <ServiceDefinitionDraftEditPage />
+                  </CatalogRoute>
+                }
+              />
+              <Route
+                path="/app/catalog/:definitionId/versions/:versionNumber"
+                element={
+                  <CatalogRoute>
+                    <ServiceDefinitionVersionDetailPage />
+                  </CatalogRoute>
+                }
+              />
+              <Route
+                path="/app/catalog/:definitionId"
+                element={
+                  <CatalogRoute>
+                    <ServiceDefinitionDetailPage />
+                  </CatalogRoute>
                 }
               />
               <Route path="/app/no-access" element={<ShellAccessDeniedPage />} />

@@ -443,3 +443,145 @@ button:disabled {
 .confirm-dialog__actions {
   margin-top: 1rem;
 }
+
+.catalog-page__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.catalog-toolbar {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  margin-bottom: 1rem;
+}
+
+.catalog-filter {
+  margin: 0;
+}
+
+.catalog-table-wrap {
+  overflow-x: auto;
+  margin-bottom: 1rem;
+}
+
+.catalog-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+.catalog-table th,
+.catalog-table td {
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid #e5e5e5;
+  text-align: left;
+  vertical-align: top;
+}
+
+.catalog-table th {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #525252;
+}
+
+.catalog-pagination {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.catalog-section {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 0.35rem;
+}
+
+.catalog-details {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.catalog-details dt {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.catalog-details dd {
+  margin: 0.1rem 0 0;
+}
+
+.catalog-status,
+.catalog-version-status {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.catalog-status--active,
+.catalog-version-status--published {
+  background: #dcfce7;
+  color: #14532d;
+}
+
+.catalog-status--inactive,
+.catalog-version-status--retired {
+  background: #fee2e2;
+  color: #7f1d1d;
+}
+
+.catalog-version-status--draft {
+  background: #fef9c3;
+  color: #713f12;
+}
+
+.catalog-form__section {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 0.35rem;
+}
+
+.catalog-form__grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+}
+
+.catalog-repeatable {
+  border: 1px solid #e5e5e5;
+  border-radius: 0.35rem;
+  padding: 0.75rem;
+  margin: 0 0 1rem;
+}
+
+.catalog-repeatable__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.catalog-conflict-notice {
+  margin-bottom: 1rem;
+}
+
+.catalog-diff-value {
+  margin: 0;
+  white-space: pre-wrap;
+  font-size: 0.85rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}

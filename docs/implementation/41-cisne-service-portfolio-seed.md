@@ -5,7 +5,7 @@
 | **Status** | `EXECUTED` |
 | **Executado em** | 2026-08-29 |
 | **Commit** | `feat(catalog): seed complete Cisne service portfolio` |
-| **Próximo passo autorizado** | Prompt 42 |
+| **Próximo passo autorizado** | Prompt 43 (via Prompt 42) |
 
 ## Resultado
 
