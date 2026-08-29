@@ -7,31 +7,43 @@
 | Type | QUESTIONNAIRE — confirmação formal pelo responsável empresarial |
 | Origin | Criado no Prompt 28; análise documental no Prompt 29-A |
 | Location | `docs/inputs/SRC-002-business-baseline-confirmation.md` |
-| Date received | 2026-08-29 (decisões empresariais registradas; assinatura pendente) |
-| Signed by | **PENDING_HUMAN_CONFIRMATION** |
-| Status | `DECISIONS_RECORDED_SIGNATURE_PENDING` |
-| Classification | `BUSINESS_CONFIRMATION_REQUIRED` |
-| May prove operational business rules? | **Parcial** — regras Cliente `CONFIRMED` via SRC-002; assinatura formal pendente |
+| Date received | 2026-08-29 |
+| Signed by | **Abrahim Jabour Junior** (Administrador) |
+| Approval date | 2026-08-29 |
+| Status | `APPROVED` |
+| Classification | `BUSINESS_CONFIRMATION_APPROVED` |
+| May prove operational business rules? | **Sim** — regras Cliente `CONFIRMED` via SRC-002 com aprovação formal registrada |
 | Supersedes / complements | SRC-001 (`PENDING_BUSINESS_VALIDATION`) — **não** substitui documentos primários |
 
 ```gate
-status: BLOCKED_BY_SIGNATURE_ONLY
+status: LIBERADO
 clients_module_ready: true
-signed_by: PENDING_HUMAN_CONFIRMATION
-mandatory_blockers_count: 1
-signature_blocker_only: true
+signed_by: Abrahim Jabour Junior
+signed_role: Administrador
+signed_date: 2026-08-29
+mandatory_blockers_count: 0
 analysis_prompt: 29-A-corrective
 analysis_date: 2026-08-29
+approval_date: 2026-08-29
 confirmed_business_rules: 16
 ```
+
+### Histórico de fases do gate (provenance)
+
+| Fase | Data | Status | Nota |
+| ---- | ---- | ------ | ---- |
+| AWAITING_RESPONSE | 2026-08-29 | Questionário vazio | Prompt 28 |
+| ANALYZED_BLOCKED | 2026-08-29 | 14 bloqueadores | Prompt 29-A inicial |
+| BLOCKED_BY_SIGNATURE_ONLY | 2026-08-29 | 1 bloqueador (assinatura) | Prompt 29-A corretivo — decisões Q01–Q15 registradas |
+| APPROVED | 2026-08-29 | `LIBERADO` | Aprovação formal Abrahim Jabour Junior (Administrador) |
 
 ---
 
 ## Resolução controlada (Prompt 29-A corretivo)
 
-**STATUS SRC-002:** `BLOCKED_BY_SIGNATURE_ONLY`  
-**APPROVAL STATUS:** Decisões empresariais registradas · assinatura humana pendente  
-**Módulo Clientes liberado para Prompt 29:** **Somente após assinatura** (`gate:src-002` → `LIBERADO`)
+**STATUS SRC-002:** `LIBERADO`  
+**APPROVAL STATUS:** Aprovado formalmente em 2026-08-29 por Abrahim Jabour Junior (Administrador)  
+**Módulo Clientes liberado para Prompt 29:** **Sim** (`gate:src-002` → `PASS`)
 
 ### CONFIRMED BUSINESS RULES
 
@@ -116,15 +128,13 @@ Registro: `business-rules-register.md` — **BR-025, BR-026..BR-040** (`CONFIRME
 
 ### IMPLEMENTATION BLOCKERS (ativos)
 
-| # | Bloqueador |
-| - | ---------- |
-| 1 | Assinatura humana formal (`PENDING_HUMAN_CONFIRMATION`) |
+Nenhum bloqueador ativo.
 
-**Histórico:** 14 bloqueadores resolvidos no Prompt 29-A corretivo (registrados em `mandatory_blockers_resolved` abaixo).
+**Histórico:** 14 bloqueadores resolvidos no Prompt 29-A corretivo; bloqueador de assinatura resolvido em 2026-08-29.
 
 ```text
-mandatory_blockers_resolved: 14
-mandatory_blockers_active: 1
+mandatory_blockers_resolved: 15
+mandatory_blockers_active: 0
 ```
 
 ### EVIDENCE
@@ -145,7 +155,7 @@ CLIENT       → contraparte comercial atendida
 USER/EMPLOYEE → pessoa que atua na organização
 ```
 
-Proprietários/controladores (identificação empresarial, **não** assinatura SRC-002): Abrahim Jabour Junior; Monica Perez Badra Jabour.
+Proprietários/controladores: Abrahim Jabour Junior (aprovador SRC-002); Monica Perez Badra Jabour.
 
 ---
 
@@ -512,11 +522,12 @@ Proprietários/controladores (identificação empresarial, **não** assinatura S
 
 | Campo | Valor |
 | ----- | ----- |
-| Nome completo | **PENDING_HUMAN_CONFIRMATION** |
-| Cargo / função autorizada | **PENDING_HUMAN_CONFIRMATION** |
-| Data | **PENDING_HUMAN_CONFIRMATION** |
-| Assinatura (física ou eletrônica) | **PENDING_HUMAN_CONFIRMATION** |
-| Observações gerais | Análise documental Prompt 29-A concluída; aguarda respostas autorizadas do patrocinador |
+| Nome completo | **Abrahim Jabour Junior** |
+| Cargo / função autorizada | **Administrador** |
+| Data | **2026-08-29** |
+| Assinatura (física ou eletrônica) | Aprovação formal registrada via instrução autorizada do responsável (Prompt 29-A — aprovação humana) |
+| Declaração | Aprovo formalmente o baseline empresarial SRC-002, incluindo decisões Q01–Q15, DDP-020 no escopo CLIENTE, DDP-028 e regras BR-025 a BR-040 registradas no repositório. |
+| Observações gerais | Decisões previamente registradas não foram alteradas neste processo de aprovação. BR-041 permanece `CONDITIONAL`. |
 
 ---
 
@@ -524,8 +535,9 @@ Proprietários/controladores (identificação empresarial, **não** assinatura S
 
 | Campo | Valor |
 | ----- | ----- |
-| Registrado em `source-registry.md` | 2026-08-29 — decisões registradas; assinatura pendente |
+| Registrado em `source-registry.md` | 2026-08-29 — aprovado por Abrahim Jabour Junior |
+| Aprovado por | Abrahim Jabour Junior (Administrador) — 2026-08-29 |
 | Regras promovidas a `CONFIRMED` | **16** (BR-025, BR-026..BR-040) + BR-041 CONDITIONAL |
 | DDPs respondidos | DDP-028 ANSWERED; DDP-020 CLIENT_SCOPE; DDP-041 ANSWERED |
 | Conflitos abertos (`SC-*`) | 0 empresariais; MAP-001/002 FIXED |
-| Gate automatizado | `pnpm gate:src-002` → **BLOCKED_BY_SIGNATURE_ONLY** |
+| Gate automatizado | `pnpm gate:src-002` → **PASS** |

@@ -1981,3 +1981,42 @@ NOTES:
 - [x] Prompt 30 não executado
 
 ---
+
+```text
+PROMPT: 29-A (aprovação humana)
+TITLE: Aprovação formal SRC-002 — baseline empresarial Clientes
+STARTED_AT: 2026-08-29T14:52:00-04:00
+FINISHED_AT: 2026-08-29T14:55:00-04:00
+STATUS: LIBERADO
+APPROVED_BY: Abrahim Jabour Junior
+APPROVED_ROLE: Administrador
+APPROVAL_DATE: 2026-08-29
+FILES_CHANGED:
+  docs/inputs/SRC-002-business-baseline-confirmation.md
+  docs/01-foundation/source-registry.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+SRC_002_STATUS: LIBERADO
+MANDATORY_BLOCKERS: 0
+CONFIRMED_BUSINESS_RULES: 16
+GATE_SCRIPT: pnpm gate:src-002 → PASS
+CODE_CREATED: NO
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Assinatura formal registrada. Decisões Q01–Q15 e BR-025..BR-040 inalteradas.
+  BR-041 permanece CONDITIONAL. Prompt 29 autorizado; não executado. Prompt 30 não executado.
+```
+
+## Quality gate Prompt 29-A aprovação (evidência)
+
+- [x] Assinatura formal registrada (Abrahim Jabour Junior, Administrador, 2026-08-29)
+- [x] Decisões Q01–Q15 não alteradas
+- [x] BR-025..BR-040 inalteradas; BR-041 CONDITIONAL preservada
+- [x] Provenance de fases anteriores preservada
+- [x] gate:src-002 → PASS
+- [x] lint, typecheck, test, test:integration, build — PASS
+- [x] Nenhum código de Clientes criado
+- [x] Prompt 29 não executado automaticamente
+- [x] Prompt 30 não executado
+
+---
