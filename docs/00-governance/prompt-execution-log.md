@@ -1861,3 +1861,36 @@ NOTES:
 - [x] Prompt 29 não executado
 
 ---
+
+```text
+PROMPT: 29
+TITLE: Módulo de Clientes — backend e persistência
+STARTED_AT: 2026-08-29T13:30:00-04:00
+FINISHED_AT: 2026-08-29T13:31:00-04:00
+STATUS: NOT_EXECUTED
+PRECONDITION: FAIL
+FILES_CREATED:
+  docs/implementation/29-clients-backend.md
+FILES_CHANGED:
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: NOT_RUN
+CODE_CREATED: NO
+BUSINESS_TABLES_ADDED: 0
+BLOCK_REASON: Prompt 28 BLOCKED_AWAITING_BUSINESS_CONFIRMATION — módulo Clientes não liberado; SRC-002 vazio; DDP-028 OPEN; 0 regras CONFIRMED
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Pré-condição explícita do prompt não atendida. Nenhum código, migration, endpoint ou teste criado.
+  AGENTS.md — parada obrigatória em NOT_READY_FOR_IMPLEMENTATION.
+  Prompt 30 não executado.
+```
+
+## Quality gate Prompt 29 (evidência)
+
+- [x] Pré-condição Prompt 28 verificada — módulo Clientes **não** liberado
+- [x] Nenhum código empresarial criado
+- [x] Nenhuma regra inventada (CPF/CNPJ, campos cadastrais)
+- [x] docs/implementation/29-clients-backend.md (registro de bloqueio)
+- [x] Lint / typecheck / test / build — **não executados** (sem alteração de código)
+- [x] Prompt 30 não executado
+
+---
