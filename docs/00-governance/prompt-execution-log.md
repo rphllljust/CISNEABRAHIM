@@ -1894,3 +1894,44 @@ NOTES:
 - [x] Prompt 30 não executado
 
 ---
+
+```text
+PROMPT: 29-A
+TITLE: Resolução controlada do gate SRC-002 e preparação do módulo Clientes
+STARTED_AT: 2026-08-29T13:35:00-04:00
+FINISHED_AT: 2026-08-29T13:42:00-04:00
+STATUS: BLOCKED
+FILES_CREATED:
+  scripts/validate-src-002-gate.mjs
+FILES_CHANGED:
+  docs/inputs/SRC-002-business-baseline-confirmation.md
+  package.json
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS (lint, typecheck, test, integration, build — sem regressão)
+SRC_002_STATUS: BLOQUEADO
+CLIENTS_MODULE_READY: false
+CONFIRMED_BUSINESS_RULES: 0
+GATE_SCRIPT: pnpm gate:src-002 → FAIL (esperado)
+CODE_CREATED: NO
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Análise documental integral; SRC-002 atualizado com matriz de evidências, bloqueios e MAP-001/002.
+  DDP-020 e DDP-028 analisados — permanecem OPEN/UNKNOWN. Assinatura PENDING_HUMAN_CONFIRMATION.
+  Nenhuma regra promovida; source-registry/DDPs/regras não alterados (sem resposta humana).
+  Prompt 29 (implementação) permanece bloqueado. Prompt 30 não executado.
+```
+
+## Quality gate Prompt 29-A (evidência)
+
+- [x] Baseline empresarial reconstruído em SRC-002
+- [x] Evidências verificadas (SRC-001, BR-REG, DDP-REG, TERM-004, DBND-SOT-001, DEM-001)
+- [x] Conflitos MAP-001/002 identificados (mapeamento documental)
+- [x] DDP-028 e DDP-020 analisados — não resolvidos
+- [x] Nenhuma assinatura inventada
+- [x] Nenhuma decisão empresarial inventada
+- [x] Gate automatizado `pnpm gate:src-002` implementado e executado (FAIL esperado)
+- [x] lint, typecheck, test, test:integration, build — PASS
+- [x] Nenhum código de Clientes criado
+- [x] Prompt 30 não executado
+
+---
