@@ -1294,3 +1294,60 @@ NOTES:
 - [x] Prompt 20 não executado
 
 ---
+
+```text
+PROMPT: 20
+TITLE: Autenticação backend
+STARTED_AT: 2026-08-29T00:30:00-04:00
+FINISHED_AT: 2026-08-29T01:00:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED:
+  apps/api/src/auth/ (module, controller, services, guards, DTOs, serializers)
+  apps/api/src/infrastructure/http/ (correlation-id, exception filter)
+  apps/api/src/auth/auth.integration.spec.ts
+  apps/api/src/auth/auth.e2e.spec.ts
+  apps/api/vitest.e2e.config.ts
+  docs/implementation/20-authentication-backend.md
+FILES_CHANGED:
+  apps/api/src/app.module.ts
+  apps/api/src/main.ts
+  apps/api/package.json
+  apps/api/vitest.config.ts
+  apps/api/vitest.integration.config.ts
+  packages/database/src/test-builders/index.ts
+  package.json
+  turbo.json
+  .env.example
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS_WITH_RESTRICTIONS
+ROUTES: POST login, POST refresh, POST logout, POST logout-all, GET session
+CREDENTIALS_COMMITTED: 0
+SENSITIVE_LEAKS: 0
+DOC_FILES_CREATED: 1
+UNIT_TESTS: PASS
+INTEGRATION_TESTS: PASS
+E2E_TESTS: PASS
+LINT: PASS
+TYPECHECK: PASS
+BUILD: PASS
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  JWT HS256 (HMAC) access curto + refresh opaco rotacionado (SEC-DEC-002).
+  Sem autorização empresarial nem recuperação de senha.
+  Rate limit login in-memory (5/min IP+UA).
+  Prompt 21 não executado.
+```
+
+## Quality gate Prompt 20 (evidência)
+
+- [x] Login, sessão atual, refresh, logout, logout-all implementados
+- [x] Conta desativada, revogação e detecção de reuse de refresh
+- [x] scrypt verify, JWT curto, refresh rotacionado, hash-only em PG
+- [x] Erros estáveis sem enumeração; DTO allowlist; correlation ID em erros
+- [x] Testes unitários, integração PostgreSQL e E2E — PASS
+- [x] lint, typecheck, build — PASS
+- [x] docs/implementation/20-authentication-backend.md (único doc novo)
+- [x] 0 vazamentos de hash/senha/token em respostas (assertNoSensitiveLeak)
+- [x] Prompt 21 não executado
+
+---

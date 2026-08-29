@@ -12,6 +12,6 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: ['src/**/*.integration.spec.ts'],
+    include: ['src/**/*.e2e.spec.ts'],
   },
 });

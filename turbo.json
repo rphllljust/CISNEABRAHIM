@@ -17,7 +17,11 @@
     },
     "test:integration": {
       "dependsOn": ["^build"],
-      "env": ["DATABASE_URL", "TEST_DATABASE_URL"]
+      "env": ["DATABASE_URL", "TEST_DATABASE_URL", "JWT_SECRET"]
+    },
+    "test:e2e": {
+      "dependsOn": ["^build"],
+      "env": ["DATABASE_URL", "TEST_DATABASE_URL", "JWT_SECRET"]
     },
     "dev": {
       "cache": false,
