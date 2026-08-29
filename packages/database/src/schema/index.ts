@@ -61,4 +61,7 @@ export {
   serviceLegalClassifications,
   servicePricingModels,
   serviceResourceRequirements,
+  unitOfMeasureCategoryEnum,
+  unitOfMeasureStatusEnum,
+  unitsOfMeasure,
 } from './service-catalog';

@@ -8,6 +8,7 @@ export const AUTHZ_RESOURCE_TYPES = {
   ScopedRecord: 'authz:scoped-record',
   Client: 'client:client',
   CatalogService: 'catalog:service',
+  CatalogUnit: 'catalog:unit',
 } as const;
 
 export type AuthzResourceType = (typeof AUTHZ_RESOURCE_TYPES)[keyof typeof AUTHZ_RESOURCE_TYPES];

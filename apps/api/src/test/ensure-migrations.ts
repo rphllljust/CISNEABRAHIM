@@ -93,6 +93,11 @@ export default async function ensureMigrations(): Promise<void> {
     if (!hasLineageVersion) {
       await applySqlFile(pool, '0008_service_definitions_lineage_version.sql');
     }
+
+    const hasUnits = await tableExists(pool, 'cat.units_of_measure');
+    if (!hasUnits) {
+      await applySqlFile(pool, '0009_units_of_measure.sql');
+    }
   } finally {
     await pool.end();
   }

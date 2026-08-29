@@ -1,5 +1,6 @@
 import type { MeasurementMode, OperationalArchetype } from './service-catalog-status';
 import { MEASUREMENT_MODES, OPERATIONAL_ARCHETYPES } from './service-catalog-status';
+import { isValidUnitCodeFormat, normalizeUnitCode } from './unit-of-measure';
 
 export class CatalogValidationError extends Error {
   constructor(readonly code: string) {
@@ -59,8 +60,8 @@ export function assertAllowedUnits(units: AllowedUnitInput[]): AllowedUnitInput[
     throw new CatalogValidationError('ALLOWED_UNITS_REQUIRED');
   }
   const normalized = units.map((unit, index) => {
-    const unitCode = unit.unitCode.trim();
-    if (unitCode.length === 0 || unitCode.length > 32) {
+    const unitCode = normalizeUnitCode(unit.unitCode);
+    if (!isValidUnitCodeFormat(unitCode)) {
       throw new CatalogValidationError('INVALID_UNIT_CODE');
     }
     return {

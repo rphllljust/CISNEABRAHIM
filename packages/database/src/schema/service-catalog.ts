@@ -410,3 +410,62 @@ export const serviceEvidenceRequirements = catSchema.table(
     index('service_evidence_requirements_version_id_idx').on(table.serviceDefinitionVersionId),
   ],
 );
+
+export const unitOfMeasureCategoryEnum = catSchema.enum('unit_of_measure_category', [
+  'COUNT',
+  'TIME',
+  'LENGTH',
+  'AREA',
+  'VOLUME',
+  'MASS',
+  'DISTANCE',
+  'SERVICE',
+]);
+
+export const unitOfMeasureStatusEnum = catSchema.enum('unit_of_measure_status', [
+  'ACTIVE',
+  'INACTIVE',
+]);
+
+export const unitsOfMeasure = catSchema.table(
+  'units_of_measure',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    code: text('code').notNull(),
+    name: text('name').notNull(),
+    category: unitOfMeasureCategoryEnum('category').notNull(),
+    decimalScale: smallint('decimal_scale').notNull().default(0),
+    status: unitOfMeasureStatusEnum('status').notNull().default('ACTIVE'),
+    version: integer('version').notNull().default(1),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    deactivatedAt: timestamp('deactivated_at', { withTimezone: true }),
+    deactivatedByIdentityId: uuid('deactivated_by_identity_id').references(() => identities.id, {
+      onDelete: 'restrict',
+      onUpdate: 'cascade',
+    }),
+    createdByIdentityId: uuid('created_by_identity_id').references(() => identities.id, {
+      onDelete: 'restrict',
+      onUpdate: 'cascade',
+    }),
+    updatedByIdentityId: uuid('updated_by_identity_id').references(() => identities.id, {
+      onDelete: 'restrict',
+      onUpdate: 'cascade',
+    }),
+  },
+  (table) => [
+    check('units_of_measure_code_not_empty_chk', sql`length(trim(${table.code})) > 0`),
+    check(
+      'units_of_measure_code_format_chk',
+      sql`${table.code} ~ '^[A-Z0-9][A-Z0-9_]{0,31}$'`,
+    ),
+    check('units_of_measure_name_not_empty_chk', sql`length(trim(${table.name})) > 0`),
+    check(
+      'units_of_measure_decimal_scale_chk',
+      sql`${table.decimalScale} >= 0 AND ${table.decimalScale} <= 6`,
+    ),
+    check('units_of_measure_version_positive_chk', sql`${table.version} >= 1`),
+    uniqueIndex('units_of_measure_code_uidx').on(table.code),
+    index('units_of_measure_status_idx').on(table.status),
+  ],
+);

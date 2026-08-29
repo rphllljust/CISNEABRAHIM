@@ -2,27 +2,34 @@ import { randomUUID } from 'node:crypto';
 import type { Pool, PoolClient } from 'pg';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { ensureUnitsOfMeasureBaseline } from '../catalog/units-of-measure-baseline';
 import { insertIdentity } from './identity-builders';
 
 type DbClient = Pool | PoolClient;
 
 export async function applyServiceCatalogMigration(client: DbClient): Promise<void> {
-  const migrationPath = resolve(__dirname, '../../migrations/0007_service_catalog_baseline.sql');
-  const sql = readFileSync(migrationPath, 'utf8');
-  const statements = sql
-    .split('--> statement-breakpoint')
-    .map((statement) => statement.trim())
-    .filter((statement) => statement.length > 0);
+  for (const file of [
+    '0007_service_catalog_baseline.sql',
+    '0008_service_definitions_lineage_version.sql',
+    '0009_units_of_measure.sql',
+  ]) {
+    const migrationPath = resolve(__dirname, '../../migrations', file);
+    const sql = readFileSync(migrationPath, 'utf8');
+    const statements = sql
+      .split('--> statement-breakpoint')
+      .map((statement) => statement.trim())
+      .filter((statement) => statement.length > 0);
 
-  for (const statement of statements) {
-    try {
-      await client.query(statement);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      if (message.includes('already exists')) {
-        continue;
+    for (const statement of statements) {
+      try {
+        await client.query(statement);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (message.includes('already exists') || message.includes('duplicate_object')) {
+          continue;
+        }
+        throw error;
       }
-      throw error;
     }
   }
 }
@@ -40,7 +47,10 @@ export async function truncateCatalogTables(client: DbClient): Promise<void> {
       cat.service_categories
     RESTART IDENTITY CASCADE
   `);
+  await ensureUnitsOfMeasureBaseline(client);
 }
+
+export { ensureUnitsOfMeasureBaseline } from '../catalog/units-of-measure-baseline';
 
 export type BuiltCatalogCategory = {
   categoryId: string;

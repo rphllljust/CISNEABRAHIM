@@ -2317,3 +2317,71 @@ NOTES:
 - [x] Prompt 35 não executado
 
 ---
+
+```text
+PROMPT: 36
+TITLE: Catálogo de unidades de medida
+STARTED_AT: 2026-08-29T16:54:00-04:00
+FINISHED_AT: 2026-08-29T17:01:00-04:00
+STATUS: EXECUTED
+BASELINE_COMMIT: 0c3d64b
+FILES_CREATED:
+  packages/database/migrations/0009_units_of_measure.sql
+  packages/database/src/catalog/units-of-measure-baseline.ts
+  apps/api/src/catalog/domain/unit-of-measure.ts
+  apps/api/src/catalog/domain/measured-quantity.ts
+  apps/api/src/catalog/domain/measured-quantity.spec.ts
+  apps/api/src/catalog/domain/unit-of-measure.spec.ts
+  apps/api/src/catalog/repositories/units-of-measure.repository.ts
+  apps/api/src/catalog/services/units-of-measure-access.service.ts
+  apps/api/src/catalog/controllers/units-of-measure.controller.ts
+  apps/api/src/catalog/dto/units-of-measure.dto.ts
+  apps/api/src/catalog/serializers/units-of-measure-response.serializer.ts
+  apps/api/src/catalog/units-of-measure.integration.spec.ts
+  apps/api/src/catalog/units-of-measure.e2e.spec.ts
+FILES_CHANGED:
+  packages/database/migrations/meta/_journal.json
+  packages/database/src/schema/service-catalog.ts
+  packages/database/src/schema/index.ts
+  packages/database/src/index.ts
+  packages/database/src/test-builders/catalog-builders.ts
+  packages/database/src/test-builders/index.ts
+  packages/database/src/service-catalog.persistence.integration.spec.ts
+  packages/database/scripts/ci-database-gate.mjs
+  apps/api/src/test/ensure-migrations.ts
+  apps/api/src/catalog/catalog.module.ts
+  apps/api/src/catalog/domain/service-catalog.validation.ts
+  apps/api/src/catalog/services/service-catalog-access.service.ts
+  apps/api/src/catalog/errors/catalog-error-codes.ts
+  apps/api/src/catalog/service-catalog.integration.spec.ts
+  apps/api/src/catalog/service-catalog.e2e.spec.ts
+  apps/api/src/authorization/types/authz-actions.ts
+  apps/api/src/authorization/types/authz-resources.ts
+  apps/api/src/audit/types/security-audit.types.ts
+  apps/api/src/catalog/dto/service-catalog.dto.ts
+  apps/api/src/catalog/errors/catalog-exception.filter.ts
+  apps/api/src/catalog/repositories/service-catalog.repository.ts
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+SRC_002_GATE: PASS
+CODE_CREATED: YES (units of measure catalog)
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  cat.units_of_measure com seed idempotente (UN, M3, DAY, etc.), FK em allowed_units
+  e default_unit_code; API administrativa; validação de precisão centralizada;
+  correções residuais do Prompt 34 (lint + SOURCE_NOT_FOUND). Prompt 35 não executado.
+  Prompt 37 não executado.
+```
+
+## Quality gate Prompt 36 (evidência)
+
+- [x] Tabela `cat.units_of_measure` com code único, category, decimalScale, status, version
+- [x] Seed idempotente das 13 unidades iniciais
+- [x] FK impedindo unit_code livre em service definitions
+- [x] Validação de precisão via `measured-quantity` (domínio)
+- [x] Publish/create rejeitam unidade inexistente/inativa; histórico preservado
+- [x] API `/api/v1/catalog/units-of-measure` com authz, audit e optimistic locking
+- [x] lint, typecheck, test, test:integration, test:e2e, gate:database, gate:src-002 — PASS
+- [x] Prompt 37 não executado
+
+---

@@ -209,10 +209,14 @@ export function parseListServiceDefinitionsQuery(query: Record<string, unknown>)
   offset: number;
   status?: LineageStatus;
 } {
+  const limitRaw = query['limit'];
+  const offsetRaw = query['offset'];
+  const statusRaw = query['status'];
+
   let limit = 20;
-  if (query['limit'] !== undefined) {
-    const parsed = Number.parseInt(String(query['limit']), 10);
-    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 100) {
+  if (limitRaw !== undefined) {
+    const parsed = parseQueryPositiveInt(limitRaw);
+    if (parsed === null || parsed < 1 || parsed > 100) {
       throw new CatalogHttpException(
         HttpStatus.BAD_REQUEST,
         CATALOG_ERROR_CODES.VALIDATION_FAILED,
@@ -223,9 +227,9 @@ export function parseListServiceDefinitionsQuery(query: Record<string, unknown>)
   }
 
   let offset = 0;
-  if (query['offset'] !== undefined) {
-    const parsed = Number.parseInt(String(query['offset']), 10);
-    if (!Number.isInteger(parsed) || parsed < 0) {
+  if (offsetRaw !== undefined) {
+    const parsed = parseQueryPositiveInt(offsetRaw);
+    if (parsed === null || parsed < 0) {
       throw new CatalogHttpException(
         HttpStatus.BAD_REQUEST,
         CATALOG_ERROR_CODES.VALIDATION_FAILED,
@@ -236,19 +240,28 @@ export function parseListServiceDefinitionsQuery(query: Record<string, unknown>)
   }
 
   let status: LineageStatus | undefined;
-  if (query['status'] !== undefined) {
-    const value = String(query['status']);
-    if (value !== LINEAGE_STATUSES.Active && value !== LINEAGE_STATUSES.Inactive) {
+  if (statusRaw !== undefined) {
+    if (statusRaw !== LINEAGE_STATUSES.Active && statusRaw !== LINEAGE_STATUSES.Inactive) {
       throw new CatalogHttpException(
         HttpStatus.BAD_REQUEST,
         CATALOG_ERROR_CODES.VALIDATION_FAILED,
         'Invalid query parameters.',
       );
     }
-    status = value;
+    status = statusRaw;
   }
 
   return { limit, offset, status };
+}
+
+function parseQueryPositiveInt(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isInteger(value)) {
+    return value;
+  }
+  if (typeof value === 'string' && /^\d+$/.test(value)) {
+    return Number.parseInt(value, 10);
+  }
+  return null;
 }
 
 export function parseVersionNumberParam(value: string): number {

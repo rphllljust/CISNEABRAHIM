@@ -7,6 +7,7 @@ import {
   insertCatalogDefinition,
   insertCatalogVersion,
   truncateCatalogTables,
+  ensureUnitsOfMeasureBaseline,
 } from './test-builders/catalog-builders';
 
 const CATALOG_TABLES = [
@@ -18,6 +19,7 @@ const CATALOG_TABLES = [
   'service_legal_classifications',
   'service_pricing_models',
   'service_resource_requirements',
+  'units_of_measure',
 ] as const;
 
 describe('Service catalog persistence migration', () => {
@@ -294,5 +296,40 @@ describe('Service catalog persistence migration', () => {
     );
 
     expect(childCounts.rows.map((row) => Number(row.count))).toEqual([1, 1, 1, 1, 1]);
+  });
+
+  it('rejects service_allowed_units with unknown unit_code', async () => {
+    await truncateCatalogTables(pool);
+    const built = await insertCatalogDefinition(pool);
+    const v1 = await insertCatalogVersion(pool, {
+      definitionId: built.definitionId,
+      categoryId: built.categoryId,
+      actorIdentityId: built.actorIdentityId,
+      version: 1,
+      status: 'DRAFT',
+      publish: false,
+    });
+
+    await expect(
+      pool.query(
+        `INSERT INTO cat.service_allowed_units (
+           id, service_definition_version_id, unit_code, is_default, sort_order
+         ) VALUES ($1, $2, 'UNKNOWN_UNIT', true, 0)`,
+        [randomUUID(), v1.versionId],
+      ),
+    ).rejects.toMatchObject({ code: '23503' });
+  });
+
+  it('seeds baseline units idempotently', async () => {
+    await truncateCatalogTables(pool);
+    const first = await pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM cat.units_of_measure`,
+    );
+    await ensureUnitsOfMeasureBaseline(pool);
+    const second = await pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM cat.units_of_measure`,
+    );
+    expect(Number(second.rows[0]?.count)).toBe(Number(first.rows[0]?.count));
+    expect(Number(second.rows[0]?.count)).toBeGreaterThanOrEqual(13);
   });
 });

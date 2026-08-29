@@ -256,7 +256,9 @@ export class ServiceCatalogRepository {
     }
   }
 
-  async createDraftVersion(input: CreateDraftVersionInput): Promise<ServiceDefinitionVersionDetail | 'DRAFT_EXISTS'> {
+  async createDraftVersion(
+    input: CreateDraftVersionInput,
+  ): Promise<ServiceDefinitionVersionDetail | 'DRAFT_EXISTS' | 'SOURCE_NOT_FOUND'> {
     const pool = this.pool();
     const client = await pool.connect();
     try {
@@ -288,7 +290,7 @@ export class ServiceCatalogRepository {
         const source = await this.findVersionDetail(input.definitionId, input.sourceVersion);
         if (!source) {
           await client.query('ROLLBACK');
-          return null as never;
+          return 'SOURCE_NOT_FOUND';
         }
         payload = {
           ...input,

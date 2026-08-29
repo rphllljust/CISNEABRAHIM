@@ -16,6 +16,7 @@ import type { IdentityAuthzContext } from '../../authorization/types/authz-decis
 import { LINEAGE_STATUSES } from '../domain/service-catalog-status';
 import { CatalogValidationError } from '../domain/service-catalog.validation';
 import { assertUuid } from '../domain/service-catalog.validation';
+import { normalizeUnitCode } from '../domain/unit-of-measure';
 import type {
   CreateServiceDefinitionInput,
   CreateServiceDefinitionVersionInput,
@@ -24,6 +25,7 @@ import type {
 import { CATALOG_ERROR_CODES } from '../errors/catalog-error-codes';
 import { CatalogHttpException } from '../errors/catalog-http.exception';
 import { ServiceCatalogRepository } from '../repositories/service-catalog.repository';
+import { UnitsOfMeasureRepository } from '../repositories/units-of-measure.repository';
 import {
   toServiceDefinitionResponse,
   toServiceDefinitionVersionResponse,
@@ -35,6 +37,7 @@ import {
 export class ServiceCatalogAccessService {
   constructor(
     private readonly repository: ServiceCatalogRepository,
+    private readonly unitsRepository: UnitsOfMeasureRepository,
     private readonly authorizationRepository: AuthorizationRepository,
     private readonly policyDecisionPoint: PolicyDecisionPointService,
     private readonly securityAudit: SecurityAuditService,
@@ -53,6 +56,10 @@ export class ServiceCatalogAccessService {
         'Invalid request body.',
       );
     }
+    await this.assertActiveUnitReferences(
+      input.allowedUnits.map((unit) => unit.unitCode),
+      input.defaultUnitCode,
+    );
 
     try {
       const created = await this.repository.createDefinitionWithDraft({
@@ -147,6 +154,10 @@ export class ServiceCatalogAccessService {
         throw this.notFound();
       }
     }
+    await this.assertActiveUnitReferences(
+      input.allowedUnits.map((unit) => unit.unitCode),
+      input.defaultUnitCode,
+    );
 
     const created = await this.repository.createDraftVersion({
       definitionId,
@@ -160,6 +171,9 @@ export class ServiceCatalogAccessService {
         CATALOG_ERROR_CODES.INVALID_STATE,
         'A draft version already exists for this service definition.',
       );
+    }
+    if (created === 'SOURCE_NOT_FOUND') {
+      throw this.notFound();
     }
 
     await this.securityAudit.record({
@@ -230,6 +244,10 @@ export class ServiceCatalogAccessService {
         'Invalid request body.',
       );
     }
+    await this.assertActiveUnitReferences(
+      input.allowedUnits.map((unit) => unit.unitCode),
+      input.defaultUnitCode ?? undefined,
+    );
 
     const updated = await this.repository.updateDraftVersion({
       definitionId,
@@ -288,6 +306,15 @@ export class ServiceCatalogAccessService {
   ): Promise<ServiceDefinitionVersionResponse> {
     this.assertValidDefinitionId(definitionId);
     await this.assertGlobalAction(actor, AUTHZ_ACTIONS.CatalogServicePublish);
+
+    const draft = await this.repository.findVersionDetail(definitionId, versionNumber);
+    if (!draft) {
+      throw this.notFound();
+    }
+    await this.assertActiveUnitReferences(
+      draft.allowed_units.map((unit) => unit.unit_code),
+      draft.default_unit_code,
+    );
 
     const result = await this.repository.publishVersion(
       definitionId,
@@ -498,5 +525,31 @@ export class ServiceCatalogAccessService {
     }
     const pgError = error as { code?: string; constraint?: string };
     return pgError.code === '23505' && (pgError.constraint?.includes('code') ?? false);
+  }
+
+  private async assertActiveUnitReferences(
+    unitCodes: string[],
+    defaultUnitCode?: string | null,
+  ): Promise<void> {
+    const normalizedDefault = defaultUnitCode ? normalizeUnitCode(defaultUnitCode) : undefined;
+    const validation = await this.unitsRepository.validateUnitReferences(
+      unitCodes.map((code) => normalizeUnitCode(code)),
+      normalizedDefault,
+      true,
+    );
+    if (validation === 'INVALID_UNIT') {
+      throw new CatalogHttpException(
+        HttpStatus.BAD_REQUEST,
+        CATALOG_ERROR_CODES.INVALID_UNIT,
+        'One or more unit codes are not registered in the catalog.',
+      );
+    }
+    if (validation === 'INACTIVE_UNIT') {
+      throw new CatalogHttpException(
+        HttpStatus.CONFLICT,
+        CATALOG_ERROR_CODES.INACTIVE_UNIT,
+        'One or more unit codes are inactive.',
+      );
+    }
   }
 }

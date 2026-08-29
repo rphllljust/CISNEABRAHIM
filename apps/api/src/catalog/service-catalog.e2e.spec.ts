@@ -1,4 +1,5 @@
 import {
+  ensureUnitsOfMeasureBaseline,
   hashPassword,
   insertCatalogCategory,
   insertGrant,
@@ -64,6 +65,7 @@ describe('Service catalog E2E', () => {
   beforeEach(async () => {
     await truncateCatalogTables(pool);
     await truncateIdentityAndAuthorizationTables(pool);
+    await ensureUnitsOfMeasureBaseline(pool);
   });
 
   afterAll(async () => {

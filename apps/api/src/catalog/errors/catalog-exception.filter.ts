@@ -22,13 +22,14 @@ export function mapCatalogValidationCodeToStatus(code: string): HttpStatus {
 }
 
 export function isCatalogErrorBody(body: unknown): body is { error: { code: string } } {
-  return (
-    typeof body === 'object' &&
-    body !== null &&
-    'error' in body &&
-    typeof (body as { error: unknown }).error === 'object' &&
-    (body as { error: { code?: unknown } }).error?.code !== undefined
-  );
+  if (typeof body !== 'object' || body === null || !('error' in body)) {
+    return false;
+  }
+  const error = Reflect.get(body, 'error');
+  if (typeof error !== 'object' || error === null || !('code' in error)) {
+    return false;
+  }
+  return typeof Reflect.get(error, 'code') === 'string';
 }
 
 export { CATALOG_ERROR_CODES };

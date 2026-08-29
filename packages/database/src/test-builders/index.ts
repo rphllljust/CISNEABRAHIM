@@ -27,6 +27,7 @@ export {
   insertCatalogDefinition,
   insertCatalogVersion,
   truncateCatalogTables,
+  ensureUnitsOfMeasureBaseline,
   type BuiltCatalogCategory,
   type BuiltCatalogDefinition,
   type BuiltCatalogVersion,

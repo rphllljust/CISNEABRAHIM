@@ -1,4 +1,5 @@
 import {
+  ensureUnitsOfMeasureBaseline,
   hashPassword,
   insertCatalogCategory,
   insertGrant,
@@ -72,6 +73,7 @@ describe('Service catalog PostgreSQL integration', () => {
   beforeEach(async () => {
     await truncateCatalogTables(pool);
     await truncateIdentityAndAuthorizationTables(pool);
+    await ensureUnitsOfMeasureBaseline(pool);
   });
 
   afterAll(async () => {
@@ -223,7 +225,7 @@ describe('Service catalog PostgreSQL integration', () => {
 
     await expect(
       catalogAccess.publishVersion(actor, created.serviceDefinitionId, 1, definition.version),
-    ).rejects.toMatchObject({ code: CATALOG_ERROR_CODES.PUBLISH_INVALID });
+    ).rejects.toMatchObject({ code: CATALOG_ERROR_CODES.INVALID_UNIT });
   });
 
   it('detects optimistic concurrency conflicts on draft update', async () => {
@@ -316,5 +318,46 @@ describe('Service catalog PostgreSQL integration', () => {
 
     const all = await catalogAccess.listDefinitions(actor, { limit: 20, offset: 0 });
     expect(all.items.map((item) => item.code)).toEqual(['SERVICE_ALPHA', 'SERVICE_BETA']);
+  });
+
+  it('rejects unknown unit codes on service definition create', async () => {
+    const { identityId, categoryId } = await seedActor();
+    const actor = { identityId, sessionId: 'sid' };
+
+    await expect(
+      catalogAccess.create(actor, {
+        ...createPayload(categoryId),
+        allowedUnits: [{ unitCode: 'NOT_A_UNIT', isDefault: true }],
+      }),
+    ).rejects.toMatchObject({ code: CATALOG_ERROR_CODES.INVALID_UNIT });
+  });
+
+  it('keeps historical published versions valid when a unit is later deactivated', async () => {
+    const { identityId, categoryId } = await seedActor();
+    const actor = { identityId, sessionId: 'sid' };
+
+    const created = await catalogAccess.create(actor, createPayload(categoryId));
+    const definition = await catalogAccess.getDefinition(actor, created.serviceDefinitionId);
+    await catalogAccess.publishVersion(actor, created.serviceDefinitionId, 1, definition.version);
+
+    const day = await pool.query<{ id: string; version: number }>(
+      `SELECT id, version FROM cat.units_of_measure WHERE code = 'DAY'`,
+    );
+    const dayRow = day.rows[0];
+    expect(dayRow).toBeDefined();
+
+    await pool.query(
+      `UPDATE cat.units_of_measure
+       SET status = 'INACTIVE', version = version + 1, deactivated_at = now()
+       WHERE id = $1`,
+      [dayRow!.id],
+    );
+
+    const historical = await catalogAccess.getVersion(actor, created.serviceDefinitionId, 1);
+    expect(historical.status).toBe('PUBLISHED');
+    expect(historical.allowedUnits.some((unit) => unit.unitCode === 'DAY')).toBe(true);
+
+    await expect(catalogAccess.create(actor, createPayload(categoryId, 'NEW_AFTER_INACTIVE'))).rejects
+      .toMatchObject({ code: CATALOG_ERROR_CODES.INACTIVE_UNIT });
   });
 });

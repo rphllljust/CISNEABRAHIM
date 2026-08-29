@@ -10,3 +10,7 @@ export {
 export * from './schema';
 export * from './seed';
 export * from './test-builders';
+export {
+  BASELINE_UNITS_OF_MEASURE,
+  ensureUnitsOfMeasureBaseline,
+} from './catalog/units-of-measure-baseline';
