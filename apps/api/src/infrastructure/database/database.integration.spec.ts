@@ -38,9 +38,11 @@ const ALLOWED_TECHNICAL_TABLES = new Set([
   'sessions',
   'refresh_token_families',
   'refresh_tokens',
+  'grants',
+  'decision_audits',
 ]);
 
-const ALLOWED_SCHEMAS = new Set(['infrastructure', 'identity', 'public']);
+const ALLOWED_SCHEMAS = new Set(['infrastructure', 'identity', 'authorization', 'public']);
 
 describe('PostgreSQL integration', () => {
   let pool: Pool;

@@ -10,3 +10,9 @@ export {
   type BuiltIdentity,
   type BuiltSession,
 } from './identity-builders';
+export {
+  insertGrant,
+  truncateAuthorizationTables,
+  truncateIdentityAndAuthorizationTables,
+  type InsertGrantInput,
+} from './authz-builders';

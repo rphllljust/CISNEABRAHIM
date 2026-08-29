@@ -9,3 +9,10 @@ export {
   sessionStatusEnum,
   sessions,
 } from './identity';
+export {
+  authorizationSchema,
+  authzDecisionTypeEnum,
+  authzScopeTypeEnum,
+  decisionAudits,
+  grants,
+} from './authorization';

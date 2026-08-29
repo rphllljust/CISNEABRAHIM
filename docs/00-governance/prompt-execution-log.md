@@ -1414,3 +1414,76 @@ NOTES:
 - [x] Prompt 22 não executado
 
 ---
+
+```text
+PROMPT: 22
+TITLE: Autorização backend deny-by-default
+STARTED_AT: 2026-08-29T01:05:00-04:00
+FINISHED_AT: 2026-08-29T01:18:00-04:00
+STATUS: PASS
+FILES_CREATED:
+  packages/database/migrations/0002_authorization_baseline.sql
+  packages/database/src/schema/authorization.ts
+  packages/database/src/test-builders/authz-builders.ts
+  apps/api/src/authorization/authorization.module.ts
+  apps/api/src/authorization/controllers/authz.controller.ts
+  apps/api/src/authorization/decorators/require-authz.decorator.ts
+  apps/api/src/authorization/dto/create-grant.dto.ts
+  apps/api/src/authorization/errors/authz-error-codes.ts
+  apps/api/src/authorization/errors/authz-exception.filter.ts
+  apps/api/src/authorization/errors/authz-http.exception.ts
+  apps/api/src/authorization/guards/authorization.guard.ts
+  apps/api/src/authorization/repositories/authorization.repository.ts
+  apps/api/src/authorization/serializers/grant-response.serializer.ts
+  apps/api/src/authorization/services/grant-admin.service.ts
+  apps/api/src/authorization/services/policy-decision-point.service.ts
+  apps/api/src/authorization/services/policy-decision-point.service.spec.ts
+  apps/api/src/authorization/types/authz-actions.ts
+  apps/api/src/authorization/types/authz-decision.ts
+  apps/api/src/authorization/types/authz-resources.ts
+  apps/api/src/authorization/types/authz-scopes.ts
+  apps/api/src/authorization/authorization.integration.spec.ts
+  apps/api/src/authorization/authorization.e2e.spec.ts
+  docs/implementation/22-authorization-backend.md
+FILES_CHANGED:
+  apps/api/src/app.module.ts
+  apps/api/src/auth/auth.module.ts
+  apps/api/src/main.ts
+  apps/api/src/infrastructure/database/database.integration.spec.ts
+  apps/api/vitest.e2e.config.ts
+  packages/database/migrations/meta/_journal.json
+  packages/database/src/schema/index.ts
+  packages/database/src/test-builders/index.ts
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+BUSINESS_ROLES_INVENTED: 0
+DOC_FILES_CREATED: 1
+LINT: PASS
+TYPECHECK: PASS
+TEST: PASS
+INTEGRATION: PASS
+E2E: PASS
+MIGRATION: PASS (0002_authorization_baseline)
+BUILD: PASS
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  PDP/PEP deny-by-default; concessões explícitas por identity_id (sem array no usuário).
+  Schema "authorization" (palavra reservada PG — SQL com aspas).
+  Escopo PLATFORM bloqueia recursos não técnicos (SOD-012).
+  Negação HTTP genérica; motivo interno em decision_audits.
+  E2E serializado (fileParallelism: false) para evitar deadlock em TRUNCATE.
+  Prompt 23 não executado.
+```
+
+## Quality gate Prompt 22 (evidência)
+
+- [x] Actions e resources tipados (vocabulário técnico apenas)
+- [x] PDP + PEP integrados às rotas `/api/v1/authz/*`
+- [x] Persistência: grants com validade, scope, granted_by, version, constraints, revogação
+- [x] Migration `0002_authorization_baseline` aplicada (dev + test)
+- [x] Testes negativos: anônimo, sem concessão, ação/recurso errado, expirado, revogado, rota direta, sem vazamento, deny default, concorrência revogação
+- [x] 0 papéis empresariais inventados
+- [x] docs/implementation/22-authorization-backend.md
+- [x] Prompt 23 não executado
+
+---
