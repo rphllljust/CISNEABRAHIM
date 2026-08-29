@@ -1018,3 +1018,43 @@ NOTES:
 - [x] Prompt 15 não executado
 
 ---
+
+```text
+PROMPT: 15
+TITLE: Arquitetura de testes e estratégia de qualidade
+STARTED_AT: 2026-08-29T04:00:00-04:00
+FINISHED_AT: 2026-08-29T04:35:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED:
+  docs/16-testing/ (25 artefatos — ver README.md)
+FILES_CHANGED:
+  docs/01-foundation/requirements-traceability.md
+  docs/00-governance/prompt-execution-log.md
+  docs/README.md
+QUALITY_GATE: PASS_WITH_RESTRICTIONS
+TEST_CAND_COUNT: 58
+INV_COVERED: 22/22
+TXN_TEST_MAPPED: 18/18
+SEC_TEST_MAPPED: 22/22
+REQ_GAPS: 6
+TEST_CODE_CREATED: NO
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Risk-based; PG real Testcontainers L3/L4. Negativo+corrida em críticos.
+  Mocks não validam UNQ/CHK. Dados sintéticos. Prompt 16 não executado.
+```
+
+## Quality gate Prompt 15 (evidência)
+
+- [x] pasta `16-testing/` com 25 artefatos não vazios
+- [x] 58 TEST-CAND com rastreabilidade EV/BR/FR/UC/NFR/INV/CMD/TR/AUTHZ/RISK
+- [x] 22/22 INV com TEST-CAND
+- [x] concorrência e idempotência cobertas
+- [x] segurança negativa mapeada (SEC-TEST)
+- [x] PostgreSQL real previsto — sem mock PG behavior
+- [x] test-data sem dados reais
+- [x] 0 código de teste
+- [x] rastreabilidade atualizada
+- [x] Prompt 16 não executado
+
+---

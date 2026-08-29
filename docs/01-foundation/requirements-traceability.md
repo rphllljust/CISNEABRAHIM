@@ -316,3 +316,22 @@ Cadeia Prompt 14:
 ```text
 SEC-AST → boundary → STRIDE → SEC-CTL → SEC-TEST → SEC-RISK residual
 ```
+
+## Resumo Prompt 15
+
+| Métrica | Valor |
+| --- | --- |
+| TEST-CAND | 58 |
+| INV cobertos | 22/22 |
+| TXN-TEST mapeados | 18/18 |
+| SEC-TEST mapeados | 22/22 |
+| Gaps requisitos | 6 |
+| Código de teste | **0** |
+| Índice | [`../16-testing/README.md`](../16-testing/README.md) |
+| Relatório | [`../16-testing/prompt-15-completeness-report.md`](../16-testing/prompt-15-completeness-report.md) |
+
+Cadeia Prompt 15:
+
+```text
+RISK/INV → TEST-CAND → nível (L1|L3|L4|L6) → gate CI
+```

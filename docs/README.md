@@ -21,7 +21,8 @@
 15. `13-data-model/` contém modelo lógico relacional e constraints candidatas do Prompt 12.
 16. `14-transaction-design/` contém transações, concorrência e idempotência do Prompt 13.
 17. `15-security/` contém threat model e arquitetura de segurança do Prompt 14.
-18. `templates/` define a forma dos registros futuros.
+18. `16-testing/` contém arquitetura de testes e estratégia de qualidade do Prompt 15.
+19. `templates/` define a forma dos registros futuros.
 
 Agentes devem seguir [`../AGENTS.md`](../AGENTS.md) e o protocolo em [`00-governance/execution-protocol.md`](00-governance/execution-protocol.md).
 
@@ -230,6 +231,18 @@ Threat model e segurança (Prompt 14). Índice: [15-security/README.md](15-secur
 | [security-decisions.md](15-security/security-decisions.md) | 16 SEC-DEC |
 | [residual-risks.md](15-security/residual-risks.md) | 14 SEC-RISK |
 | [prompt-14-completeness-report.md](15-security/prompt-14-completeness-report.md) | Relatório |
+
+## 16-testing
+
+Arquitetura de testes (Prompt 15). Índice: [16-testing/README.md](16-testing/README.md).
+
+| Arquivo | Conteúdo |
+| --- | --- |
+| [requirement-test-traceability.md](16-testing/requirement-test-traceability.md) | 58 TEST-CAND |
+| [quality-gates-pipeline.md](16-testing/quality-gates-pipeline.md) | Gates CI |
+| [concurrency-tests.md](16-testing/concurrency-tests.md) | Corridas |
+| [database-constraint-tests.md](16-testing/database-constraint-tests.md) | PG real |
+| [prompt-15-completeness-report.md](16-testing/prompt-15-completeness-report.md) | Relatório |
 
 ## inputs
 
