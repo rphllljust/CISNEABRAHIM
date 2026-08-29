@@ -4,7 +4,7 @@
 | --- | --- |
 | Document ID | RTM-001 |
 | Policy | [`../00-governance/traceability-policy.md`](../00-governance/traceability-policy.md) |
-| Last updated | 2026-08-28 (Prompt 03) |
+| Last updated | 2026-08-28 (Prompt 04) |
 | Rule | Colunas inaplicáveis = `TBD`. Proibido inventar para completar. |
 
 Cadeia:
@@ -90,3 +90,18 @@ Implementação, modelo de domínio, ADR operacionais e testes: **não iniciados
 | SRC-001 | EV-077 | FR-030 | NFR-012 | QA-SC-012 | RISK-010 | DDP-014 |
 
 Matriz completa: [`../04-quality-attributes/non-functional-traceability.md`](../04-quality-attributes/non-functional-traceability.md).
+
+## Resumo Prompt 04
+
+| Métrica | Valor |
+| --- | --- |
+| Termos de glossário (TERM) | 48 (TERM-001..TERM-048) |
+| CONFIRMED | **0** |
+| PENDING_DISAMBIGUATION | 18 |
+| CANDIDATE | 24 |
+| PENDING_VALIDATION | 6 |
+| Questões abertas glossário (GLQ) | 12 |
+| Índice | [`../05-ubiquitous-language/README.md`](../05-ubiquitous-language/README.md) |
+| Relatório | [`../05-ubiquitous-language/prompt-04-completeness-report.md`](../05-ubiquitous-language/prompt-04-completeness-report.md) |
+
+Cadeia estendida: `SOURCE → EVIDENCE → TERM → BR → FR → NFR → DDP`.

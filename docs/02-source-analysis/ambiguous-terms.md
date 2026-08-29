@@ -47,4 +47,4 @@
 | Saldo autorizado (PO) | AMBIGUOUS_VALUE | EV-060 | Regra consumo TBD |
 | Chassi | AMBIGUOUS_ATTRIBUTE | EV-052 | Exibição vs armazenamento DDP-027 |
 
-Glossário formal: Prompt 04 (não executado).
+Glossário formal: Prompt 04 — ver [`../05-ubiquitous-language/`](../05-ubiquitous-language/).

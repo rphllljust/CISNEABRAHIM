@@ -9,8 +9,9 @@
 3. `inputs/` recebe fontes empresariais. SRC-001 disponível desde Prompt 00.1; analisado no Prompt 01.
 4. `02-source-analysis/` contém decomposição atômica e análises do Prompt 01.
 5. `03-requirements/` contém requisitos funcionais e casos de uso do Prompt 02.
-6. `04-quality-attributes/` contém requisitos não funcionais e cenários de qualidade do Prompt 03.
-7. `templates/` define a forma dos registros futuros.
+6. `04-quality-attributes/` contém requisitos não funcionais do Prompt 03.
+7. `05-ubiquitous-language/` contém glossário e linguagem ubíqua do Prompt 04.
+8. `templates/` define a forma dos registros futuros.
 
 Agentes devem seguir [`../AGENTS.md`](../AGENTS.md) e o protocolo em [`00-governance/execution-protocol.md`](00-governance/execution-protocol.md).
 
@@ -76,6 +77,17 @@ Requisitos não funcionais e cenários de qualidade (Prompt 03). Índice: [04-qu
 | [quality-attribute-scenarios.md](04-quality-attributes/quality-attribute-scenarios.md) | 28 cenários QA-SC-001..QA-SC-028 |
 | [security-requirements.md](04-quality-attributes/security-requirements.md) | 24 SEC-REQ |
 | [prompt-03-completeness-report.md](04-quality-attributes/prompt-03-completeness-report.md) | Relatório de completude |
+
+## 05-ubiquitous-language
+
+Glossário e linguagem ubíqua (Prompt 04). Índice: [05-ubiquitous-language/README.md](05-ubiquitous-language/README.md).
+
+| Arquivo | Conteúdo |
+| --- | --- |
+| [ubiquitous-language-register.md](05-ubiquitous-language/ubiquitous-language-register.md) | 48 termos TERM-001..TERM-048 |
+| [ambiguous-terms-resolution.md](05-ubiquitous-language/ambiguous-terms-resolution.md) | Resolução de ambiguidades |
+| [glossary-traceability.md](05-ubiquitous-language/glossary-traceability.md) | Rastreabilidade TERM |
+| [prompt-04-completeness-report.md](05-ubiquitous-language/prompt-04-completeness-report.md) | Relatório de completude |
 
 ## inputs
 

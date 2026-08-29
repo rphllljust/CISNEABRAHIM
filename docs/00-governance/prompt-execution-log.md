@@ -391,4 +391,64 @@ NOTES:
 - [x] 0 scripts ou código funcional
 - [x] DDP-036..040 e RISK-023..024 adicionados
 - [x] rastreabilidade atualizada
-- [x] Prompt 04 não executado
+- [x] Prompt 04 não executado (no encerramento do Prompt 03)
+
+---
+
+```text
+PROMPT: 04
+TITLE: Glossário empresarial e linguagem ubíqua
+STARTED_AT: 2026-08-28T22:44:00-04:00
+FINISHED_AT: 2026-08-28T23:05:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED:
+  docs/05-ubiquitous-language/README.md
+  docs/05-ubiquitous-language/glossary-method.md
+  docs/05-ubiquitous-language/ubiquitous-language-register.md
+  docs/05-ubiquitous-language/ambiguous-terms-resolution.md
+  docs/05-ubiquitous-language/synonyms-and-aliases.md
+  docs/05-ubiquitous-language/homonyms-and-collisions.md
+  docs/05-ubiquitous-language/discouraged-and-prohibited-terms.md
+  docs/05-ubiquitous-language/commercial-language.md
+  docs/05-ubiquitous-language/service-request-language.md
+  docs/05-ubiquitous-language/service-order-language.md
+  docs/05-ubiquitous-language/resource-language.md
+  docs/05-ubiquitous-language/execution-language.md
+  docs/05-ubiquitous-language/measurement-and-billing-language.md
+  docs/05-ubiquitous-language/document-language.md
+  docs/05-ubiquitous-language/responsibility-language.md
+  docs/05-ubiquitous-language/state-event-timestamp-semantics.md
+  docs/05-ubiquitous-language/business-vs-technical-language.md
+  docs/05-ubiquitous-language/naming-conventions-candidates.md
+  docs/05-ubiquitous-language/glossary-traceability.md
+  docs/05-ubiquitous-language/glossary-open-questions.md
+  docs/05-ubiquitous-language/prompt-04-completeness-report.md
+FILES_CHANGED:
+  docs/02-source-analysis/ambiguous-terms.md
+  docs/01-foundation/requirements-traceability.md
+  docs/00-governance/prompt-execution-log.md
+  docs/README.md
+QUALITY_GATE: PASS_WITH_RESTRICTIONS
+FUNCTIONAL_CODE_CREATED: NO
+TERM_COUNT: 48
+GLQ_COUNT: 12
+TERM_CONFIRMED: 0
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  48 TERM com proveniência SRC-001/EV-*. 38 ambiguidades AT-001 mapeadas.
+  0 termos CONFIRMED. Sem enums, API, tabelas ou scripts.
+  Separação negócio/técnico e documento lógico×versão×arquivo.
+  Prompt 05 não executado.
+```
+
+## Quality gate Prompt 04 (evidência)
+
+- [x] pasta `05-ubiquitous-language/` com 21 artefatos não vazios
+- [x] 48 TERM com campos obrigatórios e proveniência
+- [x] ambiguidades não resolvidas sem fonte permanecem abertas
+- [x] 0 definições CONFIRMED
+- [x] negócio ≠ técnico documentado
+- [x] IDs históricos (FR, EV, BR) preservados
+- [x] 0 código, scripts, enums ou nomes de API congelados
+- [x] rastreabilidade atualizada
+- [x] Prompt 05 não executado
