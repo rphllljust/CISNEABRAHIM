@@ -2105,3 +2105,44 @@ NOTES:
 - [x] Prompt 30 não executado
 
 ---
+
+```text
+PROMPT: 30
+TITLE: Interface web do módulo Clientes
+STARTED_AT: 2026-08-29T15:45:00-04:00
+FINISHED_AT: 2026-08-29T16:06:00-04:00
+STATUS: EXECUTED
+BASELINE_COMMIT: bb540cc
+FILES_CREATED:
+  apps/web/src/clients/** (api, pages, components, hooks, utils, tests)
+  apps/web/src/test/clients-fetch-mock.ts
+  apps/web/src/test/render-with-providers.tsx
+  docs/implementation/30-clients-frontend.md
+FILES_CHANGED:
+  apps/web/src/App.tsx
+  apps/web/src/index.css
+  apps/web/src/shell/nav-config.ts
+  apps/web/src/shell/types.ts
+  apps/web/src/shell/useNavAccess.ts
+  apps/web/src/test/setup.ts
+  apps/web/src/test/shell-fetch-mock.ts
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+SRC_002_GATE: PASS
+CODE_CREATED: YES (clients frontend only)
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Listagem paginada via API; filtro status; create/edit/deactivate/activate;
+  optimistic concurrency; autorização visual por probes; E2E frontend completo.
+  Prompt 31 não executado.
+```
+
+## Quality gate Prompt 30 (evidência)
+
+- [x] Telas list/detail/create/edit implementadas
+- [x] Contratos reais `/api/v1/clients` consumidos
+- [x] Sem PF, CRM, autoridade de negócio no frontend
+- [x] lint, typecheck, test, test:integration, test:e2e API, build, gate:src-002 — PASS
+- [x] Prompt 31 não executado
+
+---

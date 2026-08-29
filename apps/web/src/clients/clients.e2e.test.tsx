@@ -1,0 +1,79 @@
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { App } from '../App';
+import { resetTokenStoreForTests } from '../auth/storage/token-store';
+import { createClientsFetchMock } from '../test/clients-fetch-mock';
+
+describe('clients administrative flow e2e (frontend)', () => {
+  beforeEach(() => {
+    resetTokenStoreForTests();
+    sessionStorage.clear();
+    vi.unstubAllGlobals();
+    window.history.pushState({}, '', '/login');
+  });
+
+  async function login(user: ReturnType<typeof userEvent.setup>) {
+    await user.type(await screen.findByLabelText(/login/i), 'user@test');
+    await user.type(screen.getByLabelText(/password/i), 'Password1!');
+    await user.click(screen.getByRole('button', { name: /sign in/i }));
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /technical home/i })).toBeInTheDocument();
+    });
+  }
+
+  it('supports list, create, detail, edit, deactivate and activate', async () => {
+    vi.stubGlobal('fetch', createClientsFetchMock());
+    render(<App />);
+    const user = userEvent.setup();
+    await login(user);
+
+    await waitFor(
+      () => {
+        expect(screen.getByRole('link', { name: /clientes/i })).toBeInTheDocument();
+      },
+      { timeout: 10000 },
+    );
+    await user.click(screen.getByRole('link', { name: /clientes/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /^clientes$/i })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('link', { name: /novo cliente/i }));
+
+    await user.type(screen.getByLabelText(/razão social/i), 'Fluxo E2E LTDA');
+    await user.type(screen.getByLabelText(/^cnpj$/i), '33.444.555/0001-66');
+    await user.type(screen.getByLabelText(/nome do contato/i), 'Operações');
+    await user.type(screen.getByLabelText(/^e-mail$/i), 'ops@e2e.invalid');
+    await user.click(screen.getByRole('button', { name: /cadastrar cliente/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /fluxo e2e ltda/i })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('link', { name: /editar/i }));
+    await user.clear(screen.getByLabelText(/razão social/i));
+    await user.type(screen.getByLabelText(/razão social/i), 'Fluxo E2E Atualizado LTDA');
+    await user.click(screen.getByRole('button', { name: /salvar alterações/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /fluxo e2e atualizado ltda/i })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: /desativar/i }));
+    await user.type(screen.getByLabelText(/motivo da desativação/i), 'Encerramento contratual');
+    await user.click(screen.getByRole('button', { name: /confirmar desativação/i }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Status: Inativo')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: /reativar/i }));
+    await user.click(screen.getByRole('button', { name: /confirmar reativação/i }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Status: Ativo')).toBeInTheDocument();
+    });
+  }, 15000);
+});

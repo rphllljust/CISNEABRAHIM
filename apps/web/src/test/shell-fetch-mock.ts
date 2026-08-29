@@ -22,6 +22,7 @@ export function createShellFetchMock(options: ShellFetchMockOptions = {}) {
   return vi.fn(async (input: RequestInfo, init?: RequestInit) => {
     const url = requestUrl(input);
     const method = init?.method ?? 'GET';
+    const pathname = new URL(url).pathname;
 
     if (url.endsWith('/api/v1/auth/login') && method === 'POST') {
       const rawBody = init?.body;
@@ -85,6 +86,18 @@ export function createShellFetchMock(options: ShellFetchMockOptions = {}) {
         identityId: MOCK_IDENTITY_ID,
         sessionId: MOCK_SESSION_ID,
       });
+    }
+
+    if (pathname === '/api/v1/clients' && method === 'GET') {
+      return jsonResponse({ error: { code: 'CLIENT_DENIED', message: 'Forbidden.' } }, 403);
+    }
+
+    if (pathname.startsWith('/api/v1/clients/') && method === 'GET') {
+      return jsonResponse({ error: { code: 'CLIENT_NOT_FOUND', message: 'Not found.' } }, 404);
+    }
+
+    if (pathname.startsWith('/api/v1/clients/') && (method === 'PATCH' || method === 'POST')) {
+      return jsonResponse({ error: { code: 'CLIENT_DENIED', message: 'Forbidden.' } }, 403);
     }
 
     return jsonResponse({ error: { code: 'UNKNOWN', message: 'Not found' } }, 404);

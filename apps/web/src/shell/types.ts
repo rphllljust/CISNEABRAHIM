@@ -1,4 +1,4 @@
-export type ShellNavAccessCheck = 'authz-probe';
+export type ShellNavAccessCheck = 'authz-probe' | 'client-list';
 
 export type ShellNavItem = {
   id: string;

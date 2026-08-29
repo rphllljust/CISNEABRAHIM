@@ -18,6 +18,13 @@ export const SHELL_NAV_ITEMS: ShellNavItem[] = [
     capabilityId: 'CAP-001',
     accessCheck: 'authz-probe',
   },
+  {
+    id: 'clients',
+    label: 'Clientes',
+    path: '/app/clients',
+    capabilityId: 'client:client:list',
+    accessCheck: 'client-list',
+  },
 ];
 
 export function findNavItemByPath(pathname: string): ShellNavItem | undefined {

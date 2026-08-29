@@ -270,3 +270,176 @@ button:disabled {
     display: flex;
   }
 }
+
+/* Clients module */
+.clients-page__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.clients-toolbar {
+  margin-bottom: 1rem;
+}
+
+.clients-filter select {
+  padding: 0.55rem 0.65rem;
+  border: 1px solid #737373;
+  border-radius: 0.35rem;
+  font: inherit;
+  background: #fff;
+  min-width: 12rem;
+}
+
+.clients-table-wrap {
+  overflow-x: auto;
+  margin-bottom: 1rem;
+}
+
+.clients-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+.clients-table th,
+.clients-table td {
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid #e5e5e5;
+  text-align: left;
+}
+
+.clients-table th {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #525252;
+}
+
+.clients-pagination {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.client-section {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 0.35rem;
+}
+
+.client-section h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.client-details {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.client-details dt {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.client-details dd {
+  margin: 0.1rem 0 0;
+}
+
+.client-card-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.client-card-list li {
+  padding: 0.65rem 0.75rem;
+  background: #fafafa;
+  border: 1px solid #e5e5e5;
+  border-radius: 0.35rem;
+}
+
+.client-status {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.client-status--active {
+  background: #dcfce7;
+  color: #14532d;
+}
+
+.client-status--inactive {
+  background: #fee2e2;
+  color: #7f1d1d;
+}
+
+.button-link {
+  display: inline-block;
+  padding: 0.55rem 0.9rem;
+  border-radius: 0.35rem;
+  border: 1px solid #1d4ed8;
+  background: #1d4ed8;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.button-link.button-secondary {
+  background: #fff;
+  color: #1d4ed8;
+}
+
+.field-error {
+  color: #7f1d1d;
+  font-size: 0.9rem;
+}
+
+.form-hint {
+  color: #525252;
+  font-size: 0.9rem;
+  margin: 0 0 1rem;
+}
+
+.form-field textarea {
+  padding: 0.55rem 0.65rem;
+  border: 1px solid #737373;
+  border-radius: 0.35rem;
+  font: inherit;
+  background: #fff;
+  resize: vertical;
+}
+
+.confirm-dialog {
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0;
+  max-width: 32rem;
+  width: calc(100% - 2rem);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 18%);
+}
+
+.confirm-dialog::backdrop {
+  background: rgb(0 0 0 / 45%);
+}
+
+.confirm-dialog__panel {
+  padding: 1.25rem;
+}
+
+.confirm-dialog__actions {
+  margin-top: 1rem;
+}
