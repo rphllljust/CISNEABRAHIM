@@ -4,13 +4,13 @@
 | --- | --- |
 | Document ID | RTM-001 |
 | Policy | [`../00-governance/traceability-policy.md`](../00-governance/traceability-policy.md) |
-| Last updated | 2026-08-28 (Prompt 02) |
+| Last updated | 2026-08-28 (Prompt 03) |
 | Rule | Colunas inaplicáveis = `TBD`. Proibido inventar para completar. |
 
 Cadeia:
 
 ```text
-SOURCE → EVIDENCE → BUSINESS RULE → FUNCTIONAL REQUIREMENT → USE CASE → DOMAIN MODEL → ARCHITECTURE DECISION → IMPLEMENTATION → TEST → ACCEPTANCE
+SOURCE → EVIDENCE → BUSINESS RULE → FUNCTIONAL REQUIREMENT → NON-FUNCTIONAL REQUIREMENT → QUALITY SCENARIO → USE CASE → DOMAIN MODEL → ARCHITECTURE DECISION → IMPLEMENTATION → TEST → ACCEPTANCE
 ```
 
 ## Matriz atual
@@ -63,4 +63,30 @@ Fontes primárias (`NOT_PROVIDED`): sem linhas adicionais.
 | Índice completo | [`../03-requirements/README.md`](../03-requirements/README.md) |
 | Relatório de completude | [`../03-requirements/prompt-02-completeness-report.md`](../03-requirements/prompt-02-completeness-report.md) |
 
-Implementação, modelo de domínio, ADR operacionais e testes: **não iniciados** (Prompt 03+).
+Implementação, modelo de domínio, ADR operacionais e testes: **não iniciados** (Prompt 04+).
+
+## Resumo Prompt 03
+
+| Métrica | Valor |
+| --- | --- |
+| Requisitos não funcionais (NFR) | 40 (NFR-001..NFR-040) |
+| Cenários de qualidade (QA-SC) | 28 (QA-SC-001..QA-SC-028) |
+| Requisitos de segurança (SEC-REQ) | 24 |
+| Questões abertas NFR (NFNQ) | 18 |
+| NFR CONFIRMED | **0** |
+| NFR com target numérico | **0** |
+| RPO / RTO | TARGET_PENDING (DDP-016) |
+| Índice completo | [`../04-quality-attributes/README.md`](../04-quality-attributes/README.md) |
+| Relatório de completude | [`../04-quality-attributes/prompt-03-completeness-report.md`](../04-quality-attributes/prompt-03-completeness-report.md) |
+
+### Amostra NFR na matriz
+
+| SOURCE | EVIDENCE | FR | NFR | QA-SC | RISK | DDP |
+| --- | --- | --- | --- | --- | --- | --- |
+| SRC-001 | EV-079 | FR-022 | NFR-001, NFR-006 | QA-SC-001 | RISK-003 | DDP-037 |
+| SRC-001 | EV-028 | FR-009 | NFR-003 | QA-SC-003 | RISK-004 | DDP-002 |
+| SRC-001 | EV-061 | FR-032 | NFR-008 | QA-SC-008 | RISK-020 | DDP-030 |
+| SRC-001 | EV-083 | — | NFR-025..028 | QA-SC-021 | RISK-011 | DDP-016 |
+| SRC-001 | EV-077 | FR-030 | NFR-012 | QA-SC-012 | RISK-010 | DDP-014 |
+
+Matriz completa: [`../04-quality-attributes/non-functional-traceability.md`](../04-quality-attributes/non-functional-traceability.md).

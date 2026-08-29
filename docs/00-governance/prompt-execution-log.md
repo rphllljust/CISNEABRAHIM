@@ -317,4 +317,78 @@ NOTES:
 - [x] `scripts/generate-prompt-02.py` não permanece
 - [x] nenhum cache permanece
 - [x] Git contém somente alterações esperadas (pós-auditoria: docs corretivos)
-- [x] Prompt 03 não executado
+- [x] Prompt 03 não executado (no encerramento da auditoria corretiva)
+
+---
+
+```text
+PROMPT: 03
+TITLE: Requisitos não funcionais e cenários de qualidade
+STARTED_AT: 2026-08-28T22:39:00-04:00
+FINISHED_AT: 2026-08-28T22:55:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED:
+  docs/04-quality-attributes/README.md
+  docs/04-quality-attributes/quality-attribute-method.md
+  docs/04-quality-attributes/non-functional-requirements-register.md
+  docs/04-quality-attributes/quality-attribute-scenarios.md
+  docs/04-quality-attributes/security-requirements.md
+  docs/04-quality-attributes/privacy-and-data-protection-requirements.md
+  docs/04-quality-attributes/reliability-and-resilience-requirements.md
+  docs/04-quality-attributes/availability-requirements.md
+  docs/04-quality-attributes/performance-and-capacity-requirements.md
+  docs/04-quality-attributes/data-integrity-requirements.md
+  docs/04-quality-attributes/concurrency-and-idempotency-requirements.md
+  docs/04-quality-attributes/auditability-and-accountability-requirements.md
+  docs/04-quality-attributes/observability-requirements.md
+  docs/04-quality-attributes/recoverability-requirements.md
+  docs/04-quality-attributes/retention-and-disposal-requirements.md
+  docs/04-quality-attributes/maintainability-and-evolvability-requirements.md
+  docs/04-quality-attributes/testability-requirements.md
+  docs/04-quality-attributes/compatibility-and-accessibility-requirements.md
+  docs/04-quality-attributes/deployment-and-environment-requirements.md
+  docs/04-quality-attributes/quality-attribute-tradeoffs.md
+  docs/04-quality-attributes/non-functional-open-questions.md
+  docs/04-quality-attributes/non-functional-traceability.md
+  docs/04-quality-attributes/prompt-03-completeness-report.md
+FILES_CHANGED:
+  docs/01-foundation/requirements-traceability.md
+  docs/01-foundation/risk-register.md
+  docs/01-foundation/domain-decisions-pending.md
+  docs/00-governance/prompt-execution-log.md
+  docs/README.md
+QUALITY_GATE: PASS_WITH_RESTRICTIONS
+FUNCTIONAL_CODE_CREATED: NO
+NFR_COUNT: 40
+QA_SC_COUNT: 28
+SEC_REQ_COUNT: 24
+NFNQ_COUNT: 18
+NFR_NUMERIC_TARGETS: 0
+TARGETS_PENDING: 40
+INVENTED_METRICS: 0
+NFR_CONFIRMED: 0
+DDP_ADDED: DDP-036..DDP-040 (5)
+RISK_ADDED: RISK-023..RISK-024 (2)
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Fonte: SRC-001 (PENDING_BUSINESS_VALIDATION). 0 NFR CONFIRMED.
+  RPO/RTO TARGET_PENDING. Sem stack, scripts ou código.
+  Concorrência e idempotência classificadas sem mecanismo.
+  Prompt 04 não executado.
+```
+
+## Quality gate Prompt 03 (evidência)
+
+- [x] pasta `04-quality-attributes/` com 23 artefatos não vazios
+- [x] 40 NFRs com proveniência e campos obrigatórios
+- [x] 28 cenários QA-SC sem metas numéricas inventadas
+- [x] 24 SEC-REQ classificados (business / application / infrastructure / open)
+- [x] RPO/RTO TARGET_PENDING (DDP-016)
+- [x] AUDIT_TRAIL separado de TECHNICAL_LOG
+- [x] Concorrência e idempotência classificadas por operação
+- [x] Trade-offs documentados sem vencedor imposto
+- [x] 0 tecnologias escolhidas
+- [x] 0 scripts ou código funcional
+- [x] DDP-036..040 e RISK-023..024 adicionados
+- [x] rastreabilidade atualizada
+- [x] Prompt 04 não executado

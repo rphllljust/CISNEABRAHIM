@@ -234,6 +234,28 @@ Impacto qualitativo preliminar (`HIGH`/`MEDIUM`/`LOW`) é julgamento de engenhar
 | Source | SRC-001 EV-041, EV-042, EV-043 |
 | Nearby controls | BR-007, BR-025, DDP-022 |
 
+## RISK-023 — Métricas inventadas na implantação
+
+| Campo | Valor |
+| --- | --- |
+| Title | Fixar SLO, SLA, RPO, RTO ou capacidade sem fonte empresarial |
+| Probability | `UNKNOWN` |
+| Impact | HIGH |
+| Status | `OPEN` |
+| Source | Prompt 03 — governança NFR |
+| Nearby controls | NFR-* com TARGET_PENDING; DDP-016, DDP-036, DDP-040 |
+
+## RISK-024 — Confusão audit trail vs log técnico
+
+| Campo | Valor |
+| --- | --- |
+| Title | Tratar log de debug como prova empresarial ou omitir auditoria em favor de telemetria |
+| Probability | `UNKNOWN` |
+| Impact | HIGH |
+| Status | `OPEN` |
+| Source | SRC-001 EV-078; Prompt 03 |
+| Nearby controls | NFR-029, NFR-039; auditability-and-accountability-requirements.md |
+
 ## Próximo ID
 
-`RISK-023`.
+`RISK-025`.

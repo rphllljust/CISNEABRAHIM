@@ -3,7 +3,7 @@
 | Campo | Valor |
 | --- | --- |
 | Document ID | DDP-REG-001 |
-| Last updated | 2026-08-28 (Prompt 01) |
+| Last updated | 2026-08-28 (Prompt 03) |
 | Status of answers | **NONE** — perguntas abertas; respostas não autorizadas |
 
 Status típicos: `OPEN`, `BLOCKING`, `ANSWERED`, `SUPERSEDED`. Todas as entradas abaixo estão `OPEN` e `BLOCKING` para implementação do tema.
@@ -222,6 +222,36 @@ Quais campos da OS são obrigatórios para cada tipo de serviço?
 
 **Status:** `OPEN` · **Fonte:** EV-047, EV-048
 
+## DDP-036 — Targets de performance por classe de operação
+
+Quais classes de operação (consulta, transação, relatório, upload, integração) terão metas de tempo de resposta e quais valores a empresa autoriza?
+
+**Status:** `OPEN` · **Bloqueia dimensionamento:** sim · **Fonte:** Prompt 03 / EV-074, EV-075
+
+## DDP-037 — Política de concorrência e idempotência por operação
+
+Para cada operação crítica (criar solicitação, converter, liberar, alocar, medição, faturamento, documento), qual política de concorrência e repetição a empresa exige — sem escolher tecnologia nesta etapa?
+
+**Status:** `OPEN` · **Bloqueia implementação transacional:** sim · **Fonte:** Prompt 03 / EV-079, EV-028
+
+## DDP-038 — Observabilidade mínima operacional
+
+Quais eventos de negócio, métricas, traces e alertas são obrigatórios para operação e auditoria? Como separar AUDIT_TRAIL de TECHNICAL_LOG?
+
+**Status:** `OPEN` · **Fonte:** Prompt 03 / EV-074, EV-078
+
+## DDP-039 — Classificação de dados pessoais no domínio
+
+Quais campos do sistema contêm dados pessoais, qual finalidade, minimização aplicável e validação legal necessária?
+
+**Status:** `OPEN` · **Bloqueia política de privacidade:** sim · **Fonte:** Prompt 03 / EV-029, EV-030 · **Nota:** PENDING_LEGAL_VALIDATION
+
+## DDP-040 — Nível de disponibilidade aceitável
+
+Qual disponibilidade mínima em horário operacional, tolerância a manutenção planejada e requisitos para integrações críticas?
+
+**Status:** `OPEN` · **Fonte:** Prompt 03 / EV-005 · **Targets:** TARGET_PENDING
+
 ## Próximo ID
 
-`DDP-036`.
+`DDP-041`.

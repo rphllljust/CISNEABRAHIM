@@ -9,7 +9,8 @@
 3. `inputs/` recebe fontes empresariais. SRC-001 disponível desde Prompt 00.1; analisado no Prompt 01.
 4. `02-source-analysis/` contém decomposição atômica e análises do Prompt 01.
 5. `03-requirements/` contém requisitos funcionais e casos de uso do Prompt 02.
-6. `templates/` define a forma dos registros futuros.
+6. `04-quality-attributes/` contém requisitos não funcionais e cenários de qualidade do Prompt 03.
+7. `templates/` define a forma dos registros futuros.
 
 Agentes devem seguir [`../AGENTS.md`](../AGENTS.md) e o protocolo em [`00-governance/execution-protocol.md`](00-governance/execution-protocol.md).
 
@@ -64,6 +65,17 @@ Requisitos funcionais e casos de uso (Prompt 02). Índice: [03-requirements/READ
 | [acceptance-criteria-catalog.md](03-requirements/acceptance-criteria-catalog.md) | 52 ACs AC-001..AC-052 |
 | [business-capability-map.md](03-requirements/business-capability-map.md) | 27 capacidades candidatas |
 | [prompt-02-completeness-report.md](03-requirements/prompt-02-completeness-report.md) | Relatório de completude |
+
+## 04-quality-attributes
+
+Requisitos não funcionais e cenários de qualidade (Prompt 03). Índice: [04-quality-attributes/README.md](04-quality-attributes/README.md).
+
+| Arquivo | Conteúdo |
+| --- | --- |
+| [non-functional-requirements-register.md](04-quality-attributes/non-functional-requirements-register.md) | 40 NFRs NFR-001..NFR-040 |
+| [quality-attribute-scenarios.md](04-quality-attributes/quality-attribute-scenarios.md) | 28 cenários QA-SC-001..QA-SC-028 |
+| [security-requirements.md](04-quality-attributes/security-requirements.md) | 24 SEC-REQ |
+| [prompt-03-completeness-report.md](04-quality-attributes/prompt-03-completeness-report.md) | Relatório de completude |
 
 ## inputs
 
