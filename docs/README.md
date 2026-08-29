@@ -14,7 +14,8 @@
 8. `06-domain-boundaries/` contém subdomínios e bounded contexts candidatos do Prompt 05.
 9. `07-domain-behavior/` contém invariantes, comandos e eventos candidatos do Prompt 06.
 10. `08-state-machines/` contém máquinas de estado empresariais candidatas do Prompt 07.
-11. `templates/` define a forma dos registros futuros.
+11. `09-authorization/` contém autorização empresarial e segregação do Prompt 08.
+12. `templates/` define a forma dos registros futuros.
 
 Agentes devem seguir [`../AGENTS.md`](../AGENTS.md) e o protocolo em [`00-governance/execution-protocol.md`](00-governance/execution-protocol.md).
 
@@ -136,6 +137,19 @@ Máquinas de estado empresariais candidatas (Prompt 07). Índice: [08-state-mach
 | [state-event-timestamp-matrix.md](08-state-machines/state-event-timestamp-matrix.md) | STATE/EVENT/TIMESTAMP |
 | [cross-lifecycle-dependencies.md](08-state-machines/cross-lifecycle-dependencies.md) | 14 XLC |
 | [prompt-07-completeness-report.md](08-state-machines/prompt-07-completeness-report.md) | Relatório |
+
+## 09-authorization
+
+Autorização empresarial e segregação (Prompt 08). Índice: [09-authorization/README.md](09-authorization/README.md).
+
+| Arquivo | Conteúdo |
+| --- | --- |
+| [actor-register.md](09-authorization/actor-register.md) | 12 ACT |
+| [business-role-candidates.md](09-authorization/business-role-candidates.md) | 16 ROLE-CAND |
+| [command-authorization-matrix.md](09-authorization/command-authorization-matrix.md) | CMD × autorização |
+| [segregation-of-duties-matrix.md](09-authorization/segregation-of-duties-matrix.md) | 12 SOD |
+| [sensitive-data-access-matrix.md](09-authorization/sensitive-data-access-matrix.md) | Dados restritos |
+| [prompt-08-completeness-report.md](09-authorization/prompt-08-completeness-report.md) | Relatório |
 
 ## inputs
 

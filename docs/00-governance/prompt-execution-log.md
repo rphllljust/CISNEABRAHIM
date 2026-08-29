@@ -722,3 +722,45 @@ NOTES:
 - [x] Prompt 08 não executado
 
 ---
+
+```text
+PROMPT: 08
+TITLE: Modelo empresarial de autorização e segregação de funções
+STARTED_AT: 2026-08-28T23:40:00-04:00
+FINISHED_AT: 2026-08-29T00:10:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED:
+  docs/09-authorization/ (21 artefatos — ver README.md)
+FILES_CHANGED:
+  docs/01-foundation/requirements-traceability.md
+  docs/00-governance/prompt-execution-log.md
+  docs/README.md
+QUALITY_GATE: PASS_WITH_RESTRICTIONS
+ACT_COUNT: 12
+ROLE_CAND_COUNT: 16
+AUTHZ_COUNT: 42
+SOD_COUNT: 12
+SENSITIVE_ACTIONS: 28
+ADP_COUNT: 14
+TECHNICAL_ROLES: 0
+CODE_CREATED: NO
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Autorização funcional e contextual separadas. Admin técnico sem poder empresarial automático.
+  Custo/margem protegidos (SEC-REQ-009). DDP-003, DDP-015, DDP-022 bloqueiam SoD definitiva.
+  Sem JWT, guards, middleware ou código. Prompt 09 não executado.
+```
+
+## Quality gate Prompt 08 (evidência)
+
+- [x] pasta `09-authorization/` com 21 artefatos não vazios
+- [x] 12 ACT e 16 ROLE-CAND (nenhum definitivo)
+- [x] 42 AUTHZ com campos obrigatórios
+- [x] 12 SOD incluindo conflitos do enunciado
+- [x] 28 ações sensíveis mapeadas
+- [x] custo/margem e admin técnico tratados
+- [x] 0 roles técnicas, 0 código
+- [x] rastreabilidade atualizada
+- [x] Prompt 09 não executado
+
+---

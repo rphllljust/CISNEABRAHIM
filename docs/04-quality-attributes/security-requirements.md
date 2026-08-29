@@ -7,7 +7,7 @@
 | Total entradas | 24 (SEC-REQ-001..SEC-REQ-024) |
 | Prompt | 03 |
 
-> Autorização empresarial — **não** RBAC técnico. Sem roles técnicas nomeadas.
+> Modelo empresarial detalhado: [`../09-authorization/`](../09-authorization/) (Prompt 08). Sem roles técnicas.
 
 ## Classificação
 

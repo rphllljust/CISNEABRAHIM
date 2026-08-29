@@ -4,7 +4,7 @@
 | --- | --- |
 | Document ID | RTM-001 |
 | Policy | [`../00-governance/traceability-policy.md`](../00-governance/traceability-policy.md) |
-| Last updated | 2026-08-28 (Prompt 07) |
+| Last updated | 2026-08-28 (Prompt 08) |
 | Rule | Colunas inaplicáveis = `TBD`. Proibido inventar para completar. |
 
 Cadeia:
@@ -170,4 +170,24 @@ Cadeia Prompt 07:
 
 ```text
 INV → CMD → DE → SM-CAND → STATE-CAND → TR-CAND → GUARD
+```
+
+## Resumo Prompt 08
+
+| Métrica | Valor |
+| --- | --- |
+| Atores (ACT) | 12 |
+| Papéis candidatos (ROLE-CAND) | 16 |
+| Regras autorização (AUTHZ) | 42 |
+| Segregação (SOD) | 12 |
+| Ações sensíveis | 28 |
+| Decisões pendentes (ADP) | 14 |
+| Roles técnicas / código | **0** |
+| Índice | [`../09-authorization/README.md`](../09-authorization/README.md) |
+| Relatório | [`../09-authorization/prompt-08-completeness-report.md`](../09-authorization/prompt-08-completeness-report.md) |
+
+Cadeia Prompt 08:
+
+```text
+ACT → ROLE-CAND → AUTHZ → CMD/TR → SOD → DENY → SEC-REQ
 ```
