@@ -6,6 +6,7 @@ import { sanitizeRedirectPath } from '../auth/utils/safe-redirect';
 
 type LocationState = {
   from?: string;
+  reason?: 'session_expired';
 };
 
 export function LoginPage() {
@@ -20,7 +21,12 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const redirectTo = sanitizeRedirectPath((location.state as LocationState | null)?.from);
+  const locationState = (location.state as LocationState | null) ?? {};
+  const redirectTo = sanitizeRedirectPath(locationState.from);
+  const sessionExpiredNotice =
+    locationState.reason === 'session_expired'
+      ? 'Your session has expired. Sign in again.'
+      : null;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -53,6 +59,11 @@ export function LoginPage() {
   return (
     <main>
       <h1>Sign in</h1>
+      {sessionExpiredNotice ? (
+        <p className="form-notice" role="status">
+          {sessionExpiredNotice}
+        </p>
+      ) : null}
       <form onSubmit={(event) => void handleSubmit(event)} noValidate aria-describedby={errorMessage ? errorId : undefined}>
         <div className="form-field">
           <label htmlFor={loginId}>Login</label>

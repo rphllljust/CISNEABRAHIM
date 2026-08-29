@@ -1,30 +1,18 @@
-import { useAuth } from '../auth/context/AuthProvider';
-
 export function AppHomePage() {
-  const { identityId, sessionId, logout, logoutAll } = useAuth();
-
   return (
-    <main>
-      <h1>CISNE Rondônia</h1>
-      <p>Authenticated session (technical shell — no business modules).</p>
-      <dl className="session-details">
-        <div>
-          <dt>Identity</dt>
-          <dd>{identityId}</dd>
-        </div>
-        <div>
-          <dt>Session</dt>
-          <dd>{sessionId}</dd>
-        </div>
-      </dl>
-      <div className="button-row">
-        <button type="button" onClick={() => void logout()}>
-          Log out
-        </button>
-        <button type="button" onClick={() => void logoutAll()}>
-          Log out all sessions
-        </button>
-      </div>
+    <main id="main-content" className="shell-page">
+      <h1>Technical home</h1>
+      <p>
+        Authenticated application shell. No business modules, dashboards, or simulated metrics are
+        available in this phase.
+      </p>
+      <section aria-labelledby="shell-capabilities-heading">
+        <h2 id="shell-capabilities-heading">Navigation</h2>
+        <p>
+          Structural menu items may reflect candidate capabilities. The backend remains the
+          authority for access decisions.
+        </p>
+      </section>
     </main>
   );
 }

@@ -1623,3 +1623,65 @@ NOTES:
 - [x] Prompt 25 não executado
 
 ---
+
+```text
+PROMPT: 25
+TITLE: Application shell protegido
+STARTED_AT: 2026-08-29T12:50:00-04:00
+FINISHED_AT: 2026-08-29T13:02:00-04:00
+STATUS: PASS
+FILES_CREATED:
+  apps/web/src/shell/AppShellLayout.tsx
+  apps/web/src/shell/AppHeader.tsx
+  apps/web/src/shell/AppNav.tsx
+  apps/web/src/shell/CapabilityRoute.tsx
+  apps/web/src/shell/ShellErrorBoundary.tsx
+  apps/web/src/shell/useNavAccess.ts
+  apps/web/src/shell/nav-config.ts
+  apps/web/src/shell/types.ts
+  apps/web/src/shell/format-identity.ts
+  apps/web/src/shell/format-identity.test.ts
+  apps/web/src/shell/ShellErrorBoundary.test.tsx
+  apps/web/src/shell/shell.e2e.test.tsx
+  apps/web/src/auth/api/authz-api.ts
+  apps/web/src/pages/PlatformDiagnosticsPage.tsx
+  apps/web/src/pages/ShellAccessDeniedPage.tsx
+  apps/web/src/pages/SessionExpiredPage.tsx
+  apps/web/src/test/shell-fetch-mock.ts
+  docs/implementation/25-protected-shell.md
+FILES_CHANGED:
+  apps/web/src/App.tsx
+  apps/web/src/auth/context/AuthProvider.tsx
+  apps/web/src/auth/auth-flow.e2e.test.tsx
+  apps/web/src/pages/AppHomePage.tsx
+  apps/web/src/pages/LoginPage.tsx
+  apps/web/src/index.css
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+BUSINESS_MODULES_CREATED: 0
+DOC_FILES_CREATED: 1
+LINT: PASS
+TYPECHECK: PASS
+TEST: PASS (@cisne/web 28, @cisne/api 31)
+E2E: PASS (shell.e2e + auth-flow)
+BUILD: PASS
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Shell com header, nav estrutural, skip link, landmarks e responsividade.
+  Menu reflete CAP-001 via GET /api/v1/authz/probe; backend permanece autoridade.
+  Páginas técnicas apenas — sem dashboard, cards, gráficos ou módulos empresariais.
+  Prompt 26 não executado.
+```
+
+## Quality gate Prompt 25 (evidência)
+
+- [x] Layout protegido com header, nav, logout e identificação mínima de sessão
+- [x] Carregamento, acesso negado (capability), sessão expirada, erro inesperado, indisponível
+- [x] Acessibilidade mínima: skip link, landmarks, foco, teclado, contraste
+- [x] 0 módulos empresariais criados
+- [x] Testes: sessão válida/ausente/expirada, sem capability, deep link, mobile, logout, rede
+- [x] lint, typecheck, test, build — PASS
+- [x] docs/implementation/25-protected-shell.md
+- [x] Prompt 26 não executado
+
+---

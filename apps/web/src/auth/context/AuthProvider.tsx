@@ -33,6 +33,7 @@ type AuthContextValue = AuthState & {
   logout: () => Promise<void>;
   logoutAll: () => Promise<void>;
   refreshSession: () => Promise<void>;
+  expireSession: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -72,6 +73,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const applySession = useCallback((identityId: string, sessionId: string) => {
     setState({ status: 'authenticated', identityId, sessionId });
+  }, []);
+
+  const expireSession = useCallback(() => {
+    tokenStore.clear();
+    setState({ status: 'unauthenticated', identityId: null, sessionId: null });
   }, []);
 
   const bootstrap = useCallback(async () => {
@@ -164,8 +170,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       logoutAll,
       refreshSession,
+      expireSession,
     }),
-    [state, login, logout, logoutAll, refreshSession],
+    [state, login, logout, logoutAll, refreshSession, expireSession],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

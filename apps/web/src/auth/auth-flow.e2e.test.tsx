@@ -3,77 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../App';
 import { resetTokenStoreForTests } from '../auth/storage/token-store';
-import { requestUrl } from '../test/request-url';
-
-const identityId = '11111111-1111-4111-8111-111111111111';
-const sessionId = '22222222-2222-4222-8222-222222222222';
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return {
-    ok: status >= 200 && status < 300,
-    status,
-    json: async () => body,
-  } as Response;
-}
-
-function createFetchMock() {
-  return vi.fn(async (input: RequestInfo, init?: RequestInit) => {
-    const url = requestUrl(input);
-    const method = init?.method ?? 'GET';
-
-    if (url.endsWith('/api/v1/auth/login') && method === 'POST') {
-      const rawBody = init?.body;
-      const body = JSON.parse(typeof rawBody === 'string' ? rawBody : '{}') as {
-        login: string;
-        password: string;
-      };
-      if (body.password === 'Password1!') {
-        return jsonResponse({
-          accessToken: 'access-token',
-          refreshToken: 'refresh-token',
-          tokenType: 'Bearer',
-          expiresIn: 900,
-          session: { id: sessionId, expiresAt: new Date().toISOString(), status: 'active' },
-        });
-      }
-      return jsonResponse(
-        { error: { code: 'AUTH_INVALID_CREDENTIALS', message: 'Invalid credentials.' } },
-        401,
-      );
-    }
-
-    if (url.endsWith('/api/v1/auth/session') && method === 'GET') {
-      const auth = init?.headers ? new Headers(init.headers).get('authorization') : null;
-      if (auth?.startsWith('Bearer ')) {
-        return jsonResponse({
-          identityId,
-          session: { id: sessionId, expiresAt: new Date().toISOString(), status: 'active' },
-        });
-      }
-      return jsonResponse({ error: { code: 'AUTH_UNAUTHORIZED', message: 'Unauthorized.' } }, 401);
-    }
-
-    if (url.endsWith('/api/v1/auth/refresh') && method === 'POST') {
-      return jsonResponse({
-        accessToken: 'access-token-2',
-        refreshToken: 'refresh-token-2',
-        tokenType: 'Bearer',
-        expiresIn: 900,
-        session: { id: sessionId, expiresAt: new Date().toISOString(), status: 'active' },
-      });
-    }
-
-    if (url.endsWith('/api/v1/auth/logout') && method === 'POST') {
-      return jsonResponse({ success: true });
-    }
-
-    if (url.endsWith('/api/v1/auth/logout-all') && method === 'POST') {
-      return jsonResponse({ success: true });
-    }
-
-    return jsonResponse({ error: { code: 'UNKNOWN', message: 'Not found' } }, 404);
-  });
-}
+import { createShellFetchMock, MOCK_SESSION_ID } from '../test/shell-fetch-mock';
 
 describe('auth flow e2e (frontend)', () => {
   beforeEach(() => {
@@ -84,7 +14,7 @@ describe('auth flow e2e (frontend)', () => {
   });
 
   it('redirects unauthenticated users to login and protects /app', async () => {
-    vi.stubGlobal('fetch', createFetchMock());
+    vi.stubGlobal('fetch', createShellFetchMock());
     render(<App />);
 
     await waitFor(() => {
@@ -92,8 +22,8 @@ describe('auth flow e2e (frontend)', () => {
     });
   });
 
-  it('logs in, reaches protected route, refreshes session, and logs out', async () => {
-    const fetchMock = createFetchMock();
+  it('logs in, reaches protected shell, and logs out', async () => {
+    const fetchMock = createShellFetchMock();
     vi.stubGlobal('fetch', fetchMock);
     const user = userEvent.setup();
 
@@ -105,16 +35,16 @@ describe('auth flow e2e (frontend)', () => {
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/authenticated session/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /technical home/i })).toBeInTheDocument();
     });
 
-    expect(screen.getByText(identityId)).toBeInTheDocument();
+    expect(screen.getByRole('banner')).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('/api/v1/auth/session'),
       expect.objectContaining({ method: 'GET' }),
     );
 
-    await user.click(screen.getByRole('button', { name: /log out$/i }));
+    await user.click(screen.getByRole('button', { name: /log out/i }));
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: /sign in/i })).toBeInTheDocument();
@@ -123,20 +53,25 @@ describe('auth flow e2e (frontend)', () => {
 
   it('bootstraps session from refresh token in sessionStorage', async () => {
     sessionStorage.setItem('cisne.refreshToken', 'refresh-token');
-    const fetchMock = createFetchMock();
+    const fetchMock = createShellFetchMock();
     vi.stubGlobal('fetch', fetchMock);
 
     window.history.pushState({}, '', '/app');
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByText(/authenticated session/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /technical home/i })).toBeInTheDocument();
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('/api/v1/auth/refresh'),
       expect.objectContaining({ method: 'POST' }),
     );
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/api/v1/auth/session'),
+      expect.objectContaining({ method: 'GET' }),
+    );
+    expect(screen.getByTitle(MOCK_SESSION_ID)).toBeInTheDocument();
   });
 
   it('shows service unavailable on network errors during bootstrap', async () => {
