@@ -36,3 +36,4 @@ export {
 } from './catalog-builders';
 export { truncateAllOperationalTables, truncateClientTables } from './client-builders';
 export { truncatePhysicalAssetTables } from './asset-builders';
+export { truncateDocumentTables } from './document-builders';

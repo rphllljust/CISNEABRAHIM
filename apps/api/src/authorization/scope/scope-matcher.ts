@@ -94,6 +94,17 @@ export function toResourceContextFromPhysicalAsset(asset: {
   };
 }
 
+export function toResourceContextFromDocument(document: {
+  id: string;
+  unit_id: string;
+}): AuthzResourceContext {
+  return {
+    resourceId: document.id,
+    unitId: document.unit_id,
+    documentId: document.id,
+  };
+}
+
 export function toResourceContextFromScopedRecord(record: {
   id: string;
   owner_identity_id: string;

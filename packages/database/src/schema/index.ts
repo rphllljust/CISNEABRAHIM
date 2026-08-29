@@ -49,6 +49,13 @@ export {
   vehicleProfiles,
 } from './physical-assets';
 export {
+  docSchema,
+  documentStatusEnum,
+  documentVersions,
+  documents,
+  storedObjects,
+} from './documents';
+export {
   catSchema,
   evidenceKindEnum,
   legalClassificationSchemeEnum,

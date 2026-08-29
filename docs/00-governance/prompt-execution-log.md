@@ -2634,3 +2634,36 @@ Resumo:
 - [x] Prompt 45 não executado
 
 ---
+
+## Prompt 45 — Documentos, versionamento e object storage
+
+| Campo | Valor |
+| ----- | ----- |
+| ID | 45 |
+| Título | Documentos, versionamento e object storage |
+| Status | PASS |
+| Commit | feat(documents): implement secure versioned document storage |
+| Executado em | 2026-08-29 |
+
+```
+Resumo:
+  Schema doc.documents + doc.document_versions + doc.stored_objects.
+  Upload validado (MIME, extensão, magic bytes, tamanho), hash SHA-256,
+  versionamento imutável, compensação storage↔DB, download stream + token.
+  Authz documents:document:* com escopo UNIT/DOCUMENT/GLOBAL.
+  Prompt 46 não executado.
+```
+
+## Quality gate Prompt 45 (evidência)
+
+- [x] Upload e nova versão preservando histórico
+- [x] Fake MIME / oversize rejeitados
+- [x] Unauthorized, cross-scope, IDOR download
+- [x] Storage failure e DB failure (compensação)
+- [x] Hash, download stream, signed access
+- [x] DTO sem storage_key
+- [x] Migration 0015 + persistence test
+- [x] lint, typecheck, test, test:integration, test:e2e — PASS
+- [x] Prompt 46 não executado
+
+---

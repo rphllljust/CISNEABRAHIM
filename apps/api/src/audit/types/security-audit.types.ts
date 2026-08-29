@@ -35,6 +35,9 @@ export const SECURITY_AUDIT_ACTIONS = {
   ResourcesAssetUpdate: 'security:resources:asset:update',
   ResourcesAssetDeactivate: 'security:resources:asset:deactivate',
   ResourcesAssetActivate: 'security:resources:asset:activate',
+  DocumentsDocumentCreate: 'security:documents:document:create',
+  DocumentsDocumentUploadVersion: 'security:documents:document:upload-version',
+  DocumentsDocumentDownload: 'security:documents:document:download',
 } as const;
 
 export type SecurityAuditAction =
@@ -69,6 +72,7 @@ export const SECURITY_AUDIT_RESOURCE_TYPES = {
   ResourcesResourceType: 'security:resources:resource-type',
   ResourcesLaborType: 'security:resources:labor-type',
   ResourcesAsset: 'security:resources:asset',
+  DocumentsDocument: 'security:documents:document',
 } as const;
 
 export type SecurityAuditResourceType =
