@@ -3,8 +3,8 @@
 | Campo             | Valor                                                   |
 | ----------------- | ------------------------------------------------------- |
 | Document ID       | DDP-REG-001                                             |
-| Last updated      | 2026-08-28 (Prompt 03)                                  |
-| Status of answers | **NONE** — perguntas abertas; respostas não autorizadas |
+| Last updated      | 2026-08-29 (Prompt 29-A corretivo)                      |
+| Status of answers | **PARTIAL** — DDP-020 (CLIENT), DDP-028, DDP-041 respondidas no escopo SRC-002 |
 
 Status típicos: `OPEN`, `BLOCKING`, `ANSWERED`, `SUPERSEDED`. Todas as entradas abaixo estão `OPEN` e `BLOCKING` para implementação do tema.
 
@@ -130,7 +130,9 @@ Prazos legais e empresariais de guarda de dados e documentos? `NOT_PROVIDED`.
 
 Para cada conceito crítico (OS, saldo de PO, medição, fatura, pagamento, cadastro), qual sistema é autoritativo?
 
-**Status:** `OPEN` · **Bloqueia integrações e persistência definitiva:** sim
+**Status:** `PARTIALLY_ANSWERED` — **escopo CLIENTE resolvido** (SRC-002 Q04, Prompt 29-A corretivo): CISNE = master operacional do Cliente; ERP/fiscal = autoridade de domínios externos quando integração existir; `externalErpId` opcional, nunca PK. Demais conceitos (OS, PO, medição, fatura, pagamento, documentos, WhatsApp) permanecem `OPEN`.
+
+**Bloqueia implementação de Clientes:** não (escopo CLIENTE) · **Bloqueia integrações definitivas de outros domínios:** sim
 
 ## DDP-021 — Canal WhatsApp
 
@@ -166,7 +168,9 @@ Existe exigência de Progressive Web App ou experiência mobile instalável?
 
 Quais verticais (locação citada como prioridade candidata em §21) entram no primeiro release? Confirmação formal da direção necessária.
 
-**Status:** `OPEN` · **Bloqueia:** escopo de produto · **Fonte:** EV-003, EV-080–EV-082 · **Risco:** RISK-021
+**Status:** `PARTIALLY_ANSWERED` — módulo **Clientes PJ** confirmado no Release 1 (SRC-002 Q01). Demais verticais permanecem `OPEN`.
+
+**Bloqueia:** escopo completo de produto · **Fonte:** EV-003, EV-080–EV-082, SRC-002 · **Risco:** RISK-021
 
 ## DDP-027 — Chassi — exibição vs armazenamento
 
@@ -178,7 +182,9 @@ Como tratar chassi e dados sensíveis de veículo (máscara em tela vs armazenam
 
 Quem pode solicitar? Solicitante interno ou externo? Lista de perfis?
 
-**Status:** `OPEN` · **Fonte:** EV-029
+**Status:** `ANSWERED` (SRC-002, Prompt 29-A corretivo) — Origem da demanda pode ser externa (cliente, contato, WhatsApp, PO, contrato, proposta, etc.). No Release 1, registro transacional da Solicitação é por usuário interno autorizado. Solicitante externo não cria/libera OS nem altera custo/preço/faturamento. Separar `REQUEST_ORIGIN` de `SYSTEM_ACTOR` e `AUTHORIZED_APPROVER`.
+
+**Fonte:** EV-029, SRC-002 · **Bloqueia implementação de Solicitação (escopo R1):** não
 
 ## DDP-029 — Prontidão para liberação da OS
 
@@ -252,6 +258,14 @@ Qual disponibilidade mínima em horário operacional, tolerância a manutenção
 
 **Status:** `OPEN` · **Fonte:** Prompt 03 / EV-005 · **Targets:** TARGET_PENDING
 
+## DDP-041 — Campos mínimos do Cliente PJ
+
+Quais campos são obrigatórios e opcionais no cadastro de Cliente PJ no Release 1?
+
+**Status:** `ANSWERED` (SRC-002 Q06, Prompt 29-A corretivo) — Obrigatórios: razão social, CNPJ, pelo menos um contato operacional utilizável. Opcionais quando suportados: nome fantasia, código externo/ERP, telefone, e-mail, endereços, observações estritamente necessárias. Sem campos CRM/fiscais avançados não aprovados.
+
+**Fonte:** SRC-002 Q06 · **Bloqueia implementação de Clientes:** não
+
 ## Próximo ID
 
-`DDP-041`.
+`DDP-042`.

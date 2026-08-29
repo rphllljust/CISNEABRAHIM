@@ -3,7 +3,7 @@
 | Campo        | Valor                                           |
 | ------------ | ----------------------------------------------- |
 | Document ID  | SRC-REG-001                                     |
-| Last updated | 2026-08-28 (Prompt 01: análise atômica SRC-001) |
+| Last updated | 2026-08-29 (Prompt 29-A corretivo: registro SRC-002) |
 
 ## Como preencher
 
@@ -50,7 +50,29 @@
 | Affected domains (candidatos de cobertura desta fonte; não são módulos confirmados) | Atividades empresariais citadas; solicitação de serviço; abertura e liberação de OS; conteúdo operacional da OS; equipamentos, veículos e máquinas; mão de obra; custo interno vs preço comercial; origem de cobrança e fases de item; cadeia comercial (proposta, pedido, PO, contrato, OS, execução, medição, faturamento, pagamento); documentos e versões; responsabilidade e handoff; gargalos e aging; integrações candidatas; preocupações de segurança; prioridade candidata (locação); decisões bloqueantes listadas na fonte |
 | Atomic analysis                                                                     | **COMPLETE** (Prompt 01 — 84 evidências EV-001–EV-084 em [`../02-source-analysis/atomic-evidence-register.md`](../02-source-analysis/atomic-evidence-register.md))                                                                                                                                                                                                                                                                                                                                                                     |
 | Analyzed in prompt                                                                  | **01** (2026-08-28)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| Notes                                                                               | Fonte de contexto reconstruído. Nenhuma afirmação promovida a `CONFIRMED` no Prompt 01. Permanece `PENDING_BUSINESS_VALIDATION`.                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Notes                                                                               | Fonte de contexto reconstruído. Nenhuma afirmação promovida a `CONFIRMED` no Prompt 01. Permanece `PENDING_BUSINESS_VALIDATION`. Complementado por SRC-002 (decisões Cliente).                                                                                                                                                                                                                                                                                                                                                                                                       |
+
+### SRC-002
+
+| Campo | Valor |
+| ----- | ----- |
+| SOURCE-ID | SRC-002 |
+| Title | Confirmação de baseline empresarial — módulo Clientes e decisões correlatas |
+| Type | `BUSINESS_DECISION` · `DOCUMENTARY_EVIDENCE` (parcial) |
+| Origin | Questionário criado Prompt 28; decisões registradas Prompt 29-A corretivo (instrução empresarial autorizada) |
+| Location | [`../inputs/SRC-002-business-baseline-confirmation.md`](../inputs/SRC-002-business-baseline-confirmation.md) |
+| Date received | 2026-08-29 |
+| Status | `DECISIONS_RECORDED_SIGNATURE_PENDING` |
+| Classification | `BUSINESS_CONFIRMATION_REQUIRED` |
+| May prove operational business rules? | **YES** (escopo Cliente e DDP-028; assinatura formal pendente) |
+| Signed by | `PENDING_HUMAN_CONFIRMATION` |
+| Business facts recorded | CISNE RONDÔNIA COMÉRCIO E SERVIÇOS LTDA; CNPJ 11.897.171/0001-81 (operadora, não Client); código externo 152888 (referência comercial, não PK) |
+| Business decisions recorded | Q01–Q15; DDP-020 (CLIENT_SCOPE); DDP-028; DDP-041 |
+| Technical decisions recorded | Autorização via Identity + Capability + Scope; sem hardcode de proprietários |
+| Confirmed rules promoted | BR-025..BR-040 (`CONFIRMED`); BR-041 (`CONDITIONAL`) — ver `business-rules-register.md` |
+| Conflicts resolved | MAP-001, MAP-002 |
+| Analyzed in prompt | **29-A corretivo** (2026-08-29) |
+| Notes | Gate `BLOCKED_BY_SIGNATURE_ONLY` — único bloqueador ativo: assinatura humana. Não inventar assinatura de Abrahim Jabour Junior ou Monica Perez Badra Jabour sem registro explícito. |
 
 ## Fontes ainda não fornecidas
 

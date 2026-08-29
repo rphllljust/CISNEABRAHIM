@@ -4,8 +4,8 @@
 | ---------------------------- | ---------------------- |
 | Document ID                  | BR-REG-001             |
 | Source of register structure | SRC-000                |
-| Last updated                 | 2026-08-28 (Prompt 01) |
-| Confirmed rules              | **0**                  |
+| Last updated                 | 2026-08-29 (Prompt 29-A corretivo) |
+| Confirmed rules              | **16**                             |
 
 ## Status permitidos
 
@@ -19,7 +19,7 @@ DEPRECATED
 SUPERSEDED
 ```
 
-Nenhuma regra neste arquivo está `CONFIRMED`. SRC-001 analisado no Prompt 01; todas as entradas abaixo permanecem candidatas ou pendentes de validação.
+Regras **BR-025, BR-026..BR-040** promovidas a `CONFIRMED` via SRC-002 (Prompt 29-A corretivo, 2026-08-29). **BR-041** permanece `CONDITIONAL`. Demais entradas abaixo permanecem candidatas ou pendentes salvo indicação contrária.
 
 Template: [`../templates/business-rule-template.md`](../templates/business-rule-template.md).
 
@@ -324,12 +324,189 @@ Template: [`../templates/business-rule-template.md`](../templates/business-rule-
 | ID               | BR-025                                                                  |
 | Title            | Solicitar não equivale a autorizar                                      |
 | Statement        | Solicitar serviço ou OS não equivale a autorizar abertura ou liberação. |
-| Status           | `CANDIDATE`                                                             |
-| Source           | SRC-001                                                                 |
-| Evidence         | EV-041                                                                  |
-| Pending decision | DDP-003                                                                 |
+| Status           | `CONFIRMED`                                                             |
+| Source           | SRC-001; **confirmado por** SRC-002 (Prompt 29-A corretivo)           |
+| Evidence         | EV-041; Q15/DDP-028                                                     |
+| Pending decision | —                                                                       |
 | Risk             | RISK-022                                                                |
 
 ## Próximos IDs
 
-Próximo livre: `BR-026`. Não reutilizar `BR-001`–`BR-025`.
+Próximo livre: `BR-042`. Não reutilizar `BR-001`–`BR-041`.
+
+## BR-026
+
+| Campo      | Valor                                                                                      |
+| ---------- | ------------------------------------------------------------------------------------------ |
+| ID         | BR-026                                                                                     |
+| Title      | Módulo Clientes PJ no Release 1                                                            |
+| Statement  | Release 1 inclui cadastro interno mínimo de Cliente PJ (operacional); não é CRM nem ERP.   |
+| Status     | `CONFIRMED`                                                                                |
+| Source     | SRC-002 (Q01)                                                                              |
+| Evidence   | Prompt 29-A corretivo                                                                      |
+| Blocks implementation? | Não — habilita Prompt 29                                                         |
+
+## BR-027
+
+| Campo     | Valor                                                        |
+| --------- | ------------------------------------------------------------ |
+| ID        | BR-027                                                       |
+| Title     | CNPJ obrigatório para Cliente PJ                            |
+| Statement | Todo Cliente PJ deve possuir CNPJ válido e obrigatório.     |
+| Status    | `CONFIRMED`                                                  |
+| Source    | SRC-002 (Q02)                                                |
+| Evidence  | Prompt 29-A corretivo                                        |
+
+## BR-028
+
+| Campo     | Valor                                                                 |
+| --------- | --------------------------------------------------------------------- |
+| ID        | BR-028                                                                |
+| Title     | Cliente PF fora do Release 1                                          |
+| Statement | Pessoa física como Cliente não integra Release 1 (`NOT_IN_RELEASE_1`). |
+| Status    | `CONFIRMED`                                                           |
+| Source    | SRC-002 (Q07)                                                         |
+| Evidence  | Prompt 29-A corretivo                                                 |
+
+## BR-029
+
+| Campo     | Valor                                                                                   |
+| --------- | --------------------------------------------------------------------------------------- |
+| ID        | BR-029                                                                                  |
+| Title     | CNPJ único globalmente                                                                  |
+| Statement | CNPJ é único no cadastro de Clientes; normalizar para representação canônica (dígitos) antes de comparar/persistir. |
+| Status    | `CONFIRMED`                                                                             |
+| Source    | SRC-002 (Q03)                                                                           |
+| Evidence  | Prompt 29-A corretivo                                                                   |
+
+## BR-030
+
+| Campo     | Valor                                                                                         |
+| --------- | --------------------------------------------------------------------------------------------- |
+| ID        | BR-030                                                                                        |
+| Title     | Identidade operacional CISNE do Cliente                                                       |
+| Statement | Sistema CISNE é autoridade sobre identidade interna operacional e relacionamentos do Cliente. |
+| Status    | `CONFIRMED`                                                                                   |
+| Source    | SRC-002 (Q04)                                                                                 |
+| Evidence  | Prompt 29-A corretivo; DDP-020 CLIENT_SCOPE                                                   |
+
+## BR-031
+
+| Campo     | Valor                                                                                |
+| --------- | ------------------------------------------------------------------------------------ |
+| ID        | BR-031                                                                               |
+| Title     | Chave externa/ERP não é PK interna                                                   |
+| Statement | Identificador ERP externo (`externalErpId` ou equivalente) nunca é PK do Cliente. |
+| Status    | `CONFIRMED`                                                                          |
+| Source    | SRC-002 (Q04)                                                                        |
+| Evidence  | Prompt 29-A corretivo; código 152888 = referência externa apenas                   |
+
+## BR-032
+
+| Campo     | Valor                                                                                              |
+| --------- | -------------------------------------------------------------------------------------------------- |
+| ID        | BR-032                                                                                             |
+| Title     | Cliente é contraparte comercial                                                                    |
+| Statement | Client representa contraparte comercial atendida; CISNE (organização operadora) ≠ Client.          |
+| Status    | `CONFIRMED`                                                                                        |
+| Source    | SRC-002 (Q05)                                                                                      |
+| Evidence  | Prompt 29-A corretivo                                                                              |
+
+## BR-033
+
+| Campo     | Valor                                                                                         |
+| --------- | --------------------------------------------------------------------------------------------- |
+| ID        | BR-033                                                                                        |
+| Title     | Sem exclusão física destrutiva de Cliente usado                                               |
+| Statement | Cliente utilizado em processo empresarial não sofre DELETE físico destrutivo; usar desativação lógica. |
+| Status    | `CONFIRMED`                                                                                   |
+| Source    | SRC-002 (Q08)                                                                                 |
+| Evidence  | Prompt 29-A corretivo                                                                         |
+
+## BR-034
+
+| Campo     | Valor                                                                                    |
+| --------- | ---------------------------------------------------------------------------------------- |
+| ID        | BR-034                                                                                   |
+| Title     | Perfil de Controle administra Cliente                                                    |
+| Statement | Criar, editar e desativar Cliente exige Perfil de Controle com capabilities `CLIENT_*`. |
+| Status    | `CONFIRMED`                                                                              |
+| Source    | SRC-002 (Q09–Q11)                                                                        |
+| Evidence  | Prompt 29-A corretivo                                                                    |
+
+## BR-035
+
+| Campo     | Valor                                                                          |
+| --------- | ------------------------------------------------------------------------------ |
+| ID        | BR-035                                                                         |
+| Title     | Empregado não administra Cliente automaticamente                               |
+| Statement | Empregados não recebem capacidades administrativas de Cliente por padrão.    |
+| Status    | `CONFIRMED`                                                                    |
+| Source    | SRC-002 (Q09–Q12)                                                              |
+| Evidence  | Prompt 29-A corretivo                                                          |
+
+## BR-036
+
+| Campo     | Valor                                                                                    |
+| --------- | ---------------------------------------------------------------------------------------- |
+| ID        | BR-036                                                                                   |
+| Title     | Desativação preserva histórico                                                          |
+| Statement | Cliente desativado permanece consultável; histórico (OS, solicitações, documentos, auditoria) preservado. |
+| Status    | `CONFIRMED`                                                                              |
+| Source    | SRC-002 (Q08)                                                                            |
+| Evidence  | Prompt 29-A corretivo                                                                    |
+
+## BR-037
+
+| Campo     | Valor                                                                                              |
+| --------- | -------------------------------------------------------------------------------------------------- |
+| ID        | BR-037                                                                                             |
+| Title     | OS liberada exige Cliente ativo                                                                    |
+| Statement | Liberação de OS exige Cliente válido, existente e com status ACTIVE; intake pode ser sem Cliente. |
+| Status    | `CONFIRMED`                                                                                        |
+| Source    | SRC-002 (Q15)                                                                                      |
+| Evidence  | Prompt 29-A corretivo                                                                              |
+
+## BR-038
+
+| Campo     | Valor                                                                                 |
+| --------- | ------------------------------------------------------------------------------------- |
+| ID        | BR-038                                                                                |
+| Title     | Origem externa da demanda                                                             |
+| Statement | Origem da demanda pode ser externa (cliente, WhatsApp, PO, contrato, proposta, etc.). |
+| Status    | `CONFIRMED`                                                                           |
+| Source    | SRC-002 (DDP-028)                                                                     |
+| Evidence  | Prompt 29-A corretivo                                                                 |
+
+## BR-039
+
+| Campo     | Valor                                                                                        |
+| --------- | -------------------------------------------------------------------------------------------- |
+| ID        | BR-039                                                                                       |
+| Title     | Registro interno da solicitação no Release 1                                                  |
+| Statement | No Release 1, registro transacional da Solicitação é realizado por usuário interno autorizado. |
+| Status    | `CONFIRMED`                                                                                  |
+| Source    | SRC-002 (DDP-028)                                                                            |
+| Evidence  | Prompt 29-A corretivo                                                                        |
+
+## BR-040
+
+| Campo     | Valor                                                                                                              |
+| --------- | ------------------------------------------------------------------------------------------------------------------ |
+| ID        | BR-040                                                                                                             |
+| Title     | Solicitante externo sem autoridade operacional                                                                     |
+| Statement | Solicitante externo não cria, libera ou aprova OS; não altera custo, preço ou faturamento.                       |
+| Status    | `CONFIRMED`                                                                                                        |
+| Source    | SRC-002 (DDP-028; Q15)                                                                                             |
+| Evidence  | Prompt 29-A corretivo                                                                                              |
+
+## BR-041
+
+| Campo     | Valor                                                                                                      |
+| --------- | ---------------------------------------------------------------------------------------------------------- |
+| ID        | BR-041                                                                                                     |
+| Title     | Regras Cliente/Contrato/PO afetam operação                                                                 |
+| Statement | Regras específicas de Cliente, Contrato ou PO podem afetar operação e faturamento quando módulos existirem. |
+| Status    | `CONDITIONAL`                                                                                              |
+| Source    | SRC-002 (item 16)                                                                                          |
+| Evidence  | Prompt 29-A corretivo                                                                                      |

@@ -10,7 +10,7 @@
 | ------------------------- | -------------------------------- | ---------------------- | ------------------------------ | ------- |
 | Solicitação               | Sistema CISNE (futuro)           | BC-CAND-005            | BC-CAND-016 read               | —       |
 | OS e histórico            | Sistema CISNE                    | BC-CAND-006            | BC-CAND-016                    | —       |
-| Cliente cadastro          | Interno ou ERP                   | BC-CAND-002 / externo  | BC-CAND-003                    | DDP-020 |
+| Cliente cadastro          | **Sistema CISNE** (master operacional; ERP opcional réplica futura) | BC-CAND-002            | BC-CAND-003 via `externalErpId` | DDP-020 **CLIENT_SCOPE ANSWERED** |
 | Contrato / proposta       | ERP ou interno                   | BC-CAND-003 / externo  | BC-CAND-006                    | DDP-030 |
 | Purchase Order            | **Cliente / ERP candidato**      | BC-CAND-004 ou externo | BC-CAND-006                    | DDP-009 |
 | Saldo PO                  | Mesmo SoT do PO                  | BC-CAND-004            | BC-CAND-003                    | DDP-009 |

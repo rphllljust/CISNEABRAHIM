@@ -1935,3 +1935,49 @@ NOTES:
 - [x] Prompt 30 não executado
 
 ---
+
+```text
+PROMPT: 29-A (corretivo)
+TITLE: Resolução definitiva controlada do SRC-002 e liberação do módulo Clientes
+STARTED_AT: 2026-08-29T14:00:00-04:00
+FINISHED_AT: 2026-08-29T14:30:00-04:00
+STATUS: BLOCKED_BY_SIGNATURE_ONLY
+FILES_CHANGED:
+  docs/inputs/SRC-002-business-baseline-confirmation.md
+  docs/01-foundation/business-rules-register.md
+  docs/01-foundation/domain-decisions-pending.md
+  docs/01-foundation/source-registry.md
+  docs/06-domain-boundaries/source-of-truth-by-context.md
+  docs/implementation/28-business-readiness-gate.md
+  scripts/validate-src-002-gate.mjs
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS (lint, typecheck, test, integration, build)
+SRC_002_STATUS: BLOCKED_BY_SIGNATURE_ONLY
+CLIENTS_MODULE_READY: true (decisões resolvidas; aguarda assinatura)
+CONFIRMED_BUSINESS_RULES: 16 (BR-025..BR-040)
+CONDITIONAL_BUSINESS_RULES: 1 (BR-041)
+MANDATORY_BLOCKERS_BEFORE: 14
+MANDATORY_BLOCKERS_AFTER: 1 (assinatura humana)
+GATE_SCRIPT: pnpm gate:src-002 → BLOCKED_BY_SIGNATURE_ONLY (exit 1 esperado)
+CODE_CREATED: NO
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Decisões empresariais Q01–Q15 registradas; DDP-020 (CLIENT), DDP-028, DDP-041 resolvidos.
+  MAP-001/002 corrigidos. Nenhuma assinatura inventada.
+  Prompt 29 (implementação) aguarda assinatura formal. Prompt 30 não executado.
+```
+
+## Quality gate Prompt 29-A corretivo (evidência)
+
+- [x] Decisões empresariais Q01–Q15 registradas em SRC-002
+- [x] BR-025..BR-040 promovidas a CONFIRMED; BR-041 CONDITIONAL
+- [x] DDP-020 (CLIENT_SCOPE), DDP-028, DDP-041 atualizados
+- [x] MAP-001/002 corrigidos
+- [x] source-registry.md atualizado (SRC-002)
+- [x] Nenhuma assinatura inventada
+- [x] Nenhum código de Clientes criado
+- [x] gate:src-002 → BLOCKED_BY_SIGNATURE_ONLY
+- [x] lint, typecheck, test, test:integration, build — PASS
+- [x] Prompt 30 não executado
+
+---

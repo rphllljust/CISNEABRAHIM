@@ -48,9 +48,9 @@ Artefatos primários (`NOT_PROVIDED`): Documento Mestre, contratos, POs reais, N
 
 | Módulo | Evidência mínima ausente | Bloqueio |
 | ------ | ------------------------ | -------- |
-| Clientes | Campos obrigatórios, interno/externo, SoT | DDP-028, DDP-020 |
+| Clientes | Campos obrigatórios PJ, SoT Cliente, autorização | **Resolvido** — SRC-002 Prompt 29-A (DDP-041, DDP-020 CLIENT); assinatura pendente |
 | Recursos | Mão de obra, equipamento, veículo, alocação | DDP-006, DDP-007, DDP-008, DDP-034 |
-| Solicitações | Quem solicita, canal WhatsApp, conversão | DDP-002, DDP-021, DDP-028 |
+| Solicitações | Quem solicita, canal WhatsApp, conversão | DDP-002, DDP-021; **DDP-028 ANSWERED** |
 | OS | Tipos, estados, criar/liberar, composição | DDP-001, DDP-003, DDP-022, DDP-029, DDP-035 |
 | Execução | Estados, handoff, evidências | DDP-032, SM-CAND-* |
 | Medição | Objeto, aprovador, evidência, SoD | DDP-010, INV-008, INV-017 |

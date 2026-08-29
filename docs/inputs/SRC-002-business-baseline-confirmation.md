@@ -7,99 +7,145 @@
 | Type | QUESTIONNAIRE — confirmação formal pelo responsável empresarial |
 | Origin | Criado no Prompt 28; análise documental no Prompt 29-A |
 | Location | `docs/inputs/SRC-002-business-baseline-confirmation.md` |
-| Date received | _pendente — aguarda assinatura_ |
+| Date received | 2026-08-29 (decisões empresariais registradas; assinatura pendente) |
 | Signed by | **PENDING_HUMAN_CONFIRMATION** |
-| Status | `ANALYZED_BLOCKED` |
+| Status | `DECISIONS_RECORDED_SIGNATURE_PENDING` |
 | Classification | `BUSINESS_CONFIRMATION_REQUIRED` |
-| May prove operational business rules? | **Não** — 0 regras `CONFIRMED`; assinatura pendente |
+| May prove operational business rules? | **Parcial** — regras Cliente `CONFIRMED` via SRC-002; assinatura formal pendente |
 | Supersedes / complements | SRC-001 (`PENDING_BUSINESS_VALIDATION`) — **não** substitui documentos primários |
 
 ```gate
-status: BLOQUEADO
-clients_module_ready: false
+status: BLOCKED_BY_SIGNATURE_ONLY
+clients_module_ready: true
 signed_by: PENDING_HUMAN_CONFIRMATION
-mandatory_blockers_count: 14
-analysis_prompt: 29-A
+mandatory_blockers_count: 1
+signature_blocker_only: true
+analysis_prompt: 29-A-corrective
 analysis_date: 2026-08-29
-confirmed_business_rules: 0
+confirmed_business_rules: 16
 ```
 
 ---
 
-## Resolução controlada (Prompt 29-A)
+## Resolução controlada (Prompt 29-A corretivo)
 
-**STATUS DO SRC-002:** `BLOQUEADO`  
-**Módulo Clientes liberado para Prompt 29:** **NÃO**
+**STATUS SRC-002:** `BLOCKED_BY_SIGNATURE_ONLY`  
+**APPROVAL STATUS:** Decisões empresariais registradas · assinatura humana pendente  
+**Módulo Clientes liberado para Prompt 29:** **Somente após assinatura** (`gate:src-002` → `LIBERADO`)
 
 ### CONFIRMED BUSINESS RULES
 
-Nenhuma regra empresarial de Clientes/Party está `CONFIRMED` em `business-rules-register.md` (total confirmado: **0**).  
-SRC-001 declara explicitamente que **não** pode confirmar regras definitivas isoladamente (§2, §23).
+Fonte das decisões: instrução empresarial autorizada do Prompt 29-A corretivo (2026-08-29).  
+Registro: `business-rules-register.md` — **BR-025, BR-026..BR-040** (`CONFIRMED`); **BR-041** (`CONDITIONAL`).
+
+| ID | Regra (resumo) |
+| -- | -------------- |
+| BR-026 | Módulo Clientes PJ no Release 1 (cadastro mínimo operacional; não CRM/ERP) |
+| BR-027 | CNPJ obrigatório para Cliente PJ |
+| BR-028 | Cliente PF fora do Release 1 (`NOT_IN_RELEASE_1`) |
+| BR-029 | CNPJ único globalmente (normalização canônica antes de comparar/persistir) |
+| BR-030 | Sistema CISNE é autoridade da identidade operacional interna do Cliente |
+| BR-031 | Chave externa/ERP (`externalErpId` ou equivalente) nunca é PK interna |
+| BR-032 | Cliente é contraparte comercial; CISNE ≠ Client; unidade organizacional ≠ Client |
+| BR-033 | Cliente com uso empresarial não sofre DELETE físico destrutivo |
+| BR-034 | Perfil de Controle com capabilities `CLIENT_CREATE`/`CLIENT_EDIT`/`CLIENT_DEACTIVATE` administra Cliente |
+| BR-035 | Empregado não recebe administração de Cliente automaticamente |
+| BR-036 | Desativação lógica preserva histórico (OS, solicitações, documentos, auditoria) |
+| BR-037 | OS liberada exige `clientId` válido, Cliente existente e `ACTIVE` |
+| BR-038 | Origem da demanda pode ser externa (cliente, WhatsApp, PO, etc.) |
+| BR-039 | Registro transacional da Solicitação no Release 1 é por usuário interno autorizado |
+| BR-025 | Solicitar não equivale a autorizar (promovida de CANDIDATE) |
+| BR-040 | Solicitante externo não cria, libera, aprova OS nem altera custo/preço/faturamento |
+| BR-041 | Regras específicas Cliente/Contrato/PO podem afetar operação/faturamento (`CONDITIONAL`) |
 
 ### CONDITIONAL BUSINESS RULES
 
-| Regra | Evidência | Condição | Impacto se ignorada |
-| ----- | --------- | -------- | ------------------- |
-| Não presumir cadastro/CNPJ/CPF/hierarquia de Cliente nesta fase | TERM-004 (`Significado excluído`) | Válido até decisão formal de cadastro | Modelagem prematura; violação de governança |
-| Cliente citado como campo/contexto de OS, não como entidade confirmada | DEM-001; EV-047 | Válido até AGG-012 confirmado | Tabela `pty.party` sem baseline |
-| Party/intake = PII RESTRICTED quando existir | SEC-AST-010 | Válido quando cadastro for autorizado | LGPD/privacidade (DDP-039 OPEN) |
-| SoT de Cliente: interno **ou** ERP — decisão pendente | DBND-SOT-001; DDP-020 | Válido até escolha explícita | Réplica vs master; integração |
+| Regra | Condição |
+| ----- | -------- |
+| BR-041 | Aplica quando módulos Contrato/PO estiverem implementados |
+| SoT híbrido ERP | ERP/fiscal permanece autoridade de domínios externos quando integração existir; sem integração fictícia |
+| Contatos com PII | Minimização e autorização backend (DDP-039 legal ainda OPEN) |
 
-### UNRESOLVED BUSINESS DECISIONS (bloqueiam Clientes)
+### OUT OF RELEASE 1
 
-| ID | Pergunta | Status | Evidência |
-| -- | -------- | ------ | --------- |
-| DDP-020 | Source of Truth — cadastro de cliente | `REQUIRES_BUSINESS_DECISION` | DBND-SOT-001: "Interno ou ERP"; EV-077 |
-| DDP-028 | Quem pode solicitar serviço (interno/externo/perfis) | `UNKNOWN` | EV-021, EV-029; SRC-001 §5 |
-| DDP-015 | Permissões / papéis / SoD | `UNKNOWN` | SRC-001 §20; ADP-001..014 OPEN |
-| DDP-026 | Escopo do primeiro release (Clientes incluído?) | `UNKNOWN` | SRC-001 §21; BR-020 CANDIDATE |
-| DDP-039 | Classificação de dados pessoais (party) | `UNKNOWN` | SEC-AST-010; NFR-010 |
-| — | **Lacuna:** campos obrigatórios PJ/PF/CNPJ/CPF | `REQUIRES_BUSINESS_DECISION` | Nenhum DDP dedicado; TERM-004 exclui definição |
-| — | Quem cadastra/edita/desativa Cliente | `REQUIRES_BUSINESS_DECISION` | ADP-010 OPEN; sem FR de cadastro confirmado |
-| — | Cliente interno vs externo | `UNKNOWN` | EV-021; SRC-001 §5 |
-| — | Contatos / endereços / responsáveis | `UNKNOWN` | Não descritos em fonte validada |
-| — | Relação Cliente→Proposta/Contrato/PO/OS | `UNKNOWN` | BR-013 CANDIDATE (não presumir cardinalidades) |
+| Item | Status |
+| ---- | ------ |
+| Cliente PF (CPF, RG) | `NOT_IN_RELEASE_1` |
+| CRM (funil, campanhas, lead scoring) | `NOT_IN_RELEASE_1` |
+| Grupo econômico complexo | `NOT_IN_RELEASE_1` (compatibilidade arquitetural preservada) |
+| Enum cliente interno/externo | `REJECTED` para Release 1 |
+
+### RESOLVED BUSINESS DECISIONS
+
+| Ref | Decisão |
+| --- | ------- |
+| Q01 | Clientes no Release 1 — SIM (cadastro mínimo interno) |
+| Q02 | Apenas PJ; CNPJ obrigatório |
+| Q03 | CNPJ único global; normalizar para dígitos na comparação |
+| Q04 | SoT híbrido: CISNE master operacional; ERP opcional futuro via `externalErpId` |
+| Q05 | Sem classificação interno/externo no Client; CISNE ≠ Client |
+| Q06 | Obrigatórios: razão social, CNPJ, ≥1 contato operacional |
+| Q07 | PF fora do Release 1 |
+| Q08 | Desativação lógica; sem DELETE destrutivo; RESTRICT em histórico |
+| Q09 | `CLIENT_CREATE` — Perfil de Controle autorizado |
+| Q10 | `CLIENT_EDIT` — Perfil de Controle autorizado |
+| Q11 | `CLIENT_DEACTIVATE` — Perfil de Controle; motivo/auditoria quando padrão exigir |
+| Q12 | OWNER/CONTROL visão global por capability; empregado limitado ao contexto operacional |
+| Q13 | Um CNPJ = uma entidade jurídica; sem fusão de CNPJs distintos |
+| Q14 | Múltiplos contatos e endereços com finalidade (operational/commercial/billing) |
+| Q15 | Intake pode não ter Cliente; **liberação de OS** exige Cliente ACTIVE |
+| DDP-028 | Resolvido — ver §3 e `domain-decisions-pending.md` |
+| DDP-020 | Resolvido **somente escopo CLIENTE** — ver §19 |
+| DDP-041 | Campos mínimos PJ — ver §1 |
+
+### UNRESOLVED BUSINESS DECISIONS (não bloqueiam Clientes após decisões acima)
+
+| ID | Tema | Nota |
+| -- | ---- | ---- |
+| DDP-020 | SoT de OS, PO, medição, fatura, pagamento | Fora do escopo deste prompt |
+| DDP-015 | Papéis empresariais completos | Parcialmente coberto por capabilities Cliente |
+| DDP-039 | Validação legal LGPD | PENDING_LEGAL_VALIDATION |
+| DDP-001..019, 021+ | Demais domínios | Inalterados |
 
 ### CONFLICTS
 
-| ID | Descrição | Documentos |
-| -- | --------- | ---------- |
-| MAP-001 | SRC-002 §1 rotula **DDP-028** como "dados mínimos de cliente", mas `domain-decisions-pending.md` define **DDP-028** como "Quem pode solicitar serviço" | SRC-002 §1 vs DDP-REG-001 |
-| MAP-002 | `28-business-readiness-gate.md` associa DDP-028 simultaneamente a "quem solicita" e "dados de cliente" | 28-gate vs DDP-REG-001 |
+| ID | Status | Correção |
+| -- | ------ | -------- |
+| MAP-001 | **FIXED** | §1 não referencia mais DDP-028; DDP-041 criado para campos mínimos PJ |
+| MAP-002 | **FIXED** | `28-business-readiness-gate.md` atualizado — DDP-028 = solicitante/origem |
 
-**Nota:** MAP-001/002 são conflitos de **mapeamento documental**, não conflito empresarial entre fontes primárias (SC-REG: 0 conflitos).
+### IMPLEMENTATION BLOCKERS (ativos)
 
-### IMPLEMENTATION BLOCKERS (módulo Clientes — Prompt 29)
+| # | Bloqueador |
+| - | ---------- |
+| 1 | Assinatura humana formal (`PENDING_HUMAN_CONFIRMATION`) |
 
-1. Assinatura humana pendente (`PENDING_HUMAN_CONFIRMATION`)
-2. Zero regras `CONFIRMED` aplicáveis a cadastro de Cliente
-3. Campos obrigatórios PJ/PF: `UNKNOWN`
-4. CNPJ/CPF obrigatório e unicidade: `UNKNOWN` (TERM-004 proíbe presumir)
-5. DDP-020 não respondido (SoT interno vs ERP)
-6. DDP-015 / ADP-014 não respondidos (autorização e isolamento CLIENT)
-7. DDP-026 não respondido (Clientes no primeiro release?)
-8. Operações CRUD não confirmadas (criar/listar/alterar/ativar/desativar)
-9. Relacionamentos Cliente→comercial/OS/documentos não confirmados
-10. Contatos/endereços/responsáveis: sem baseline
-11. Classificação PII (DDP-039): OPEN
-12. AGG-CAND-012 / `pty.party`: status CANDIDATE, não FINAL
-13. Nenhum FR `CONFIRMED` de cadastro de Cliente (FR-001..042 são candidatos)
-14. Fontes primárias (ERP, contrato, Documento Mestre): `NOT_PROVIDED`
+**Histórico:** 14 bloqueadores resolvidos no Prompt 29-A corretivo (registrados em `mandatory_blockers_resolved` abaixo).
 
-### EVIDENCE MATRIX (Clientes / Party — amostra crítica)
+```text
+mandatory_blockers_resolved: 14
+mandatory_blockers_active: 1
+```
 
-| Regra / decisão | Evidência | Status | Conflito | Decisão necessária |
-| --------------- | --------- | ------ | -------- | ------------------ |
-| Entidade Cliente/Party existe como cadastro | EV-047 (campo OS apenas); DEM-001 `?` | UNKNOWN | — | Confirmar se AGG-012 entra no release |
-| CNPJ/CPF no cadastro | TERM-004 exclui | REJECTED (presumir) | — | Q02 |
-| Exclusão física de Cliente | Prompt 29 (futuro): proibida | CONDITIONAL (eng.) | — | Confirmar desativação lógica (Q08) |
-| Desativação lógica | identity schema usa `disabled` (técnico) | UNKNOWN (negócio) | — | Q08 |
-| Autorização deny-by-default | Implementação técnica Prompt 22–27 | CONFIRMED (técnico) | — | Papéis de negócio para Cliente: DDP-015 |
-| Escopo CLIENT em authz | `authorization.ts` enum | CONFIRMED (técnico) | — | Regras de quem acessa qual client: UNKNOWN |
-| Unicidade identificador | — | UNKNOWN | — | Q02, Q03 |
-| Optimistic concurrency | Padrão identity (`version`) | CONDITIONAL (eng.) | — | Aplicar a Party quando autorizado |
-| Auditoria de alterações | SECURITY_AUDIT técnico existe | CONDITIONAL (eng.) | — | Eventos de domínio Cliente: UNKNOWN |
-| Integridade referencial OS→Party | FK candidata em `foreign-key-strategy.md` | UNKNOWN | — | Cardinalidade e obrigatoriedade |
+### EVIDENCE
+
+| Tipo | Referência |
+| ---- | ---------- |
+| BUSINESS DECISION | Prompt 29-A corretivo — Q01–Q15 |
+| BUSINESS FACT | CISNE RONDÔNIA COMÉRCIO E SERVIÇOS LTDA — CNPJ 11.897.171/0001-81 (operadora; **não** cadastrar como Client) |
+| DOCUMENTARY EVIDENCE | Código externo 152888 em documentação comercial — **não** usar como PK (`external_supplier_code` candidato) |
+| TECHNICAL DECISION | Identity + Capability + Scope + backend authorization (sem hardcode de nomes) |
+| Prior analysis | Prompt 29-A inicial; MAP-001/002 |
+
+### Fronteira organizacional (não implementar Organization neste prompt)
+
+```text
+ORGANIZATION → CISNE RONDÔNIA (operadora)
+CLIENT       → contraparte comercial atendida
+USER/EMPLOYEE → pessoa que atua na organização
+```
+
+Proprietários/controladores (identificação empresarial, **não** assinatura SRC-002): Abrahim Jabour Junior; Monica Perez Badra Jabour.
 
 ---
 
@@ -127,17 +173,17 @@ SRC-001 declara explicitamente que **não** pode confirmar regras definitivas is
 
 **Pergunta:** Quais campos são obrigatórios no cadastro de cliente (pessoa jurídica e/ou física)? Existe distinção cliente interno vs externo?
 
-**Análise Prompt 29-A:** Nenhum campo cadastral confirmado. TERM-004 exclui explicitamente definição de cadastro/CNPJ/hierarquia. Não existe DDP dedicado a campos PJ/PF — lacuna registrada.
+**Decisão registrada (Q02, Q05–Q07, Q06):** Release 1 = **PJ apenas**. PF = `NOT_IN_RELEASE_1`. Sem enum interno/externo.
 
 | Item | Resposta | Detalhe / condição / evidência |
 | ---- | -------- | ------------------------------ |
-| Campos obrigatórios PJ | `UNKNOWN` | Nenhuma fonte primária; AGG-CAND-012 CANDIDATE sem atributos confirmados |
-| Campos obrigatórios PF | `UNKNOWN` | Idem |
-| Cliente interno vs externo | `UNKNOWN` | EV-021, SRC-001 §5 — pendente confirmar |
-| CNPJ/CPF único no sistema | `UNKNOWN` | TERM-004: não presumir CNPJ; unicidade não decidida |
-| Inativação vs exclusão | `UNKNOWN` | Negócio não confirmado; precedente técnico identity `disabled` (não vinculante) |
+| Campos obrigatórios PJ | `CONFIRMED` | Razão social + CNPJ + ≥1 contato operacional utilizável (Q06) |
+| Campos obrigatórios PF | `NOT_IN_RELEASE_1` | Q07 — fora do escopo Release 1 |
+| Cliente interno vs externo | `REJECTED` | Q05 — CISNE/unidade organizacional ≠ Client; sem enum Release 1 |
+| CNPJ/CPF único no sistema | `CONFIRMED` | CNPJ único global; normalização canônica (dígitos) antes de comparar (Q03) |
+| Inativação vs exclusão | `CONFIRMED` | Desativação lógica; sem DELETE destrutivo; histórico preservado (Q08) |
 
-**DDP relacionados:** _lacuna documental — ver MAP-001_; DDP-020 (SoT) · **Módulo:** Clientes
+**DDP relacionados:** **DDP-041** (campos mínimos PJ) · DDP-020 (SoT — escopo CLIENTE resolvido) · **Módulo:** Clientes
 
 ---
 
@@ -162,17 +208,17 @@ SRC-001 declara explicitamente que **não** pode confirmar regras definitivas is
 
 **Pergunta:** Quem pode registrar uma solicitação de serviço? Solicitante interno, externo, ambos?
 
-**Análise Prompt 29-A (DDP-028):** Pergunta aberta em SRC-001 §5. EV-021 = OPEN_QUESTION. TERM-005 ACCEPTED_FOR_DOCUMENTATION descreve solicitante, não perfis autorizados.
+**Decisão registrada (DDP-028 resolvido):** Origem da demanda pode ser externa; registro transacional no CISNE é por usuário interno autorizado no Release 1. Separar `REQUEST_ORIGIN`, `SYSTEM_ACTOR`, `AUTHORIZED_APPROVER`.
 
 | Item | Resposta | Detalhe / condição / evidência |
 | ---- | -------- | ------------------------------ |
-| Perfis autorizados a solicitar | `UNKNOWN` | DDP-028 OPEN; EV-021 |
-| Solicitante externo (cliente) | `UNKNOWN` | EV-021, EV-029 |
-| Solicitante interno | `UNKNOWN` | EV-021 |
-| WhatsApp como canal oficial | `UNKNOWN` | BR-005 PENDING_VALIDATION; DDP-021 OPEN |
-| Solicitar ≠ autorizar OS | `CONDITIONAL` | BR-025 CANDIDATE (EV-041); requer promoção a CONFIRMED |
+| Perfis autorizados a registrar solicitação | `CONFIRMED` | Usuário interno autorizado (Release 1) |
+| Solicitante externo (cliente) | `CONFIRMED` | Pode ser origem da demanda; não registra transação diretamente |
+| Solicitante interno | `CONFIRMED` | Registra solicitação no sistema |
+| WhatsApp como canal oficial | `UNKNOWN` | DDP-021 permanece OPEN |
+| Solicitar ≠ autorizar OS | `CONFIRMED` | BR-025, BR-040; solicitante externo sem autoridade de OS |
 
-**DDP relacionados:** DDP-002, DDP-021, **DDP-028** · **Módulo:** Solicitações
+**DDP relacionados:** DDP-002, DDP-021, **DDP-028 (ANSWERED)** · **Módulo:** Solicitações
 
 ---
 
@@ -401,21 +447,21 @@ SRC-001 declara explicitamente que **não** pode confirmar regras definitivas is
 
 **Pergunta:** Quais funções existem? Segregação de funções (SoD)? Incompatibilidades?
 
-**Análise Prompt 29-A (impacto Clientes):** Nenhum papel empresarial confirmado. ADP-001..014 OPEN. Escopo CLIENT existe apenas como enum técnico de autorização.
+**Decisão registrada (Q09–Q12):** Capabilities `CLIENT_CREATE`, `CLIENT_EDIT`, `CLIENT_DEACTIVATE` para Perfil de Controle. Sem hardcode de nomes. OWNER/CONTROL visão global por capability; empregado limitado ao contexto operacional.
 
 | Item | Resposta | Detalhe / condição / evidência |
 | ---- | -------- | ------------------------------ |
-| Lista de papéis / funções | `UNKNOWN` | DDP-015 OPEN; ADP-010 OPEN |
-| Maker-checker obrigatório (ex.: liberar OS) | `UNKNOWN` | DDP-022 OPEN; ADP-013 OPEN |
+| Lista de papéis / funções | `CONDITIONAL` | Perfil de Controle + empregado; DDP-015 completo ainda OPEN |
+| Maker-checker obrigatório (ex.: liberar OS) | `UNKNOWN` | DDP-022 OPEN — fora escopo Cliente |
 | Quem atribui permissões | `UNKNOWN` | ADP-010 OPEN |
-| Isolamento por cliente / unidade | `UNKNOWN` | ADP-014 OPEN (CLIENT / UNIT / Híbrido) |
+| Isolamento por cliente / unidade | `CONFIRMED` | Q12 — CONTROL global; empregado por contexto; ADP-014 parcial |
 | Responsável vê preço operacional | `UNKNOWN` | ADP-006 OPEN |
-| Quem cadastra Cliente | `UNKNOWN` | Sem FR confirmado; bloqueia Prompt 29 |
-| Quem edita Cliente | `UNKNOWN` | Idem |
-| Quem desativa Cliente | `UNKNOWN` | Idem |
-| Quem vê dados sensíveis de Cliente | `UNKNOWN` | DDP-039 OPEN; SEC-AST-010 |
+| Quem cadastra Cliente | `CONFIRMED` | `CLIENT_CREATE` — Perfil de Controle (Q09) |
+| Quem edita Cliente | `CONFIRMED` | `CLIENT_EDIT` — Perfil de Controle (Q10) |
+| Quem desativa Cliente | `CONFIRMED` | `CLIENT_DEACTIVATE` — Perfil de Controle (Q11) |
+| Quem vê dados sensíveis de Cliente | `CONDITIONAL` | Autorização backend; DDP-039 legal OPEN |
 
-**DDP relacionados:** DDP-015, ADP-001..014 · **Módulo:** Autorização de negócio
+**DDP relacionados:** DDP-015 (parcial), ADP-001..014 · **Módulo:** Autorização de negócio
 
 ---
 
@@ -425,18 +471,20 @@ SRC-001 declara explicitamente que **não** pode confirmar regras definitivas is
 
 **Análise Prompt 29-A (DDP-020):** DBND-SOT-001 lista "Cliente cadastro → Interno ou ERP" sem decisão. Impacto: define se CISNE é master, réplica ou híbrido.
 
+**Decisão registrada (Q04 — DDP-020 escopo CLIENTE):** Modelo híbrido desacoplado. CISNE = master operacional do Cliente. ERP/fiscal = autoridade de domínios externos quando integração existir. `externalErpId` opcional; nunca PK.
+
 | Conceito | Resposta | Sistema autoritativo |
 | -------- | -------- | -------------------- |
-| Cadastro de cliente | `UNKNOWN` | Candidatos: Sistema CISNE (BC-002) **ou** ERP externo (DDP-020) |
-| OS | `UNKNOWN` | DBND-SOT-001 candidato: Sistema CISNE — não bloqueia Clientes diretamente |
-| Saldo de PO | `UNKNOWN` | DDP-009 OPEN |
+| Cadastro de cliente | `CONFIRMED` | **CISNE** (identidade operacional interna); ERP opcional como réplica futura |
+| OS | `UNKNOWN` | DDP-020 — fora escopo desta resolução |
+| Saldo de PO | `UNKNOWN` | DDP-009, DDP-020 OPEN |
 | Medição | `UNKNOWN` | DDP-010 OPEN |
 | Fatura / NF | `UNKNOWN` | DDP-023 OPEN |
 | Pagamento | `UNKNOWN` | DDP-012 OPEN |
 | Documentos binários | `UNKNOWN` | DDP-013 OPEN |
 | Mensagens WhatsApp | `UNKNOWN` | DDP-021 OPEN |
 
-**DDP relacionados:** DDP-014, **DDP-020**, DDP-021 · **Módulos:** Integração, todos
+**DDP relacionados:** DDP-014, **DDP-020 (ANSWERED_FOR_CLIENT_SCOPE)**, DDP-021
 
 ---
 
@@ -444,19 +492,19 @@ SRC-001 declara explicitamente que **não** pode confirmar regras definitivas is
 
 **Pergunta:** O que entra no primeiro release operacional? O que fica explicitamente fora?
 
-**Análise Prompt 29-A:** DDP-026 OPEN. Locação = prioridade candidata (BR-020 CANDIDATE), não confirmada. Módulo Clientes não liberado.
+**Decisão registrada (Q01):** Módulo Clientes **incluído** — cadastro PJ mínimo operacional (não CRM/ERP).
 
 | Item | Resposta | Detalhe / condição / evidência |
 | ---- | -------- | ------------------------------ |
-| Verticais incluídas | `UNKNOWN` | BR-020 CANDIDATE; SRC-001 §21 |
-| Módulos incluídos — **Clientes** | `UNKNOWN` | Bloqueia Prompt 29 |
+| Verticais incluídas | `UNKNOWN` | Locação candidata (BR-020); DDP-026 parcial |
+| Módulos incluídos — **Clientes** | `CONFIRMED` | Q01 — cadastro PJ mínimo |
 | Módulos incluídos — demais | `UNKNOWN` | Solicitações · OS · etc. |
-| Módulos explicitamente fora | `UNKNOWN` | |
-| Integrações no primeiro release | `UNKNOWN` | DDP-014 OPEN |
+| Módulos explicitamente fora | `CONFIRMED` | Cliente PF; CRM; ERP completo |
+| Integrações no primeiro release | `UNKNOWN` | DDP-014 OPEN; sem integração ERP fictícia |
 | PWA / mobile obrigatório | `UNKNOWN` | DDP-025 OPEN |
 | Data alvo (se houver) | `UNKNOWN` | |
 
-**DDP relacionados:** DDP-026, DDP-025 · **Escopo de produto**
+**DDP relacionados:** DDP-026 (parcial — Clientes confirmado), DDP-025
 
 ---
 
@@ -476,8 +524,8 @@ SRC-001 declara explicitamente que **não** pode confirmar regras definitivas is
 
 | Campo | Valor |
 | ----- | ----- |
-| Registrado em `source-registry.md` | pendente — aguarda assinatura |
-| Regras promovidas a `CONFIRMED` | **0** (Prompt 29-A) |
-| DDPs respondidos | **0** (DDP-020, DDP-028 permanecem OPEN) |
-| Conflitos abertos (`SC-*`) | 0 empresariais; MAP-001/002 documentais |
-| Gate automatizado | `pnpm gate:src-002` → **FAIL** (esperado enquanto BLOQUEADO) |
+| Registrado em `source-registry.md` | 2026-08-29 — decisões registradas; assinatura pendente |
+| Regras promovidas a `CONFIRMED` | **16** (BR-025, BR-026..BR-040) + BR-041 CONDITIONAL |
+| DDPs respondidos | DDP-028 ANSWERED; DDP-020 CLIENT_SCOPE; DDP-041 ANSWERED |
+| Conflitos abertos (`SC-*`) | 0 empresariais; MAP-001/002 FIXED |
+| Gate automatizado | `pnpm gate:src-002` → **BLOCKED_BY_SIGNATURE_ONLY** |

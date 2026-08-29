@@ -35,36 +35,57 @@ function main() {
     process.exit(1);
   }
 
-  const failures = [];
+  const blockers = Number.parseInt(gate.mandatory_blockers_count ?? 'NaN', 10);
+  const signaturePending =
+    gate.signed_by === 'PENDING_HUMAN_CONFIRMATION' || gate.signed_by === '';
 
+  if (gate.status === 'BLOCKED_BY_SIGNATURE_ONLY') {
+    if (
+      gate.clients_module_ready === 'true' &&
+      blockers === 1 &&
+      signaturePending &&
+      gate.signature_blocker_only === 'true'
+    ) {
+      console.error('SRC-002 business gate: BLOCKED_BY_SIGNATURE_ONLY');
+      console.error('  - Business decisions resolved; human signature pending');
+      process.exit(1);
+    }
+    console.error('SRC-002 business gate: FAIL');
+    console.error('  - gate.status is BLOCKED_BY_SIGNATURE_ONLY but preconditions are inconsistent');
+    process.exit(1);
+  }
+
+  if (gate.status === 'LIBERADO' && gate.clients_module_ready === 'true' && !signaturePending) {
+    if (!Number.isFinite(blockers) || blockers > 0) {
+      console.error('SRC-002 business gate: FAIL');
+      console.error(`  - gate.mandatory_blockers_count is ${gate.mandatory_blockers_count} (required: 0)`);
+      process.exit(1);
+    }
+    console.log('SRC-002 business gate: PASS');
+    return;
+  }
+
+  const failures = [];
   if (gate.status !== 'LIBERADO') {
     failures.push(`gate.status is "${gate.status ?? 'MISSING'}" (required: LIBERADO)`);
   }
-
   if (gate.clients_module_ready !== 'true') {
     failures.push(
       `gate.clients_module_ready is "${gate.clients_module_ready ?? 'MISSING'}" (required: true)`,
     );
   }
-
-  if (gate.signed_by === 'PENDING_HUMAN_CONFIRMATION' || !gate.signed_by) {
+  if (signaturePending) {
     failures.push('gate.signed_by is pending human confirmation');
   }
-
-  const blockers = Number.parseInt(gate.mandatory_blockers_count ?? 'NaN', 10);
   if (!Number.isFinite(blockers) || blockers > 0) {
     failures.push(`gate.mandatory_blockers_count is ${gate.mandatory_blockers_count} (required: 0)`);
   }
 
-  if (failures.length > 0) {
-    console.error('SRC-002 business gate: FAIL');
-    for (const failure of failures) {
-      console.error(`  - ${failure}`);
-    }
-    process.exit(1);
+  console.error('SRC-002 business gate: FAIL');
+  for (const failure of failures) {
+    console.error(`  - ${failure}`);
   }
-
-  console.log('SRC-002 business gate: PASS');
+  process.exit(1);
 }
 
 main();
