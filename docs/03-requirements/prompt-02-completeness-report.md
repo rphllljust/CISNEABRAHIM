@@ -6,6 +6,7 @@
 | Fonte | SRC-001 |
 | Status documental | CANDIDATE — sem fonte primária |
 | Gerado em | 2026-08-28 |
+| Atualizado em | 2026-08-28 (auditoria corretiva) |
 | Prompt | 02 |
 | Resultado | PASS_WITH_RESTRICTIONS |
 
@@ -76,3 +77,60 @@ Nenhuma regra ou requisito marcado como `CONFIRMED`. Implementação **não** au
 ## Arquivos gerados
 
 20 arquivos em `docs/03-requirements/`.
+
+## Auditoria corretiva (Prompt 02 — revisão obrigatória)
+
+| Campo | Valor |
+| --- | --- |
+| Data | 2026-08-28 |
+| Tipo | Remoção de artefato e revalidação documental |
+| Resultado | PASS_WITH_RESTRICTIONS |
+
+### Artefato de geração
+
+- **Identificado:** `scripts/generate-prompt-02.py` (e auxiliares `_build_*.py`, `_append_part3.py`, `update-traceability-p02.py`) criados exclusivamente pelo agente durante a execução original do Prompt 02.
+- **Histórico Git:** nunca commitados (`git log --all --full-history -- scripts/` vazio).
+- **Estado no workspace:** ausente na auditoria corretiva; remoção ocorreu na execução original do Prompt 02, antes do commit `7cc97fd`.
+- **Ação nesta auditoria:** verificação estrutural; nenhuma remoção adicional necessária.
+
+### Declarações obrigatórias
+
+```text
+FUNCTIONAL_CODE_CREATED: NO
+AUXILIARY_CODE_REMAINING: NO
+PROMPT_03_EXECUTED: NO
+```
+
+### Revalidação (recalculada)
+
+| Item | Contagem | IDs únicos |
+| --- | --- | --- |
+| FR | 42 | FR-001..FR-042 |
+| UC | 26 | UC-001..UC-026 |
+| AC | 52 | AC-001..AC-052 |
+| VR | 22 | VR-001..VR-022 |
+| AUTH-REQ | 20 | AUTH-REQ-001..020 |
+| DR | 28 | DR-001..DR-028 |
+| DOC-REQ | 14 | DOC-REQ-001..014 |
+| NOTIF-REQ | 10 | NOTIF-REQ-001..010 |
+| INT-REQ | 8 | INT-REQ-001..008 |
+| RPT-REQ | 12 | RPT-REQ-001..012 |
+| EX | 18 | EX-001..EX-018 |
+| RQ-QUESTION | 25 | RQ-QUESTION-001..025 |
+| EV disponíveis | 84 | EV-001..EV-084 |
+| EV em linha `Evidências` de FR | 54 | ver `requirements-coverage.md` |
+| EV sem FR direto (justificadas) | 30 | ver `requirements-coverage.md` |
+| BR CONFIRMED | 0 | — |
+| Fontes primárias operacionais | 0 | SRC-001 permanece `SPONSOR_CONTEXT_RECONSTRUCTED` |
+
+### Quality gate corretivo
+
+- [x] 20 documentos revisados integralmente
+- [x] Contagens recalculadas (não confiadas no relatório anterior)
+- [x] IDs únicos por tipo (sem duplicatas de definição)
+- [x] 30 EV sem FR direto justificadas em `requirements-coverage.md`
+- [x] 0 regras ou requisitos `CONFIRMED`
+- [x] SRC-001 não elevada; WhatsApp `CAPABILITY_ONLY`; integrações `PENDING_EXTERNAL_DOCUMENTATION`
+- [x] Nenhum artefato de código no repositório
+- [x] `scripts/generate-prompt-02.py` ausente
+- [x] Prompt 03 não executado

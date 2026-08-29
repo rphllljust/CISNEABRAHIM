@@ -276,3 +276,45 @@ NOTES:
 - [x] nenhum código funcional, package.json, DB
 - [x] SRC-001 não alterado
 - [x] Prompt 03 não executado
+
+---
+
+```text
+PROMPT: 02-CORRECTIVE
+TITLE: Auditoria corretiva — remoção de artefato e revalidação documental
+STARTED_AT: 2026-08-28T21:46:00-04:00
+FINISHED_AT: 2026-08-28T21:52:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED: (nenhum)
+FILES_CHANGED:
+  docs/03-requirements/requirements-coverage.md
+  docs/03-requirements/prompt-02-completeness-report.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS_WITH_RESTRICTIONS
+FUNCTIONAL_CODE_CREATED: NO
+AUXILIARY_CODE_REMAINING: NO
+PROMPT_03_EXECUTED: NO
+GENERATOR_ARTIFACT:
+  scripts/generate-prompt-02.py — criado exclusivamente pelo agente no Prompt 02; removido antes do commit; ausente no Git e no workspace na auditoria
+COMMIT_PROMPT_02: 7cc97fd docs: define evidence-based functional requirements
+NOTES:
+  Auditoria corretiva solicitada explicitamente. Nenhum commit de remoção necessário (artefato nunca versionado).
+  20 arquivos em docs/03-requirements/ revisados; contagens recalculadas.
+  54 EV em FR; 30 EV sem FR direto justificadas; 84 EV preservadas no registro atômico.
+  0 CONFIRMED; SRC-001 PENDING_BUSINESS_VALIDATION; WhatsApp CAPABILITY_ONLY.
+  Prompt 03 não executado.
+```
+
+## Quality gate Prompt 02 corretivo (evidência)
+
+- [x] 20 documentos em `03-requirements/` revisados
+- [x] contagens recalculadas
+- [x] IDs únicos
+- [x] evidências não utilizadas em FR justificadas
+- [x] nenhuma regra confirmada
+- [x] nenhuma fonte reconstruída elevada
+- [x] nenhum artefato de código permanece
+- [x] `scripts/generate-prompt-02.py` não permanece
+- [x] nenhum cache permanece
+- [x] Git contém somente alterações esperadas (pós-auditoria: docs corretivos)
+- [x] Prompt 03 não executado
