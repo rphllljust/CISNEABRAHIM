@@ -88,6 +88,25 @@ export function createShellFetchMock(options: ShellFetchMockOptions = {}) {
       });
     }
 
+    if (url.endsWith('/api/v1/dashboard/operational') && method === 'GET') {
+      return jsonResponse({
+        generatedAt: new Date().toISOString(),
+        visibility: {
+          serviceRequests: true,
+          serviceOrders: false,
+          measurements: false,
+          billing: false,
+          documents: false,
+          resources: false,
+        },
+        attention: [],
+        operation: [],
+        deadlines: [],
+        finance: [],
+        shortcuts: [],
+      });
+    }
+
     if (pathname === '/api/v1/clients' && method === 'GET') {
       return jsonResponse({ error: { code: 'CLIENT_DENIED', message: 'Forbidden.' } }, 403);
     }

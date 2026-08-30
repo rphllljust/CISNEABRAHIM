@@ -19,7 +19,7 @@ describe('service requests administrative flow e2e (frontend)', () => {
     await user.type(screen.getByLabelText(/password/i), 'Password1!');
     await user.click(screen.getByRole('button', { name: /sign in/i }));
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /technical home/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /painel operacional/i })).toBeInTheDocument();
     });
   }
 

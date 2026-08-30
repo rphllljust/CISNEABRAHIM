@@ -19,6 +19,7 @@
   "devDependencies": {
     "@cisne/eslint-config": "workspace:*",
     "@cisne/tsconfig": "workspace:*",
+    "@tailwindcss/vite": "4",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.6",
@@ -28,6 +29,7 @@
     "@vitejs/plugin-react": "^4.5.2",
     "eslint": "^9.28.0",
     "jsdom": "^26.1.0",
+    "tailwindcss": "4",
     "typescript": "^5.8.3",
     "vite": "^7.0.0",
     "vitest": "^3.2.1"

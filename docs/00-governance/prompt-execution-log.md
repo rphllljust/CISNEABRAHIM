@@ -4020,7 +4020,51 @@ NOTES:
   Prompt 72 não executado.
 ```
 
-## Quality gate Prompt 71 (evidência)
+## Prompt 72 — Read models e dashboard operacional
+
+```
+PROMPT_ID: 72
+PROMPT_TITLE: Read models e dashboard operacional
+EXECUTED_AT: 2026-08-29
+EXECUTION_STATUS: PASS
+COMMIT: feat(dashboard): implement operational read models and dashboard
+ARTIFACTS:
+  apps/api/src/dashboard/**
+  apps/api/src/app.module.ts
+  apps/web/src/dashboard/**
+  apps/web/src/test/dashboard-fetch-mock.ts
+  apps/web/src/test/shell-fetch-mock.ts
+  apps/web/src/App.tsx
+  apps/web/package.json
+  apps/web/vite.config.ts
+  apps/web/src/**/*.e2e.test.tsx (home → Painel operacional)
+ENDPOINT: GET /api/v1/dashboard/operational (single snapshot, no N+1 per card)
+READ_MODELS: pending requests, OS release/confirm/in-progress/overdue, resources in use, measurements, billing, divergences, pending documents
+AUTHZ: active-grant visibility + scoped SQL filters per domain (aligned with list endpoints)
+UX: sections Atenção → Operação → Financeiro → Atalhos; responsive grid; skeleton; 60s polling; partial failure
+QUALITY_GATE: PASS
+NEXT_ALLOWED_PROMPT: 73
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Visibilidade do dashboard usa grants ativos (como ClientList), não PDP sem contexto — UNIT scope funciona.
+  Corrigido remapScope param offset ($1→$2) nas queries agregadas.
+  DashboardModule importa AuthModule para JwtAuthGuard.
+  Prompt 73 não executado.
+```
+
+## Quality gate Prompt 72 (evidência)
+
+| Cenário de teste | Resultado | Evidência |
+|------------------|-----------|-----------|
+| read model scope isolation | PASS | operational-dashboard.integration.spec.ts |
+| access denied without grants | PASS | operational-dashboard.integration.spec.ts |
+| snapshot section ordering | PASS | operational-dashboard-response.serializer.spec.ts |
+| single API call (no N+1) | PASS | dashboard.e2e.test.tsx |
+| responsive shell landmarks | PASS | shell.e2e.test.tsx, auth-flow.e2e.test.tsx |
+| metric card a11y (link/article) | PASS | dashboard.components.test.tsx |
+| API typecheck | PASS | tsc --noEmit |
+
+---
 
 | Cenário de teste | Resultado | Evidência |
 |------------------|-----------|-----------|

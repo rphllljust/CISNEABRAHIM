@@ -35,7 +35,7 @@ describe('auth flow e2e (frontend)', () => {
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /technical home/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /painel operacional/i })).toBeInTheDocument();
     });
 
     expect(screen.getByRole('banner')).toBeInTheDocument();
@@ -60,7 +60,7 @@ describe('auth flow e2e (frontend)', () => {
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /technical home/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /painel operacional/i })).toBeInTheDocument();
     });
 
     expect(fetchMock).toHaveBeenCalledWith(

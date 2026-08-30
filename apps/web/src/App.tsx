@@ -36,7 +36,7 @@ import { ServiceRequestCreatePage } from './requests/pages/ServiceRequestCreateP
 import { ServiceRequestDetailPage } from './requests/pages/ServiceRequestDetailPage';
 import { ServiceRequestEditPage } from './requests/pages/ServiceRequestEditPage';
 import { ServiceRequestsListPage } from './requests/pages/ServiceRequestsListPage';
-import { AppHomePage } from './pages/AppHomePage';
+import { OperationalDashboardPage } from './dashboard/pages/OperationalDashboardPage';
 import { LoginPage } from './pages/LoginPage';
 import { PlatformDiagnosticsPage } from './pages/PlatformDiagnosticsPage';
 import { ServiceUnavailablePage } from './pages/ServiceUnavailablePage';
@@ -64,7 +64,7 @@ export function App() {
               />
             </Route>
             <Route element={<AppShellLayout />}>
-              <Route path="/app" element={<AppHomePage />} />
+              <Route path="/app" element={<OperationalDashboardPage />} />
               <Route
                 path="/app/platform"
                 element={

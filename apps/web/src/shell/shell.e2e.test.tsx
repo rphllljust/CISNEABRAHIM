@@ -14,7 +14,7 @@ describe('protected application shell', () => {
     window.history.pushState({}, '', '/');
   });
 
-  it('renders shell landmarks and technical home for a valid session', async () => {
+  it('renders shell landmarks and operational dashboard for a valid session', async () => {
     vi.stubGlobal('fetch', createShellFetchMock());
     window.history.pushState({}, '', '/login');
     render(<App />);
@@ -25,7 +25,7 @@ describe('protected application shell', () => {
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /technical home/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /painel operacional/i })).toBeInTheDocument();
     });
 
     expect(screen.getByRole('banner')).toBeInTheDocument();
@@ -134,7 +134,7 @@ describe('protected application shell', () => {
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /technical home/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /painel operacional/i })).toBeInTheDocument();
     });
 
     await user.click(screen.getByRole('button', { name: /log out/i }));
