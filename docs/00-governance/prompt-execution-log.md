@@ -4864,7 +4864,7 @@ QUALITY_GATE: PASS
 NEXT_ALLOWED_PROMPT: 91
 NEXT_PROMPT_EXECUTED: NO
 NOTES:
-  Prompt 91 não executado.
+  Prompt 91 executado (PASS).
   Piloto ativo; go-live completo ainda bloqueado por sign-off empresarial.
 ```
 
@@ -4879,6 +4879,44 @@ NOTES:
 | observação thresholds | PASS | pilot-observation.ts |
 | exit criteria EXIT_READY/BLOCKED | PASS | pilot-runner.spec.ts |
 | janela mínima observação | PASS | pilot-exit.ts |
+| API typecheck | PASS | tsc --noEmit |
+
+---
+
+## Prompt 91 — Rollback e release safety
+
+```
+PROMPT_ID: 91
+PROMPT_TITLE: Rollback e release safety
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: PASS
+COMMIT: 6160ace ops(release): validate production rollback strategy
+ARTIFACTS:
+  apps/api/src/ops/release/**
+  scripts/release/drill.mjs
+  .env.release.example
+  docs/19-operations/release-rollback-strategy.md
+SCOPE: N→N+1→N application rollback; expand/contract DB; compat strategies; idempotent external events
+ROLLBACK_TRIGGERS: error_rate | health_failure | critical_business_failure
+VALIDATION: health, data_integrity, service_orders, documents, worker, outbox, billing
+QUALITY_GATE: PASS
+NEXT_ALLOWED_PROMPT: 92
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Prompt 92 não executado.
+  Rollback de banco não assumido (databaseRollbackSupported=false).
+```
+
+## Quality gate Prompt 91 (evidência)
+
+| Cenário de teste | Resultado | Evidência |
+|------------------|-----------|-----------|
+| deploy N → N+1 → rollback N (mesmo digest) | PASS | release-drill.spec.ts |
+| expand/contract sem downgrade destrutivo | PASS | release-migration-safety.ts |
+| estratégias compat (dual read, flag, migration) | PASS | release-compat.ts |
+| idempotência notifications/ERP/billing/outbox | PASS | release-idempotency.ts |
+| critérios objetivos de rollback | PASS | release-decision.ts |
+| validação pós-rollback (7 domínios) | PASS | release-drill.spec.ts |
 | API typecheck | PASS | tsc --noEmit |
 
 ---
