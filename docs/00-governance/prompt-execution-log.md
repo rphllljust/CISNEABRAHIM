@@ -4375,3 +4375,46 @@ NOTES:
 | web typecheck | PASS | tsc --noEmit |
 
 ---
+
+## Prompt 79 — Observabilidade
+
+```
+PROMPT_ID: 79
+PROMPT_TITLE: Observabilidade
+EXECUTED_AT: 2026-08-29
+EXECUTION_STATUS: PASS
+COMMIT: 086c746 feat(observability): implement production-grade telemetry
+ARTIFACTS:
+  apps/api/src/observability/**
+  apps/api/src/health/health.controller.ts (live/ready)
+  apps/api/src/platform/background-jobs/services/background-worker.service.ts
+  apps/api/src/documents/storage/object-storage.service.ts
+LOGGING: JSON estruturado (timestamp, level, environment, service, requestId, correlationId, operation, durationMs, result, errorCode, actorId opcional)
+REDACTION: password, tokens, cookie, secret, authorization, CNPJ/email/phone e document content
+METRICS: GET /api/v1/observability/metrics — HTTP rate/error/latency p50/p95/p99, DB pool/latency, worker, backlog outbox/jobs, notification/integration/storage failures
+BUSINESS_METRICS: separadas em snapshot.business (OS overdue, measurement aging, billing aging)
+TRACING: AsyncLocalStorage + headers x-correlation-id / x-request-id; propagação em worker
+HEALTH: GET /health/live (liveness), GET /health/ready (readiness DB), GET /health (legado)
+QUALITY_GATE: PASS
+NEXT_ALLOWED_PROMPT: 80
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  OpenTelemetry não adicionado — correlação leve via contexto interno.
+  Prompt 80 não executado.
+```
+
+## Quality gate Prompt 79 (evidência)
+
+| Cenário de teste | Resultado | Evidência |
+|------------------|-----------|-----------|
+| correlation propagation | PASS | observability-context.spec.ts |
+| redaction / no secrets | PASS | log-redaction.spec.ts, structured-log.spec.ts |
+| error/http metrics | PASS | metrics-registry.service.spec.ts |
+| worker metrics | PASS | metrics-registry.service.spec.ts |
+| liveness vs readiness | PASS | health.controller.spec.ts |
+| business vs technical metrics | PASS | observability-metrics.service.spec.ts |
+| structured JSON format | PASS | structured-log.spec.ts |
+| latency percentiles | PASS | latency-histogram.spec.ts |
+| API typecheck | PASS | tsc --noEmit |
+
+---
