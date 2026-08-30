@@ -33,4 +33,4 @@ Rollback real — L3 com `ROLLBACK` assert.
 
 ## RPO/RTO
 
-TARGET_NOT_DEFINED — ver `docs/19-operations/backup-strategy.md` (Prompt 84). Teste de recovery time permanece pendente até DDP-016.
+TARGET_NOT_DEFINED — ver `docs/19-operations/backup-strategy.md` (Prompt 84) e `docs/19-operations/dr-restore-runbook.md` (Prompt 85). Teste de recovery time permanece pendente até DDP-016.

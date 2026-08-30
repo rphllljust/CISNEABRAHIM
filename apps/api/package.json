@@ -15,7 +15,9 @@
     "test:perf:smoke": "vitest run --config vitest.perf.config.ts src/performance/performance-smoke.perf-smoke.spec.ts",
     "test:perf": "vitest run --config vitest.perf.config.ts",
     "test:backup": "vitest run src/ops/backup",
-    "backup:run": "npx tsx src/ops/backup/cli/run-backup.ts"
+    "backup:run": "npx tsx src/ops/backup/cli/run-backup.ts",
+    "test:dr": "vitest run src/ops/dr",
+    "dr:drill": "npx tsx src/ops/dr/cli/run-dr-drill.ts"
   },
   "dependencies": {
     "@cisne/database": "workspace:*",

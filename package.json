@@ -19,6 +19,7 @@
     "test:perf:smoke": "pnpm --filter @cisne/api test:perf:smoke",
     "test:perf": "pnpm --filter @cisne/api test:perf",
     "backup:run": "pnpm --filter @cisne/api backup:run",
+    "dr:drill": "pnpm --filter @cisne/api dr:drill",
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",
     "db:up": "docker compose -f docker/compose.yaml up -d --wait",

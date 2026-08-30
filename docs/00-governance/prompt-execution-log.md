@@ -4611,7 +4611,7 @@ QUALITY_GATE: PASS
 NEXT_ALLOWED_PROMPT: 85
 NEXT_PROMPT_EXECUTED: NO
 NOTES:
-  Prompt 85 não executado.
+  Prompt 85 executado (PASS).
 ```
 
 ## Quality gate Prompt 84 (evidência)
@@ -4624,6 +4624,45 @@ NOTES:
 | falha registra status monitorável | PASS | backup-runner.spec.ts |
 | alerta em falha de backup | PASS | technical-alert.engine.spec.ts |
 | RPO/RTO não inventados | PASS | backup-strategy.md |
+| API typecheck | PASS | tsc --noEmit |
+
+---
+
+## Prompt 85 — Restore e disaster recovery
+
+```
+PROMPT_ID: 85
+PROMPT_TITLE: Restore e disaster recovery
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: PASS
+DR_STATUS: PASS (restore comprovado em ambiente isolado)
+COMMIT: (pending) ops(dr): validate disaster recovery procedure
+ARTIFACTS:
+  apps/api/src/ops/dr/**
+  docs/19-operations/dr-restore-runbook.md
+ISOLATION: DR_DATABASE_URL sandbox; bloqueio automático em produção
+SCENARIOS: db_loss, application_host_loss, object_storage_partial_loss, bad_deployment, credential_rotation
+VERIFICATION: migration consistency, referential integrity, document hashes, domain smoke, login
+METRICS: RPO/RTO medidos; metas TARGET_NOT_DEFINED (DDP-016)
+RULE: backup não aprovado até restore PASS
+QUALITY_GATE: PASS
+NEXT_ALLOWED_PROMPT: 86
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Prompt 86 não executado.
+```
+
+## Quality gate Prompt 85 (evidência)
+
+| Cenário de teste | Resultado | Evidência |
+|------------------|-----------|-----------|
+| restore isolado object storage + hashes | PASS | dr-runner.spec.ts |
+| drill completo backup→desastre→restore→verify | PASS | dr-runner.spec.ts |
+| integridade documentos (objeto ausente) | PASS | dr-runner.spec.ts |
+| bloqueio ambiente produção | PASS | dr-runner.spec.ts |
+| 5 cenários de desastre documentados | PASS | dr-types.ts |
+| RPO/RTO medidos sem inventar metas | PASS | dr-metrics.ts |
+| runbook operacional | PASS | dr-restore-runbook.md |
 | API typecheck | PASS | tsc --noEmit |
 
 ---
