@@ -1,0 +1,190 @@
+name: CD
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [master, main]
+  workflow_dispatch:
+    inputs:
+      ci_run_id:
+        description: CI workflow run id to promote (defaults to triggering run)
+        required: false
+
+concurrency:
+  group: cd-${{ github.event.workflow_run.id || github.run_id }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  FORCE_COLOR: '1'
+
+jobs:
+  resolve-ci-artifact:
+    name: Resolve CI artifact (build once)
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
+    outputs:
+      ci_run_id: ${{ steps.resolve.outputs.ci_run_id }}
+    steps:
+      - id: resolve
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.ci_run_id }}" ]; then
+            echo "ci_run_id=${{ inputs.ci_run_id }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "ci_run_id=${{ github.event.workflow_run.id }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download CI build artifact (no rebuild)
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ steps.resolve.outputs.ci_run_id }}
+          name: cisne-build-${{ steps.resolve.outputs.ci_run_id }}
+
+      - name: Upload promotion bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: cisne-promotion-${{ github.run_id }}
+          retention-days: 30
+          path: |
+            artifacts/ci/build-metadata.json
+            artifacts/cd/deploy-manifest.json
+            apps/api/dist
+            apps/web/dist
+            packages/database/dist
+
+  deploy-hml:
+    name: Deploy HML + smoke
+    runs-on: ubuntu-latest
+    needs: resolve-ci-artifact
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: cisne_hml_cd
+          POSTGRES_PASSWORD: cisne_hml_cd_password
+          POSTGRES_DB: cisne_hml_cd
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cisne_hml_cd -d cisne_hml_cd"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      CISNE_ENV: hml
+      NODE_ENV: production
+      DATABASE_URL: postgresql://cisne_hml_cd:cisne_hml_cd_password@localhost:5432/cisne_hml_cd
+      JWT_SECRET: hml-cd-jwt-secret-with-at-least-32-characters
+      JWT_ISSUER: cisne-api-hml
+      JWT_AUDIENCE: cisne-clients-hml
+      CORS_ORIGIN: http://localhost:5174
+      OBJECT_STORAGE_PROVIDER: filesystem
+      OBJECT_STORAGE_ROOT: .object-storage-hml-cd
+      OBJECT_STORAGE_BUCKET: cisne-hml-documents
+      HML_INTEGRATIONS_SANDBOX: 'true'
+      EMAIL_NOTIFICATION_CONFIGURED: 'false'
+      WHATSAPP_NOTIFICATION_CONFIGURED: 'false'
+      HML_PUBLIC_API_URL: http://127.0.0.1:3000
+      CD_COMMIT_SHA: ${{ github.sha }}
+      CD_BUILD_RUN_ID: ${{ needs.resolve-ci-artifact.outputs.ci_run_id }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Download promotion bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: cisne-promotion-${{ github.run_id }}
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Bootstrap synthetic HML operator
+        env:
+          HML_SYNTHETIC_SEED_CONFIRM: I_UNDERSTAND
+          BOOTSTRAP_ADMIN_LOGIN: hml-cd@cisne.invalid
+          BOOTSTRAP_ADMIN_PASSWORD: Synthetic-HML-CD-Password-123!
+          BOOTSTRAP_CONFIRM: I_UNDERSTAND
+          HML_SMOKE_LOGIN: hml-cd@cisne.invalid
+          HML_SMOKE_PASSWORD: Synthetic-HML-CD-Password-123!
+        run: node scripts/hml/bootstrap-synthetic.mjs
+
+      - name: Start API from CI artifact (no rebuild)
+        run: |
+          node apps/api/dist/main.js &
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:3000/api/v1/health/ready; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "API failed readiness"
+          exit 1
+
+      - name: CD unit tests (pipeline simulation)
+        run: pnpm --filter @cisne/api test:cd
+
+      - name: Promote same artifact to HML
+        env:
+          HML_SMOKE_LOGIN: hml-cd@cisne.invalid
+          HML_SMOKE_PASSWORD: Synthetic-HML-CD-Password-123!
+        run: node scripts/cd/promote.mjs
+
+      - name: Record HML deploy manifest
+        run: cat artifacts/cd/deploy-manifest.json
+
+  acceptance:
+    name: Acceptance gate
+    runs-on: ubuntu-latest
+    needs: deploy-hml
+    steps:
+      - run: echo "HML smoke passed — acceptance gate open for production promotion"
+
+  deploy-production:
+    name: Promote to production (manual gate)
+    runs-on: ubuntu-latest
+    needs: acceptance
+    environment: production
+    env:
+      PRD_PROMOTION_APPROVED: I_UNDERSTAND
+      CD_REQUIRE_SECRET_STORE: 'false'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Download promotion bundle (same artifact digest)
+        uses: actions/download-artifact@v4
+        with:
+          name: cisne-promotion-${{ github.run_id }}
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Promote same artifact to production (no rebuild)
+        run: node scripts/cd/promote.mjs --production
+
+      - name: Record production manifest
+        run: cat artifacts/cd/deploy-manifest.json
