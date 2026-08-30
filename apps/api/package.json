@@ -28,7 +28,9 @@
     "test:uat:unit": "vitest run src/uat --exclude '**/*.integration.spec.ts'",
     "test:uat": "vitest run --config vitest.integration.config.ts src/uat/uat-business.integration.spec.ts",
     "test:pilot": "vitest run src/ops/pilot",
-    "pilot:status": "npx tsx src/ops/pilot/cli/run-pilot-status.ts"
+    "pilot:status": "npx tsx src/ops/pilot/cli/run-pilot-status.ts",
+    "test:release": "vitest run src/ops/release",
+    "release:drill": "npx tsx src/ops/release/cli/run-release-drill.ts"
   },
   "dependencies": {
     "@cisne/database": "workspace:*",

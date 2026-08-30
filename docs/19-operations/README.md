@@ -10,3 +10,4 @@ Documentação operacional (backup, continuidade, runbooks).
 | [cd-pipeline.md](cd-pipeline.md) | 87 |
 | [production-infrastructure.md](production-infrastructure.md) | 88 |
 | [pilot-program.md](pilot-program.md) | 90 |
+| [release-rollback-strategy.md](release-rollback-strategy.md) | 91 |
