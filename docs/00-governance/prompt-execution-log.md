@@ -4466,7 +4466,7 @@ PROMPT_ID: 81
 PROMPT_TITLE: Security hardening
 EXECUTED_AT: 2026-08-30
 EXECUTION_STATUS: PASS
-COMMIT: (pending) security: harden application before production
+COMMIT: 8cc4477 security: harden application before production
 ARTIFACTS:
   apps/api/src/security/**
   apps/api/src/infrastructure/http/security-headers.interceptor.ts
