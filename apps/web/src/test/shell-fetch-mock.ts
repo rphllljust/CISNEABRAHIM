@@ -88,6 +88,14 @@ export function createShellFetchMock(options: ShellFetchMockOptions = {}) {
       });
     }
 
+    if (url.includes('/api/v1/alerts/summary') && method === 'GET') {
+      return jsonResponse({ activeCount: 0 });
+    }
+
+    if (url.includes('/api/v1/alerts') && method === 'GET') {
+      return jsonResponse([]);
+    }
+
     if (url.includes('/api/v1/dashboard/executive') && method === 'GET') {
       return jsonResponse({
         generatedAt: new Date().toISOString(),

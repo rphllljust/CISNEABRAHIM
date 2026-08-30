@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AlertsModule } from './alerts/alerts.module';
 import { IntegrationsAclModule } from './integrations/acl/integrations-acl.module';
 import { IntegrationsInboxModule } from './integrations/inbox/integrations-inbox.module';
 import { BackgroundJobsModule } from './platform/background-jobs/background-jobs.module';
@@ -22,6 +23,6 @@ import { EventsModule } from './events/events.module';
 import { ServiceOrdersModule } from './service-orders/service-orders.module';
 
 @Module({
-  imports: [HealthModule, AuditModule, AuthModule, AuthorizationModule, ClientsModule, CatalogModule, CommercialModule, RequestsModule, ServiceOrdersModule, MeasurementsModule, BillingModule, ResourcesModule, DocumentsModule, EventsModule, NotificationsModule, DashboardModule, AnalyticsModule, BackgroundJobsModule, OutboxModule, IntegrationsAclModule, IntegrationsInboxModule],
+  imports: [HealthModule, AuditModule, AuthModule, AuthorizationModule, ClientsModule, CatalogModule, CommercialModule, RequestsModule, ServiceOrdersModule, MeasurementsModule, BillingModule, ResourcesModule, DocumentsModule, EventsModule, NotificationsModule, DashboardModule, AnalyticsModule, AlertsModule, BackgroundJobsModule, OutboxModule, IntegrationsAclModule, IntegrationsInboxModule],
 })
 export class AppModule {}

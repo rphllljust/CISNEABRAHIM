@@ -1,0 +1,143 @@
+.alerts-page {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.alerts-page__header {
+  margin-bottom: 1rem;
+}
+
+.alerts-page__lead {
+  margin: 0.35rem 0 0;
+  color: #475569;
+}
+
+.alerts-page__error {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+  border-radius: 0.75rem;
+}
+
+.alerts-page__empty {
+  color: #64748b;
+}
+
+.alerts-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #f8fafc;
+}
+
+.alerts-filters label {
+  font-size: 0.875rem;
+  color: #334155;
+}
+
+.alerts-filters select {
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  background: #fff;
+}
+
+.alerts-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.alerts-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background: #fff;
+}
+
+.alerts-card--critical {
+  border-left: 6px solid var(--chart-critical, #dc2626);
+}
+
+.alerts-card--warning {
+  border-left: 6px solid var(--chart-warning, #d97706);
+}
+
+.alerts-card__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.alerts-card__header h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.alerts-card__severity {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.alerts-card__message {
+  margin: 0.5rem 0 0;
+  color: #334155;
+}
+
+.alerts-card__meta {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.alerts-card__link {
+  display: inline-block;
+  margin-top: 0.75rem;
+  color: #1d4ed8;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.alert-badge-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #1d4ed8;
+  text-decoration: none;
+  font-size: 0.875rem;
+}
+
+.alert-badge-link__count {
+  min-width: 1.25rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+@media (max-width: 767px) {
+  .alerts-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

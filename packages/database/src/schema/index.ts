@@ -184,3 +184,10 @@ export {
   notifications,
   deliveryAttempts,
 } from './notifications';
+export {
+  altSchema,
+  businessAlertSeverityEnum,
+  businessAlertStatusEnum,
+  businessAlertTypeEnum,
+  businessAlerts,
+} from './business-alerts';

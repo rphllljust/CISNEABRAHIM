@@ -1,5 +1,6 @@
 import { useAuth } from '../auth/context/AuthProvider';
 import { formatIdentityLabel } from './format-identity';
+import { AlertBadgeLink } from '../alerts/components/AlertBadgeLink';
 
 export function AppHeader() {
   const { identityId, sessionId, logout } = useAuth();
@@ -11,6 +12,7 @@ export function AppHeader() {
         <p className="app-header__subtitle">Authenticated application shell</p>
       </div>
       <div className="app-header__session" aria-label="Session">
+        <AlertBadgeLink />
         <dl className="session-chip">
           <div>
             <dt>Identity</dt>

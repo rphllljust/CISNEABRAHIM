@@ -6,6 +6,13 @@ import type { ShellNavItem } from './types';
  */
 export const SHELL_NAV_ITEMS: ShellNavItem[] = [
   {
+    id: 'alerts',
+    label: 'Alertas',
+    path: '/app/alerts',
+    capabilityId: 'service-orders:service-order:list',
+    accessCheck: 'request-list',
+  },
+  {
     id: 'home',
     label: 'Home',
     path: '/app',

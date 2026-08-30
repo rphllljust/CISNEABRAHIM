@@ -3,6 +3,7 @@ export const BACKGROUND_JOB_KINDS = {
   Integration: 'INTEGRATION',
   DocumentProcessing: 'DOCUMENT_PROCESSING',
   ReportGeneration: 'REPORT_GENERATION',
+  OperationalAlertScan: 'OPERATIONAL_ALERT_SCAN',
 } as const;
 
 export type BackgroundJobKind = (typeof BACKGROUND_JOB_KINDS)[keyof typeof BACKGROUND_JOB_KINDS];

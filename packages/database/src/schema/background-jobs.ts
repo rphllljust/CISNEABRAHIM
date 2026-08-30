@@ -8,6 +8,7 @@ export const backgroundJobKindEnum = pgEnum('background_job_kind', [
   'INTEGRATION',
   'DOCUMENT_PROCESSING',
   'REPORT_GENERATION',
+  'OPERATIONAL_ALERT_SCAN',
 ]);
 
 export const backgroundJobStatusEnum = pgEnum('background_job_status', [

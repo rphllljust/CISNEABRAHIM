@@ -133,6 +133,20 @@ export function createDashboardFetchMock() {
       );
     }
 
+    if (url.includes('/api/v1/alerts/summary') && method === 'GET') {
+      return new Response(JSON.stringify({ activeCount: 1 }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (url.includes('/api/v1/alerts') && method === 'GET') {
+      return new Response(JSON.stringify([]), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     if (url.includes('/api/v1/dashboard/executive') && method === 'GET') {
       return new Response(JSON.stringify(EXECUTIVE_DASHBOARD_SNAPSHOT), {
         status: 200,

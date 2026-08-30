@@ -4209,7 +4209,7 @@ NEXT_PROMPT_EXECUTED: NO
 NOTES:
   Endpoint único evita waterfall no frontend; /dashboard/operational preservado.
   Aging financeiro só renderiza quando AGING_BUCKET_BANDS configurado.
-  Prompt 76 não executado.
+  Prompt 76 executado (PASS).
 ```
 
 ## Quality gate Prompt 75 (evidência)
@@ -4224,6 +4224,55 @@ NOTES:
 | empty attention | PASS | dashboard.executive.test.tsx |
 | filtros URL (period) | PASS | dashboard.e2e.test.tsx |
 | single API call | PASS | dashboard.e2e.test.tsx |
+| API typecheck | PASS | tsc --noEmit |
+| web typecheck | PASS | tsc --noEmit |
+
+---
+
+## Prompt 76 — Alertas operacionais de negócio
+
+```
+PROMPT_ID: 76
+PROMPT_TITLE: Alertas operacionais de negócio
+EXECUTED_AT: 2026-08-29
+EXECUTION_STATUS: PASS
+COMMIT: feat(alerts): implement SLA and overdue business alerts
+ARTIFACTS:
+  packages/database/migrations/0031_operational_business_alerts.sql
+  packages/database/migrations/0032_background_job_operational_alert_scan.sql
+  packages/database/src/schema/business-alerts.ts
+  apps/api/src/alerts/**
+  apps/api/src/platform/background-jobs/handlers/operational-alert-scan.handler.ts
+  apps/web/src/alerts/**
+ENDPOINT: GET /api/v1/alerts, GET /api/v1/alerts/summary
+ALERT_TYPES: SERVICE_ORDER_DUE_SOON, SERVICE_ORDER_OVERDUE, SERVICE_ORDER_STALLED, MEASUREMENT_AGING, BILLING_AGING, PAYMENT_OVERDUE
+DEDUP: alertType + aggregateId + policyWindow (partial unique index on ACTIVE)
+TRANSITION: create on condition entry; touch on repeat scan; resolve when condition clears
+ESCALATION: WARNING / CRITICAL via ALERT_ESCALATION_OVERDUE_DAYS (policy env)
+WORKER: OPERATIONAL_ALERT_SCAN background job + optional scheduler bootstrap
+FRONTEND: /app/alerts center, badge in header, filterable list, entity links
+QUALITY_GATE: PASS
+NEXT_ALLOWED_PROMPT: 77
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Scheduler bootstrap movido para BackgroundJobsModule (evita dependência circular).
+  Alertas persistidos em alt.business_alerts (separado de ntf.notifications).
+  Prompt 77 não executado.
+```
+
+## Quality gate Prompt 76 (evidência)
+
+| Cenário de teste | Resultado | Evidência |
+|------------------|-----------|-----------|
+| before deadline (no overdue) | PASS | alert-evaluation.engine.spec.ts |
+| at deadline (overdue) | PASS | alert-evaluation.engine.spec.ts |
+| due soon within threshold | PASS | alert-evaluation.engine.spec.ts |
+| escalation when policy threshold | PASS | alert-evaluation.engine.spec.ts |
+| dedup key composition | PASS | alert-deduplication.spec.ts |
+| transition create/touch/resolve | PASS | alert-transition.engine.spec.ts |
+| duplicate worker cycle (touch not create) | PASS | business-alerts.integration.spec.ts |
+| resolve when SO completed | PASS | business-alerts.integration.spec.ts |
+| alert center + entity link | PASS | alerts.components.test.tsx |
 | API typecheck | PASS | tsc --noEmit |
 | web typecheck | PASS | tsc --noEmit |
 

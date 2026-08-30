@@ -1,0 +1,1 @@
+ALTER TYPE "plt"."background_job_kind" ADD VALUE IF NOT EXISTS 'OPERATIONAL_ALERT_SCAN';
