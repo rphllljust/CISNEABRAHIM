@@ -1,0 +1,44 @@
+name: HML validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+      - main
+    paths:
+      - 'apps/api/src/ops/hml/**'
+      - 'docker/hml/**'
+      - '.env.hml.example'
+      - 'scripts/hml/**'
+
+permissions:
+  contents: read
+
+jobs:
+  hml-guards:
+    name: HML config / smoke unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: HML unit tests
+        run: pnpm --filter @cisne/api test:hml
+
+      - name: Validate HML example env isolation markers
+        run: |
+          grep -q 'CISNE_ENV=hml' .env.hml.example
+          grep -q 'cisne_hml' .env.hml.example
+          grep -q 'HML_INTEGRATIONS_SANDBOX=true' .env.hml.example

@@ -85,6 +85,9 @@ artifacts/ci/
 # Backup artifacts (local / CI scratch)
 .backup/
 
+# HML local object storage
+.object-storage-hml/
+
 # Do not ignore project documentation
 # docs/ is versioned
 # AGENTS.md and README.md are versioned

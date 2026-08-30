@@ -4649,7 +4649,7 @@ QUALITY_GATE: PASS
 NEXT_ALLOWED_PROMPT: 86
 NEXT_PROMPT_EXECUTED: NO
 NOTES:
-  Prompt 86 não executado.
+  Prompt 86 executado (PASS).
 ```
 
 ## Quality gate Prompt 85 (evidência)
@@ -4663,6 +4663,47 @@ NOTES:
 | 5 cenários de desastre documentados | PASS | dr-types.ts |
 | RPO/RTO medidos sem inventar metas | PASS | dr-metrics.ts |
 | runbook operacional | PASS | dr-restore-runbook.md |
+| API typecheck | PASS | tsc --noEmit |
+
+---
+
+## Prompt 86 — Homologação
+
+```
+PROMPT_ID: 86
+PROMPT_TITLE: Homologação
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: PASS
+COMMIT: (pending) ops(hml): establish production-like homologation environment
+ARTIFACTS:
+  docker/hml/**
+  apps/api/src/ops/hml/**
+  scripts/hml/**
+  .env.hml.example
+  docs/19-operations/hml-environment.md
+ISOLATION: CISNE_ENV=hml, DB/storage/secrets/URLs dedicados
+BUILD: mesma imagem pnpm build (Dockerfile.api/web)
+DATA: bootstrap sintético; sem PII de produção
+INTEGRATIONS: sandbox default; email/WhatsApp outbound desligados
+MIGRATIONS: drizzle migrate no deploy
+SMOKE: health, login, client, request, OS, execution, measurement, billing, documents
+OBSERVABILITY: metrics/alerts endpoint incluído no smoke
+QUALITY_GATE: PASS
+NEXT_ALLOWED_PROMPT: 87
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Prompt 87 não executado.
+```
+
+## Quality gate Prompt 86 (evidência)
+
+| Cenário de teste | Resultado | Evidência |
+|------------------|-----------|-----------|
+| isolamento HML vs produção | PASS | hml-config.spec.ts |
+| outbound sandbox default | PASS | hml-config.spec.ts |
+| smoke pós-deploy (domínios core) | PASS | hml-smoke.spec.ts |
+| compose + Dockerfiles promovíveis | PASS | docker/hml/* |
+| migrations via drizzle no deploy | PASS | hml-deploy.ts |
 | API typecheck | PASS | tsc --noEmit |
 
 ---

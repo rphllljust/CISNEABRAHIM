@@ -1,0 +1,67 @@
+# CISNE Rondônia — Homologação (HML)
+# Isolado de produção: DB, storage, secrets e URLs próprios.
+# Uso: cp .env.hml.example .env.hml && docker compose -f docker/hml/compose.yaml --env-file .env.hml up -d --build
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: cisne_hml_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${HML_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${HML_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${HML_POSTGRES_DB}
+    ports:
+      - '127.0.0.1:5433:5432'
+    volumes:
+      - cisne_hml_pg_data:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks: [cisne_hml]
+
+  api:
+    build:
+      context: ../..
+      dockerfile: docker/hml/Dockerfile.api
+    container_name: cisne_hml_api
+    restart: unless-stopped
+    env_file:
+      - ../../.env.hml
+    environment:
+      DATABASE_URL: postgresql://${HML_POSTGRES_USER}:${HML_POSTGRES_PASSWORD}@postgres:5432/${HML_POSTGRES_DB}
+      OBJECT_STORAGE_ROOT: /data/object-storage
+    volumes:
+      - cisne_hml_object_storage:/data/object-storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - '127.0.0.1:3100:3000'
+    networks: [cisne_hml]
+
+  web:
+    build:
+      context: ../..
+      dockerfile: docker/hml/Dockerfile.web
+      args:
+        VITE_API_BASE_URL: ${HML_PUBLIC_API_URL}
+    container_name: cisne_hml_web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - '127.0.0.1:5174:80'
+    networks: [cisne_hml]
+
+networks:
+  cisne_hml:
+    name: cisne_hml
+
+volumes:
+  cisne_hml_pg_data:
+    name: cisne_hml_pg_data
+  cisne_hml_object_storage:
+    name: cisne_hml_object_storage

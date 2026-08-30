@@ -11,7 +11,7 @@
 | ------- | ------------------------------- | ------------------------------------ |
 | local   | Docker compose / Testcontainers | dev + integration                    |
 | CI      | Testcontainers ephemeral        | L3,L4,L7 cada push                   |
-| staging | Dedicated PG                    | E2E, ZAP, PERF futuro                |
+| staging | Dedicated PG (HML compose)        | E2E, ZAP, PERF, deploy smoke         |
 | prod    | —                               | **sem testes automatizados escrita** |
 
 ## PostgreSQL real
