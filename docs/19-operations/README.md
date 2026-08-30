@@ -9,3 +9,4 @@ Documentação operacional (backup, continuidade, runbooks).
 | [hml-environment.md](hml-environment.md) | 86 |
 | [cd-pipeline.md](cd-pipeline.md) | 87 |
 | [production-infrastructure.md](production-infrastructure.md) | 88 |
+| [pilot-program.md](pilot-program.md) | 90 |

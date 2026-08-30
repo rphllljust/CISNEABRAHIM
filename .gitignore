@@ -87,6 +87,7 @@ artifacts/ci/
 
 # CD promotion manifests (generated in CI)
 artifacts/cd/
+.pilot/
 
 # HML local object storage
 .object-storage-hml/

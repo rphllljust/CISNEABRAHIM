@@ -54,7 +54,7 @@ import { computeUatVerdict } from './uat-verdict';
 
 const UNIT_UAT = 'unit-uat';
 
-describe('Business UAT (Prompt 89)', { hookTimeout: 120_000, timeout: 300_000 }, () => {
+describe('Business UAT (Prompt 89)', () => {
   let pool: Pool;
   let services: UatVerticalServices;
   const testDatabaseUrl = process.env['TEST_DATABASE_URL'];
