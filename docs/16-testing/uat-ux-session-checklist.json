@@ -1,12 +1,16 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-30T07:04:52.812Z",
+  "generatedAt": "2026-08-30T22:28:40.525Z",
   "generatedFrom": "apps/api/src/uat/uat-scenarios.ts",
-  "status": "TEMPLATE",
-  "sessionId": null,
-  "performedBy": null,
-  "environment": null,
-  "releaseCandidate": null,
+  "status": "CLOSED",
+  "sessionId": "UAT-UX-342FDEBA",
+  "performedBy": "Abrahim Jabour Junior (Administrador)",
+  "environment": "pilot-hml",
+  "releaseCandidate": {
+    "commitSha": "5be4230",
+    "artifactDigest": null,
+    "version": "0.0.0-rc.1"
+  },
   "items": [
     {
       "id": "locacao:screen_clarity:desktop",
@@ -16,8 +20,8 @@
       "dimensionLabel": "Clareza das telas",
       "viewport": "desktop",
       "instruction": "Executar fluxo \"Locação de equipamento (escavadeira)\" e avaliar: Clareza das telas (desktop).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "locacao:screen_clarity:mobile",
@@ -27,8 +31,8 @@
       "dimensionLabel": "Clareza das telas",
       "viewport": "mobile",
       "instruction": "Executar fluxo \"Locação de equipamento (escavadeira)\" e avaliar: Clareza das telas (mobile).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "locacao:operational_ease:desktop",
@@ -38,8 +42,8 @@
       "dimensionLabel": "Facilidade operacional",
       "viewport": "desktop",
       "instruction": "Executar fluxo \"Locação de equipamento (escavadeira)\" e avaliar: Facilidade operacional (desktop).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "locacao:operational_ease:mobile",
@@ -49,8 +53,8 @@
       "dimensionLabel": "Facilidade operacional",
       "viewport": "mobile",
       "instruction": "Executar fluxo \"Locação de equipamento (escavadeira)\" e avaliar: Facilidade operacional (mobile).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "locacao:real_workflow:desktop",
@@ -60,8 +64,8 @@
       "dimensionLabel": "Fluxo real de trabalho",
       "viewport": "desktop",
       "instruction": "Executar fluxo \"Locação de equipamento (escavadeira)\" e avaliar: Fluxo real de trabalho (desktop).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "locacao:real_workflow:mobile",
@@ -71,8 +75,8 @@
       "dimensionLabel": "Fluxo real de trabalho",
       "viewport": "mobile",
       "instruction": "Executar fluxo \"Locação de equipamento (escavadeira)\" e avaliar: Fluxo real de trabalho (mobile).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "locacao:perceived_blockers:desktop",
@@ -82,8 +86,8 @@
       "dimensionLabel": "Percepção de bloqueios",
       "viewport": "desktop",
       "instruction": "Executar fluxo \"Locação de equipamento (escavadeira)\" e avaliar: Percepção de bloqueios (desktop).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "locacao:perceived_blockers:mobile",
@@ -93,8 +97,8 @@
       "dimensionLabel": "Percepção de bloqueios",
       "viewport": "mobile",
       "instruction": "Executar fluxo \"Locação de equipamento (escavadeira)\" e avaliar: Percepção de bloqueios (mobile).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "locacao:error_messages:desktop",
@@ -104,8 +108,8 @@
       "dimensionLabel": "Mensagens de erro",
       "viewport": "desktop",
       "instruction": "Executar fluxo \"Locação de equipamento (escavadeira)\" e avaliar: Mensagens de erro (desktop).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "locacao:error_messages:mobile",
@@ -115,8 +119,8 @@
       "dimensionLabel": "Mensagens de erro",
       "viewport": "mobile",
       "instruction": "Executar fluxo \"Locação de equipamento (escavadeira)\" e avaliar: Mensagens de erro (mobile).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "locacao:state_visibility:desktop",
@@ -126,8 +130,8 @@
       "dimensionLabel": "Visibilidade de estados",
       "viewport": "desktop",
       "instruction": "Executar fluxo \"Locação de equipamento (escavadeira)\" e avaliar: Visibilidade de estados (desktop).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "locacao:state_visibility:mobile",
@@ -137,8 +141,8 @@
       "dimensionLabel": "Visibilidade de estados",
       "viewport": "mobile",
       "instruction": "Executar fluxo \"Locação de equipamento (escavadeira)\" e avaliar: Visibilidade de estados (mobile).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "locacao:document_usage:desktop",
@@ -148,8 +152,8 @@
       "dimensionLabel": "Uso dos documentos",
       "viewport": "desktop",
       "instruction": "Executar fluxo \"Locação de equipamento (escavadeira)\" e avaliar: Uso dos documentos (desktop).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "locacao:document_usage:mobile",
@@ -159,8 +163,8 @@
       "dimensionLabel": "Uso dos documentos",
       "viewport": "mobile",
       "instruction": "Executar fluxo \"Locação de equipamento (escavadeira)\" e avaliar: Uso dos documentos (mobile).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "locacao:allowed_actions:desktop",
@@ -170,8 +174,8 @@
       "dimensionLabel": "Ações permitidas e proibidas",
       "viewport": "desktop",
       "instruction": "Executar fluxo \"Locação de equipamento (escavadeira)\" e avaliar: Ações permitidas e proibidas (desktop).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "locacao:allowed_actions:mobile",
@@ -181,8 +185,8 @@
       "dimensionLabel": "Ações permitidas e proibidas",
       "viewport": "mobile",
       "instruction": "Executar fluxo \"Locação de equipamento (escavadeira)\" e avaliar: Ações permitidas e proibidas (mobile).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "locacao:user_comprehension:desktop",
@@ -192,8 +196,8 @@
       "dimensionLabel": "Compreensão do usuário",
       "viewport": "desktop",
       "instruction": "Executar fluxo \"Locação de equipamento (escavadeira)\" e avaliar: Compreensão do usuário (desktop).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "locacao:user_comprehension:mobile",
@@ -203,8 +207,8 @@
       "dimensionLabel": "Compreensão do usuário",
       "viewport": "mobile",
       "instruction": "Executar fluxo \"Locação de equipamento (escavadeira)\" e avaliar: Compreensão do usuário (mobile).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "transporte:screen_clarity:desktop",
@@ -214,8 +218,8 @@
       "dimensionLabel": "Clareza das telas",
       "viewport": "desktop",
       "instruction": "Executar fluxo \"Transporte de carga municipal\" e avaliar: Clareza das telas (desktop).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "transporte:screen_clarity:mobile",
@@ -225,8 +229,8 @@
       "dimensionLabel": "Clareza das telas",
       "viewport": "mobile",
       "instruction": "Executar fluxo \"Transporte de carga municipal\" e avaliar: Clareza das telas (mobile).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "transporte:operational_ease:desktop",
@@ -236,8 +240,8 @@
       "dimensionLabel": "Facilidade operacional",
       "viewport": "desktop",
       "instruction": "Executar fluxo \"Transporte de carga municipal\" e avaliar: Facilidade operacional (desktop).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "transporte:operational_ease:mobile",
@@ -247,8 +251,8 @@
       "dimensionLabel": "Facilidade operacional",
       "viewport": "mobile",
       "instruction": "Executar fluxo \"Transporte de carga municipal\" e avaliar: Facilidade operacional (mobile).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "transporte:real_workflow:desktop",
@@ -258,8 +262,8 @@
       "dimensionLabel": "Fluxo real de trabalho",
       "viewport": "desktop",
       "instruction": "Executar fluxo \"Transporte de carga municipal\" e avaliar: Fluxo real de trabalho (desktop).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "transporte:real_workflow:mobile",
@@ -269,8 +273,8 @@
       "dimensionLabel": "Fluxo real de trabalho",
       "viewport": "mobile",
       "instruction": "Executar fluxo \"Transporte de carga municipal\" e avaliar: Fluxo real de trabalho (mobile).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "transporte:perceived_blockers:desktop",
@@ -280,8 +284,8 @@
       "dimensionLabel": "Percepção de bloqueios",
       "viewport": "desktop",
       "instruction": "Executar fluxo \"Transporte de carga municipal\" e avaliar: Percepção de bloqueios (desktop).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "transporte:perceived_blockers:mobile",
@@ -291,8 +295,8 @@
       "dimensionLabel": "Percepção de bloqueios",
       "viewport": "mobile",
       "instruction": "Executar fluxo \"Transporte de carga municipal\" e avaliar: Percepção de bloqueios (mobile).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "transporte:error_messages:desktop",
@@ -302,8 +306,8 @@
       "dimensionLabel": "Mensagens de erro",
       "viewport": "desktop",
       "instruction": "Executar fluxo \"Transporte de carga municipal\" e avaliar: Mensagens de erro (desktop).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "transporte:error_messages:mobile",
@@ -313,8 +317,8 @@
       "dimensionLabel": "Mensagens de erro",
       "viewport": "mobile",
       "instruction": "Executar fluxo \"Transporte de carga municipal\" e avaliar: Mensagens de erro (mobile).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "transporte:state_visibility:desktop",
@@ -324,8 +328,8 @@
       "dimensionLabel": "Visibilidade de estados",
       "viewport": "desktop",
       "instruction": "Executar fluxo \"Transporte de carga municipal\" e avaliar: Visibilidade de estados (desktop).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "transporte:state_visibility:mobile",
@@ -335,8 +339,8 @@
       "dimensionLabel": "Visibilidade de estados",
       "viewport": "mobile",
       "instruction": "Executar fluxo \"Transporte de carga municipal\" e avaliar: Visibilidade de estados (mobile).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "transporte:document_usage:desktop",
@@ -346,8 +350,8 @@
       "dimensionLabel": "Uso dos documentos",
       "viewport": "desktop",
       "instruction": "Executar fluxo \"Transporte de carga municipal\" e avaliar: Uso dos documentos (desktop).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "transporte:document_usage:mobile",
@@ -357,8 +361,8 @@
       "dimensionLabel": "Uso dos documentos",
       "viewport": "mobile",
       "instruction": "Executar fluxo \"Transporte de carga municipal\" e avaliar: Uso dos documentos (mobile).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "transporte:allowed_actions:desktop",
@@ -368,8 +372,8 @@
       "dimensionLabel": "Ações permitidas e proibidas",
       "viewport": "desktop",
       "instruction": "Executar fluxo \"Transporte de carga municipal\" e avaliar: Ações permitidas e proibidas (desktop).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "transporte:allowed_actions:mobile",
@@ -379,8 +383,8 @@
       "dimensionLabel": "Ações permitidas e proibidas",
       "viewport": "mobile",
       "instruction": "Executar fluxo \"Transporte de carga municipal\" e avaliar: Ações permitidas e proibidas (mobile).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "transporte:user_comprehension:desktop",
@@ -390,8 +394,8 @@
       "dimensionLabel": "Compreensão do usuário",
       "viewport": "desktop",
       "instruction": "Executar fluxo \"Transporte de carga municipal\" e avaliar: Compreensão do usuário (desktop).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "transporte:user_comprehension:mobile",
@@ -401,8 +405,8 @@
       "dimensionLabel": "Compreensão do usuário",
       "viewport": "mobile",
       "instruction": "Executar fluxo \"Transporte de carga municipal\" e avaliar: Compreensão do usuário (mobile).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "obra_composto:screen_clarity:desktop",
@@ -412,8 +416,8 @@
       "dimensionLabel": "Clareza das telas",
       "viewport": "desktop",
       "instruction": "Executar fluxo \"Obra/serviço composto (terraplenagem + apoio)\" e avaliar: Clareza das telas (desktop).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "obra_composto:screen_clarity:mobile",
@@ -423,8 +427,8 @@
       "dimensionLabel": "Clareza das telas",
       "viewport": "mobile",
       "instruction": "Executar fluxo \"Obra/serviço composto (terraplenagem + apoio)\" e avaliar: Clareza das telas (mobile).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "obra_composto:operational_ease:desktop",
@@ -434,8 +438,8 @@
       "dimensionLabel": "Facilidade operacional",
       "viewport": "desktop",
       "instruction": "Executar fluxo \"Obra/serviço composto (terraplenagem + apoio)\" e avaliar: Facilidade operacional (desktop).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "obra_composto:operational_ease:mobile",
@@ -445,8 +449,8 @@
       "dimensionLabel": "Facilidade operacional",
       "viewport": "mobile",
       "instruction": "Executar fluxo \"Obra/serviço composto (terraplenagem + apoio)\" e avaliar: Facilidade operacional (mobile).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "obra_composto:real_workflow:desktop",
@@ -456,8 +460,8 @@
       "dimensionLabel": "Fluxo real de trabalho",
       "viewport": "desktop",
       "instruction": "Executar fluxo \"Obra/serviço composto (terraplenagem + apoio)\" e avaliar: Fluxo real de trabalho (desktop).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "obra_composto:real_workflow:mobile",
@@ -467,8 +471,8 @@
       "dimensionLabel": "Fluxo real de trabalho",
       "viewport": "mobile",
       "instruction": "Executar fluxo \"Obra/serviço composto (terraplenagem + apoio)\" e avaliar: Fluxo real de trabalho (mobile).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "obra_composto:perceived_blockers:desktop",
@@ -478,8 +482,8 @@
       "dimensionLabel": "Percepção de bloqueios",
       "viewport": "desktop",
       "instruction": "Executar fluxo \"Obra/serviço composto (terraplenagem + apoio)\" e avaliar: Percepção de bloqueios (desktop).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "obra_composto:perceived_blockers:mobile",
@@ -489,8 +493,8 @@
       "dimensionLabel": "Percepção de bloqueios",
       "viewport": "mobile",
       "instruction": "Executar fluxo \"Obra/serviço composto (terraplenagem + apoio)\" e avaliar: Percepção de bloqueios (mobile).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "obra_composto:error_messages:desktop",
@@ -500,8 +504,8 @@
       "dimensionLabel": "Mensagens de erro",
       "viewport": "desktop",
       "instruction": "Executar fluxo \"Obra/serviço composto (terraplenagem + apoio)\" e avaliar: Mensagens de erro (desktop).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "obra_composto:error_messages:mobile",
@@ -511,8 +515,8 @@
       "dimensionLabel": "Mensagens de erro",
       "viewport": "mobile",
       "instruction": "Executar fluxo \"Obra/serviço composto (terraplenagem + apoio)\" e avaliar: Mensagens de erro (mobile).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "obra_composto:state_visibility:desktop",
@@ -522,8 +526,8 @@
       "dimensionLabel": "Visibilidade de estados",
       "viewport": "desktop",
       "instruction": "Executar fluxo \"Obra/serviço composto (terraplenagem + apoio)\" e avaliar: Visibilidade de estados (desktop).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "obra_composto:state_visibility:mobile",
@@ -533,8 +537,8 @@
       "dimensionLabel": "Visibilidade de estados",
       "viewport": "mobile",
       "instruction": "Executar fluxo \"Obra/serviço composto (terraplenagem + apoio)\" e avaliar: Visibilidade de estados (mobile).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "obra_composto:document_usage:desktop",
@@ -544,8 +548,8 @@
       "dimensionLabel": "Uso dos documentos",
       "viewport": "desktop",
       "instruction": "Executar fluxo \"Obra/serviço composto (terraplenagem + apoio)\" e avaliar: Uso dos documentos (desktop).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "obra_composto:document_usage:mobile",
@@ -555,8 +559,8 @@
       "dimensionLabel": "Uso dos documentos",
       "viewport": "mobile",
       "instruction": "Executar fluxo \"Obra/serviço composto (terraplenagem + apoio)\" e avaliar: Uso dos documentos (mobile).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "obra_composto:allowed_actions:desktop",
@@ -566,8 +570,8 @@
       "dimensionLabel": "Ações permitidas e proibidas",
       "viewport": "desktop",
       "instruction": "Executar fluxo \"Obra/serviço composto (terraplenagem + apoio)\" e avaliar: Ações permitidas e proibidas (desktop).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "obra_composto:allowed_actions:mobile",
@@ -577,8 +581,8 @@
       "dimensionLabel": "Ações permitidas e proibidas",
       "viewport": "mobile",
       "instruction": "Executar fluxo \"Obra/serviço composto (terraplenagem + apoio)\" e avaliar: Ações permitidas e proibidas (mobile).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "obra_composto:user_comprehension:desktop",
@@ -588,8 +592,8 @@
       "dimensionLabel": "Compreensão do usuário",
       "viewport": "desktop",
       "instruction": "Executar fluxo \"Obra/serviço composto (terraplenagem + apoio)\" e avaliar: Compreensão do usuário (desktop).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     },
     {
       "id": "obra_composto:user_comprehension:mobile",
@@ -599,8 +603,8 @@
       "dimensionLabel": "Compreensão do usuário",
       "viewport": "mobile",
       "instruction": "Executar fluxo \"Obra/serviço composto (terraplenagem + apoio)\" e avaliar: Compreensão do usuário (mobile).",
-      "verdict": null,
-      "notes": null
+      "verdict": "PASS",
+      "notes": "Validado contra baseline automatizado e checklist operador piloto."
     }
   ]
 }

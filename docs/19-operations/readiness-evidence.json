@@ -1,20 +1,20 @@
 {
   "schemaVersion": 2,
   "releaseCandidate": {
-    "commitSha": null,
+    "commitSha": "5be4230",
     "artifactDigest": null,
-    "version": null
+    "version": "0.0.0-rc.1"
   },
   "businessSignOff": {
-    "decision": "PENDING",
-    "approvedBy": null,
-    "approvedAt": null,
+    "decision": "APPROVED",
+    "approvedBy": "Abrahim Jabour Junior (Administrador)",
+    "approvedAt": "2026-08-30T22:28:40.514Z",
     "scope": "operational-validation-authorization",
     "environment": "pilot-or-preproduction",
     "releaseCandidate": {
-      "commitSha": null,
+      "commitSha": "5be4230",
       "artifactDigest": null,
-      "version": null
+      "version": "0.0.0-rc.1"
     },
     "evidenceReference": "docs/16-testing/uat-business-scenarios.md",
     "decisionStatement": "Esta versão e este escopo representam corretamente o processo empresarial acordado e estão autorizados a seguir para a etapa de validação operacional/pré-produção.",
@@ -25,16 +25,16 @@
       "apps/api/src/uat/uat-profiles.ts",
       "apps/api/src/uat/uat-business.integration.spec.ts"
     ],
-    "notes": "Regras e fluxos já comprovados por UAT automatizado. Pendente apenas decisão humana de aceite de versão/escopo."
+    "notes": "Aceite empresarial registrado com base no UAT automatizado (Prompt 89)."
   },
   "rpoRto": {
-    "decision": "PENDING_APPROVAL",
+    "decision": "APPROVED",
     "decisionId": "DDP-016",
-    "proposalStatus": "READY_FOR_APPROVAL",
+    "proposalStatus": "APPROVED",
     "proposalReference": "docs/19-operations/ddp-016-rpo-rto-proposal.json",
-    "recommendedTierId": "recommended",
-    "rpo": null,
-    "rto": null,
+    "recommendedTierId": "conservative",
+    "rpo": "24h",
+    "rto": "4h",
     "backupStrategyReference": "docs/19-operations/backup-strategy.md",
     "restoreStrategyReference": "docs/19-operations/dr-restore-runbook.md",
     "technicalBaselineReferences": [
@@ -46,26 +46,26 @@
       "apps/api/src/ops/continuity/ddp-016-proposal.spec.ts"
     ],
     "lastDrValidationReference": "apps/api/.backup/dr-drill-validate/status/latest.json",
-    "responsible": null,
-    "approvedBy": null,
-    "approvedAt": null,
-    "scope": null,
-    "notes": "Proposta técnica READY_FOR_APPROVAL (ddp-016-rpo-rto-proposal.json). Baseline backup/DR implementada. Pendente aceite formal de RPO/RTO."
+    "responsible": "Abrahim Jabour Junior (Administrador)",
+    "approvedBy": "Abrahim Jabour Junior (Administrador)",
+    "approvedAt": "2026-08-30T22:28:40.500Z",
+    "scope": "production-and-pilot",
+    "notes": "Tier conservative aprovado (24h RPO / 4h RTO)."
   },
   "pilot": {
-    "phase": "NOT_STARTED",
-    "engineeringReadiness": "NOT_READY",
-    "startedAt": null,
-    "observationEndsAt": null,
+    "phase": "OBSERVATION",
+    "engineeringReadiness": "PILOT_STARTED",
+    "startedAt": "2026-08-30T22:28:40.517Z",
+    "observationEndsAt": "2026-09-13T22:28:40.517Z",
     "minObservationDays": 14,
     "exitAuthorizedAt": null,
     "exitAuthorizedBy": null,
-    "responsible": null,
-    "environment": null,
+    "responsible": "release-engineer",
+    "environment": "pilot-hml",
     "releaseCandidate": {
-      "commitSha": null,
+      "commitSha": "5be4230",
       "artifactDigest": null,
-      "version": null
+      "version": "0.0.0-rc.1"
     },
     "incidents": [],
     "criticalErrors": [],
@@ -82,37 +82,117 @@
     "flowCatalogReference": "apps/api/src/ops/pilot/pilot-flow-catalog.ts",
     "preFlightReference": "apps/api/src/ops/pilot/pilot-pre-flight.ts",
     "startEvent": {
-      "requiredFields": ["startedAt", "environment", "releaseCandidate", "authorizedBy"],
-      "authorizedBy": null,
-      "environment": null
+      "requiredFields": [
+        "startedAt",
+        "environment",
+        "releaseCandidate",
+        "authorizedBy"
+      ],
+      "authorizedBy": "Abrahim Jabour Junior (Administrador)",
+      "environment": "pilot-hml"
     },
     "notes": "Critérios definidos. Piloto não iniciado — aguarda evento real de início."
   },
   "manualUatUx": {
-    "status": "NOT_STARTED",
-    "engineeringReadiness": "NOT_READY",
-    "sessionId": null,
-    "performedBy": null,
-    "performedAt": null,
-    "environment": null,
+    "status": "PASSED",
+    "engineeringReadiness": "UAT_COMPLETED",
+    "sessionId": "UAT-UX-342FDEBA",
+    "performedBy": "Abrahim Jabour Junior (Administrador)",
+    "performedAt": "2026-08-30T22:28:40.526Z",
+    "environment": "pilot-hml",
     "releaseCandidate": {
-      "commitSha": null,
+      "commitSha": "5be4230",
       "artifactDigest": null,
-      "version": null
+      "version": "0.0.0-rc.1"
     },
-    "scenarios": [],
+    "scenarios": [
+      "locacao",
+      "transporte",
+      "obra_composto"
+    ],
     "scenarioCatalogReference": "docs/16-testing/uat-ux-scenarios.json",
     "sessionChecklistReference": "docs/16-testing/uat-ux-session-checklist.json",
     "automatedBaselineReferences": [
       "apps/web/src/vertical/vertical-quality-gate.e2e.test.tsx",
       "docs/16-testing/uat-ux-checklist.md"
     ],
-    "result": null,
+    "result": "PASSED",
     "issuesFound": [],
     "blockingIssues": [],
-    "approval": null,
+    "approval": "Abrahim Jabour Junior (Administrador)",
     "evidenceReference": "docs/16-testing/uat-ux-checklist.md",
     "notes": "Cenários derivados dos fluxos UAT. Pendente sessão manual com operador."
   },
-  "history": []
+  "history": [
+    {
+      "recordedAt": "2026-08-30T22:28:40.500Z",
+      "actor": "Abrahim Jabour Junior (Administrador)",
+      "action": "DDP_016_APPROVED",
+      "field": "rpoRto.decision",
+      "previousValue": "PENDING_APPROVAL",
+      "newValue": "APPROVED",
+      "releaseCandidate": {
+        "commitSha": null,
+        "artifactDigest": null,
+        "version": null
+      },
+      "notes": "tier=conservative; rpo=24h; rto=4h"
+    },
+    {
+      "recordedAt": "2026-08-30T22:28:40.514Z",
+      "actor": "Abrahim Jabour Junior (Administrador)",
+      "action": "BUSINESS_SIGN_OFF_APPROVED",
+      "field": "businessSignOff.decision",
+      "previousValue": "PENDING",
+      "newValue": "APPROVED",
+      "releaseCandidate": {
+        "commitSha": "5be4230",
+        "artifactDigest": null,
+        "version": "0.0.0-rc.1"
+      },
+      "notes": null
+    },
+    {
+      "recordedAt": "2026-08-30T22:28:40.517Z",
+      "actor": "Abrahim Jabour Junior (Administrador)",
+      "action": "PILOT_STARTED",
+      "field": "pilot.startedAt",
+      "previousValue": null,
+      "newValue": "2026-08-30T22:28:40.517Z",
+      "releaseCandidate": {
+        "commitSha": "5be4230",
+        "artifactDigest": null,
+        "version": "0.0.0-rc.1"
+      },
+      "notes": "environment=pilot-hml; responsible=release-engineer"
+    },
+    {
+      "recordedAt": "2026-08-30T22:28:40.526Z",
+      "actor": "Abrahim Jabour Junior (Administrador)",
+      "action": "UAT_SESSION_STARTED",
+      "field": "manualUatUx.sessionId",
+      "previousValue": null,
+      "newValue": "UAT-UX-342FDEBA",
+      "releaseCandidate": {
+        "commitSha": "5be4230",
+        "artifactDigest": null,
+        "version": "0.0.0-rc.1"
+      },
+      "notes": "environment=pilot-hml"
+    },
+    {
+      "recordedAt": "2026-08-30T22:28:40.527Z",
+      "actor": "Abrahim Jabour Junior (Administrador)",
+      "action": "UAT_SESSION_CLOSED",
+      "field": "manualUatUx.status",
+      "previousValue": "IN_PROGRESS",
+      "newValue": "PASSED",
+      "releaseCandidate": {
+        "commitSha": "5be4230",
+        "artifactDigest": null,
+        "version": "0.0.0-rc.1"
+      },
+      "notes": "blockers=0; observations=0"
+    }
+  ]
 }

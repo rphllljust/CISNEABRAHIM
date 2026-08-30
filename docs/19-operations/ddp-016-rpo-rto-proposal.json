@@ -1,6 +1,6 @@
 {
   "decisionId": "DDP-016",
-  "status": "READY_FOR_APPROVAL",
+  "status": "APPROVED",
   "evaluatedAt": "2026-08-30T06:58:30.333Z",
   "capabilities": {
     "backupMethod": "pg_dump_fc_logical",

@@ -106,7 +106,7 @@ Quais funções, segregações e incompatibilidades (maker-checker) existem? Sem
 
 | Campo | Valor |
 | ----- | ----- |
-| Status | **READY_FOR_APPROVAL** |
+| Status | **APPROVED** (tier conservadora — 24h RPO / 4h RTO) |
 | Proposta técnica | `docs/19-operations/ddp-016-rpo-rto-proposal.json` |
 | Evidência implementação | Prompt 84 (backup), 85 (DR), `ddp-016-proposal.ts` |
 
