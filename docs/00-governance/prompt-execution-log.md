@@ -4098,7 +4098,7 @@ NOTES:
 
 ---
 
-| Cenário de teste | Resultado | Evidência |
+## Quality gate Prompt 72 (evidência)
 
 | Cenário de teste | Resultado | Evidência |
 |------------------|-----------|-----------|
@@ -4112,9 +4112,9 @@ NOTES:
 
 ---
 
+## Quality gate Prompt 71 (evidência)
+
 | Cenário de teste | Resultado | Evidência |
-|------------------|-----------|-----------|
-| success | PASS | notification-delivery.integration.spec.ts IN_APP delivered |
 | transient failure | PASS | notification-delivery.service.spec.ts + integration retry |
 | permanent failure | PASS | notification-delivery.service.spec.ts + integration email |
 | retry | PASS | notification-delivery.integration.spec.ts attempt 2 |
