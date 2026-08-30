@@ -4080,6 +4080,55 @@ NOTES:
   Prompt 74 não executado.
 ```
 
+## Prompt 74 — Produtividade operacional
+
+```
+PROMPT_ID: 74
+PROMPT_TITLE: Produtividade operacional
+EXECUTED_AT: 2026-08-29
+EXECUTION_STATUS: PASS
+COMMIT: feat(analytics): implement operational productivity metrics
+ARTIFACTS:
+  apps/api/src/analytics/domain/productivity-*.ts
+  apps/api/src/analytics/repositories/productivity-read-model.repository.ts
+  apps/api/src/analytics/services/productivity-access.service.ts
+  apps/api/src/analytics/controllers/productivity.controller.ts
+  apps/api/src/analytics/serializers/productivity-response.serializer.ts
+  apps/api/src/analytics/productivity.integration.spec.ts
+ENDPOINT: GET /api/v1/analytics/productivity?period=&from=&to=&groupBy=&unitId=&archetype=
+METRICS: throughput, onTimeRate, averageCycleTime, reworkRate (measurement_rejection), utilization (allocated/planned window), evidenceCompleteness, measurementAcceptance
+DENOMINATORS: explícitos em RateMetric; value=null quando amostra insuficiente
+GROUPING: unit | archetype | none — sem ranking individual
+PERIODS: today | week | month | custom (timezone empresarial)
+HISTORICAL: service_snapshot congelado por OS; sem score consolidado 0–100
+QUALITY_GATE: PASS
+NEXT_ALLOWED_PROMPT: 75
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Rework usa rejeição de medição (conceito existente); OS reopen não modelado.
+  Utilização = janela alocada / janela planejada quando denominador > 0.
+  Evidência derivada de service_snapshot + execution_evidence/entries no momento da conclusão.
+  Prompt 75 não executado.
+```
+
+## Quality gate Prompt 74 (evidência)
+
+| Cenário de teste | Resultado | Evidência |
+|------------------|-----------|-----------|
+| zero denominator | PASS | productivity.domain.spec.ts |
+| one OS cycle time | PASS | productivity.domain.spec.ts |
+| late / on-time completion | PASS | productivity-read-model.repository.ts SQL |
+| rework (measurement rejection) | PASS | productivity-read-model.repository.ts |
+| aggregation by period | PASS | productivity.domain.spec.ts |
+| aggregation by unit | PASS | productivity.integration.spec.ts |
+| authorization | PASS | productivity.integration.spec.ts |
+| timezone periods | PASS | productivity.domain.spec.ts |
+| no consolidated score | PASS | productivity.domain.spec.ts |
+| EXPLAIN aggregate query | PASS | productivity.integration.spec.ts |
+| API typecheck | PASS | tsc --noEmit |
+
+---
+
 ## Quality gate Prompt 73 (evidência)
 
 | Cenário de teste | Resultado | Evidência |
