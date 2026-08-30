@@ -3904,7 +3904,7 @@ PROMPT_ID: 70-A
 PROMPT_TITLE: Correção de governança e isolamento de integrações externas
 EXECUTED_AT: 2026-08-29
 EXECUTION_STATUS: PASS
-COMMIT: fix(integrations): isolate unavailable external providers
+COMMIT: 6d62615 fix(integrations): isolate unavailable external providers
 ARTIFACTS:
   apps/api/src/integrations/acl/adapters/unconfigured/**
   apps/api/src/integrations/acl/config/integration-capability.config.ts
