@@ -76,6 +76,9 @@ export const SECURITY_AUDIT_ACTIONS = {
   MeasurementsMeasurementReview: 'security:measurements:measurement:review',
   MeasurementsMeasurementApprove: 'security:measurements:measurement:approve',
   MeasurementsMeasurementReject: 'security:measurements:measurement:reject',
+  BillingBillingRecordPrepare: 'security:billing:billing-record:prepare',
+  BillingBillingRecordRead: 'security:billing:billing-record:read',
+  BillingBillingRecordVoid: 'security:billing:billing-record:void',
 } as const;
 
 export type SecurityAuditAction =

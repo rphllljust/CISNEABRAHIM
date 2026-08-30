@@ -107,6 +107,9 @@ export const AUTHZ_ACTIONS = {
   MeasurementsMeasurementReview: 'measurements:measurement:review',
   MeasurementsMeasurementApprove: 'measurements:measurement:approve',
   MeasurementsMeasurementReject: 'measurements:measurement:reject',
+  BillingBillingRecordPrepare: 'billing:billing-record:prepare',
+  BillingBillingRecordRead: 'billing:billing-record:read',
+  BillingBillingRecordVoid: 'billing:billing-record:void',
 } as const;
 
 export type AuthzAction = (typeof AUTHZ_ACTIONS)[keyof typeof AUTHZ_ACTIONS];

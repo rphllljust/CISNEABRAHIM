@@ -107,6 +107,15 @@ export {
   msrSchema,
 } from './measurements';
 export {
+  billingCommandIdempotency,
+  billingHistoryEvents,
+  billingItems,
+  billingRecords,
+  billingRecordStatusEnum,
+  bilSchema,
+  paymentTermsSourceEnum,
+} from './billing';
+export {
   plannedResourceKindEnum,
   plannedResources,
   plannedResourceStatusEnum,

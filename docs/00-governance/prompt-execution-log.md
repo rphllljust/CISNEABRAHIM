@@ -3291,3 +3291,48 @@ NOTES:
 - [x] Prompt 58 não executado
 
 ---
+
+## Prompt 58 — Preparação de faturamento (backend)
+
+```
+PROMPT_ID: 58
+PROMPT_TITLE: Preparação de faturamento — backend
+EXECUTED_AT: 2026-08-29
+EXECUTION_STATUS: PASS
+COMMIT: 2d7db5b feat(billing): implement billing preparation domain
+ARTIFACTS:
+  packages/database/migrations/0024_billing_baseline.sql
+  packages/database/src/schema/billing.ts
+  packages/database/src/test-builders/billing-builders.ts
+  apps/api/src/billing/
+  apps/api/src/app.module.ts
+  apps/api/src/main.ts
+  apps/api/src/authorization/types/authz-actions.ts
+  apps/api/src/audit/types/security-audit.types.ts
+  docs/implementation/58-billing-preparation-backend.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  BillingRecord nasce somente de Measurement APPROVED; total derivado de itens (numeric).
+  Snapshots cadastrais/comerciais imutáveis (client, endereço, referência comercial).
+  Estados operacionais PREPARED / VOIDED (sem emissão fiscal, envio ou pagamento).
+  Divergência de condições comerciais → BILLING_COMMERCIAL_TERMS_MISMATCH.
+  Concorrência serializada (FOR UPDATE + índice único por medição preparada).
+  Prompt 59 não executado.
+```
+
+## Quality gate Prompt 58 (evidência)
+
+- [x] BillingRecord somente de medição APPROVED
+- [x] BillingItem derivado de measurement_items; total = soma de linhas
+- [x] Snapshots: clientLegalName, clientTaxId, billingAddress, commercialReference
+- [x] Payment terms mismatch (PO vs declarado) sem decisão silenciosa
+- [x] Estados PREPARED / VOIDED separados de emissão/envio/pagamento
+- [x] Autorização PDP + grants (prepare/read/void)
+- [x] Testes: domain (4), integration (9), E2E (1)
+- [x] typecheck + eslint billing PASS
+- [x] Prompt 59 não executado
+
+---

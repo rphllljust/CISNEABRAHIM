@@ -1,0 +1,566 @@
+import {
+  ensureOperationalLaborTypesBaseline,
+  ensurePhysicalResourceTypesBaseline,
+  ensureUnitsOfMeasureBaseline,
+  hashPassword,
+  insertCatalogCategory,
+  insertGrant,
+  insertIdentity,
+  insertScopeRef,
+  truncateBillingTables,
+  truncateCatalogTables,
+  truncateClientTables,
+  truncateCommercialPurchaseOrderTables,
+  truncateCommercialProposalTables,
+  truncateDocumentTables,
+  truncateIdentityAndAuthorizationTables,
+  truncatePhysicalAssetTables,
+  truncateServiceOrderTables,
+  truncateServiceRequestTables,
+} from '@cisne/database';
+import { Test, TestingModule } from '@nestjs/testing';
+import { Pool } from 'pg';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { AuditModule } from '../audit/audit.module';
+import { AuthModule } from '../auth/auth.module';
+import { AUTH_TEST_PASSWORD, applyAuthTestEnv } from '../auth/test/auth-test-env';
+import { normalizeLoginIdentifier } from '../auth/crypto/token-crypto';
+import { AuthorizationModule } from '../authorization/authorization.module';
+import { AUTHZ_ACTIONS } from '../authorization/types/authz-actions';
+import { AUTHZ_RESOURCE_TYPES } from '../authorization/types/authz-resources';
+import { AUTHZ_SCOPES } from '../authorization/types/authz-scopes';
+import { CatalogModule } from '../catalog/catalog.module';
+import { ServiceCatalogAccessService } from '../catalog/services/service-catalog-access.service';
+import { ClientsModule } from '../clients/clients.module';
+import { ADDRESS_PURPOSES, CONTACT_PURPOSES } from '../clients/domain/client-status';
+import { ClientAccessService } from '../clients/services/client-access.service';
+import { CommercialModule } from '../commercial/commercial.module';
+import { PURCHASE_ORDER_PRICING_STRUCTURES } from '../commercial/domain/purchase-order';
+import { PurchaseOrdersAccessService } from '../commercial/services/purchase-orders-access.service';
+import { BillingModule } from '../billing/billing.module';
+import { BILLING_RECORD_STATUSES } from '../billing/domain/billing';
+import { BILLING_ERROR_CODES } from '../billing/errors/billing-error-codes';
+import { BillingAccessService } from '../billing/services/billing-access.service';
+import { MeasurementsModule } from '../measurements/measurements.module';
+import { MeasurementsAccessService } from '../measurements/services/measurements-access.service';
+import { ResourcesModule } from '../resources/resources.module';
+import { SERVICE_ORDER_ORIGINS } from '../service-orders/domain/service-order';
+import { ServiceOrdersModule } from '../service-orders/service-orders.module';
+import { ServiceOrderExecutionAccessService } from '../service-orders/services/service-order-execution-access.service';
+import { ServiceOrdersAccessService } from '../service-orders/services/service-orders-access.service';
+
+const UNIT_A = 'unit-bil-a';
+const TEST_CNPJ = '11222333000181';
+
+const SAMPLE_EXECUTION_REQUIREMENTS = [
+  { requirementType: 'OBSERVATION' as const, requirementLevel: 'REQUIRED' as const },
+  { requirementType: 'QUANTITY' as const, requirementLevel: 'REQUIRED' as const },
+];
+
+async function grantBillingAdmin(pool: Pool, identityId: string, grantedBy: string): Promise<void> {
+  const actions = [
+    AUTHZ_ACTIONS.ServiceOrdersServiceOrderCreate,
+    AUTHZ_ACTIONS.ServiceOrdersServiceOrderRead,
+    AUTHZ_ACTIONS.ServiceOrdersServiceOrderPrepare,
+    AUTHZ_ACTIONS.ServiceOrdersServiceOrderRelease,
+    AUTHZ_ACTIONS.ServiceOrdersPlannedResourcePlan,
+    AUTHZ_ACTIONS.ServiceOrdersPlannedResourceRead,
+    AUTHZ_ACTIONS.ServiceOrdersExecutionRead,
+    AUTHZ_ACTIONS.ServiceOrdersExecutionStart,
+    AUTHZ_ACTIONS.ServiceOrdersExecutionComplete,
+    AUTHZ_ACTIONS.ServiceOrdersExecutionRecord,
+    AUTHZ_ACTIONS.MeasurementsMeasurementCreate,
+    AUTHZ_ACTIONS.MeasurementsMeasurementRead,
+    AUTHZ_ACTIONS.MeasurementsMeasurementUpdate,
+    AUTHZ_ACTIONS.MeasurementsMeasurementSubmit,
+    AUTHZ_ACTIONS.MeasurementsMeasurementReview,
+    AUTHZ_ACTIONS.MeasurementsMeasurementApprove,
+    AUTHZ_ACTIONS.MeasurementsMeasurementReject,
+    AUTHZ_ACTIONS.BillingBillingRecordPrepare,
+    AUTHZ_ACTIONS.BillingBillingRecordRead,
+    AUTHZ_ACTIONS.BillingBillingRecordVoid,
+    AUTHZ_ACTIONS.ClientCreate,
+    AUTHZ_ACTIONS.ClientRead,
+    AUTHZ_ACTIONS.CatalogServiceCreate,
+    AUTHZ_ACTIONS.CatalogServiceRead,
+    AUTHZ_ACTIONS.CatalogServicePublish,
+    AUTHZ_ACTIONS.CommercialPurchaseOrderCreate,
+    AUTHZ_ACTIONS.CommercialPurchaseOrderRead,
+    AUTHZ_ACTIONS.CommercialPurchaseOrderRegister,
+  ];
+
+  for (const action of actions) {
+    const resourceType = action.startsWith('client:')
+      ? AUTHZ_RESOURCE_TYPES.Client
+      : action.startsWith('catalog:')
+        ? AUTHZ_RESOURCE_TYPES.CatalogService
+        : action.startsWith('commercial:')
+          ? AUTHZ_RESOURCE_TYPES.CommercialPurchaseOrder
+          : AUTHZ_RESOURCE_TYPES.ServiceOrdersServiceOrder;
+
+    await insertGrant(pool, {
+      identityId,
+      action,
+      resourceType,
+      scopeType: AUTHZ_SCOPES.Global,
+      grantedByIdentityId: grantedBy,
+    });
+  }
+}
+
+describe('Billing PostgreSQL integration', () => {
+  let pool: Pool;
+  let billingAccess: BillingAccessService;
+  let measurementsAccess: MeasurementsAccessService;
+  let serviceOrdersAccess: ServiceOrdersAccessService;
+  let executionAccess: ServiceOrderExecutionAccessService;
+  let clientAccess: ClientAccessService;
+  let catalogAccess: ServiceCatalogAccessService;
+  let purchaseOrdersAccess: PurchaseOrdersAccessService;
+  const testDatabaseUrl = process.env['TEST_DATABASE_URL'];
+
+  beforeAll(async () => {
+    if (!testDatabaseUrl) {
+      throw new Error('TEST_DATABASE_URL is required for billing integration tests.');
+    }
+
+    applyAuthTestEnv(testDatabaseUrl);
+    process.env['OBJECT_STORAGE_ROOT'] ??= '.object-storage-test';
+    process.env['OBJECT_STORAGE_PROVIDER'] ??= 'filesystem';
+
+    const module: TestingModule = await Test.createTestingModule({
+      imports: [
+        AuthModule,
+        AuditModule,
+        AuthorizationModule,
+        ClientsModule,
+        CatalogModule,
+        CommercialModule,
+        ResourcesModule,
+        ServiceOrdersModule,
+        MeasurementsModule,
+        BillingModule,
+      ],
+    }).compile();
+
+    billingAccess = module.get(BillingAccessService);
+    measurementsAccess = module.get(MeasurementsAccessService);
+    serviceOrdersAccess = module.get(ServiceOrdersAccessService);
+    executionAccess = module.get(ServiceOrderExecutionAccessService);
+    clientAccess = module.get(ClientAccessService);
+    catalogAccess = module.get(ServiceCatalogAccessService);
+    purchaseOrdersAccess = module.get(PurchaseOrdersAccessService);
+    pool = new Pool({ connectionString: testDatabaseUrl });
+  });
+
+  beforeEach(async () => {
+    await truncateBillingTables(pool);
+    await truncateServiceRequestTables(pool);
+    await truncateServiceOrderTables(pool);
+    await truncatePhysicalAssetTables(pool);
+    await truncateCommercialPurchaseOrderTables(pool);
+    await truncateCommercialProposalTables(pool);
+    await truncateDocumentTables(pool);
+    await truncateClientTables(pool);
+    await truncateCatalogTables(pool);
+    await truncateIdentityAndAuthorizationTables(pool);
+    await ensureUnitsOfMeasureBaseline(pool);
+    await ensurePhysicalResourceTypesBaseline(pool);
+    await ensureOperationalLaborTypesBaseline(pool);
+    await insertScopeRef(pool, { scopeType: 'UNIT', refId: UNIT_A });
+  });
+
+  afterAll(async () => {
+    await pool.end();
+  });
+
+  async function seedActor() {
+    const login = normalizeLoginIdentifier(`bil-${crypto.randomUUID()}@cisne.invalid`);
+    const passwordHash = await hashPassword(AUTH_TEST_PASSWORD);
+    const { identityId } = await insertIdentity(pool, login, passwordHash);
+    await grantBillingAdmin(pool, identityId, identityId);
+    return { identityId, actor: { identityId, sessionId: 'sid' } };
+  }
+
+  async function seedDraftMeasurement(actor: { identityId: string; sessionId: string }) {
+    const client = await clientAccess.create(actor, {
+      legalName: `Cliente Draft ${crypto.randomUUID()}`,
+      tradeName: 'Cliente Draft',
+      taxId: TEST_CNPJ,
+      contacts: [{ name: 'Contato', purpose: CONTACT_PURPOSES.Operational, phone: '69999990000' }],
+    });
+
+    const suffix = crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase();
+    const category = await insertCatalogCategory(pool, {
+      code: `CAT-${suffix}`,
+      name: 'Serviços',
+    });
+    const draft = await catalogAccess.create(actor, {
+      code: `DRAFT-SRV-${suffix}`,
+      name: 'Serviço draft',
+      categoryId: category.categoryId,
+      archetype: 'CIVIL_WORK',
+      measurementMode: 'BY_EVENT',
+      measurementBasis: 'GLOBAL_COMPLETION',
+      allowedUnits: [{ unitCode: 'SERVICE', isDefault: true, sortOrder: 0 }],
+      pricingModels: [{ modelCode: 'GLOBAL_PRICE', salePrice: '1000.0000', internalCost: '800.0000' }],
+      resourceRequirements: [],
+      laborRequirements: [],
+      executionRequirements: SAMPLE_EXECUTION_REQUIREMENTS,
+    });
+    const definition = await catalogAccess.getDefinition(actor, draft.serviceDefinitionId);
+    const published = await catalogAccess.publishVersion(actor, draft.serviceDefinitionId, 1, definition.version);
+
+    const created = await serviceOrdersAccess.create(actor, {
+      origin: SERVICE_ORDER_ORIGINS.AuthorizedDirect,
+      unitId: UNIT_A,
+      clientId: client.id,
+      serviceDefinitionId: published.serviceDefinitionId,
+      serviceDefinitionVersionId: published.id,
+    });
+    const prepared = await serviceOrdersAccess.prepare(actor, created.id, { rowVersion: created.rowVersion });
+    const released = await serviceOrdersAccess.release(actor, prepared.id, { rowVersion: prepared.rowVersion });
+    const started = await executionAccess.start(actor, released.id, { rowVersion: released.rowVersion });
+    await executionAccess.recordObservation(actor, started.id, {
+      rowVersion: started.rowVersion,
+      text: 'Execução concluída.',
+    });
+    const afterObservation = await serviceOrdersAccess.getById(actor, started.id);
+    await executionAccess.recordQuantity(actor, afterObservation.id, {
+      rowVersion: afterObservation.rowVersion,
+      quantityValue: '1',
+      unitCode: 'SERVICE',
+    });
+    const afterQuantity = await serviceOrdersAccess.getById(actor, started.id);
+    const completed = await executionAccess.complete(actor, afterQuantity.id, {
+      rowVersion: afterQuantity.rowVersion,
+    });
+    const measurement = await measurementsAccess.create(actor, completed.id);
+    return { completed, measurement };
+  }
+
+  async function seedApprovedMeasurement(actor: { identityId: string; sessionId: string }) {
+    const client = await clientAccess.create(actor, {
+      legalName: `Cliente Billing ${crypto.randomUUID()}`,
+      tradeName: 'Cliente Billing',
+      taxId: TEST_CNPJ,
+      contacts: [{ name: 'Contato', purpose: CONTACT_PURPOSES.Operational, phone: '69999990000' }],
+      addresses: [
+        {
+          purpose: ADDRESS_PURPOSES.Billing,
+          street: 'Rua Faturamento',
+          number: '100',
+          city: 'Porto Velho',
+          state: 'RO',
+          postalCode: '76800000',
+          country: 'BR',
+        },
+      ],
+    });
+
+    const suffix = crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase();
+    const category = await insertCatalogCategory(pool, {
+      code: `CAT-${suffix}`,
+      name: 'Serviços',
+    });
+    const draft = await catalogAccess.create(actor, {
+      code: `BIL-SRV-${suffix}`,
+      name: 'Serviço faturável',
+      categoryId: category.categoryId,
+      archetype: 'CIVIL_WORK',
+      measurementMode: 'BY_EVENT',
+      measurementBasis: 'GLOBAL_COMPLETION',
+      allowedUnits: [{ unitCode: 'SERVICE', isDefault: true, sortOrder: 0 }],
+      pricingModels: [{ modelCode: 'GLOBAL_PRICE', salePrice: '1000.0000', internalCost: '800.0000' }],
+      resourceRequirements: [],
+      laborRequirements: [],
+      executionRequirements: SAMPLE_EXECUTION_REQUIREMENTS,
+    });
+    const definition = await catalogAccess.getDefinition(actor, draft.serviceDefinitionId);
+    const published = await catalogAccess.publishVersion(actor, draft.serviceDefinitionId, 1, definition.version);
+
+    const created = await serviceOrdersAccess.create(actor, {
+      origin: SERVICE_ORDER_ORIGINS.AuthorizedDirect,
+      unitId: UNIT_A,
+      clientId: client.id,
+      serviceDefinitionId: published.serviceDefinitionId,
+      serviceDefinitionVersionId: published.id,
+      description: 'OS para faturamento',
+    });
+    const prepared = await serviceOrdersAccess.prepare(actor, created.id, { rowVersion: created.rowVersion });
+    const released = await serviceOrdersAccess.release(actor, prepared.id, { rowVersion: prepared.rowVersion });
+
+    const started = await executionAccess.start(actor, released.id, { rowVersion: released.rowVersion });
+    await executionAccess.recordObservation(actor, started.id, {
+      rowVersion: started.rowVersion,
+      text: 'Execução concluída.',
+    });
+    const afterObservation = await serviceOrdersAccess.getById(actor, started.id);
+    await executionAccess.recordQuantity(actor, afterObservation.id, {
+      rowVersion: afterObservation.rowVersion,
+      quantityValue: '1',
+      unitCode: 'SERVICE',
+    });
+    const afterQuantity = await serviceOrdersAccess.getById(actor, started.id);
+    const completed = await executionAccess.complete(actor, afterQuantity.id, {
+      rowVersion: afterQuantity.rowVersion,
+    });
+
+    const measurement = await measurementsAccess.create(actor, completed.id);
+    const submitted = await measurementsAccess.submit(actor, completed.id, measurement.id, {
+      rowVersion: measurement.rowVersion,
+    });
+    const reviewed = await measurementsAccess.startReview(actor, completed.id, measurement.id, {
+      rowVersion: submitted.rowVersion,
+    });
+
+    const login = normalizeLoginIdentifier(`bil-reviewer-${crypto.randomUUID()}@cisne.invalid`);
+    const passwordHash = await hashPassword(AUTH_TEST_PASSWORD);
+    const { identityId: reviewerId } = await insertIdentity(pool, login, passwordHash);
+    await grantBillingAdmin(pool, reviewerId, actor.identityId);
+    const reviewer = { identityId: reviewerId, sessionId: 'sid-reviewer' };
+
+    const approved = await measurementsAccess.approve(reviewer, completed.id, measurement.id, {
+      rowVersion: reviewed.rowVersion,
+    });
+
+    return { client, completed, approved };
+  }
+
+  it('rejects billing preparation without approved measurement', async () => {
+    const { actor } = await seedActor();
+    const { completed, measurement } = await seedDraftMeasurement(actor);
+
+    await expect(
+      billingAccess.prepare(actor, completed.id, {
+        measurementId: measurement.id,
+        paymentTerms: '30 DDL',
+      }),
+    ).rejects.toMatchObject({ code: BILLING_ERROR_CODES.MEASUREMENT_NOT_APPROVED });
+  });
+
+  it('prepares billing record from approved measurement with item-derived total', async () => {
+    const { actor } = await seedActor();
+    const { completed, approved, client } = await seedApprovedMeasurement(actor);
+
+    const billing = await billingAccess.prepare(actor, completed.id, {
+      measurementId: approved.id,
+      paymentTerms: '30 DDL',
+    });
+
+    expect(billing.status).toBe(BILLING_RECORD_STATUSES.Prepared);
+    expect(billing.totalAmount).toBe('1000');
+    expect(billing.items).toHaveLength(1);
+    expect(billing.clientLegalNameSnapshot).toBe(client.legalName);
+    expect(billing.clientTaxIdSnapshot).toBe(TEST_CNPJ);
+    expect(billing.billingAddressSnapshot.city).toBe('Porto Velho');
+    expect(billing.commercialReferenceSnapshot).toBeTruthy();
+  });
+
+  it('rejects duplicate billing for the same measurement', async () => {
+    const { actor } = await seedActor();
+    const { completed, approved } = await seedApprovedMeasurement(actor);
+
+    await billingAccess.prepare(actor, completed.id, {
+      measurementId: approved.id,
+      paymentTerms: '30 DDL',
+    });
+
+    await expect(
+      billingAccess.prepare(actor, completed.id, {
+        measurementId: approved.id,
+        paymentTerms: '30 DDL',
+      }),
+    ).rejects.toMatchObject({ code: BILLING_ERROR_CODES.BILLING_ALREADY_EXISTS });
+  });
+
+  it('rejects asserted total mismatch', async () => {
+    const { actor } = await seedActor();
+    const { completed, approved } = await seedApprovedMeasurement(actor);
+
+    await expect(
+      billingAccess.prepare(actor, completed.id, {
+        measurementId: approved.id,
+        paymentTerms: '30 DDL',
+        assertedTotalAmount: '5000.0000',
+      }),
+    ).rejects.toMatchObject({ code: BILLING_ERROR_CODES.BILLING_AMOUNT_MISMATCH });
+  });
+
+  it('detects PO payment terms mismatch', async () => {
+    const { actor } = await seedActor();
+    const client = await clientAccess.create(actor, {
+      legalName: `Cliente PO ${crypto.randomUUID()}`,
+      tradeName: 'Cliente PO',
+      taxId: TEST_CNPJ,
+      contacts: [{ name: 'Contato', purpose: CONTACT_PURPOSES.Operational, phone: '69999990000' }],
+    });
+
+    const suffix = crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase();
+    const category = await insertCatalogCategory(pool, { code: `CAT-${suffix}`, name: 'Serviços' });
+    const draft = await catalogAccess.create(actor, {
+      code: `PO-SRV-${suffix}`,
+      name: 'Serviço PO',
+      categoryId: category.categoryId,
+      archetype: 'RENTAL',
+      measurementMode: 'BY_EVENT',
+      measurementBasis: 'GLOBAL_COMPLETION',
+      allowedUnits: [{ unitCode: 'SERVICE', isDefault: true, sortOrder: 0 }],
+      pricingModels: [{ modelCode: 'GLOBAL_PRICE', salePrice: '1000.0000' }],
+      resourceRequirements: [],
+      laborRequirements: [],
+      executionRequirements: SAMPLE_EXECUTION_REQUIREMENTS,
+    });
+    const definition = await catalogAccess.getDefinition(actor, draft.serviceDefinitionId);
+    const published = await catalogAccess.publishVersion(actor, draft.serviceDefinitionId, 1, definition.version);
+
+    const purchaseOrder = await purchaseOrdersAccess.create(actor, {
+      clientId: client.id,
+      unitId: UNIT_A,
+      poNumber: `PO-${suffix}`,
+      pricingStructure: PURCHASE_ORDER_PRICING_STRUCTURES.LineItems,
+      paymentTerms: '07 DDL',
+      items: [
+        {
+          lineNumber: 1,
+          description: 'Serviço PO',
+          serviceDefinitionId: published.serviceDefinitionId,
+          serviceDefinitionVersionId: published.id,
+          quantity: '1.0000',
+          unitCode: 'SERVICE',
+          unitPrice: '1000.0000',
+          lineTotal: '1000.0000',
+        },
+      ],
+    });
+    const registered = await purchaseOrdersAccess.register(actor, purchaseOrder.purchaseOrder.id, {
+      rowVersion: purchaseOrder.purchaseOrder.rowVersion,
+    });
+
+    const created = await serviceOrdersAccess.create(actor, {
+      origin: SERVICE_ORDER_ORIGINS.PurchaseOrder,
+      unitId: UNIT_A,
+      clientId: client.id,
+      purchaseOrderId: registered.purchaseOrder.id,
+      serviceDefinitionId: published.serviceDefinitionId,
+      serviceDefinitionVersionId: published.id,
+    });
+    const prepared = await serviceOrdersAccess.prepare(actor, created.id, { rowVersion: created.rowVersion });
+    const released = await serviceOrdersAccess.release(actor, prepared.id, { rowVersion: prepared.rowVersion });
+    const started = await executionAccess.start(actor, released.id, { rowVersion: released.rowVersion });
+    await executionAccess.recordObservation(actor, started.id, {
+      rowVersion: started.rowVersion,
+      text: 'OK',
+    });
+    const afterObservation = await serviceOrdersAccess.getById(actor, started.id);
+    await executionAccess.recordQuantity(actor, afterObservation.id, {
+      rowVersion: afterObservation.rowVersion,
+      quantityValue: '1',
+      unitCode: 'SERVICE',
+    });
+    const afterQuantity = await serviceOrdersAccess.getById(actor, started.id);
+    const completed = await executionAccess.complete(actor, afterQuantity.id, {
+      rowVersion: afterQuantity.rowVersion,
+    });
+    const measurement = await measurementsAccess.create(actor, completed.id);
+    const submitted = await measurementsAccess.submit(actor, completed.id, measurement.id, {
+      rowVersion: measurement.rowVersion,
+    });
+    const reviewed = await measurementsAccess.startReview(actor, completed.id, measurement.id, {
+      rowVersion: submitted.rowVersion,
+    });
+    const login = normalizeLoginIdentifier(`bil-po-${crypto.randomUUID()}@cisne.invalid`);
+    const passwordHash = await hashPassword(AUTH_TEST_PASSWORD);
+    const { identityId: reviewerId } = await insertIdentity(pool, login, passwordHash);
+    await grantBillingAdmin(pool, reviewerId, actor.identityId);
+    const reviewer = { identityId: reviewerId, sessionId: 'sid-po' };
+    const approved = await measurementsAccess.approve(reviewer, completed.id, measurement.id, {
+      rowVersion: reviewed.rowVersion,
+    });
+
+    await expect(
+      billingAccess.prepare(actor, completed.id, {
+        measurementId: approved.id,
+        paymentTerms: 'À vista',
+      }),
+    ).rejects.toMatchObject({ code: BILLING_ERROR_CODES.COMMERCIAL_TERMS_MISMATCH });
+  });
+
+  it('preserves client snapshot after client update', async () => {
+    const { actor } = await seedActor();
+    const { completed, approved, client } = await seedApprovedMeasurement(actor);
+
+    const billing = await billingAccess.prepare(actor, completed.id, {
+      measurementId: approved.id,
+      paymentTerms: '30 DDL',
+    });
+
+    await pool.query(`UPDATE pty.clients SET legal_name = 'Nome Alterado' WHERE id = $1`, [client.id]);
+
+    const reloaded = await billingAccess.getById(actor, completed.id, billing.id);
+    expect(reloaded.clientLegalNameSnapshot).toBe(client.legalName);
+    expect(reloaded.clientLegalNameSnapshot).not.toBe('Nome Alterado');
+  });
+
+  it('allows only one concurrent prepare transition', async () => {
+    const { actor } = await seedActor();
+    const { completed, approved } = await seedApprovedMeasurement(actor);
+
+    const results = await Promise.allSettled([
+      billingAccess.prepare(actor, completed.id, {
+        measurementId: approved.id,
+        paymentTerms: '30 DDL',
+      }),
+      billingAccess.prepare(actor, completed.id, {
+        measurementId: approved.id,
+        paymentTerms: '30 DDL',
+      }),
+    ]);
+
+    const fulfilled = results.filter((result) => result.status === 'fulfilled');
+    const rejected = results.filter((result) => result.status === 'rejected');
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+  });
+
+  it('denies unauthorized billing read', async () => {
+    const { actor } = await seedActor();
+    const { completed, approved } = await seedApprovedMeasurement(actor);
+    const billing = await billingAccess.prepare(actor, completed.id, {
+      measurementId: approved.id,
+      paymentTerms: '30 DDL',
+    });
+
+    const login = normalizeLoginIdentifier(`bil-deny-${crypto.randomUUID()}@cisne.invalid`);
+    const passwordHash = await hashPassword(AUTH_TEST_PASSWORD);
+    const { identityId } = await insertIdentity(pool, login, passwordHash);
+    await insertGrant(pool, {
+      identityId,
+      action: AUTHZ_ACTIONS.ServiceOrdersServiceOrderRead,
+      resourceType: AUTHZ_RESOURCE_TYPES.ServiceOrdersServiceOrder,
+      scopeType: AUTHZ_SCOPES.Global,
+      grantedByIdentityId: actor.identityId,
+    });
+
+    await expect(
+      billingAccess.getById({ identityId, sessionId: 'sid' }, completed.id, billing.id),
+    ).rejects.toMatchObject({ code: BILLING_ERROR_CODES.DENIED });
+  });
+
+  it('voids prepared billing record', async () => {
+    const { actor } = await seedActor();
+    const { completed, approved } = await seedApprovedMeasurement(actor);
+    const billing = await billingAccess.prepare(actor, completed.id, {
+      measurementId: approved.id,
+      paymentTerms: '30 DDL',
+    });
+
+    const voided = await billingAccess.voidRecord(actor, completed.id, billing.id, {
+      rowVersion: billing.rowVersion,
+      voidReason: 'Erro operacional detectado.',
+    });
+
+    expect(voided.status).toBe(BILLING_RECORD_STATUSES.Voided);
+    expect(voided.voidReason).toBe('Erro operacional detectado.');
+  });
+});

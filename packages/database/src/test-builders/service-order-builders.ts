@@ -18,6 +18,10 @@ export async function truncateServiceOrderTables(client: DbClient): Promise<void
   await client.query('DELETE FROM msr.measurement_adjustments');
   await client.query('DELETE FROM msr.measurement_items');
   await client.query('DELETE FROM msr.measurements');
+  await client.query('DELETE FROM bil.billing_command_idempotency');
+  await client.query('DELETE FROM bil.billing_history_events');
+  await client.query('DELETE FROM bil.billing_items');
+  await client.query('DELETE FROM bil.billing_records');
   await client.query('DELETE FROM res.resource_allocation_history_events');
   await client.query('DELETE FROM res.resource_allocations');
   await client.query('DELETE FROM so.planned_resources');
