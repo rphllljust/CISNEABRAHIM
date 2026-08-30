@@ -23,12 +23,12 @@ describe('operational dashboard e2e (frontend)', () => {
     });
   }
 
-  it('loads dashboard with attention metrics and shortcuts from a single API call', async () => {
+  it('loads executive dashboard with attention, charts and shortcuts from a single API call', async () => {
     const shellMock = createShellFetchMock();
     const dashboardMock = createDashboardFetchMock();
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
-      if (url.includes('/api/v1/dashboard/operational')) {
+      if (url.includes('/api/v1/dashboard/executive')) {
         return dashboardMock(input, init);
       }
       return shellMock(input, init);
@@ -42,12 +42,44 @@ describe('operational dashboard e2e (frontend)', () => {
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: /atenção necessária/i })).toBeInTheDocument();
     });
-    expect(screen.getByRole('link', { name: 'OS atrasadas: 3 itens' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /OS vencidas: 3 itens/i })).toBeInTheDocument();
+    expect(screen.getByText('Maior atraso: 8 dia(s)')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /análise operacional/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /produtividade/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ir para solicitações de serviço' })).toBeInTheDocument();
 
     const dashboardCalls = fetchMock.mock.calls.filter(([url]) =>
-      String(url).includes('/api/v1/dashboard/operational'),
+      String(url).includes('/api/v1/dashboard/executive'),
     );
     expect(dashboardCalls.length).toBeGreaterThanOrEqual(1);
+    expect(dashboardCalls[0]?.[0]).toContain('period=week');
+  });
+
+  it('reflects period filter in URL when user changes period', async () => {
+    const shellMock = createShellFetchMock();
+    const dashboardMock = createDashboardFetchMock();
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes('/api/v1/dashboard/executive')) {
+        return dashboardMock(input, init);
+      }
+      return shellMock(input, init);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<App />);
+    const user = userEvent.setup();
+    await login(user);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/período/i)).toBeInTheDocument();
+    });
+
+    await user.selectOptions(screen.getByLabelText(/período/i), 'month');
+
+    await waitFor(() => {
+      expect(window.location.search).toContain('period=month');
+      expect(fetchMock.mock.calls.some(([url]) => String(url).includes('period=month'))).toBe(true);
+    });
   });
 });

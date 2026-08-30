@@ -88,6 +88,33 @@ export function createShellFetchMock(options: ShellFetchMockOptions = {}) {
       });
     }
 
+    if (url.includes('/api/v1/dashboard/executive') && method === 'GET') {
+      return jsonResponse({
+        generatedAt: new Date().toISOString(),
+        businessTimezone: 'America/Porto_Velho',
+        period: { preset: 'week', from: '2026-08-23', to: '2026-08-29' },
+        visibility: {
+          serviceRequests: true,
+          serviceOrders: false,
+          measurements: false,
+          billing: false,
+          documents: false,
+          resources: false,
+          productivity: false,
+          financialAging: false,
+        },
+        attention: [],
+        charts: {
+          serviceOrdersByStatus: { title: '', description: '', items: [], summary: '' },
+          throughputTrend: { title: '', description: '', points: [], summary: '' },
+          sla: { title: '', description: '', points: [], summary: '' },
+          financialAging: { available: false, title: '', description: '', buckets: [], summary: '' },
+        },
+        productivity: null,
+        shortcuts: [],
+      });
+    }
+
     if (url.endsWith('/api/v1/dashboard/operational') && method === 'GET') {
       return jsonResponse({
         generatedAt: new Date().toISOString(),

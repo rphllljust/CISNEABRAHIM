@@ -1,7 +1,13 @@
 import { Link } from 'react-router-dom';
-import { DashboardSection } from '../components/DashboardSection';
+import { AttentionBlock } from '../components/AttentionBlock';
+import { DashboardAgingChart } from '../components/charts/DashboardAgingChart';
+import { DashboardBarChart } from '../components/charts/DashboardBarChart';
+import { DashboardLineChart } from '../components/charts/DashboardLineChart';
+import { DashboardSlaChart } from '../components/charts/DashboardSlaChart';
+import { DashboardFilters } from '../components/DashboardFilters';
 import { OperationalDashboardSkeleton } from '../components/OperationalDashboardSkeleton';
-import { useOperationalDashboard } from '../hooks/useOperationalDashboard';
+import { ProductivityPanel } from '../components/ProductivityPanel';
+import { useExecutiveDashboard } from '../hooks/useExecutiveDashboard';
 import '../dashboard.css';
 
 function formatGeneratedAt(value: string): string {
@@ -11,8 +17,12 @@ function formatGeneratedAt(value: string): string {
   }).format(new Date(value));
 }
 
+function formatPeriodLabel(from: string, to: string): string {
+  return `${from} — ${to}`;
+}
+
 export function OperationalDashboardPage() {
-  const { state, reload } = useOperationalDashboard();
+  const { state, reload, filters, setFilters, periodOptions } = useExecutiveDashboard();
 
   if (state.phase === 'loading') {
     return (
@@ -44,7 +54,7 @@ export function OperationalDashboardPage() {
         <p className="dashboard-page__eyebrow">Operação</p>
         <h1>Painel operacional</h1>
         <p className="dashboard-page__lead">
-          Priorize pendências que exigem decisão antes de métricas secundárias.
+          Central de decisão operacional — alertas primeiro, análise em seguida.
         </p>
         {snapshot ? (
           <p className="dashboard-page__meta">
@@ -65,29 +75,68 @@ export function OperationalDashboardPage() {
 
       {snapshot ? (
         <>
-          <DashboardSection
-            id="attention"
-            title="Atenção necessária"
-            description="Itens que bloqueiam ou atrasam a operação."
-            metrics={snapshot.attention}
-            emptyMessage="Nenhuma pendência crítica no momento."
+          <DashboardFilters
+            period={filters.period}
+            periodOptions={periodOptions}
+            onPeriodChange={(period) => setFilters({ period })}
+            periodLabel={formatPeriodLabel(snapshot.period.from, snapshot.period.to)}
           />
 
-          <DashboardSection
-            id="operation"
-            title="Operação atual"
-            description="Fluxo em andamento e recursos alocados."
-            metrics={snapshot.operation}
-            emptyMessage="Nenhuma OS ou recurso em destaque."
-          />
+          <AttentionBlock items={snapshot.attention} />
 
-          <DashboardSection
-            id="finance"
-            title="Financeiro permitido"
-            description="Pendências visíveis apenas com permissão financeira."
-            metrics={snapshot.finance}
-            emptyMessage="Sem pendências financeiras no escopo atual."
-          />
+          {snapshot.visibility.serviceOrders ? (
+            <section className="dashboard-section" aria-labelledby="analytics-heading">
+              <header className="dashboard-section__header">
+                <h2 id="analytics-heading">Análise operacional</h2>
+                <p className="dashboard-section__description">
+                  Gráficos refletem o período selecionado e o escopo autorizado.
+                </p>
+              </header>
+              <div className="dashboard-analytics">
+                <DashboardBarChart
+                  chartId="service-orders-by-status"
+                  title={snapshot.charts.serviceOrdersByStatus.title}
+                  description={snapshot.charts.serviceOrdersByStatus.description}
+                  summary={snapshot.charts.serviceOrdersByStatus.summary}
+                  items={snapshot.charts.serviceOrdersByStatus.items.map((item) => ({
+                    key: item.status,
+                    label: item.label,
+                    value: item.count,
+                  }))}
+                />
+                <DashboardLineChart
+                  chartId="throughput-trend"
+                  title={snapshot.charts.throughputTrend.title}
+                  description={snapshot.charts.throughputTrend.description}
+                  summary={snapshot.charts.throughputTrend.summary}
+                  points={snapshot.charts.throughputTrend.points}
+                />
+                <DashboardSlaChart
+                  chartId="sla-chart"
+                  title={snapshot.charts.sla.title}
+                  description={snapshot.charts.sla.description}
+                  summary={snapshot.charts.sla.summary}
+                  points={snapshot.charts.sla.points}
+                />
+              </div>
+            </section>
+          ) : null}
+
+          {snapshot.visibility.productivity && snapshot.productivity ? (
+            <ProductivityPanel productivity={snapshot.productivity} />
+          ) : null}
+
+          {snapshot.visibility.financialAging && snapshot.charts.financialAging.available ? (
+            <section className="dashboard-section" aria-labelledby="finance-heading">
+              <DashboardAgingChart
+                chartId="financial-aging"
+                title={snapshot.charts.financialAging.title}
+                description={snapshot.charts.financialAging.description}
+                summary={snapshot.charts.financialAging.summary}
+                buckets={snapshot.charts.financialAging.buckets}
+              />
+            </section>
+          ) : null}
 
           {snapshot.shortcuts.length > 0 ? (
             <section className="dashboard-section" aria-labelledby="shortcuts-heading">

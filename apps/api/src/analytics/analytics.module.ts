@@ -18,6 +18,6 @@ import { ProductivityAccessService } from './services/productivity-access.servic
     ProductivityReadModelRepository,
     ProductivityAccessService,
   ],
-  exports: [AgingAccessService, ProductivityAccessService],
+  exports: [AgingAccessService, ProductivityAccessService, ProductivityReadModelRepository],
 })
 export class AnalyticsModule {}

@@ -4,6 +4,8 @@ import {
   DASHBOARD_ERROR_CODES,
   DashboardApiError,
   type DashboardErrorCode,
+  type ExecutiveDashboardFilters,
+  type ExecutiveDashboardSnapshot,
   type OperationalDashboardSnapshot,
 } from '../types/dashboard.types';
 
@@ -34,6 +36,52 @@ async function parseError(response: Response): Promise<DashboardApiError> {
     // ignore
   }
   return new DashboardApiError(response.status, code, classifyError(response.status, code));
+}
+
+function buildExecutiveQuery(filters: ExecutiveDashboardFilters): string {
+  const params = new URLSearchParams();
+  if (filters.period) {
+    params.set('period', filters.period);
+  }
+  if (filters.unitId) {
+    params.set('unitId', filters.unitId);
+  }
+  if (filters.from) {
+    params.set('from', filters.from);
+  }
+  if (filters.to) {
+    params.set('to', filters.to);
+  }
+  const query = params.toString();
+  return query ? `?${query}` : '';
+}
+
+export async function getExecutiveDashboard(
+  filters: ExecutiveDashboardFilters,
+  signal?: AbortSignal,
+): Promise<ExecutiveDashboardSnapshot> {
+  try {
+    const response = await fetch(
+      `${getApiBaseUrl()}/api/v1/dashboard/executive${buildExecutiveQuery(filters)}`,
+      {
+        method: 'GET',
+        headers: authHeaders(),
+        signal,
+      },
+    );
+    if (!response.ok) {
+      throw await parseError(response);
+    }
+    return (await response.json()) as ExecutiveDashboardSnapshot;
+  } catch (error) {
+    if (error instanceof DashboardApiError) {
+      throw error;
+    }
+    if (isNetworkError(error)) {
+      throw new DashboardApiError(0, undefined, 'network');
+    }
+    throw error;
+  }
 }
 
 export async function getOperationalDashboard(

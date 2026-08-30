@@ -21,11 +21,16 @@ export class OperationalDashboardAccessService {
     private readonly scopeEnforcement: ScopeEnforcementService,
   ) {}
 
-  async getOperationalSnapshot(actor: IdentityAuthzContext) {
+  async requireVisibility(actor: IdentityAuthzContext): Promise<DashboardVisibility> {
     const visibility = await this.resolveVisibility(actor);
     if (!Object.values(visibility).some(Boolean)) {
       throw new DashboardHttpException(403, DASHBOARD_ERROR_CODES.ACCESS_DENIED, 'Access denied.');
     }
+    return visibility;
+  }
+
+  async getOperationalSnapshot(actor: IdentityAuthzContext) {
+    const visibility = await this.requireVisibility(actor);
 
     const scopes = await this.resolveScopeFilters(actor, visibility);
     const counts = await this.repository.countOperationalMetrics(visibility, scopes);

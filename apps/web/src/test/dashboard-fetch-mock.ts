@@ -1,7 +1,9 @@
-import type { OperationalDashboardSnapshot } from '../types/dashboard.types';
+import type { ExecutiveDashboardSnapshot } from '../types/dashboard.types';
 
-const DASHBOARD_SNAPSHOT: OperationalDashboardSnapshot = {
+export const EXECUTIVE_DASHBOARD_SNAPSHOT: ExecutiveDashboardSnapshot = {
   generatedAt: '2026-08-29T12:00:00.000Z',
+  businessTimezone: 'America/Porto_Velho',
+  period: { preset: 'week', from: '2026-08-23', to: '2026-08-29' },
   visibility: {
     serviceRequests: true,
     serviceOrders: true,
@@ -9,46 +11,90 @@ const DASHBOARD_SNAPSHOT: OperationalDashboardSnapshot = {
     billing: true,
     documents: false,
     resources: true,
+    productivity: true,
+    financialAging: true,
   },
   attention: [
     {
       id: 'overdue-service-orders',
-      label: 'OS atrasadas',
+      label: 'OS vencidas',
       count: 3,
       severity: 'critical',
-      href: '/app/service-orders',
-      ariaLabel: 'OS atrasadas: 3 itens',
+      href: '/app/service-orders?filter=overdue',
+      ariaLabel: 'OS vencidas: 3 itens. Maior atraso 8 dias.',
+      maxDelayDays: 8,
+      detail: 'Maior atraso: 8 dia(s)',
     },
     {
       id: 'pending-measurements',
-      label: 'Medições aguardando aprovação',
+      label: 'Medições paradas',
       count: 2,
       severity: 'warning',
       href: '/app/billing',
-      ariaLabel: 'Medições aguardando aprovação: 2 itens',
+      ariaLabel: 'Medições paradas: 2 itens',
+      maxDelayDays: null,
+      detail: 'Aguardando análise ou aprovação',
     },
   ],
-  operation: [
-    {
-      id: 'orders-in-progress',
-      label: 'OS em andamento',
-      count: 4,
-      severity: 'neutral',
-      href: '/app/service-orders',
-      ariaLabel: 'OS em andamento: 4 itens',
+  charts: {
+    serviceOrdersByStatus: {
+      title: 'OS por status',
+      description: 'Distribuição atual de ordens de serviço no escopo autorizado.',
+      items: [
+        { status: 'IN_EXECUTION', label: 'Em execução', count: 4 },
+        { status: 'RELEASED', label: 'Liberada', count: 2 },
+      ],
+      summary: '6 ordens de serviço ativas no escopo.',
     },
-  ],
-  deadlines: [],
-  finance: [
-    {
-      id: 'pending-billing',
-      label: 'Faturamentos pendentes',
-      count: 1,
-      severity: 'warning',
-      href: '/app/billing',
-      ariaLabel: 'Faturamentos pendentes: 1 item',
+    throughputTrend: {
+      title: 'Evolução temporal',
+      description: 'Série diária de OS abertas e concluídas no período selecionado.',
+      points: [
+        { date: '2026-08-28', opened: 2, completed: 1 },
+        { date: '2026-08-29', opened: 1, completed: 3 },
+      ],
+      summary: '3 abertas e 4 concluídas no período.',
     },
-  ],
+    sla: {
+      title: 'SLA de conclusão',
+      description: 'Conclusões dentro e fora do prazo por semana.',
+      points: [
+        { periodLabel: '2026-S35', onTime: 2, overdue: 1, eligible: 3, onTimeRate: 2 / 3 },
+      ],
+      summary: '2 de 3 conclusões elegíveis no prazo (66.7%).',
+    },
+    financialAging: {
+      available: true,
+      title: 'Aging financeiro',
+      description: 'Recebíveis vencidos por faixa configurada.',
+      buckets: [
+        { bandId: '0-7', label: '0–7 dias', count: 1, totalAmount: '500.00' },
+        { bandId: '8-15', label: '8–15 dias', count: 1, totalAmount: '300.00' },
+      ],
+      summary: '2 recebíveis vencidos.',
+    },
+  },
+  productivity: {
+    completed: 10,
+    onTimeRate: { value: 0.8, numerator: 8, denominator: 10, available: true },
+    averageCycleTime: { valueHours: 24, sampleSize: 10, available: true },
+    reworkRate: {
+      value: 0.1,
+      numerator: 1,
+      denominator: 10,
+      available: true,
+      concept: 'measurement_rejection_rate',
+    },
+    utilization: {
+      value: 0.5,
+      numerator: 5,
+      denominator: 10,
+      available: true,
+      concept: 'allocated_window_over_planned_window',
+    },
+    evidenceCompleteness: { value: 0.9, numerator: 9, denominator: 10, available: true },
+    measurementAcceptance: { value: 0.85, numerator: 17, denominator: 20, available: true },
+  },
   shortcuts: [
     {
       id: 'shortcut-requests',
@@ -87,8 +133,8 @@ export function createDashboardFetchMock() {
       );
     }
 
-    if (url.includes('/api/v1/dashboard/operational') && method === 'GET') {
-      return new Response(JSON.stringify(DASHBOARD_SNAPSHOT), {
+    if (url.includes('/api/v1/dashboard/executive') && method === 'GET') {
+      return new Response(JSON.stringify(EXECUTIVE_DASHBOARD_SNAPSHOT), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       });

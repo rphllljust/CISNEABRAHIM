@@ -4177,3 +4177,54 @@ NOTES:
 | channel config gating | PASS | notification-channel.config.spec.ts |
 
 ---
+
+## Prompt 75 — Dashboard executivo e gráficos
+
+```
+PROMPT_ID: 75
+PROMPT_TITLE: Dashboard executivo e gráficos
+EXECUTED_AT: 2026-08-29
+EXECUTION_STATUS: PASS
+COMMIT: feat(dashboard): add operational analytics and productivity views
+ARTIFACTS:
+  apps/api/src/dashboard/domain/executive-dashboard.ts
+  apps/api/src/dashboard/repositories/executive-dashboard.repository.ts
+  apps/api/src/dashboard/services/executive-dashboard-access.service.ts
+  apps/api/src/dashboard/controllers/executive-dashboard.controller.ts
+  apps/api/src/dashboard/serializers/executive-dashboard-response.serializer.ts
+  apps/api/src/dashboard/serializers/executive-dashboard-response.serializer.spec.ts
+  apps/web/src/dashboard/components/AttentionBlock.tsx
+  apps/web/src/dashboard/components/ProductivityPanel.tsx
+  apps/web/src/dashboard/components/charts/*
+  apps/web/src/dashboard/hooks/useExecutiveDashboard.ts
+  apps/web/src/dashboard/pages/OperationalDashboardPage.tsx
+ENDPOINT: GET /api/v1/dashboard/executive?period=&from=&to=&unitId=
+CHARTS: SVG/CSS sem biblioteca externa; bar (status), line (throughput), SLA com denominador, aging financeiro (buckets via env)
+ATTENTION: OS vencidas (qty + maior atraso + link filtrado), vencendo em breve, medições, faturamentos vencidos, divergências
+PRODUCTIVITY: painel sem gauge 0–100; métricas separadas embutidas na resposta executiva
+URL_STATE: period (+ unitId quando autorizado)
+QUALITY_GATE: PASS
+NEXT_ALLOWED_PROMPT: 76
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Endpoint único evita waterfall no frontend; /dashboard/operational preservado.
+  Aging financeiro só renderiza quando AGING_BUCKET_BANDS configurado.
+  Prompt 76 não executado.
+```
+
+## Quality gate Prompt 75 (evidência)
+
+| Cenário de teste | Resultado | Evidência |
+|------------------|-----------|-----------|
+| overdue card com maior atraso | PASS | dashboard.executive.test.tsx, executive-dashboard-response.serializer.spec.ts |
+| zero overdue | PASS | executive-dashboard-response.serializer.spec.ts |
+| productivity sem score composto | PASS | dashboard.executive.test.tsx |
+| aging buckets | PASS | dashboard.executive.test.tsx |
+| charts (bar + tabela acessível) | PASS | dashboard.executive.test.tsx |
+| empty attention | PASS | dashboard.executive.test.tsx |
+| filtros URL (period) | PASS | dashboard.e2e.test.tsx |
+| single API call | PASS | dashboard.e2e.test.tsx |
+| API typecheck | PASS | tsc --noEmit |
+| web typecheck | PASS | tsc --noEmit |
+
+---
