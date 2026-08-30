@@ -45,6 +45,7 @@ const MIGRATION_FILES = [
   '0024_billing_baseline.sql',
   '0025_billing_documents.sql',
   '0026_domain_events_notifications.sql',
+  '0027_background_jobs.sql',
 ];
 
 const INCREMENTAL_BASELINE_FILES = MIGRATION_FILES.slice(0, -1);
@@ -66,6 +67,7 @@ const EXPECTED_SCHEMAS = [
   'msr',
   'bil',
   'evt',
+  'plt',
 ];
 
 const EXPECTED_TABLES = [
@@ -90,6 +92,7 @@ const EXPECTED_TABLES = [
   'bil.billing_documents',
   'evt.domain_events',
   'evt.notification_intents',
+  'plt.background_jobs',
 ];
 
 function adminConnectionString() {
@@ -387,6 +390,22 @@ async function assertPreDeltaState(connectionString, deltaFile) {
       );
       if ((enumValues.rowCount ?? 0) > 0) {
         throw new Error('Incremental baseline incorrectly contains OBSERVATION evidence_kind before 0013');
+      }
+      return;
+    }
+
+    if (deltaFile === '0027_background_jobs.sql') {
+      const domainEvents = await client.query('SELECT to_regclass($1) AS regclass', [
+        'evt.domain_events',
+      ]);
+      if (!domainEvents.rows[0]?.regclass) {
+        throw new Error('Expected evt.domain_events before 0027 delta');
+      }
+      const backgroundJobs = await client.query('SELECT to_regclass($1) AS regclass', [
+        'plt.background_jobs',
+      ]);
+      if (backgroundJobs.rows[0]?.regclass) {
+        throw new Error('Incremental baseline incorrectly contains plt.background_jobs before 0027');
       }
       return;
     }

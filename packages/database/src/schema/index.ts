@@ -161,3 +161,10 @@ export {
   notificationIntentStatusEnum,
   notificationIntents,
 } from './domain-events';
+export {
+  pltSchema,
+  backgroundJobKindEnum,
+  backgroundJobStatusEnum,
+  backgroundJobFailureClassEnum,
+  backgroundJobs,
+} from './background-jobs';

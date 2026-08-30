@@ -203,6 +203,11 @@ export default async function ensureMigrations(): Promise<void> {
     if (!hasDomainEvents) {
       await applySqlFile(pool, '0026_domain_events_notifications.sql');
     }
+
+    const hasBackgroundJobs = await tableExists(pool, 'plt.background_jobs');
+    if (!hasBackgroundJobs) {
+      await applySqlFile(pool, '0027_background_jobs.sql');
+    }
   } finally {
     await pool.end();
   }

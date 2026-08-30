@@ -3620,3 +3620,48 @@ NOTES:
 | payload versioning | PASS | `event-payloads.v1.spec.ts` + payload_version=1 |
 
 ---
+
+## Prompt 65 — Worker assíncrono
+
+```
+PROMPT_ID: 65
+PROMPT_TITLE: Worker assíncrono — processamento confiável fora da request HTTP
+EXECUTED_AT: 2026-08-29
+EXECUTION_STATUS: PASS
+COMMIT: feat(platform): implement reliable background processing
+ARTIFACTS:
+  packages/database/migrations/0027_background_jobs.sql
+  packages/database/src/schema/background-jobs.ts
+  packages/database/src/test-builders/platform-builders.ts
+  packages/database/scripts/ci-database-gate.mjs
+  apps/api/src/platform/background-jobs/**
+  apps/api/src/worker/main.ts
+  apps/api/src/worker/worker-app.module.ts
+  apps/api/src/app.module.ts
+  apps/api/package.json (start:worker)
+JOB_KINDS: NOTIFICATION, INTEGRATION, DOCUMENT_PROCESSING, REPORT_GENERATION
+FAILURE_CLASSES: TRANSIENT, PERMANENT
+QUALITY_GATE: PASS
+NEXT_ALLOWED_PROMPT: 66
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Fila PostgreSQL (plt.background_jobs) com SKIP LOCKED, lease, idempotency_key, backoff exponencial e dead-letter.
+  Worker separado (pnpm --filter @cisne/api start:worker) com graceful shutdown SIGINT/SIGTERM.
+  Handler NOTIFICATION marca intent DISPATCHED sem SDK externo; demais kinds registráveis via registry.
+  Evidência: lint/typecheck PASS; api unit 141; background-worker integration 7; api integration suite.
+  Prompt 66 não executado.
+```
+
+## Quality gate Prompt 65 (evidência)
+
+| Cenário de teste | Resultado | Evidência |
+|------------------|-----------|-----------|
+| success | PASS | `background-worker.integration.spec.ts` |
+| retry | PASS | transient + scheduleRetry + backoff |
+| exhausted retry | PASS | status DEAD após max_attempts |
+| crash | PASS | releaseExpiredLeases + reprocessamento |
+| shutdown | PASS | stop() aguarda in-flight |
+| duplicate job | PASS | idempotency_key unique |
+| concurrency | PASS | WORKER_CONCURRENCY=2 |
+
+---

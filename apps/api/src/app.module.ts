@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { BackgroundJobsModule } from './platform/background-jobs/background-jobs.module';
 import { AuthModule } from './auth/auth.module';
 import { AuditModule } from './audit/audit.module';
 import { AuthorizationModule } from './authorization/authorization.module';
@@ -15,6 +16,6 @@ import { EventsModule } from './events/events.module';
 import { ServiceOrdersModule } from './service-orders/service-orders.module';
 
 @Module({
-  imports: [HealthModule, AuditModule, AuthModule, AuthorizationModule, ClientsModule, CatalogModule, CommercialModule, RequestsModule, ServiceOrdersModule, MeasurementsModule, BillingModule, ResourcesModule, DocumentsModule, EventsModule],
+  imports: [HealthModule, AuditModule, AuthModule, AuthorizationModule, ClientsModule, CatalogModule, CommercialModule, RequestsModule, ServiceOrdersModule, MeasurementsModule, BillingModule, ResourcesModule, DocumentsModule, EventsModule, BackgroundJobsModule],
 })
 export class AppModule {}
