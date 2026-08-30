@@ -4052,7 +4052,53 @@ NOTES:
   Prompt 73 não executado.
 ```
 
-## Quality gate Prompt 72 (evidência)
+## Prompt 73 — Aging operacional e financeiro
+
+```
+PROMPT_ID: 73
+PROMPT_TITLE: Aging operacional e financeiro
+EXECUTED_AT: 2026-08-29
+EXECUTION_STATUS: PASS
+COMMIT: feat(analytics): implement operational and financial aging
+ARTIFACTS:
+  apps/api/src/analytics/**
+  apps/api/src/app.module.ts
+ENDPOINT: GET /api/v1/analytics/aging
+DERIVED_AGING: estado + timestamps + deadline + política + now (sem cron, sem persistir dias atrasados)
+SERVICE_ORDER_OVERDUE: ServiceOrderOverduePolicy lê TERMINAL_SERVICE_ORDER_STATUSES da máquina real; overdue derivado, status inalterado
+TIMEZONE: BUSINESS_TIMEZONE (default America/Porto_Velho); due_date como data civil
+FINANCIAL: ageDays/daysUntilDue/daysOverdue; somas via sumMoneyAmounts (numeric); exclui VOIDED/CANCELLED
+BUCKETS: DEFAULT_AGING_BUCKET_POLICY vazio; AGING_BUCKET_BANDS opcional via env
+READ_MODELS: OS vencidas/próximas, SR/medições/faturamento envelhecendo, recebíveis vencidos — queries agregadas paralelas
+AUTHZ: grants + scope SQL; financial oculto sem billing grant
+QUALITY_GATE: PASS
+NEXT_ALLOWED_PROMPT: 74
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Estados paid/sent não modelados no schema — não inventados; awaiting_payment/overdue derivados de FINALIZED + due_date.
+  EXPLAIN na query crítica de OS vencida (aging.integration.spec.ts).
+  Prompt 74 não executado.
+```
+
+## Quality gate Prompt 73 (evidência)
+
+| Cenário de teste | Resultado | Evidência |
+|------------------|-----------|-----------|
+| OS dentro do prazo | PASS | aging.domain.spec.ts |
+| vencimento exatamente agora | PASS | aging.domain.spec.ts |
+| OS vencida (derivada) | PASS | aging.domain.spec.ts + integration |
+| OS terminal não vencida | PASS | aging.domain.spec.ts |
+| billing futuro / vencido | PASS | aging.domain.spec.ts |
+| timezone / due date civil | PASS | aging.domain.spec.ts |
+| authorization scope | PASS | aging.integration.spec.ts |
+| Decimal sums | PASS | aging.domain.spec.ts |
+| financial hidden without grant | PASS | aging-response.serializer.spec.ts |
+| EXPLAIN query crítica | PASS | aging.integration.spec.ts |
+| API typecheck | PASS | tsc --noEmit |
+
+---
+
+| Cenário de teste | Resultado | Evidência |
 
 | Cenário de teste | Resultado | Evidência |
 |------------------|-----------|-----------|
