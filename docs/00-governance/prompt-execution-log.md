@@ -4505,3 +4505,45 @@ NOTES:
 | API typecheck | PASS | tsc --noEmit |
 
 ---
+
+## Prompt 82 — Performance e load tests
+
+```
+PROMPT_ID: 82
+PROMPT_TITLE: Performance e load tests
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: PASS
+COMMIT: (pending) perf: establish and validate production performance baseline
+ARTIFACTS:
+  apps/api/src/performance/**
+  apps/api/vitest.perf.config.ts
+  packages/database/migrations/0035_service_orders_list_perf_index.sql
+  docs/16-testing/performance-test-plan.md
+DATASET: synthetic seeder (smoke + full profiles) — clients, OS, execution entries, documents, measurements, billing
+BENCHMARKS: reproducible scenarios with throughput, p50/p95/p99, error rate, memory, DB pool
+BUDGETS: derived from measured baselines with 2.5x headroom (not invented SLAs)
+FIXES:
+  - parallel federated search per entity type
+  - SQL parameter typing fix for text search (42P18)
+  - composite index service_orders (unit_id, status, created_at DESC)
+CONCURRENCY: CNPJ duplicate stress with integrity assertion
+QUALITY_GATE: PASS
+NEXT_ALLOWED_PROMPT: 83
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Full benchmark gated by PERF_FULL=1; smoke in CI via pnpm test:perf:smoke.
+  Prompt 83 não executado.
+```
+
+## Quality gate Prompt 82 (evidência)
+
+| Cenário de teste | Resultado | Evidência |
+|------------------|-----------|-----------|
+| smoke benchmarks within budget | PASS | performance-smoke.perf-smoke.spec.ts |
+| concurrency CNPJ integrity | PASS | performance-concurrency.perf.spec.ts |
+| budget derivation | PASS | performance-budgets.spec.ts |
+| search parallel queries | PASS | search.repository.spec.ts |
+| search integration regression | PASS | search.integration.spec.ts |
+| API typecheck | PASS | tsc --noEmit |
+
+---

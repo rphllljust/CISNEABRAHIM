@@ -11,7 +11,9 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run --exclude '**/*.integration.spec.ts' --exclude '**/*.e2e.spec.ts'",
     "test:integration": "vitest run --config vitest.integration.config.ts",
-    "test:e2e": "vitest run --config vitest.e2e.config.ts"
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "test:perf:smoke": "vitest run --config vitest.perf.config.ts src/performance/performance-smoke.perf-smoke.spec.ts",
+    "test:perf": "vitest run --config vitest.perf.config.ts"
   },
   "dependencies": {
     "@cisne/database": "workspace:*",

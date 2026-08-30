@@ -57,70 +57,88 @@ export class SearchRepository {
     offset: number,
     filters: SearchFilters,
   ): Promise<{ groups: Map<SearchEntityType, { total: number; items: SearchResultItem[] }> }> {
-    const client = await this.pool().connect();
-    const groups = new Map<SearchEntityType, { total: number; items: SearchResultItem[] }>();
+    const results = await Promise.all(
+      types.map((entityType) =>
+        this.searchEntityType(entityType, query, scopes, limit, offset, filters),
+      ),
+    );
 
+    const groups = new Map<SearchEntityType, { total: number; items: SearchResultItem[] }>();
+    for (const result of results) {
+      if (result) {
+        groups.set(result.entityType, { total: result.total, items: result.items });
+      }
+    }
+    return { groups };
+  }
+
+  private async searchEntityType(
+    entityType: SearchEntityType,
+    query: NormalizedSearchQuery,
+    scopes: SearchScopeFilters,
+    limit: number,
+    offset: number,
+    filters: SearchFilters,
+  ): Promise<{ entityType: SearchEntityType; total: number; items: SearchResultItem[] } | null> {
+    const scope = this.scopeForType(scopes, entityType);
+    if (!scope) {
+      return null;
+    }
+
+    const search = this.buildEntitySearch(entityType, query, filters);
+    if (!search) {
+      return null;
+    }
+
+    const merged = mergeScopeAndPredicate(scope, search.predicate, search.params);
+    if (merged.clause === 'FALSE') {
+      return null;
+    }
+
+    const client = await this.pool().connect();
     try {
       await client.query(`SET LOCAL statement_timeout = '5000ms'`);
 
-      for (const entityType of types) {
-        const scope = this.scopeForType(scopes, entityType);
-        if (!scope) {
-          continue;
-        }
-
-        const search = this.buildEntitySearch(entityType, query, filters);
-        if (!search) {
-          continue;
-        }
-
-        const merged = mergeScopeAndPredicate(scope, search.predicate, search.params);
-        if (merged.clause === 'FALSE') {
-          continue;
-        }
-
-        const countResult = await client.query<{ count: string }>(
-          `SELECT COUNT(*)::text AS count
-           FROM ${search.fromClause}
-           WHERE ${merged.clause}`,
-          merged.params,
-        );
-        const total = Number.parseInt(countResult.rows[0]?.count ?? '0', 10);
-        if (total === 0) {
-          continue;
-        }
-
-        const listParams = [...merged.params, limit, offset];
-        const limitIndex = merged.params.length + 1;
-        const offsetIndex = merged.params.length + 2;
-        const listResult = await client.query<SearchRow>(
-          `${search.selectClause}
-           FROM ${search.fromClause}
-           WHERE ${merged.clause}
-           ORDER BY ${search.orderBy}
-           LIMIT $${limitIndex} OFFSET $${offsetIndex}`,
-          listParams,
-        );
-
-        groups.set(entityType, {
-          total,
-          items: listResult.rows.map((row) => ({
-            entityType,
-            entityId: row.entity_id,
-            title: row.title,
-            subtitle: row.subtitle,
-            status: row.status,
-            occurredAt: row.occurred_at.toISOString(),
-            entityHref: row.entity_href,
-            highlights: row.highlight ? [row.highlight] : [],
-          })),
-        });
+      const countResult = await client.query<{ count: string }>(
+        `SELECT COUNT(*)::text AS count
+         FROM ${search.fromClause}
+         WHERE ${merged.clause}`,
+        merged.params,
+      );
+      const total = Number.parseInt(countResult.rows[0]?.count ?? '0', 10);
+      if (total === 0) {
+        return null;
       }
+
+      const listParams = [...merged.params, limit, offset];
+      const limitIndex = merged.params.length + 1;
+      const offsetIndex = merged.params.length + 2;
+      const listResult = await client.query<SearchRow>(
+        `${search.selectClause}
+         FROM ${search.fromClause}
+         WHERE ${merged.clause}
+         ORDER BY ${search.orderBy}
+         LIMIT $${limitIndex} OFFSET $${offsetIndex}`,
+        listParams,
+      );
+
+      return {
+        entityType,
+        total,
+        items: listResult.rows.map((row) => ({
+          entityType,
+          entityId: row.entity_id,
+          title: row.title,
+          subtitle: row.subtitle,
+          status: row.status,
+          occurredAt: row.occurred_at.toISOString(),
+          entityHref: row.entity_href,
+          highlights: row.highlight ? [row.highlight] : [],
+        })),
+      };
     } finally {
       client.release();
     }
-
-    return { groups };
   }
 
   private scopeForType(
@@ -315,7 +333,7 @@ export class SearchRepository {
       cnpj: 'c.normalized_tax_id = $1',
       code: 'c.external_erp_id ILIKE $1',
       plate: 'FALSE',
-      text: '(c.legal_name % $1 OR c.trade_name % $1 OR c.legal_name ILIKE $2 OR c.trade_name ILIKE $2)',
+      text: '(c.legal_name % $1::text OR c.trade_name % $1::text OR c.legal_name ILIKE $2 OR c.trade_name ILIKE $2)',
     });
     if (!match) {
       return null;
@@ -346,7 +364,7 @@ export class SearchRepository {
       cnpj: 'FALSE',
       code: '(sr.request_code ILIKE $1 OR sr.external_origin_reference ILIKE $1)',
       plate: 'FALSE',
-      text: '(sr.description ILIKE $2 OR sr.request_code ILIKE $2)',
+      text: '(sr.description ILIKE $1 OR sr.request_code ILIKE $1)',
     });
     if (!match) {
       return null;
@@ -377,7 +395,7 @@ export class SearchRepository {
       cnpj: "pv.client_snapshot->>'normalizedTaxId' = $1",
       code: 'p.proposal_code ILIKE $1',
       plate: 'FALSE',
-      text: '(p.title ILIKE $2 OR p.proposal_code ILIKE $2)',
+      text: '(p.title ILIKE $1 OR p.proposal_code ILIKE $1)',
     });
     if (!match) {
       return null;
@@ -418,7 +436,7 @@ export class SearchRepository {
       cnpj: "po.client_snapshot->>'normalizedTaxId' = $1",
       code: '(po.internal_code ILIKE $1 OR po.po_number ILIKE $1 OR po.rc_number ILIKE $1)',
       plate: 'FALSE',
-      text: '(po.po_number ILIKE $2 OR po.rc_number ILIKE $2 OR po.internal_code ILIKE $2)',
+      text: '(po.po_number ILIKE $1 OR po.rc_number ILIKE $1 OR po.internal_code ILIKE $1)',
     });
     if (!match) {
       return null;
@@ -452,7 +470,7 @@ export class SearchRepository {
       cnpj: "so.client_snapshot->>'normalizedTaxId' = $1",
       code: '(so.order_number ILIKE $1 OR so.internal_code ILIKE $1 OR so.rc_number ILIKE $1)',
       plate: 'FALSE',
-      text: '(so.order_number ILIKE $2 OR so.internal_code ILIKE $2 OR so.description ILIKE $2)',
+      text: '(so.order_number ILIKE $1 OR so.internal_code ILIKE $1 OR so.description ILIKE $1)',
     });
     if (!match) {
       return null;
@@ -483,7 +501,7 @@ export class SearchRepository {
       cnpj: 'FALSE',
       code: 'a.asset_code ILIKE $1',
       plate: 'vp.normalized_plate = $1',
-      text: '(a.name % $1 OR a.asset_code ILIKE $2)',
+      text: '(a.name % $1::text OR a.asset_code ILIKE $2)',
     });
     if (!match) {
       return null;
@@ -515,7 +533,7 @@ export class SearchRepository {
       cnpj: 'FALSE',
       code: 'so.original_filename ILIKE $1',
       plate: 'FALSE',
-      text: '(d.title % $1 OR d.title ILIKE $2 OR so.original_filename ILIKE $2)',
+      text: '(d.title % $1::text OR d.title ILIKE $2 OR so.original_filename ILIKE $2)',
     });
     if (!match) {
       return null;
@@ -554,7 +572,7 @@ export class SearchRepository {
       cnpj: 'FALSE',
       code: '(so.order_number ILIKE $1 OR so.internal_code ILIKE $1)',
       plate: 'FALSE',
-      text: '(so.order_number ILIKE $2 OR so.internal_code ILIKE $2)',
+      text: '(so.order_number ILIKE $1 OR so.internal_code ILIKE $1)',
     });
     if (!match) {
       return null;
@@ -586,7 +604,7 @@ export class SearchRepository {
       cnpj: 'br.client_tax_id_snapshot = $1',
       code: '(so.order_number ILIKE $1 OR so.internal_code ILIKE $1 OR br.contract_reference ILIKE $1)',
       plate: 'FALSE',
-      text: '(br.client_legal_name_snapshot ILIKE $2 OR so.order_number ILIKE $2)',
+      text: '(br.client_legal_name_snapshot ILIKE $1 OR so.order_number ILIKE $1)',
     });
     if (!match) {
       return null;
@@ -618,7 +636,11 @@ export class SearchRepository {
     }
 
     if (query.kind === 'text') {
-      return { clause: template, params: [query.term, query.prefixTerm] };
+      const usesSecondParam = template.includes('$2');
+      if (usesSecondParam) {
+        return { clause: template, params: [query.term, query.prefixTerm] };
+      }
+      return { clause: template, params: [query.prefixTerm] };
     }
 
     if (query.kind === 'code') {

@@ -3,37 +3,62 @@
 | Campo       | Valor                           |
 | ----------- | ------------------------------- |
 | Document ID | Plano testes performance        |
-| Status      | **FUTURE** — TARGET_NOT_DEFINED |
-| Prompt      | 15                              |
+| Status      | **ACTIVE** — BASELINE_ESTABLISHED |
+| Prompt      | 82                              |
 
-## Escopo futuro
+## Dataset sintético
 
-| Área                    | Hipótese        | Ferramenta      |
-| ----------------------- | --------------- | --------------- |
-| API p95 latency         | < 500ms read OS | k6              |
-| Conversão TX throughput | 50 TPS? TBD     | k6              |
-| Concurrent allocations  | sem deadlock    | k6 + PG         |
-| Report BC-016           | heavy query     | explain analyze |
+Massa gerada por `apps/api/src/performance/synthetic/performance-dataset.seeder.ts` — sem dados pessoais de produção.
 
-## NFR pendentes
+| Perfil | Clients | OS | ExecutionEntries | Documents | Measurements | Billing |
+| ------ | ------- | -- | ---------------- | --------- | ------------ | ------- |
+| smoke (CI) | 25 | 60 | 120 | 40 | 20 | 10 |
+| full (`PERF_FULL=1`) | 500 | 2_000 | 5_000 | 800 | 400 | 200 |
 
-NFR-001..004 sem SLA numérico confirmado — **não inventar thresholds**.
+Config: `PERF_DATASET_PROFILE=smoke|full`, `PERF_UNIT_ID`.
 
-## Ambiente
+## Cenários de benchmark
 
-Staging com dados volume sintético — nunca prod.
+Reproduzíveis via `apps/api/src/performance/benchmark/performance-scenarios.ts`:
 
-## Relação concorrência
+| Cenário | Endpoint |
+| ------- | -------- |
+| auth.session | `GET /auth/session` |
+| clients.list | `GET /clients` |
+| search.advanced | `GET /search` |
+| service-orders.list | `GET /service-orders` |
+| dashboard.operational | `GET /dashboard/operational` |
+| service-orders.detail | `GET /service-orders/:id` |
+| resources.availability | `GET /resources/physical-assets?allocationStatus=AVAILABLE` |
+| measurements.list | `GET /service-orders/:id/measurements` |
+| billing.list | `GET /service-orders/:id/billing-records` |
+| reports.catalog / preview | `GET /reports/*` |
 
-QA-CONC-001 valida **corretude**; PERF valida **latência** sob carga.
+Métricas: throughput, p50/p95/p99, error rate, heap/RSS, pool DB (quando coletado).
+
+## Execução
+
+| Comando | Uso |
+| ------- | --- |
+| `pnpm test:perf:smoke` | CI — smoke com dataset reduzido |
+| `PERF_FULL=1 pnpm test:perf` | benchmark completo (não em cada PR) |
+
+Ambiente: `TEST_DATABASE_URL` (descartável). Nunca produção.
+
+## Budgets preliminares
+
+Derivados de medição + headroom 2.5× (`performance-budgets.ts`). Não são SLAs empresariais confirmados — `PENDING_MEASUREMENT` em QATTR-PERF-001 permanece até validação com patrocinador.
+
+## Correções aplicadas (Prompt 82)
+
+1. **Search**: queries paralelas por tipo de entidade; correção de parâmetros SQL `42P18` em busca textual.
+2. **Índice**: `service_orders_unit_status_created_idx` para listagens por unidade/status.
+
+## Concorrência
+
+`performance-concurrency.perf.spec.ts` — stress CNPJ duplicado com verificação de integridade (1 vencedor).
 
 ## Gate
 
-PERF não bloqueia MVP; bloqueia scale release quando SLAs definidos.
-
-## PERF-CAND backlog
-
-| ID            | Cenário               |
-| ------------- | --------------------- |
-| PERF-CAND-001 | List 10k OS paginated |
-| PERF-CAND-002 | Burst CMD-001 intake  |
+- Smoke perf pode entrar em CI (`test:perf:smoke`).
+- Load test completo não bloqueia cada PR (custo desproporcional).

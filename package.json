@@ -16,6 +16,8 @@
     "test": "turbo run test",
     "test:integration": "turbo run test:integration --concurrency=1",
     "test:e2e": "turbo run test:e2e",
+    "test:perf:smoke": "pnpm --filter @cisne/api test:perf:smoke",
+    "test:perf": "pnpm --filter @cisne/api test:perf",
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",
     "db:up": "docker compose -f docker/compose.yaml up -d --wait",
