@@ -1,6 +1,7 @@
 export const DOCUMENT_CATEGORIES = {
   General: 'GENERAL',
   Evidence: 'EVIDENCE',
+  BillingDocument: 'BILLING_DOCUMENT',
 } as const;
 
 export type DocumentCategory = (typeof DOCUMENT_CATEGORIES)[keyof typeof DOCUMENT_CATEGORIES];

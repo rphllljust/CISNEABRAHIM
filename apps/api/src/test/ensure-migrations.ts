@@ -178,6 +178,26 @@ export default async function ensureMigrations(): Promise<void> {
     if (!hasMeasurements) {
       await applySqlFile(pool, '0023_measurement_baseline.sql');
     }
+
+    const hasBillingRecords = await tableExists(pool, 'bil.billing_records');
+    if (!hasBillingRecords) {
+      await applySqlFile(pool, '0024_billing_baseline.sql');
+    }
+
+    const hasBillingDocuments = await tableExists(pool, 'bil.billing_documents');
+    if (!hasBillingDocuments) {
+      await applySqlFile(pool, '0025_billing_documents.sql');
+    } else {
+      await pool.query(`
+        ALTER TABLE bil.billing_document_items
+        DROP CONSTRAINT IF EXISTS billing_document_items_billing_item_id_fkey
+      `);
+      await pool.query(`
+        ALTER TABLE bil.billing_document_items
+        ADD CONSTRAINT billing_document_items_billing_item_id_fkey
+        FOREIGN KEY (billing_item_id) REFERENCES bil.billing_items(id) ON DELETE SET NULL
+      `);
+    }
   } finally {
     await pool.end();
   }

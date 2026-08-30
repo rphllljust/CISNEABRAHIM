@@ -24,7 +24,7 @@ import { DOCUMENT_UPLOAD_LIMITS } from './dto/documents.dto';
     ObjectStorageService,
     DownloadTokenService,
   ],
-  exports: [DocumentsRepository, DocumentsAccessService, ObjectStorageService],
+  exports: [DocumentsRepository, DocumentsAccessService, ObjectStorageService, DownloadTokenService],
 })
 export class DocumentsModule implements OnModuleInit {
   constructor(private readonly adapterHost: HttpAdapterHost) {}

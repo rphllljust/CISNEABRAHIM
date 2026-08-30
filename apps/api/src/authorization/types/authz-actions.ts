@@ -110,6 +110,11 @@ export const AUTHZ_ACTIONS = {
   BillingBillingRecordPrepare: 'billing:billing-record:prepare',
   BillingBillingRecordRead: 'billing:billing-record:read',
   BillingBillingRecordVoid: 'billing:billing-record:void',
+  BillingBillingDocumentIssue: 'billing:billing-document:issue',
+  BillingBillingDocumentRead: 'billing:billing-document:read',
+  BillingBillingDocumentCancel: 'billing:billing-document:cancel',
+  BillingBillingDocumentReplace: 'billing:billing-document:replace',
+  BillingBillingDocumentDownload: 'billing:billing-document:download',
 } as const;
 
 export type AuthzAction = (typeof AUTHZ_ACTIONS)[keyof typeof AUTHZ_ACTIONS];

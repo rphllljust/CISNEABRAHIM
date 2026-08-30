@@ -79,6 +79,11 @@ export const SECURITY_AUDIT_ACTIONS = {
   BillingBillingRecordPrepare: 'security:billing:billing-record:prepare',
   BillingBillingRecordRead: 'security:billing:billing-record:read',
   BillingBillingRecordVoid: 'security:billing:billing-record:void',
+  BillingBillingDocumentIssue: 'security:billing:billing-document:issue',
+  BillingBillingDocumentRead: 'security:billing:billing-document:read',
+  BillingBillingDocumentCancel: 'security:billing:billing-document:cancel',
+  BillingBillingDocumentReplace: 'security:billing:billing-document:replace',
+  BillingBillingDocumentDownload: 'security:billing:billing-document:download',
 } as const;
 
 export type SecurityAuditAction =

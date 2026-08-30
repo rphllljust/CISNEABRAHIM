@@ -108,6 +108,12 @@ export {
 } from './measurements';
 export {
   billingCommandIdempotency,
+  billingDocumentCommandIdempotency,
+  billingDocumentHistoryEvents,
+  billingDocumentItems,
+  billingDocumentNumberSequences,
+  billingDocuments,
+  billingDocumentStatusEnum,
   billingHistoryEvents,
   billingItems,
   billingRecords,
