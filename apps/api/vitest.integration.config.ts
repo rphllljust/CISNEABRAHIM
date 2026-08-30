@@ -15,5 +15,6 @@ export default defineConfig({
     hookTimeout: 120_000,
     testTimeout: 300_000,
     globalSetup: ['./src/test/ensure-migrations.ts'],
+    setupFiles: ['./src/test/integration-test-db-serializer.ts'],
   },
 });

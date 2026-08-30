@@ -28,6 +28,28 @@ $env:DEV_SEED_PASSWORD='Dev-Only-1!Synthetic'  # opcional
 pnpm db:seed:dev
 ```
 
+## SYNTHETIC_BUSINESS_SEED (development / homologation)
+
+Massa sintética determinística para telas, filtros e fluxo vertical. **Proibido em produção.**
+
+Pré-condições:
+
+- `NODE_ENV=development` e `DATABASE_URL` apontando a `cisne_local_dev` em host local
+- `DEVELOPMENT_SYNTHETIC_SEED_CONFIRM=I_UNDERSTAND`
+- Operador DEV existente (`pnpm auth:repair:dev-login`)
+
+Homologação: `CISNE_ENV=hml`, database `cisne_hml`, `HML_SYNTHETIC_SEED_CONFIRM=I_UNDERSTAND`.
+
+```powershell
+$env:DEVELOPMENT_SYNTHETIC_SEED_CONFIRM='I_UNDERSTAND'
+$env:SEED_REFERENCE_DATE='2026-08-01T12:00:00-04:00'  # opcional
+pnpm db:seed:synthetic
+```
+
+Namespace: `cisne-synthetic-dev-v1` via `external_erp_id` e prefixo `TESTE —` nos nomes.
+
+Idempotente: reexecução retorna `already_present` por cenário.
+
 ## TEST_DATA_BUILDERS
 
 `IdentityTestBuilders` produz dados `@cisne.invalid` isolados:

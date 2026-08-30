@@ -6297,3 +6297,144 @@ COMMIT: NOT_REQUIRED
 WORKING_TREE: DIRTY (alterações anteriores preservadas)
 NEXT_ACTION: manter execução local em http://192.168.1.89:5173 com API em :3000
 ```
+
+---
+
+## DIAGNÓSTICO + RECUPERAÇÃO RUNTIME — banco vazio e seed controlado
+
+```text
+PROMPT: EMPTY-DATABASE-DIAGNOSIS
+PHASE: RUNTIME-RECOVERY + CONTROLLED-SEED
+STARTED_AT: 2026-08-30T13:13-04:00
+FINISHED_AT: 2026-08-30T13:42-04:00
+STATUS: PASS
+
+RECOVERY COMMANDS:
+  Docker Desktop iniciado (daemon estava parado)
+  npx pnpm@9.15.9 db:up — PASS (cisne_local_postgres Healthy)
+  npx pnpm@9.15.9 db:migrate — journal dev backfill (3→19); test OK; db:migrate:dev revalidado PASS
+  npx pnpm@9.15.9 auth:repair:dev-login — PASS (cisne_local_dev + cisne_runtime updated)
+
+CONEXÃO REAL DATABASE_URL:
+  NODE_ENV=development host=127.0.0.1 port=5432 database=cisne_local_dev user=cisne_local_dev
+  Probe pg Pool — OK; server_addr=172.18.0.2 (container local)
+
+PRÉ-SEED (somente leitura):
+  pty.clients=0 sr.service_requests=0 com.proposals=0 so.service_orders=0
+  bil.billing_records=0 cat.service_definitions=49 — operacional vazio
+
+SEED AUTHORIZED: YES → db:seed:demo-ui executado
+  scripts/seed-dev-demo-data.mjs — 2 cenários UAT PASS (locacao, transporte)
+  pós-seed: clients=2 serviceOrders=2 billingDocuments=2 documents=4 grants=232
+
+API SMOKE:
+  POST /api/v1/auth/login — 200
+  GET /api/v1/clients — 200 items=2 (alinhado com banco)
+
+FIXES APPLIED:
+  scripts/seed-dev-demo-data.mjs — reflect-metadata via requireFromApi
+
+EMPTY DATABASE DIAGNOSIS: PASS
+ENVIRONMENT: DEVELOPMENT
+DATABASE TARGET: CONFIRMED
+MIGRATIONS: CURRENT (19)
+DATABASE DATA: PRESENT
+API DATA: PRESENT
+FRONTEND DATA: NOT_RUN
+TENANT/SCOPE: CORRECT
+ROOT CAUSE: infra parada + db:seed:dev não popula módulos operacionais
+SEED AUTHORIZED: YES
+PRODUCTION SYNTHETIC DATA: PROHIBITED
+REGRESSION TEST: NOT_REQUIRED
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT_ACTION: definir JWT_SECRET no .env local para API dev estável
+NEXT_PROMPT_EXECUTED: NO
+```
+
+---
+
+## CORRETIVO — Serialização DB testes integração/E2E (pós MASTER-CERTIFICATION)
+
+```text
+EXECUTED_AT: 2026-08-30
+STATUS: PASS (correção aplicada + validação)
+
+ISSUE:
+  Falhas intermitentes em adversarial-security e chaos-recovery durante regressão MASTER:
+  FK 23503 (grants/decision_audits), CatalogHttpException no seed UAT, login HTTP 500.
+  Causa raiz: múltiplos processos Vitest/pnpm compartilhando TEST_DATABASE_URL sem mutex
+  (ex.: test:adversarial-security e test:chaos-recovery disparados em paralelo).
+
+FIXES:
+  packages/database/src/test-builders/integration-test-db-lock.ts
+    - INTEGRATION_TEST_DB_LOCK_KEY + withIntegrationTestDatabaseLock (reentrante)
+    - createIntegrationTestPool (max: 1 por processo)
+  apps/api/src/test/integration-test-db-serializer.ts
+    - pg_advisory_lock no beforeAll / unlock no afterAll por arquivo de teste
+  vitest.integration.config.ts + vitest.e2e.config.ts
+    - setupFiles: integration-test-db-serializer.ts
+  master-business-harness + failure-injection-harness
+    - createIntegrationTestPool em vez de Pool sem limite
+  packages/database/src/migration-torture/fixture.ts
+    - guard TS18048 (left possibly undefined)
+  apps/api/src/uat/uat-vertical-runner.ts
+    - formatUatScenarioError (HttpException response serializado)
+
+VALIDATION:
+  adversarial-security 12/12 + unit 22/22 — PASS isolado
+  chaos-recovery 14/14 — PASS isolado
+  adversarial-security ∥ chaos-recovery (2 processos) — PASS / PASS
+  master-business 9/9 — PASS
+  concurrency 24/24 — PASS
+  @cisne/database build + integration-test-db-lock.spec 2/2 — PASS
+
+COMMIT: NOT_REQUIRED
+WORKING_TREE: DIRTY
+NEXT_ACTION: reexecutar MASTER CERTIFICATION gate com suites em série (ou confiar no serializer)
+```
+
+## PROMPT — Massa sintética determinística (development / homologation)
+
+```text
+EXECUTED_AT: 2026-08-30
+PROMPT: MASSA SINTÉTICA DETERMINÍSTICA PARA DESENVOLVIMENTO E HOMOLOGAÇÃO
+STATUS: PASS
+
+PRECONDITIONS:
+  SEED AUTHORIZED = YES
+  DATABASE TARGET = cisne_local_dev @ 127.0.0.1 (development)
+  ENVIRONMENT != PRODUCTION
+
+IMPLEMENTATION:
+  packages/database/src/seed/synthetic-seed-constants.ts
+  packages/database/src/seed/synthetic-seed-safety.ts (+ spec)
+  packages/database/src/seed/synthetic-seed-lock.ts
+  packages/database/src/seed/deterministic-synthetic-identifiers.ts
+  apps/api/src/synthetic-seed/ (scenarios, runner, harness, CLI, integration spec)
+  pnpm db:seed:synthetic → nest build + node dist CLI
+  Namespace cisne-synthetic-dev-v1 + prefixo TESTE — + external_erp_id
+
+VALIDATION:
+  test:synthetic-seed 3/3 — PASS (idempotency, production block, concurrency)
+  synthetic-seed-safety.spec 6/6 — PASS
+  db:seed:synthetic dev — PASS (15 cenários, reexecução idempotente)
+  nest build — PASS
+
+GATES:
+  INTEGRATION (synthetic-seed): PASS
+  UNIT (safety): PASS
+  BUILD: PASS
+  LINT (api full): FAIL (pré-existente fora do escopo seed)
+  TYPECHECK (api full): FAIL (pré-existente performance specs)
+  TRANSACTION ROLLBACK: PARTIAL — cenários usam commits de domínio; falha intercena aborta lock mas não reverte cenários já gravados
+
+SEED COUNTS (namespace + TESTE —):
+  CLIENTS: 15 | CATALOG (SYN-* defs): 7 | ALLOCATIONS: 8 | REQUESTS: 11
+  PROPOSALS: 16 | PO: 12 | OS: 11 | EXECUTIONS: 12 | MEASUREMENTS: 6
+  BILLINGS: 5 | DOCUMENTS: 14 | NOTIFICATIONS: 0
+
+COMMIT: pending feat(seed): add deterministic business scenarios
+WORKING_TREE: DIRTY
+NEXT_ACTION: VALIDATE FULL STACK
+```

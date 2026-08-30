@@ -1,4 +1,4 @@
-import { hashPassword, insertCatalogCategory, insertGrant, insertIdentity } from '@cisne/database';
+import { hashPassword, insertCatalogCategory, insertGrant, insertIdentity, syntheticVehiclePlate } from '@cisne/database';
 import type { Pool } from 'pg';
 import { AUTHZ_RESOURCE_TYPES } from '../authorization/types/authz-resources';
 import { AUTHZ_SCOPES } from '../authorization/types/authz-scopes';
@@ -32,13 +32,12 @@ import type { ServiceRequestsAccessService } from '../requests/services/service-
 import type { PhysicalAssetsAccessService } from '../resources/services/physical-assets-access.service';
 import type { PhysicalResourceTypesAccessService } from '../resources/services/physical-resource-types-access.service';
 import { PLANNED_RESOURCE_KINDS } from '../service-orders/domain/resource-planning';
-import { SERVICE_ORDER_STATUSES } from '../service-orders/domain/service-order';
 import type { ServiceOrderExecutionAccessService } from '../service-orders/services/service-order-execution-access.service';
 import type { ServiceOrderPlanningAccessService } from '../service-orders/services/service-order-planning-access.service';
 import type { ServiceOrdersAccessService } from '../service-orders/services/service-orders-access.service';
 import { buildSyntheticUatClient } from '../master-business/synthetic-test-data';
 import type { MasterBusinessArtifacts } from '../master-business/master-business-types';
-import type { UatScenarioDefinition } from './uat-scenarios';
+import type { UatFictionalClient, UatScenarioDefinition } from './uat-scenarios';
 import type { UatScenarioResult } from './uat-types';
 import { grantsForProfile } from './uat-profiles';
 
@@ -101,18 +100,27 @@ export async function runUatVerticalScenario(
     reviewer?: UatActor;
     stopAfter?: 'prepared' | 'released' | 'completed_execution' | 'measurement_approved' | 'complete';
     captureArtifacts?: boolean;
+    deterministicSuffix?: string;
+    syntheticClient?: UatFictionalClient;
+    poNumberOverride?: string;
+    clientExternalErpId?: string;
+    vehiclePlateScenarioIndex?: number;
   },
 ): Promise<UatScenarioResult & { measurementId?: string; artifacts?: MasterBusinessArtifacts }> {
   const started = Date.now();
   try {
-    const suffix = crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase();
-    const poNumber = `PO-UAT-${scenario.id.toUpperCase()}-${suffix}`;
-    const syntheticClient = buildSyntheticUatClient(scenario.id, suffix);
+    const suffix =
+      options?.deterministicSuffix ??
+      crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase();
+    const poNumber = options?.poNumberOverride ?? `PO-UAT-${scenario.id.toUpperCase()}-${suffix}`;
+    const syntheticClient =
+      options?.syntheticClient ?? buildSyntheticUatClient(scenario.id, suffix);
 
     const client = await services.clientAccess.create(actor, {
       legalName: syntheticClient.legalName,
       tradeName: syntheticClient.tradeName,
       taxId: syntheticClient.taxId,
+      externalErpId: options?.clientExternalErpId,
       contacts: [
         {
           name: syntheticClient.contactName,
@@ -134,12 +142,12 @@ export async function runUatVerticalScenario(
     });
 
     const category = await insertCatalogCategory(services.pool, {
-      code: `UAT-${scenario.id.toUpperCase()}-${suffix}`,
+      code: `UAT-${scenario.id.toUpperCase()}-${options?.deterministicSuffix ?? suffix}`,
       name: 'UAT',
     });
 
     const draft = await services.catalogAccess.create(actor, {
-      code: `UAT-SRV-${suffix}`,
+      code: `UAT-SRV-${options?.deterministicSuffix ?? suffix}`,
       name: scenario.serviceName,
       categoryId: category.categoryId,
       archetype: scenario.archetype,
@@ -290,11 +298,13 @@ export async function runUatVerticalScenario(
         unitId,
         vehicle:
           resourceType.classification === 'VEHICLE'
-            ? {
-                plate: `U${suffix.slice(0, 1)}-${indexSuffix(resourceTypeCode)}34`,
-                normalizedPlate: `U${suffix.slice(0, 1)}${indexSuffix(resourceTypeCode)}34`.replace(/-/g, ''),
-                plateDisplay: `U${suffix.slice(0, 1)}-${indexSuffix(resourceTypeCode)}34`,
-              }
+            ? options?.vehiclePlateScenarioIndex !== undefined
+              ? syntheticVehiclePlate(options.vehiclePlateScenarioIndex, resourceTypeCode)
+              : {
+                  plate: `U${suffix.slice(0, 1)}-${indexSuffix(resourceTypeCode)}34`,
+                  normalizedPlate: `U${suffix.slice(0, 1)}${indexSuffix(resourceTypeCode)}34`.replace(/-/g, ''),
+                  plateDisplay: `U${suffix.slice(0, 1)}-${indexSuffix(resourceTypeCode)}34`,
+                }
             : undefined,
       });
       await services.planningAccess.allocateResource(actor, released.id, {
@@ -422,9 +432,20 @@ export async function runUatVerticalScenario(
       scenarioId: scenario.id,
       status: 'FAIL',
       durationMs: Date.now() - started,
-      error: error instanceof Error ? error.message : String(error),
+      error: formatUatScenarioError(error),
     };
   }
+}
+
+function formatUatScenarioError(error: unknown): string {
+  if (error instanceof Error) {
+    const response = (error as { getResponse?: () => unknown }).getResponse?.();
+    if (response !== undefined) {
+      return `${error.name}: ${JSON.stringify(response)}`;
+    }
+    return error.message;
+  }
+  return String(error);
 }
 
 function indexSuffix(code: string): string {

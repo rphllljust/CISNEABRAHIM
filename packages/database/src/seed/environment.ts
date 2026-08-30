@@ -1,9 +1,9 @@
-export function getNodeEnv(): string {
-  return process.env['NODE_ENV'] ?? 'development';
+export function getNodeEnv(env: NodeJS.ProcessEnv = process.env): string {
+  return env['NODE_ENV'] ?? 'development';
 }
 
-export function assertDevelopmentOnly(operation: string): void {
-  const nodeEnv = getNodeEnv();
+export function assertDevelopmentOnly(operation: string, env: NodeJS.ProcessEnv = process.env): void {
+  const nodeEnv = getNodeEnv(env);
   if (nodeEnv !== 'development') {
     throw new Error(`${operation} is only permitted when NODE_ENV=development (got ${nodeEnv}).`);
   }

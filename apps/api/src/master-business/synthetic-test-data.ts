@@ -28,6 +28,26 @@ export function buildSyntheticUatClient(scenarioId: string, runSuffix: string): 
   };
 }
 
+export function buildDeterministicSyntheticClient(
+  displayLabel: string,
+  scenarioKey: string,
+  cnpjIndex: number,
+): UatFictionalClient {
+  const suffix = scenarioKey.toUpperCase().replace(/[^A-Z0-9]+/g, '-');
+  return {
+    legalName: `TESTE — ${displayLabel}`,
+    tradeName: `TESTE-${suffix}`,
+    taxId: deterministicCnpjFromIndex(cnpjIndex),
+    contactName: `Contato Sintético ${suffix}`,
+    city: 'Porto Velho',
+  };
+}
+
+function deterministicCnpjFromIndex(index: number): string {
+  cnpjSequence = index;
+  return nextSyntheticCnpj();
+}
+
 export function resetSyntheticCnpjSequence(): void {
   cnpjSequence = 0;
 }

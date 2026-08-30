@@ -44,3 +44,8 @@ export { truncateServiceOrderTables } from './service-order-builders';
 export { truncateBillingTables } from './billing-builders';
 export { truncateDomainEventTables } from './event-builders';
 export { truncateBackgroundJobTables, truncateOutboxTables, truncateIntegrationInboxTables } from './platform-builders';
+export {
+  INTEGRATION_TEST_DB_LOCK_KEY,
+  createIntegrationTestPool,
+  withIntegrationTestDatabaseLock,
+} from './integration-test-db-lock';

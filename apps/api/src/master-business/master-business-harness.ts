@@ -15,9 +15,10 @@ import {
   truncatePhysicalAssetTables,
   truncateServiceOrderTables,
   truncateServiceRequestTables,
+  createIntegrationTestPool,
 } from '@cisne/database';
 import { Test, TestingModule } from '@nestjs/testing';
-import { Pool } from 'pg';
+import type { Pool } from 'pg';
 import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
 import { AUTH_TEST_PASSWORD, applyAuthTestEnv } from '../auth/test/auth-test-env';
@@ -87,7 +88,7 @@ export async function createMasterBusinessTestContext(): Promise<MasterBusinessT
     ],
   }).compile();
 
-  const pool = new Pool({ connectionString: testDatabaseUrl });
+  const pool = createIntegrationTestPool(testDatabaseUrl);
   const services: UatVerticalServices = {
     pool,
     clientAccess: module.get(ClientAccessService),

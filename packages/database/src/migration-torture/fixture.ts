@@ -132,6 +132,10 @@ export function comparePreservationSnapshots(
   for (const key of Object.keys(before)) {
     const left = before[key];
     const right = after[key];
+    if (!left) {
+      mismatches.push(`${key}: missing in before snapshot`);
+      continue;
+    }
     if (!right) {
       mismatches.push(`${key}: missing after migration`);
       continue;
