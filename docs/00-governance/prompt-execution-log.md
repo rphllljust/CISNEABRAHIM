@@ -4356,7 +4356,7 @@ NEXT_ALLOWED_PROMPT: 79
 NEXT_PROMPT_EXECUTED: NO
 NOTES:
   XLSX e PDF não implementados neste prompt (CSV prioritário).
-  Prompt 79 não executado.
+  Prompt 79 executado (PASS).
 ```
 
 ## Quality gate Prompt 78 (evidência)

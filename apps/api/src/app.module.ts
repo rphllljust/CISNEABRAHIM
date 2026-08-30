@@ -14,6 +14,7 @@ import { CatalogModule } from './catalog/catalog.module';
 import { ClientsModule } from './clients/clients.module';
 import { CommercialModule } from './commercial/commercial.module';
 import { DocumentsModule } from './documents/documents.module';
+import { ObservabilityModule } from './observability/observability.module';
 import { HealthModule } from './health/health.module';
 import { RequestsModule } from './requests/requests.module';
 import { ResourcesModule } from './resources/resources.module';
@@ -25,6 +26,6 @@ import { ReportsModule } from './reports/reports.module';
 import { ServiceOrdersModule } from './service-orders/service-orders.module';
 
 @Module({
-  imports: [HealthModule, AuditModule, AuthModule, AuthorizationModule, ClientsModule, CatalogModule, CommercialModule, RequestsModule, ServiceOrdersModule, MeasurementsModule, BillingModule, ResourcesModule, DocumentsModule, EventsModule, NotificationsModule, DashboardModule, AnalyticsModule, AlertsModule, SearchModule, ReportsModule, BackgroundJobsModule, OutboxModule, IntegrationsAclModule, IntegrationsInboxModule],
+  imports: [ObservabilityModule, HealthModule, AuditModule, AuthModule, AuthorizationModule, ClientsModule, CatalogModule, CommercialModule, RequestsModule, ServiceOrdersModule, MeasurementsModule, BillingModule, ResourcesModule, DocumentsModule, EventsModule, NotificationsModule, DashboardModule, AnalyticsModule, AlertsModule, SearchModule, ReportsModule, BackgroundJobsModule, OutboxModule, IntegrationsAclModule, IntegrationsInboxModule],
 })
 export class AppModule {}

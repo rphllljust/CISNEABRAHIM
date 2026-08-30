@@ -1,10 +1,16 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { BACKGROUND_JOB_FAILURE_CLASSES } from '../domain/background-job-kind';
 import type { BackgroundJobRow, WorkerMetricsSnapshot } from '../domain/job-handler.types';
 import { classifyJobError, errorMessage } from '../domain/job-errors';
 import { computeBackoffDelayMs, loadWorkerConfig, type WorkerConfig } from '../config/worker.config';
 import { BackgroundJobsRepository } from '../repositories/background-jobs.repository';
 import { BackgroundJobHandlerRegistry } from './background-job-handler.registry';
+import {
+  createRequestId,
+  runWithObservabilityContextAsync,
+} from '../../../observability/context/observability-context';
+import { StructuredLoggerService } from '../../../observability/logging/structured-logger.service';
+import { MetricsRegistryService } from '../../../observability/metrics/metrics-registry.service';
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -43,8 +49,14 @@ export class BackgroundWorkerService {
   constructor(
     private readonly repository: BackgroundJobsRepository,
     private readonly handlerRegistry: BackgroundJobHandlerRegistry,
+    @Optional() private readonly structuredLogger?: StructuredLoggerService,
+    @Optional() private readonly metricsRegistry?: MetricsRegistryService,
   ) {
     this.config = loadWorkerConfig();
+  }
+
+  private publishWorkerMetrics(): void {
+    this.metricsRegistry?.setWorkerMetrics(this.getMetrics());
   }
 
   getMetrics(): WorkerMetricsSnapshot {
@@ -114,6 +126,7 @@ export class BackgroundWorkerService {
         this.inFlight -= 1;
         this.metrics.inFlight = this.inFlight;
         this.inFlightPromises.delete(runPromise);
+        this.publishWorkerMetrics();
       });
       this.inFlight += 1;
       this.metrics.inFlight = this.inFlight;
@@ -150,6 +163,17 @@ export class BackgroundWorkerService {
   }
 
   private async executeJob(job: BackgroundJobRow): Promise<void> {
+    await runWithObservabilityContextAsync(
+      {
+        requestId: createRequestId(),
+        correlationId: job.correlation_id ?? createRequestId(),
+        operation: `worker:${job.job_kind}`,
+      },
+      async () => this.executeJobInner(job),
+    );
+  }
+
+  private async executeJobInner(job: BackgroundJobRow): Promise<void> {
     this.metrics.processed += 1;
     const handler = this.handlerRegistry.get(job.job_kind);
     if (!handler) {
@@ -177,6 +201,13 @@ export class BackgroundWorkerService {
       );
       await this.repository.markCompleted(job.id);
       this.metrics.succeeded += 1;
+      this.structuredLogger?.operation({
+        level: 'info',
+        message: 'background_job_completed',
+        operation: `worker:${job.job_kind}`,
+        result: 'success',
+        metadata: { jobId: job.id },
+      });
       this.logger.log(`Job completed id=${job.id} kind=${job.job_kind}`);
     } catch (error) {
       const failureClass = classifyJobError(error);
@@ -184,6 +215,14 @@ export class BackgroundWorkerService {
       if (failureClass === BACKGROUND_JOB_FAILURE_CLASSES.Permanent) {
         await this.repository.markFailedPermanent(job.id, message, failureClass);
         this.metrics.failedPermanent += 1;
+        this.structuredLogger?.operation({
+          level: 'error',
+          message: 'background_job_failed_permanent',
+          operation: `worker:${job.job_kind}`,
+          result: 'failure',
+          errorCode: message,
+          metadata: { jobId: job.id },
+        });
         this.logger.warn(`Job failed permanently id=${job.id} kind=${job.job_kind}: ${message}`);
         return;
       }

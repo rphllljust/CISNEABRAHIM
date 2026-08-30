@@ -1,0 +1,40 @@
+import { Global, Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { DatabaseModule } from '../infrastructure/database/database.module';
+import { ObservabilityController } from './controllers/observability.controller';
+import { ObservabilityContextInterceptor } from './interceptors/observability-context.interceptor';
+import { StructuredLoggerService } from './logging/structured-logger.service';
+import { MetricsRegistryService } from './metrics/metrics-registry.service';
+import { BusinessMetricsCollectorService } from './services/business-metrics-collector.service';
+import { DatabaseInstrumentationService } from './services/database-instrumentation.service';
+import { ObservabilityMetricsService } from './services/observability-metrics.service';
+import { PlatformMetricsCollectorService } from './services/platform-metrics-collector.service';
+
+@Global()
+@Module({
+  imports: [DatabaseModule],
+  controllers: [ObservabilityController],
+  providers: [
+    MetricsRegistryService,
+    StructuredLoggerService,
+    ObservabilityContextInterceptor,
+    {
+      provide: APP_INTERCEPTOR,
+      useExisting: ObservabilityContextInterceptor,
+    },
+    DatabaseInstrumentationService,
+    PlatformMetricsCollectorService,
+    BusinessMetricsCollectorService,
+    ObservabilityMetricsService,
+  ],
+  exports: [
+    MetricsRegistryService,
+    StructuredLoggerService,
+    ObservabilityContextInterceptor,
+    DatabaseInstrumentationService,
+    PlatformMetricsCollectorService,
+    BusinessMetricsCollectorService,
+    ObservabilityMetricsService,
+  ],
+})
+export class ObservabilityModule {}

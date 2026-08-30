@@ -16,7 +16,6 @@ import { ServiceOrdersExceptionFilter } from './service-orders/errors/service-or
 import { BillingExceptionFilter } from './billing/errors/billing-exception.filter';
 import { SearchExceptionFilter } from './search/errors/search-exception.filter';
 import { ReportExceptionFilter } from './reports/errors/report-exception.filter';
-import { CorrelationIdInterceptor } from './infrastructure/http/correlation-id.interceptor';
 import { SecurityHeadersInterceptor } from './infrastructure/http/security-headers.interceptor';
 
 config({ path: resolve(__dirname, '../../../.env') });
@@ -36,7 +35,7 @@ async function bootstrap(): Promise<void> {
     origin: authConfig.corsOrigin,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Authorization', 'Content-Type', 'X-Correlation-Id'],
+    allowedHeaders: ['Authorization', 'Content-Type', 'X-Correlation-Id', 'X-Request-Id'],
   });
   app.useGlobalFilters(
     new AuthExceptionFilter(),
@@ -51,7 +50,7 @@ async function bootstrap(): Promise<void> {
     new SearchExceptionFilter(),
     new ReportExceptionFilter(),
   );
-  app.useGlobalInterceptors(new CorrelationIdInterceptor(), new SecurityHeadersInterceptor());
+  app.useGlobalInterceptors(new SecurityHeadersInterceptor());
 
   await app.listen({ port, host });
 }
