@@ -4733,7 +4733,7 @@ QUALITY_GATE: PASS
 NEXT_ALLOWED_PROMPT: 88
 NEXT_PROMPT_EXECUTED: NO
 NOTES:
-  Prompt 88 não executado.
+  Prompt 88 executado (PASS).
 ```
 
 ## Quality gate Prompt 87 (evidência)
@@ -4748,6 +4748,54 @@ NOTES:
 | same artifact promotion PRD | PASS | cd-pipeline.spec.ts |
 | rollback sem revert DB | PASS | cd-pipeline.spec.ts |
 | secret scan no artifact | PASS | cd-secrets.ts |
+| API typecheck | PASS | tsc --noEmit |
+
+---
+
+## Prompt 88 — Infraestrutura de produção
+
+```
+PROMPT_ID: 88
+PROMPT_TITLE: Infraestrutura de produção
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: PASS
+COMMIT: 8dfd6b4 ops(prod): provision hardened production infrastructure
+ARTIFACTS:
+  apps/api/src/ops/prod/**
+  docker/prod/**
+  scripts/prod/**
+  .env.prod.example
+  docs/19-operations/production-infrastructure.md
+COMPUTE: dimensionado via Prompt 82 (concurrency max 3, headroom 2.5x) — 1-2 API replicas
+POSTGRES: storage durável, backup, TLS, connection limits, rede restrita
+OBJECT_STORAGE: private, versioning, lifecycle, backup alinhado
+NETWORK: edge 80/443 apenas; DB/storage não públicos
+TLS: HTTPS obrigatório; Caddy com cert automatizado
+SECRETS: secret manager + rotação 90d; scan de config
+SERVICE_ACCOUNT: least privilege; sem credencial admin cloud
+SCALING: sessions DB, outbox locking, S3 compartilhado para multi-instance
+COST: PROD_COST_ALERTS_ENABLED + PROD_MONTHLY_BUDGET_USD
+VALIDATION: infrastructure, security scan, network, backup, observability
+QUALITY_GATE: PASS
+NEXT_ALLOWED_PROMPT: 89
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Prompt 89 não executado.
+  RPO/RTO e provedor cloud permanecem TARGET_NOT_DEFINED / ADR-006 PROPOSED.
+```
+
+## Quality gate Prompt 88 (evidência)
+
+| Cenário de teste | Resultado | Evidência |
+|------------------|-----------|-----------|
+| sizing from P82 baseline | PASS | prod-sizing.ts |
+| full infrastructure validation | PASS | prod-validation.spec.ts |
+| network — DB not public | PASS | prod-validation.spec.ts |
+| TLS required on public URLs | PASS | prod-validation.spec.ts |
+| scaling — shared S3 for replicas | PASS | prod-validation.spec.ts |
+| service account least privilege | PASS | prod-validation.spec.ts |
+| security scan embedded secrets | PASS | prod-validation.spec.ts |
+| secret store gate | PASS | prod-validation.spec.ts |
 | API typecheck | PASS | tsc --noEmit |
 
 ---
