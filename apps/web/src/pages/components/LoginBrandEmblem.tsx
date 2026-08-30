@@ -1,63 +1,46 @@
 export function LoginBrandEmblem() {
   return (
-    <div className="login-brand-emblem" aria-hidden="true">
-      <svg
-        className="login-brand-emblem__svg"
-        viewBox="0 0 180 168"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <ellipse
-          className="login-brand-emblem__ripple"
-          cx="90"
-          cy="157"
-          rx="89"
-          ry="5"
-          stroke="#322c24"
+    <div className="plate-frame" aria-hidden="true">
+      <svg viewBox="0 0 480 380" xmlns="http://www.w3.org/2000/svg">
+        <ellipse className="ripple" cx="240" cy="330" rx="150" ry="10" />
+        <ellipse className="ripple" cx="240" cy="342" rx="110" ry="7" />
+
+        <path
+          className="swan-line"
+          d="M 120 300
+            C 120 230, 150 190, 170 150
+            C 185 120, 175 95, 150 80
+            C 168 78, 190 92, 196 118
+            C 210 90, 245 78, 280 90
+            C 320 104, 345 140, 345 185
+            C 345 250, 300 300, 230 305
+            C 190 308, 150 305, 120 300 Z"
+        />
+
+        <path className="swan-line" d="M 150 80 L 128 68" />
+
+        <path
+          className="swan-line"
+          d="M 152 82
+            C 178 100, 182 130, 168 158
+            C 156 182, 158 210, 178 232"
           strokeWidth="0.7"
-        />
-        <ellipse
-          className="login-brand-emblem__ripple"
-          cx="90"
-          cy="164"
-          rx="66"
-          ry="3.5"
-          stroke="#29251f"
-          strokeWidth="0.7"
-          opacity="0.8"
+          opacity="0.55"
         />
 
-        <path
-          className="login-brand-emblem__stroke"
-          d="M63 32C78 20 98 13 114 14C139 17 155 39 153 70C151 105 126 132 84 143L18 141C17 108 24 77 38 51C47 35 48 21 36 9"
-        />
-        <path
-          className="login-brand-emblem__stroke"
-          d="M22 3L36 9C49 11 59 20 63 32"
-        />
-        <path
-          className="login-brand-emblem__stroke login-brand-emblem__stroke--soft"
-          d="M36 10C44 29 51 49 48 66C45 81 51 92 59 101"
-        />
+        <circle className="swan-node" cx="150" cy="80" r="3" />
+        <circle className="swan-node dim" cx="196" cy="118" r="2.2" />
+        <circle className="swan-node dim" cx="280" cy="90" r="2.2" />
+        <circle className="swan-node" cx="345" cy="185" r="2.6" />
+        <circle className="swan-node dim" cx="230" cy="305" r="2.2" />
+        <circle className="swan-node dim" cx="168" cy="158" r="2" />
 
-        <path className="login-brand-emblem__stroke login-brand-emblem__stroke--facet" d="M63 32L114 14L153 70" />
-        <path className="login-brand-emblem__stroke login-brand-emblem__stroke--facet" d="M63 32L101 62L153 70" />
-        <path className="login-brand-emblem__stroke login-brand-emblem__stroke--facet" d="M114 14L101 62L84 143" />
-        <path className="login-brand-emblem__stroke login-brand-emblem__stroke--facet" d="M48 66L101 62L84 143" />
         <path
-          className="login-brand-emblem__stroke login-brand-emblem__stroke--facet login-brand-emblem__stroke--soft"
-          d="M18 141L84 143L153 70"
+          className="swan-line"
+          strokeWidth="0.5"
+          opacity="0.4"
+          d="M150 80 L196 118 M196 118 L280 90 M280 90 L345 185 M345 185 L230 305 M230 305 L168 158 M168 158 L150 80"
         />
-        <path
-          className="login-brand-emblem__stroke login-brand-emblem__stroke--facet login-brand-emblem__stroke--soft"
-          d="M63 32L48 66L18 141"
-        />
-
-        <circle className="login-brand-emblem__node login-brand-emblem__node--bright" cx="36" cy="9" r="1.15" />
-        <circle className="login-brand-emblem__node" cx="63" cy="32" r="1" />
-        <circle className="login-brand-emblem__node" cx="114" cy="14" r="1" />
-        <circle className="login-brand-emblem__node login-brand-emblem__node--bright" cx="153" cy="70" r="1.2" />
-        <circle className="login-brand-emblem__node" cx="84" cy="143" r="1" />
       </svg>
     </div>
   );

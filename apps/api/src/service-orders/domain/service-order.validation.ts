@@ -109,25 +109,7 @@ export function validateCreateStatus(status: string | undefined): void {
   }
 }
 
-export function parseListServiceOrdersQuery(query: Record<string, unknown>): {
-  clientId?: string;
-  unitId?: string;
-  status?: string;
-  limit: number;
-  offset: number;
-} {
-  const limitRaw = Number(query['limit'] ?? 50);
-  const offsetRaw = Number(query['offset'] ?? 0);
-  const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 100) : 50;
-  const offset = Number.isFinite(offsetRaw) ? Math.max(offsetRaw, 0) : 0;
-  const clientId = typeof query['clientId'] === 'string' ? query['clientId'] : undefined;
-  const unitId = typeof query['unitId'] === 'string' ? query['unitId'] : undefined;
-  const status = typeof query['status'] === 'string' ? query['status'] : undefined;
-  if (clientId) {
-    assertUuid(clientId, 'clientId');
-  }
-  return { clientId, unitId, status, limit, offset };
-}
+export { parseListServiceOrdersQuery } from './service-order-list.query';
 
 export function validateUpdateServiceOrderInput(
   input: UpdateServiceOrderInput,

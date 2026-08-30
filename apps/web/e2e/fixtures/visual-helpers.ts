@@ -13,7 +13,7 @@ export async function prepareAuthenticatedSession(
   await page.getByLabel(/^usuário/i).fill(TEST_LOGIN);
   await page.getByLabel(/^senha/i).fill(TEST_PASSWORD);
   await page.getByRole('button', { name: /^entrar/i }).click();
-  await expect(page.getByRole('heading', { name: /painel operacional/i })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: /visão geral/i })).toBeVisible();
 }
 
 export async function stabilizePage(page: Page): Promise<void> {
@@ -21,6 +21,6 @@ export async function stabilizePage(page: Page): Promise<void> {
   await page.evaluate(() => document.fonts.ready);
 }
 
-export const DASHBOARD_SCREENSHOT_MASKS = ['.dashboard-page__meta'];
+export const DASHBOARD_SCREENSHOT_MASKS = ['.dashboard-page__meta time', '.dashboard-page__refresh'];
 
 export const BILLING_READY_SELECTOR = '.billing-board';

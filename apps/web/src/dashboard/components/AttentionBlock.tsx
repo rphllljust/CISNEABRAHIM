@@ -1,70 +1,80 @@
-import { Link } from 'react-router-dom';
 import type { ExecutiveAttentionItem } from '../types/dashboard.types';
+import { Check } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Badge } from '../../ui/Badge';
+import { cn } from '../../ui/utils/cn';
 
 type AttentionBlockProps = {
   items: ExecutiveAttentionItem[];
 };
 
-const SEVERITY_CLASS: Record<ExecutiveAttentionItem['severity'], string> = {
-  critical: 'dashboard-attention__card--critical',
-  warning: 'dashboard-attention__card--warning',
-  info: 'dashboard-attention__card--info',
-};
+function AttentionEmptyState() {
+  return (
+    <div
+      className="mb-10 rounded-md bg-emerald-50 p-4 ring-1 ring-emerald-600/10 ring-inset"
+      role="status"
+    >
+      <div className="flex items-center gap-3">
+        <Check className="h-5 w-5 shrink-0 text-emerald-600" strokeWidth={2.4} aria-hidden />
+        <p className="text-sm font-medium text-emerald-800">Nenhuma pendência crítica no momento.</p>
+      </div>
+    </div>
+  );
+}
 
 export function AttentionBlock({ items }: AttentionBlockProps) {
+  if (items.length === 0) {
+    return <AttentionEmptyState />;
+  }
+
   return (
-    <section className="dashboard-section" aria-labelledby="attention-heading">
-      <header className="dashboard-section__header">
-        <h2 id="attention-heading">Atenção necessária</h2>
-        <p className="dashboard-section__description">
-          Pendências que exigem decisão imediata antes da análise detalhada.
-        </p>
+    <section aria-labelledby="attention-heading" className="mb-10">
+      <header className="mb-4">
+        <h2 id="attention-heading" className="text-base font-semibold text-gray-900">
+          Atenção necessária
+        </h2>
       </header>
-      {items.length > 0 ? (
-        <div className="dashboard-attention" role="list">
-          {items.map((item) => {
-            const className = `dashboard-attention__card ${SEVERITY_CLASS[item.severity]}${
-              item.id === 'overdue-service-orders' ? ' dashboard-attention__card--overdue' : ''
-            }`;
-            const content = (
-              <>
-                <p className="dashboard-attention__label">{item.label}</p>
-                <p
-                  className={`dashboard-attention__count dashboard-attention__count--${item.severity}`}
-                  aria-hidden="true"
-                >
-                  {item.count}
-                </p>
-                {item.detail ? <p className="dashboard-attention__detail">{item.detail}</p> : null}
-                {item.maxDelayDays !== null && item.id === 'overdue-service-orders' ? (
-                  <p className="dashboard-attention__badge" aria-hidden="true">
-                    Prioridade máxima
-                  </p>
-                ) : null}
-                <p className="dashboard-attention__action">Ver lista filtrada</p>
-              </>
-            );
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3" role="list">
+        {items.map((item) => {
+          const isOverdue = item.id === 'overdue-service-orders';
+          const card = (
+            <div
+              className={cn(
+                'rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-900/5',
+                isOverdue && 'ring-red-500/20',
+              )}
+            >
+              <p className="text-sm font-medium text-gray-500">{item.label}</p>
+              <p className="mt-2 text-3xl font-semibold tracking-tight text-gray-900 tabular-nums" aria-hidden="true">
+                {item.count}
+              </p>
+              {item.detail ? <p className="mt-2 text-xs text-gray-400">{item.detail}</p> : null}
+              {item.maxDelayDays !== null && isOverdue ? (
+                <Badge tone="error" className="mt-3">
+                  Prioridade máxima
+                </Badge>
+              ) : null}
+              <p className="mt-3 text-xs font-medium text-brand-600">Ver lista filtrada</p>
+            </div>
+          );
 
-            if (item.href) {
-              return (
-                <div key={item.id} role="listitem">
-                  <Link className={className} to={item.href} aria-label={item.ariaLabel}>
-                    {content}
-                  </Link>
-                </div>
-              );
-            }
-
+          if (item.href) {
             return (
-              <article key={item.id} className={className} aria-label={item.ariaLabel} role="listitem">
-                {content}
-              </article>
+              <div key={item.id} role="listitem">
+                <Link className="block text-inherit no-underline" to={item.href} aria-label={item.ariaLabel}>
+                  {card}
+                </Link>
+              </div>
             );
-          })}
-        </div>
-      ) : (
-        <p className="dashboard-section__empty">Nenhuma pendência crítica no momento.</p>
-      )}
+          }
+
+          return (
+            <article key={item.id} role="listitem" aria-label={item.ariaLabel}>
+              {card}
+            </article>
+          );
+        })}
+      </div>
     </section>
   );
 }

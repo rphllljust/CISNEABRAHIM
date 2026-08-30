@@ -86,6 +86,9 @@ describe('performance concurrency integrity', () => {
     const fulfilled = attempts.filter((attempt) => attempt.status === 'fulfilled');
     expect(fulfilled).toHaveLength(1);
 
+    if (!pool) {
+      throw new Error('Performance pool was not initialized.');
+    }
     const count = await pool.query<{ count: string }>(
       `SELECT COUNT(*)::text AS count FROM pty.clients WHERE normalized_tax_id = $1`,
       [taxId],

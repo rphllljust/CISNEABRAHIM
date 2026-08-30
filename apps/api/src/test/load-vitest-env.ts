@@ -20,6 +20,7 @@ export function loadVitestEnv(): void {
   }
 
   process.env['JWT_SECRET'] ??= 'test-jwt-secret-with-at-least-32-characters!!';
+  process.env['CISNE_RUNTIME_DIR'] ??= resolve(repoRoot, '.runtime');
 }
 
 export function getTestDatabaseUrl(): string | undefined {

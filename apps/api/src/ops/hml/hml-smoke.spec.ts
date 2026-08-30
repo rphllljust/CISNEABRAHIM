@@ -9,6 +9,10 @@ describe('hml-smoke', () => {
         return new Response(JSON.stringify({ status: 'ok' }), { status: 200 });
       }
       if (url.endsWith('/observability/metrics')) {
+        const headers = new Headers(init?.headers);
+        if (!headers.get('authorization')?.startsWith('Bearer ')) {
+          return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401 });
+        }
         return new Response(JSON.stringify({ http: { requests: 1 } }), { status: 200 });
       }
       if (url.endsWith('/auth/login')) {
@@ -39,8 +43,8 @@ describe('hml-smoke', () => {
     expect(result.checks.map((check) => check.id)).toEqual([
       'health_live',
       'health_ready',
-      'observability_metrics',
       'login',
+      'observability_metrics',
       'clients',
       'requests',
       'service_orders',
@@ -71,5 +75,38 @@ describe('hml-smoke', () => {
       fetchImpl as typeof fetch,
     );
     expect(result.status).toBe('FAIL');
+  });
+
+  it('accepts observability 403 as authorization-protected endpoint', async () => {
+    const fetchImpl = async (input: string | URL, init?: RequestInit): Promise<Response> => {
+      const url = String(input);
+      if (url.endsWith('/health/live') || url.endsWith('/health/ready')) {
+        return new Response(JSON.stringify({ status: 'ok' }), { status: 200 });
+      }
+      if (url.endsWith('/auth/login')) {
+        return new Response(JSON.stringify({ accessToken: 'smoke-token' }), { status: 200 });
+      }
+      if (url.endsWith('/observability/metrics')) {
+        const headers = new Headers(init?.headers);
+        if (!headers.get('authorization')) {
+          return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401 });
+        }
+        return new Response(JSON.stringify({ error: 'forbidden' }), { status: 403 });
+      }
+      if (init?.headers && new Headers(init.headers).get('authorization')) {
+        return new Response(JSON.stringify({ items: [] }), { status: 200 });
+      }
+      return new Response('unexpected', { status: 500 });
+    };
+
+    const result = await runHmlDeploySmoke(
+      { baseUrl: 'http://hml-api.invalid', login: 'x', password: 'y' },
+      fetchImpl as typeof fetch,
+    );
+
+    expect(result.status).toBe('PASS');
+    const metricsCheck = result.checks.find((check) => check.id === 'observability_metrics');
+    expect(metricsCheck?.passed).toBe(true);
+    expect(metricsCheck?.statusCode).toBe(403);
   });
 });

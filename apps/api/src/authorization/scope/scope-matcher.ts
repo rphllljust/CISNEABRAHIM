@@ -84,6 +84,12 @@ export function toResourceContextFromClient(client: { id: string }): AuthzResour
   };
 }
 
+export function toResourceContextFromPerson(person: { id: string }): AuthzResourceContext {
+  return {
+    resourceId: person.id,
+  };
+}
+
 export function toResourceContextFromPhysicalAsset(asset: {
   id: string;
   unit_id: string;

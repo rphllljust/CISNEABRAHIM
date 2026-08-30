@@ -7,6 +7,28 @@ export const INTEGRATION_TEST_DB_LOCK_KEY = 0x43534e45;
 
 const lockDepthByClient = new WeakMap<DbClient, number>();
 
+export async function acquireAdvisoryLockWithTimeout(
+  client: PoolClient,
+  lockKey: number,
+  timeoutMs = 30_000,
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const result = await client.query<{ acquired: boolean }>(
+      'SELECT pg_try_advisory_lock($1) AS acquired',
+      [lockKey],
+    );
+    if (result.rows[0]?.acquired) {
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw new Error(
+    `Timed out after ${timeoutMs}ms acquiring advisory lock ${lockKey}. ` +
+      'Another integration test process may be holding the database serializer lock.',
+  );
+}
+
 export async function withIntegrationTestDatabaseLock<T>(
   client: DbClient,
   run: () => Promise<T>,

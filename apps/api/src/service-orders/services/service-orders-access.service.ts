@@ -30,7 +30,6 @@ import { PURCHASE_ORDER_STATUSES } from '../../commercial/domain/purchase-order'
 import {
   SERVICE_ORDER_HISTORY_EVENTS,
   SERVICE_ORDER_ORIGINS,
-  isServiceOrderStatus,
   type ServiceOrderStatus,
 } from '../domain/service-order';
 import {
@@ -55,6 +54,11 @@ import {
   buildServiceOrderPurchaseOrderSnapshot,
   buildServiceOrderServiceSnapshot,
 } from '../domain/service-order-snapshot';
+import {
+  buildServiceOrderListSqlParts,
+  ServiceOrderListQueryError,
+  type ListServiceOrdersQuery,
+} from '../domain/service-order-list.query';
 import {
   ServiceOrderValidationError,
   validateCancelServiceOrderInput,
@@ -224,7 +228,7 @@ export class ServiceOrdersAccessService {
 
   async list(
     actor: IdentityAuthzContext,
-    query: { clientId?: string; unitId?: string; status?: string; limit: number; offset: number },
+    query: ListServiceOrdersQuery,
   ): Promise<{ items: ReturnType<typeof toServiceOrderResponse>[]; limit: number; offset: number }> {
     const decision = await this.policyDecisionPoint.decide(
       actor,
@@ -245,30 +249,17 @@ export class ServiceOrdersAccessService {
     );
     const scopeFilter = this.scopeEnforcement.buildServiceOrderListFilter(grants);
 
-    const clauses = [scopeFilter.clause];
-    const params = [...scopeFilter.params];
-    if (query.clientId) {
-      params.push(query.clientId);
-      clauses.push(`client_id = $${params.length}::uuid`);
-    }
-    if (query.unitId) {
-      params.push(query.unitId);
-      clauses.push(`unit_id = $${params.length}`);
-    }
-    if (query.status) {
-      if (!isServiceOrderStatus(query.status)) {
+    let parts;
+    try {
+      parts = buildServiceOrderListSqlParts(query, scopeFilter.clause, scopeFilter.params);
+    } catch (error) {
+      if (error instanceof ServiceOrderListQueryError || error instanceof CatalogValidationError) {
         throw this.validationFailed();
       }
-      params.push(query.status);
-      clauses.push(`status = $${params.length}::so.service_order_status`);
+      throw error;
     }
 
-    const rows = await this.repository.listServiceOrders(
-      clauses.join(' AND '),
-      params,
-      query.limit,
-      query.offset,
-    );
+    const rows = await this.repository.listServiceOrders(parts, query.limit, query.offset);
 
     return {
       items: rows.map(toServiceOrderResponse),

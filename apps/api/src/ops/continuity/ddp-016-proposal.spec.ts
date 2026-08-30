@@ -5,7 +5,7 @@ import {
   inferBackupSchedulerConfigured,
 } from './ddp-016-proposal';
 import { loadBackupConfig } from '../backup/backup-config';
-import { pruneBackups, selectBackupsForPruning } from '../backup/backup-retention';
+import { selectBackupsForPruning } from '../backup/backup-retention';
 
 describe('DDP-016 continuity proposal', () => {
   it('derives capabilities from backup config without inventing WAL/PITR', () => {

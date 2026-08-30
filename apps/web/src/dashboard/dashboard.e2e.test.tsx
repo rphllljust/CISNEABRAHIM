@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../App';
@@ -39,11 +39,14 @@ describe('operational dashboard e2e (frontend)', () => {
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: /aten.{1,2}o necess.{1,2}ria/i })).toBeInTheDocument();
     });
-    expect(screen.getByRole('link', { name: /OS vencidas: 3 itens/i })).toBeInTheDocument();
-    expect(screen.getByText('Maior atraso: 8 dia(s)')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /an.{1,2}lise operacional/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /produtividade/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /ir para solicita/i })).toBeInTheDocument();
+
+    const dashboard = within(screen.getByRole('main'));
+    expect(dashboard.getByRole('link', { name: /OS vencidas: 3 itens/i })).toBeInTheDocument();
+    expect(dashboard.getByText('Maior atraso: 8 dia(s)')).toBeInTheDocument();
+    expect(dashboard.getByRole('heading', { name: /vis.{1,2}o operacional/i })).toBeInTheDocument();
+    expect(dashboard.getByRole('heading', { name: /indicadores principais/i })).toBeInTheDocument();
+    expect(dashboard.getByRole('heading', { name: /produtividade/i })).toBeInTheDocument();
+    expect(dashboard.getByRole('link', { name: /ir para solicita/i })).toBeInTheDocument();
 
     const dashboardCalls = fetchMock.mock.calls.filter(([callInput]) =>
       requestUrl(callInput).includes('/api/v1/dashboard/executive'),
@@ -69,10 +72,10 @@ describe('operational dashboard e2e (frontend)', () => {
     await login(user);
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/per.{1,2}odo/i)).toBeInTheDocument();
+      expect(screen.getByRole('combobox', { name: 'Período' })).toBeInTheDocument();
     });
 
-    await user.selectOptions(screen.getByLabelText(/per.{1,2}odo/i), 'month');
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Período' }), 'month');
 
     await waitFor(() => {
       expect(window.location.search).toContain('period=month');

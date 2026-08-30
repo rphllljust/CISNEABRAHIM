@@ -21,7 +21,7 @@ export function Field({ label, htmlFor, hint, error, required, children, classNa
 
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
-      <label htmlFor={fieldId} className="cisne-type-label">
+      <label htmlFor={fieldId} className="mb-1.5 block text-xs font-semibold text-gray-700">
         {label}
         {required ? (
           <span className="text-error-fg" aria-hidden="true">

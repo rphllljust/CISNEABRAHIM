@@ -2,6 +2,7 @@ import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
 import type { Pool } from 'pg';
 import {
+  checkDatabaseHealth,
   ensureOperationalLaborTypesBaseline,
   ensurePhysicalResourceTypesBaseline,
   ensureUnitsOfMeasureBaseline,
@@ -36,6 +37,7 @@ import { BillingDocumentAccessService } from '../billing/services/billing-docume
 import { PhysicalAssetsAccessService } from '../resources/services/physical-assets-access.service';
 import { PhysicalResourceTypesAccessService } from '../resources/services/physical-resource-types-access.service';
 import { DatabaseService } from '../infrastructure/database/database.service';
+import { applyAuthTestEnv } from '../auth/test/auth-test-env';
 import type { UatVerticalServices, UatActor } from '../uat/uat-vertical-runner';
 
 export type SyntheticSeedHarness = {
@@ -43,9 +45,22 @@ export type SyntheticSeedHarness = {
   services: UatVerticalServices;
 };
 
+function createSharedPoolDatabaseService(pool: Pool): DatabaseService {
+  return {
+    isConfigured: () => true,
+    getConnection: () => ({ pool }),
+    getHealth: () => checkDatabaseHealth(pool),
+    onModuleDestroy: async () => {},
+  } as DatabaseService;
+}
+
 export async function createSyntheticSeedHarness(pool: Pool): Promise<SyntheticSeedHarness> {
-  process.env['JWT_SECRET'] ??= 'local-dev-jwt-secret-at-least-32-chars';
-  process.env['NODE_ENV'] ??= 'development';
+  const databaseUrl = process.env['DATABASE_URL'];
+  if (!databaseUrl) {
+    throw new Error('DATABASE_URL is required for synthetic seed harness.');
+  }
+
+  applyAuthTestEnv(databaseUrl);
   process.env['OBJECT_STORAGE_PROVIDER'] ??= 'filesystem';
   process.env['OBJECT_STORAGE_ROOT'] ??= '.object-storage-synthetic-seed';
 
@@ -67,7 +82,7 @@ export async function createSyntheticSeedHarness(pool: Pool): Promise<SyntheticS
     ],
   })
     .overrideProvider(DatabaseService)
-    .useValue(new DatabaseService())
+    .useValue(createSharedPoolDatabaseService(pool))
     .compile();
 
   const services: UatVerticalServices = {
@@ -99,6 +114,13 @@ export async function ensureSyntheticSeedBaselines(
   await ensurePhysicalResourceTypesBaseline(pool);
   await ensureOperationalLaborTypesBaseline(pool);
   await insertScopeRef(pool, { scopeType: 'UNIT', refId: unitId });
+}
+
+/** Nest harness must boot before PostgreSQL baselines that touch catalog FK actors. */
+export async function prepareSyntheticSeedHarness(pool: Pool): Promise<SyntheticSeedHarness> {
+  const harness = await createSyntheticSeedHarness(pool);
+  await ensureSyntheticSeedBaselines(pool);
+  return harness;
 }
 
 export async function resolveDevOperatorIdentityId(pool: Pool, login: string): Promise<string | null> {

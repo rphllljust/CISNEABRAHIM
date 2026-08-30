@@ -34,12 +34,16 @@ describe('LoginPage', () => {
     renderLogin();
     expect(screen.getAllByLabelText('CISNE Rondônia').length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Cisne/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText('RONDÔNIA').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Rondônia/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/04.{1,3}1120/)).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /a precisão como princípio de operação/i }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /acessar conta/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/^usuário/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^senha/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^entrar/i })).toBeInTheDocument();
-    expect(document.title).toBe('Acesso — CISNE RONDÔNIA');
+    expect(document.title).toBe('CISNE Rondônia — Acessar conta');
   });
 
   it('shows loading state and blocks double submit', async () => {

@@ -61,6 +61,15 @@ export function buildApiBaseUrlCandidates(
   options: ApiBaseUrlResolutionOptions,
 ): string[] {
   const candidates: string[] = [];
+  const preferProxyFirst =
+    options.isDev &&
+    options.browserHostname !== null &&
+    !isLoopbackHostname(options.browserHostname);
+
+  if (preferProxyFirst) {
+    candidates.push('');
+  }
+
   const configured = configuredBaseUrl?.trim();
   if (configured) {
     const sanitized = sanitizeAbsoluteBaseUrl(configured);
@@ -70,7 +79,9 @@ export function buildApiBaseUrlCandidates(
   }
 
   if (options.isDev) {
-    candidates.push('');
+    if (!candidates.includes('')) {
+      candidates.push('');
+    }
     if (options.browserHostname) {
       for (const port of DEV_DIRECT_API_PORTS) {
         candidates.push(`http://${options.browserHostname}:${port}`);
@@ -145,7 +156,10 @@ async function fetchApi(path: string, init: RequestInit): Promise<Response> {
       return response;
     } catch (error) {
       if (!isNetworkError(error)) {
-        throw error;
+        if (error instanceof Error) {
+          throw error;
+        }
+        throw new TypeError('Falha na requisição à API.', { cause: error });
       }
       lastNetworkError = error;
     }
@@ -155,7 +169,12 @@ async function fetchApi(path: string, init: RequestInit): Promise<Response> {
     return lastResponse;
   }
   if (lastNetworkError) {
-    throw lastNetworkError;
+    if (lastNetworkError instanceof Error) {
+      throw lastNetworkError;
+    }
+    throw new TypeError('Não foi possível conectar ao endpoint da API.', {
+      cause: lastNetworkError,
+    });
   }
   throw new TypeError('Não foi possível conectar ao endpoint da API.');
 }

@@ -8,6 +8,11 @@ import { ClientCreatePage } from './clients/pages/ClientCreatePage';
 import { ClientDetailPage } from './clients/pages/ClientDetailPage';
 import { ClientEditPage } from './clients/pages/ClientEditPage';
 import { ClientsListPage } from './clients/pages/ClientsListPage';
+import { PeopleRoute } from './people/PeopleRoute';
+import { PeopleListPage } from './people/pages/PeopleListPage';
+import { PersonCreatePage } from './people/pages/PersonCreatePage';
+import { PersonDetailPage } from './people/pages/PersonDetailPage';
+import { PersonEditPage } from './people/pages/PersonEditPage';
 import { CatalogRoute } from './catalog/CatalogRoute';
 import { ServiceDefinitionComparePage } from './catalog/pages/ServiceDefinitionComparePage';
 import { ServiceDefinitionCreatePage } from './catalog/pages/ServiceDefinitionCreatePage';
@@ -29,6 +34,7 @@ import { AssetsRoute } from './assets/AssetsRoute';
 import { RequestsRoute } from './requests/RequestsRoute';
 import { ServiceOrdersRoute } from './service-orders/ServiceOrdersRoute';
 import { ServiceOrderPlanningPage } from './service-orders/pages/ServiceOrderPlanningPage';
+import { ServiceOrdersListPage } from './service-orders/pages/ServiceOrdersListPage';
 import { ExecutionShellLayout } from './service-orders/layout/ExecutionShellLayout';
 import { ServiceOrderExecutionPage } from './service-orders/pages/ServiceOrderExecutionPage';
 import { ServiceOrderMeasurementPage } from './service-orders/pages/ServiceOrderMeasurementPage';
@@ -120,6 +126,38 @@ export function App() {
                   <ClientsRoute>
                     <ClientDetailPage />
                   </ClientsRoute>
+                }
+              />
+              <Route
+                path="/app/people"
+                element={
+                  <PeopleRoute>
+                    <PeopleListPage />
+                  </PeopleRoute>
+                }
+              />
+              <Route
+                path="/app/people/new"
+                element={
+                  <PeopleRoute>
+                    <PersonCreatePage />
+                  </PeopleRoute>
+                }
+              />
+              <Route
+                path="/app/people/:personId/edit"
+                element={
+                  <PeopleRoute>
+                    <PersonEditPage />
+                  </PeopleRoute>
+                }
+              />
+              <Route
+                path="/app/people/:personId"
+                element={
+                  <PeopleRoute>
+                    <PersonDetailPage />
+                  </PeopleRoute>
                 }
               />
               <Route
@@ -304,6 +342,14 @@ export function App() {
                   <PurchaseOrdersRoute>
                     <PurchaseOrderDetailPage />
                   </PurchaseOrdersRoute>
+                }
+              />
+              <Route
+                path="/app/service-orders"
+                element={
+                  <ServiceOrdersRoute>
+                    <ServiceOrdersListPage />
+                  </ServiceOrdersRoute>
                 }
               />
               <Route

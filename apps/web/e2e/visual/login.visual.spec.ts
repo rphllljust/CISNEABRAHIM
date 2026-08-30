@@ -9,4 +9,14 @@ test.describe('login page visual regression', () => {
       animations: 'disabled',
     });
   });
+
+  test('reference desktop composition', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'Reference raster is desktop-only.');
+    await page.setViewportSize({ width: 1016, height: 510 });
+    await page.goto('/login');
+    await stabilizePage(page);
+    await expect(page.locator('main')).toHaveScreenshot('login-reference.png', {
+      animations: 'disabled',
+    });
+  });
 });

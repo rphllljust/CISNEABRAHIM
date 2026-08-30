@@ -10,14 +10,16 @@ export function ProductivityPanel({ productivity }: ProductivityPanelProps) {
   const headingId = useId();
 
   return (
-    <section className="dashboard-section" aria-labelledby={headingId}>
-      <header className="dashboard-section__header">
-        <h2 id={headingId}>Produtividade</h2>
-        <p className="dashboard-section__description">
+    <section aria-labelledby={headingId}>
+      <header className="mb-4">
+        <h2 id={headingId} className="text-base font-semibold text-gray-900">
+          Produtividade
+        </h2>
+        <p className="mt-0.5 text-sm text-gray-500">
           Métricas separadas — sem índice composto 0–100 até fórmula formal aprovada.
         </p>
       </header>
-      <div className="dashboard-productivity" role="list">
+      <div className="grid grid-cols-1 gap-5 min-[480px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5" role="list">
         <Metric
           label="OS concluídas"
           value={String(productivity.completed)}
@@ -58,10 +60,14 @@ export function ProductivityPanel({ productivity }: ProductivityPanelProps) {
 
 function Metric({ label, value, detail }: { label: string; value: string; detail: string }) {
   return (
-    <article className="dashboard-productivity__metric" role="listitem" aria-label={`${label}: ${value}`}>
-      <p className="dashboard-productivity__label">{label}</p>
-      <p className="dashboard-productivity__value">{value}</p>
-      <p className="dashboard-productivity__detail">{detail}</p>
+    <article
+      className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-900/5"
+      role="listitem"
+      aria-label={`${label}: ${value}`}
+    >
+      <p className="text-sm font-medium text-gray-500">{label}</p>
+      <p className="mt-2 text-3xl font-semibold tracking-tight text-gray-900 tabular-nums">{value}</p>
+      <p className="mt-2 text-xs text-gray-400">{detail}</p>
     </article>
   );
 }

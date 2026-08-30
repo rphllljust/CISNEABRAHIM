@@ -4,6 +4,7 @@ import { FilesystemObjectStorage } from './filesystem-object-storage';
 import { loadDocumentStorageConfig } from '../config/document-storage.config';
 import type { ObjectStoragePort } from './object-storage.port';
 import { OBJECT_STORAGE_PORT } from './object-storage.port';
+import { S3ObjectStorage } from './s3-object-storage';
 
 @Injectable()
 export class ObjectStorageService implements ObjectStoragePort {
@@ -12,7 +13,8 @@ export class ObjectStorageService implements ObjectStoragePort {
   constructor(@Optional() private readonly metrics?: MetricsRegistryService) {
     const config = loadDocumentStorageConfig();
     if (config.provider === 's3') {
-      throw new Error('S3 object storage provider is not configured in this build.');
+      this.delegate = S3ObjectStorage.fromConfig(config);
+      return;
     }
     this.delegate = new FilesystemObjectStorage(config.rootPath);
   }

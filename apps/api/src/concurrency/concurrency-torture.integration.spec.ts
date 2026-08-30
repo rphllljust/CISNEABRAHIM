@@ -53,7 +53,7 @@ function buildCnpjVariants(count: number): string[] {
 function rejectionReasons(results: PromiseSettledResult<unknown>[]): unknown[] {
   return results
     .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
-    .map((result) => result.reason);
+    .map((result) => result.reason as unknown);
 }
 
 describe('Concurrency torture (PostgreSQL integration)', () => {

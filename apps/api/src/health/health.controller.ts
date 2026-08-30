@@ -29,6 +29,23 @@ export type HealthResponse = {
   database: DatabaseHealthPayload;
 };
 
+function isProductionRuntime(env: NodeJS.ProcessEnv = process.env): boolean {
+  return env['NODE_ENV'] === 'production' || env['CISNE_ENV'] === 'production';
+}
+
+function isDatabaseReadyForTraffic(
+  database: DatabaseHealthPayload,
+  env: NodeJS.ProcessEnv = process.env,
+): boolean {
+  if (database.status === 'up') {
+    return true;
+  }
+  if (database.status === 'not_configured') {
+    return !isProductionRuntime(env);
+  }
+  return false;
+}
+
 @Controller('health')
 export class HealthController {
   constructor(private readonly databaseService: DatabaseService) {}
@@ -45,7 +62,7 @@ export class HealthController {
   @Get('ready')
   async getReadiness(): Promise<ReadinessResponse> {
     const database = await this.databaseService.getHealth();
-    const ready = database.status === 'up' || database.status === 'not_configured';
+    const ready = isDatabaseReadyForTraffic(database);
     return {
       status: ready ? 'ready' : 'not_ready',
       service: 'api',
@@ -57,7 +74,7 @@ export class HealthController {
   @Get()
   async getHealth(): Promise<HealthResponse> {
     const database = await this.databaseService.getHealth();
-    const isDatabaseHealthy = database.status === 'up' || database.status === 'not_configured';
+    const isDatabaseHealthy = isDatabaseReadyForTraffic(database);
 
     return {
       status: isDatabaseHealthy ? 'ok' : 'degraded',

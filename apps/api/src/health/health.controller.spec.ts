@@ -1,7 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DatabaseService } from '../infrastructure/database/database.service';
 import { HealthController } from './health.controller';
+
+const ORIGINAL_ENV = { ...process.env };
+
+afterEach(() => {
+  process.env = { ...ORIGINAL_ENV };
+});
 
 describe('HealthController', () => {
   it('returns liveness without dependency checks', async () => {
@@ -60,6 +66,42 @@ describe('HealthController', () => {
     expect(result.checks.database.status).toBe('down');
   });
 
+  it('returns readiness ready when database is not configured in development', async () => {
+    process.env['NODE_ENV'] = 'development';
+    const databaseService = {
+      getHealth: vi.fn().mockResolvedValue({ status: 'not_configured' }),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [HealthController],
+      providers: [{ provide: DatabaseService, useValue: databaseService }],
+    }).compile();
+
+    const controller = module.get(HealthController);
+    const result = await controller.getReadiness();
+
+    expect(result.status).toBe('ready');
+    expect(result.checks.database.status).toBe('not_configured');
+  });
+
+  it('returns readiness not_ready when database is not configured in production', async () => {
+    process.env['NODE_ENV'] = 'production';
+    const databaseService = {
+      getHealth: vi.fn().mockResolvedValue({ status: 'not_configured' }),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [HealthController],
+      providers: [{ provide: DatabaseService, useValue: databaseService }],
+    }).compile();
+
+    const controller = module.get(HealthController);
+    const result = await controller.getReadiness();
+
+    expect(result.status).toBe('not_ready');
+    expect(result.checks.database.status).toBe('not_configured');
+  });
+
   it('returns technical health payload with database status', async () => {
     const databaseService = {
       getHealth: vi.fn().mockResolvedValue({ status: 'up', latencyMs: 2 }),
@@ -98,5 +140,23 @@ describe('HealthController', () => {
 
     expect(result.status).toBe('degraded');
     expect(result.database.status).toBe('down');
+  });
+
+  it('returns degraded when database is not configured in production', async () => {
+    process.env['CISNE_ENV'] = 'production';
+    const databaseService = {
+      getHealth: vi.fn().mockResolvedValue({ status: 'not_configured' }),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [HealthController],
+      providers: [{ provide: DatabaseService, useValue: databaseService }],
+    }).compile();
+
+    const controller = module.get(HealthController);
+    const result = await controller.getHealth();
+
+    expect(result.status).toBe('degraded');
+    expect(result.database.status).toBe('not_configured');
   });
 });

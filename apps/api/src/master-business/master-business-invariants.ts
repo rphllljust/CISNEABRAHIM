@@ -1,15 +1,9 @@
 import { expect } from 'vitest';
 import type { Pool } from 'pg';
-import type { BillingAccessService } from '../billing/services/billing-access.service';
-import type { BillingDocumentAccessService } from '../billing/services/billing-document-access.service';
 import type { ServiceCatalogAccessService } from '../catalog/services/service-catalog-access.service';
 import type { ClientAccessService } from '../clients/services/client-access.service';
 import type { ProposalsAccessService } from '../commercial/services/proposals-access.service';
 import type { PurchaseOrdersAccessService } from '../commercial/services/purchase-orders-access.service';
-import type { MeasurementsAccessService } from '../measurements/services/measurements-access.service';
-import type { ServiceOrderExecutionAccessService } from '../service-orders/services/service-order-execution-access.service';
-import type { ServiceOrderPlanningAccessService } from '../service-orders/services/service-order-planning-access.service';
-import type { ServiceOrdersAccessService } from '../service-orders/services/service-orders-access.service';
 import type { MasterBusinessArtifacts } from './master-business-types';
 import type { UatActor, UatVerticalServices } from '../uat/uat-vertical-runner';
 

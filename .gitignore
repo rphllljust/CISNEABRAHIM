@@ -94,17 +94,13 @@ artifacts/ci/
 artifacts/cd/
 .pilot/
 
-# HML local object storage
-.object-storage-hml/
-
-# API local object storage (test/e2e runtime)
+# Local runtime scratch (object storage, seeds, test artifacts)
+.runtime/
 .object-storage/
-.object-storage-test/
-.object-storage-e2e/
+.object-storage-*/
+.object-storage-dev-seed/
 apps/api/.object-storage/
-apps/api/.object-storage-test/
-apps/api/.object-storage-e2e/
-apps/api/.object-storage-failure-test/
+apps/api/.object-storage-*/
 
 # Do not ignore project documentation
 # docs/ is versioned

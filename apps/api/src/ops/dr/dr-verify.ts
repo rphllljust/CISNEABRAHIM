@@ -1,7 +1,6 @@
-import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
 import type { Pool } from 'pg';
-import { access } from 'node:fs/promises';
 import type { DrCheck } from './dr-types';
 import { DOCUMENT_INTEGRITY_SAMPLE_SIZE, listDocumentStorageKeys } from './object-storage-hydrate';
 
@@ -205,8 +204,6 @@ export async function writeDrStatusFile(
   statusFilePath: string,
   result: import('./dr-types').DrDrillResult,
 ): Promise<void> {
-  const { mkdir, writeFile } = await import('node:fs/promises');
-  const { dirname } = await import('node:path');
   await mkdir(dirname(statusFilePath), { recursive: true });
   await writeFile(statusFilePath, `${JSON.stringify(result, null, 2)}\n`, 'utf8');
 }

@@ -11,13 +11,13 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    'bg-cisne-action text-text-inverse border border-cisne-action hover:bg-cisne-action-hover active:bg-cisne-brand disabled:opacity-70',
+    'border border-brand-600 bg-brand-600 text-white shadow-sm hover:bg-brand-700 active:bg-brand-700 disabled:opacity-70',
   secondary:
-    'bg-surface-raised text-cisne-action border border-cisne-action hover:bg-cisne-action-muted active:bg-info-bg disabled:opacity-70',
+    'border border-gray-300 bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 active:bg-gray-100 disabled:opacity-70',
   ghost:
-    'bg-transparent text-cisne-action border border-transparent hover:bg-info-bg active:bg-cisne-action-muted disabled:opacity-70',
+    'border border-transparent bg-transparent text-gray-700 hover:bg-gray-100 active:bg-gray-200 disabled:opacity-70',
   danger:
-    'bg-fin-negative-fg text-text-inverse border border-fin-negative-fg hover:opacity-90 active:opacity-100 disabled:opacity-70',
+    'border border-red-700 bg-red-700 text-white hover:opacity-90 active:opacity-100 disabled:opacity-70',
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
@@ -38,7 +38,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       aria-busy={loading || undefined}
       aria-label={loading ? loadingAriaLabel : accessibleName}
       className={cn(
-        'inline-flex min-h-[var(--spacing-touch)] items-center justify-center gap-2 rounded-[var(--radius-md)] px-3.5 py-2 text-sm font-semibold transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)] focus-visible:cisne-focus-ring disabled:cursor-not-allowed',
+        'inline-flex min-h-[var(--spacing-touch)] items-center justify-center gap-2 rounded-md px-3.5 py-2 text-sm font-semibold transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 disabled:cursor-not-allowed',
         variantClasses[variant],
         className,
       )}

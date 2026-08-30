@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CatalogApiError, listServiceDefinitions } from '../api/service-catalog-api';
 import { mapCatalogErrorToMessage } from '../api/catalog-error-messages';
@@ -9,6 +8,25 @@ import {
   type CatalogLineageStatus,
   type ServiceDefinition,
 } from '../types/service-catalog.types';
+import {
+  FilterCard,
+  ModuleDeniedState,
+  ModuleErrorState,
+  ModuleLoadingState,
+  ModulePage,
+  ModulePageHeader,
+  ModulePagination,
+  ModulePrimaryLink,
+  ModuleTableCard,
+  ModuleTableLink,
+  filterControlClass,
+  filterLabelClass,
+  moduleTableCellClass,
+  moduleTableClass,
+  moduleTableHeadClass,
+  moduleTableHeaderCellClass,
+  moduleTableRowClass,
+} from '../../ui/module-layout';
 
 const PAGE_SIZE = 20;
 
@@ -98,38 +116,27 @@ export function ServiceDefinitionsListPage() {
 
   if (listState.phase === 'loading') {
     return (
-      <main id="main-content" className="shell-page">
-        <h1>Catálogo de serviços</h1>
-        <p aria-busy="true" aria-live="polite">
-          Carregando definições…
-        </p>
-      </main>
+      <ModuleLoadingState title="Catálogo de serviços" message="Carregando definições…" />
     );
   }
 
   if (listState.phase === 'denied') {
     return (
-      <main id="main-content" className="shell-page">
-        <h1>Catálogo de serviços</h1>
-        <p role="alert">Você não tem permissão para listar o catálogo.</p>
-        <Link to="/app">Voltar ao início</Link>
-      </main>
+      <ModuleDeniedState
+        title="Catálogo de serviços"
+        message="Você não tem permissão para listar o catálogo."
+      />
     );
   }
 
   if (listState.phase === 'error') {
     return (
-      <main id="main-content" className="shell-page">
-        <h1>Catálogo de serviços</h1>
-        <p className="form-error" role="alert">
-          {listState.message}
-        </p>
-        {listState.retryable ? (
-          <button type="button" onClick={() => void loadPage(0)}>
-            Tentar novamente
-          </button>
-        ) : null}
-      </main>
+      <ModuleErrorState
+        title="Catálogo de serviços"
+        message={listState.message}
+        retryable={listState.retryable}
+        onRetry={() => void loadPage(0)}
+      />
     );
   }
 
@@ -137,105 +144,122 @@ export function ServiceDefinitionsListPage() {
   const pageNumber = Math.floor(offset / PAGE_SIZE) + 1;
 
   return (
-    <main id="main-content" className="shell-page catalog-page">
-      <header className="catalog-page__header">
-        <h1>Catálogo de serviços</h1>
-        {capabilities.canCreate ? (
-          <Link to="/app/catalog/new" className="button-link">
-            Nova definição
-          </Link>
-        ) : null}
-      </header>
+    <ModulePage>
+      <ModulePageHeader
+        title="Catálogo de serviços"
+        action={
+          capabilities.canCreate ? (
+            <ModulePrimaryLink to="/app/catalog/new">Nova definição</ModulePrimaryLink>
+          ) : null
+        }
+      />
 
-      <div className="catalog-toolbar">
-        <div className="form-field catalog-filter">
-          <label htmlFor="catalog-search">Buscar por código</label>
-          <input
-            id="catalog-search"
-            type="search"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Ex.: CNAE-7711000"
-          />
-          <p className="form-hint">A busca aplica-se à página atual retornada pelo servidor.</p>
+      <FilterCard>
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="sm:col-span-2 lg:col-span-1">
+            <label className={filterLabelClass} htmlFor="catalog-search">
+              Buscar por código
+            </label>
+            <input
+              id="catalog-search"
+              type="search"
+              className={filterControlClass}
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Ex.: CNAE-7711000"
+            />
+            <p className="mt-2 text-xs text-gray-400">
+              A busca aplica-se à página atual retornada pelo servidor.
+            </p>
+          </div>
+          <div>
+            <label className={filterLabelClass} htmlFor="catalog-status-filter">
+              Status da definição
+            </label>
+            <select
+              id="catalog-status-filter"
+              className={filterControlClass}
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value as '' | CatalogLineageStatus)}
+            >
+              <option value="">Todos</option>
+              <option value={CATALOG_LINEAGE_STATUSES.Active}>Ativos</option>
+              <option value={CATALOG_LINEAGE_STATUSES.Inactive}>Inativos</option>
+            </select>
+          </div>
+          <div>
+            <label className={filterLabelClass} htmlFor="catalog-version-filter">
+              Versões
+            </label>
+            <select
+              id="catalog-version-filter"
+              className={filterControlClass}
+              value={versionFilter}
+              onChange={(event) => setVersionFilter(event.target.value as VersionFilter)}
+            >
+              <option value="">Todas</option>
+              <option value="HAS_DRAFT">Com rascunho</option>
+              <option value="HAS_PUBLISHED">Com versão publicada</option>
+              <option value="NO_PUBLISHED">Sem versão publicada</option>
+            </select>
+          </div>
         </div>
-        <div className="form-field catalog-filter">
-          <label htmlFor="catalog-status-filter">Status da definição</label>
-          <select
-            id="catalog-status-filter"
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value as '' | CatalogLineageStatus)}
-          >
-            <option value="">Todos</option>
-            <option value={CATALOG_LINEAGE_STATUSES.Active}>Ativos</option>
-            <option value={CATALOG_LINEAGE_STATUSES.Inactive}>Inativos</option>
-          </select>
-        </div>
-        <div className="form-field catalog-filter">
-          <label htmlFor="catalog-version-filter">Versões</label>
-          <select
-            id="catalog-version-filter"
-            value={versionFilter}
-            onChange={(event) => setVersionFilter(event.target.value as VersionFilter)}
-          >
-            <option value="">Todas</option>
-            <option value="HAS_DRAFT">Com rascunho</option>
-            <option value="HAS_PUBLISHED">Com versão publicada</option>
-            <option value="NO_PUBLISHED">Sem versão publicada</option>
-          </select>
-        </div>
-      </div>
+      </FilterCard>
 
       {filteredItems.length === 0 ? (
-        <p role="status">Nenhuma definição encontrada para os filtros selecionados.</p>
+        <p className="text-sm text-gray-500" role="status">
+          Nenhuma definição encontrada para os filtros selecionados.
+        </p>
       ) : (
-        <div className="catalog-table-wrap">
-          <table className="catalog-table" aria-label="Lista de definições de serviço">
-            <thead>
+        <ModuleTableCard>
+          <table className={moduleTableClass} aria-label="Lista de definições de serviço">
+            <thead className={moduleTableHeadClass}>
               <tr>
-                <th scope="col">Código</th>
-                <th scope="col">Status</th>
-                <th scope="col">Versão publicada</th>
-                <th scope="col">Rascunho</th>
+                <th scope="col" className={moduleTableHeaderCellClass}>
+                  Código
+                </th>
+                <th scope="col" className={moduleTableHeaderCellClass}>
+                  Status
+                </th>
+                <th scope="col" className={moduleTableHeaderCellClass}>
+                  Versão publicada
+                </th>
+                <th scope="col" className={moduleTableHeaderCellClass}>
+                  Rascunho
+                </th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-100">
               {filteredItems.map((definition) => (
-                <tr key={definition.id}>
-                  <td>
-                    <Link to={`/app/catalog/${definition.id}`}>{definition.code}</Link>
+                <tr key={definition.id} className={moduleTableRowClass}>
+                  <td className={moduleTableCellClass}>
+                    <ModuleTableLink to={`/app/catalog/${definition.id}`}>
+                      {definition.code}
+                    </ModuleTableLink>
                   </td>
-                  <td>
+                  <td className={moduleTableCellClass}>
                     <ServiceDefinitionStatusBadge status={definition.status} />
                   </td>
-                  <td>{definition.latestPublishedVersion ?? '—'}</td>
-                  <td>{definition.currentDraftVersion ?? '—'}</td>
+                  <td className={moduleTableCellClass}>
+                    {definition.latestPublishedVersion ?? '—'}
+                  </td>
+                  <td className={moduleTableCellClass}>
+                    {definition.currentDraftVersion ?? '—'}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
+        </ModuleTableCard>
       )}
 
-      <nav className="catalog-pagination" aria-label="Paginação do catálogo">
-        <button
-          type="button"
-          className="button-secondary"
-          disabled={offset === 0}
-          onClick={() => void loadPage(Math.max(0, offset - PAGE_SIZE))}
-        >
-          Anterior
-        </button>
-        <span aria-live="polite">Página {pageNumber}</span>
-        <button
-          type="button"
-          className="button-secondary"
-          disabled={!hasMore}
-          onClick={() => void loadPage(offset + PAGE_SIZE)}
-        >
-          Próxima
-        </button>
-      </nav>
-    </main>
+      <ModulePagination
+        pageNumber={pageNumber}
+        previousDisabled={offset === 0}
+        nextDisabled={!hasMore}
+        onPrevious={() => void loadPage(Math.max(0, offset - PAGE_SIZE))}
+        onNext={() => void loadPage(offset + PAGE_SIZE)}
+      />
+    </ModulePage>
   );
 }

@@ -1,5 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
+import { AuthModule } from '../auth/auth.module';
+import { AuthorizationModule } from '../authorization/authorization.module';
 import { DatabaseModule } from '../infrastructure/database/database.module';
 import { ObservabilityController } from './controllers/observability.controller';
 import { ObservabilityContextInterceptor } from './interceptors/observability-context.interceptor';
@@ -13,7 +15,7 @@ import { TechnicalAlertService } from './services/technical-alert.service';
 
 @Global()
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, AuthModule, AuthorizationModule],
   controllers: [ObservabilityController],
   providers: [
     MetricsRegistryService,

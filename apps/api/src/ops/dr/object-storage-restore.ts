@@ -1,5 +1,5 @@
 import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
-import { dirname, join, relative } from 'node:path';
+import { dirname, join } from 'node:path';
 import { spawn } from 'node:child_process';
 import type { BackupArtifact } from '../backup/backup-types';
 import { decryptBuffer, sha256Hex } from '../backup/backup-crypto';

@@ -1,5 +1,5 @@
 import { copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import { spawn } from 'node:child_process';
 import type { BackupConfig } from './backup-config';
 import type { BackupArtifact } from './backup-types';

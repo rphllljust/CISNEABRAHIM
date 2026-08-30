@@ -149,8 +149,6 @@ export async function runDrDrill(
       wipeDatabase,
     });
 
-    const restoreStarted = deps.now?.() ?? new Date();
-
     if (profile.restoresPostgres && databaseUrl) {
       const postgresArtifact = backup.artifacts.find((artifact) => artifact.kind === 'postgres');
       if (!postgresArtifact) {

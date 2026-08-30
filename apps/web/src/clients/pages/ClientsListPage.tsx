@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import { useCallback, useEffect, useState } from 'react';
 import { ClientsApiError, listClients } from '../api/clients-api';
 import { mapClientErrorToMessage } from '../api/client-error-messages';
@@ -6,6 +5,25 @@ import { ClientStatusBadge } from '../components/ClientStatusBadge';
 import { useClientCapabilities } from '../hooks/useClientCapabilities';
 import { CLIENT_STATUSES, type Client, type ClientStatus } from '../types/client.types';
 import { formatCnpjDisplay } from '../utils/format-cnpj';
+import {
+  FilterCard,
+  ModuleDeniedState,
+  ModuleErrorState,
+  ModuleLoadingState,
+  ModulePage,
+  ModulePageHeader,
+  ModulePagination,
+  ModulePrimaryLink,
+  ModuleTableCard,
+  ModuleTableLink,
+  filterControlClass,
+  filterLabelClass,
+  moduleTableCellClass,
+  moduleTableClass,
+  moduleTableHeadClass,
+  moduleTableHeaderCellClass,
+  moduleTableRowClass,
+} from '../../ui/module-layout';
 
 const PAGE_SIZE = 20;
 
@@ -68,41 +86,26 @@ export function ClientsListPage() {
   }, [loadPage]);
 
   if (listState.phase === 'loading') {
-    return (
-      <main id="main-content" className="shell-page">
-        <h1>Clientes</h1>
-        <p aria-busy="true" aria-live="polite">
-          Carregando Clientes…
-        </p>
-      </main>
-    );
+    return <ModuleLoadingState title="Clientes" message="Carregando Clientes…" />;
   }
 
   if (listState.phase === 'denied') {
     return (
-      <main id="main-content" className="shell-page">
-        <h1>Clientes</h1>
-        <p role="alert">Você não tem permissão para listar Clientes.</p>
-        <p>
-          <Link to="/app">Voltar ao início</Link>
-        </p>
-      </main>
+      <ModuleDeniedState
+        title="Clientes"
+        message="Você não tem permissão para listar Clientes."
+      />
     );
   }
 
   if (listState.phase === 'error') {
     return (
-      <main id="main-content" className="shell-page">
-        <h1>Clientes</h1>
-        <p className="form-error" role="alert">
-          {listState.message}
-        </p>
-        {listState.retryable ? (
-          <button type="button" onClick={() => void loadPage(0)}>
-            Tentar novamente
-          </button>
-        ) : null}
-      </main>
+      <ModuleErrorState
+        title="Clientes"
+        message={listState.message}
+        retryable={listState.retryable}
+        onRetry={() => void loadPage(0)}
+      />
     );
   }
 
@@ -110,79 +113,80 @@ export function ClientsListPage() {
   const pageNumber = Math.floor(offset / PAGE_SIZE) + 1;
 
   return (
-    <main id="main-content" className="shell-page clients-page">
-      <header className="clients-page__header">
-        <h1>Clientes</h1>
-        {capabilities.canCreate ? (
-          <Link to="/app/clients/new" className="button-link">
-            Novo Cliente
-          </Link>
-        ) : null}
-      </header>
+    <ModulePage>
+      <ModulePageHeader
+        title="Clientes"
+        action={
+          capabilities.canCreate ? (
+            <ModulePrimaryLink to="/app/clients/new">Novo Cliente</ModulePrimaryLink>
+          ) : null
+        }
+      />
 
-      <div className="clients-toolbar">
-        <div className="form-field clients-filter">
-          <label htmlFor="client-status-filter">Status</label>
-          <select
-            id="client-status-filter"
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value as '' | ClientStatus)}
-          >
-            <option value="">Todos</option>
-            <option value={CLIENT_STATUSES.Active}>Ativos</option>
-            <option value={CLIENT_STATUSES.Inactive}>Inativos</option>
-          </select>
-        </div>
-      </div>
+      <FilterCard>
+        <label className={filterLabelClass} htmlFor="client-status-filter">
+          Status
+        </label>
+        <select
+          id="client-status-filter"
+          className={`${filterControlClass} max-w-xs`}
+          value={statusFilter}
+          onChange={(event) => setStatusFilter(event.target.value as '' | ClientStatus)}
+        >
+          <option value="">Todos</option>
+          <option value={CLIENT_STATUSES.Active}>Ativos</option>
+          <option value={CLIENT_STATUSES.Inactive}>Inativos</option>
+        </select>
+      </FilterCard>
 
       {items.length === 0 ? (
-        <p role="status">Nenhum Cliente encontrado para os filtros selecionados.</p>
+        <p className="text-sm text-gray-500" role="status">
+          Nenhum Cliente encontrado para os filtros selecionados.
+        </p>
       ) : (
-        <div className="clients-table-wrap">
-          <table className="clients-table" aria-label="Lista de Clientes">
-            <thead>
+        <ModuleTableCard>
+          <table className={moduleTableClass} aria-label="Lista de Clientes">
+            <thead className={moduleTableHeadClass}>
               <tr>
-                <th scope="col">Razão social</th>
-                <th scope="col">CNPJ</th>
-                <th scope="col">Status</th>
+                <th scope="col" className={moduleTableHeaderCellClass}>
+                  Razão social
+                </th>
+                <th scope="col" className={moduleTableHeaderCellClass}>
+                  CNPJ
+                </th>
+                <th scope="col" className={moduleTableHeaderCellClass}>
+                  Status
+                </th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-100">
               {items.map((client) => (
-                <tr key={client.id}>
-                  <td>
-                    <Link to={`/app/clients/${client.id}`}>{client.legalName}</Link>
+                <tr key={client.id} className={moduleTableRowClass}>
+                  <td className={moduleTableCellClass}>
+                    <ModuleTableLink to={`/app/clients/${client.id}`}>
+                      {client.legalName}
+                    </ModuleTableLink>
                   </td>
-                  <td>{formatCnpjDisplay(client.taxId)}</td>
-                  <td>
+                  <td className={`${moduleTableCellClass} font-mono tabular-nums text-gray-600`}>
+                    {formatCnpjDisplay(client.taxId)}
+                  </td>
+                  <td className={moduleTableCellClass}>
                     <ClientStatusBadge status={client.status} />
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
+        </ModuleTableCard>
       )}
 
-      <nav className="clients-pagination" aria-label="Paginação de Clientes">
-        <button
-          type="button"
-          className="button-secondary"
-          disabled={offset === 0}
-          onClick={() => void loadPage(Math.max(0, offset - PAGE_SIZE))}
-        >
-          Anterior
-        </button>
-        <span aria-live="polite">Página {pageNumber}</span>
-        <button
-          type="button"
-          className="button-secondary"
-          disabled={!hasMore}
-          onClick={() => void loadPage(offset + PAGE_SIZE)}
-        >
-          Próxima
-        </button>
-      </nav>
-    </main>
+      <ModulePagination
+        pageNumber={pageNumber}
+        previousDisabled={offset === 0}
+        nextDisabled={!hasMore}
+        onPrevious={() => void loadPage(Math.max(0, offset - PAGE_SIZE))}
+        onNext={() => void loadPage(offset + PAGE_SIZE)}
+      />
+    </ModulePage>
   );
 }

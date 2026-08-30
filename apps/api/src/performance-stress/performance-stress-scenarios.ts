@@ -1,7 +1,6 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import type { BenchmarkScenario } from '../performance/benchmark/benchmark-runner';
 import { injectTimed } from '../performance/benchmark/benchmark-runner';
-import { authHeaders } from '../performance/benchmark/benchmark-harness';
 import { buildReadBenchmarkScenarios } from '../performance/benchmark/performance-scenarios';
 import type { SeededPerformanceDataset } from '../performance/synthetic/performance-dataset.seeder';
 

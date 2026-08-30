@@ -14,14 +14,6 @@ function parseDecimal(value: string): bigint {
   return BigInt(whole) * 10_000n + BigInt(paddedFraction);
 }
 
-function formatDecimal(amount: bigint): string {
-  const negative = amount < 0n;
-  const absolute = negative ? -amount : amount;
-  const whole = absolute / 10_000n;
-  const fraction = (absolute % 10_000n).toString().padStart(4, '0');
-  return `${negative ? '-' : ''}${whole}.${fraction}`;
-}
-
 export async function assertFinancialReconciliation(
   services: {
     serviceOrdersAccess: ServiceOrdersAccessService;
@@ -70,9 +62,12 @@ export async function assertFinancialReconciliation(
     billingAmount += parseDecimal(item.lineAmount);
   }
 
+  expect(executionQuantity).toBeGreaterThan(0n);
+  expect(measurementQuantity).toBe(executionQuantity);
+  expect(measurementAmount).toBeGreaterThan(0n);
+  expect(measurementAmount).toBe(billingAmount);
   expect(parseDecimal(billing.totalAmount)).toBe(billingAmount);
   expect(parseDecimal(notaFatura.totalAmount)).toBe(billingAmount);
-  expect(measurementQuantity).toBeGreaterThan(0n);
   expect(billingAmount).toBeGreaterThan(0n);
   expect(order.status).toBe('COMPLETED');
 

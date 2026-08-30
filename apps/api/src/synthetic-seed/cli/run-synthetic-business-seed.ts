@@ -7,8 +7,7 @@ import { DEVELOPMENT_SEED_LOGIN } from '@cisne/database';
 import {
   buildSyntheticActor,
   closeSyntheticSeedHarness,
-  createSyntheticSeedHarness,
-  ensureSyntheticSeedBaselines,
+  prepareSyntheticSeedHarness,
   resolveDevOperatorIdentityId,
 } from '../synthetic-seed-harness';
 import { runSyntheticBusinessSeed } from '../synthetic-business-seed-runner';
@@ -30,7 +29,7 @@ async function main(): Promise<void> {
   }
 
   const pool = new Pool({ connectionString: databaseUrl });
-  let harness: Awaited<ReturnType<typeof createSyntheticSeedHarness>> | undefined;
+  let harness: Awaited<ReturnType<typeof prepareSyntheticSeedHarness>> | undefined;
 
   try {
     const login = (process.env['DEV_OPERATOR_LOGIN'] ?? DEVELOPMENT_SEED_LOGIN).trim().toLowerCase();
@@ -41,8 +40,7 @@ async function main(): Promise<void> {
       );
     }
 
-    await ensureSyntheticSeedBaselines(pool);
-    harness = await createSyntheticSeedHarness(pool);
+    harness = await prepareSyntheticSeedHarness(pool);
 
     const result = await runSyntheticBusinessSeed(
       pool,

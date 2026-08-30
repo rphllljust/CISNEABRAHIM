@@ -26,6 +26,13 @@ export {
   type ParsedDatabaseTarget,
   type SyntheticSeedSafetyContext,
 } from './synthetic-seed-safety';
+export {
+  compensateSyntheticScenario,
+  findSyntheticNamespaceClientId,
+  isSyntheticDisplayName,
+  isSyntheticNamespaceExternalRef,
+  type SyntheticScenarioCompensationResult,
+} from './synthetic-seed-compensation';
 export { withSyntheticSeedLock } from './synthetic-seed-lock';
 export { runDevelopmentSeed, type DevelopmentSeedOptions } from './development-seed';
 export {

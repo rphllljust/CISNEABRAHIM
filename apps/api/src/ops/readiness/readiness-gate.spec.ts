@@ -15,6 +15,12 @@ import {
   evaluateExternalIntegrationsCheck,
   evaluateReadinessGate,
 } from './readiness-gate';
+import {
+  approveBusinessSignOff,
+  approveRpoRto,
+  authorizePilotExit,
+} from './readiness-evidence-writer';
+import { registerPilotStart } from '../pilot/pilot-start';
 import { resolveReleaseCandidate } from './readiness-release';
 import { ENGINEERING_READINESS_CHECK_IDS } from './readiness-types';
 
@@ -369,5 +375,107 @@ describe('readiness gate separation (engineering vs production)', () => {
 
   it('does not import dotenv from root readiness script', () => {
     expect(() => assertRootReadinessGateScriptDoesNotImportDotenv()).not.toThrow();
+  });
+});
+
+describe('readiness governance helpers', () => {
+  const RC = {
+    commitSha: 'abc123def',
+    artifactDigest: null,
+    version: '0.0.0-rc.1',
+  } as const;
+
+  it('approves conservative DDP-016 tier', () => {
+    const result = approveRpoRto(createPendingReadinessEvidence(), {
+      tierId: 'conservative',
+      approvedBy: 'Abrahim Jabour Junior',
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      return;
+    }
+    expect(result.record.rpoRto.decision).toBe('APPROVED');
+    expect(result.record.rpoRto.rpo).toBe('24h');
+    expect(result.record.rpoRto.rto).toBe('4h');
+  });
+
+  it('authorizes pilot exit only after observation window', () => {
+    const startTime = new Date('2026-08-01T12:00:00.000Z');
+    const started = registerPilotStart(
+      createPendingReadinessEvidence(),
+      {
+        authorizedBy: 'release-engineer',
+        responsible: 'sre-oncall',
+        environment: 'pilot-hml',
+        releaseCandidate: RC,
+        startedAt: startTime.toISOString(),
+      },
+      startTime,
+    );
+    expect(started.validation.ok).toBe(true);
+
+    const exit = authorizePilotExit(
+      started.record,
+      { authorizedBy: 'release-engineer' },
+      new Date('2026-08-20T12:00:00.000Z'),
+    );
+    expect(exit.ok).toBe(true);
+    if (!exit.ok) {
+      return;
+    }
+    expect(exit.record.pilot.phase).toBe('EXIT_READY');
+  });
+
+  it('returns GO when governance evidence is complete', () => {
+    let record = createPendingReadinessEvidence();
+    record = approveRpoRto(record, {
+      tierId: 'conservative',
+      approvedBy: 'Abrahim Jabour Junior',
+    }).record;
+    record = approveBusinessSignOff(record, {
+      approvedBy: 'Abrahim Jabour Junior',
+      releaseCandidate: RC,
+    }).record;
+    record = registerPilotStart(
+      record,
+      {
+        authorizedBy: 'release-engineer',
+        responsible: 'sre-oncall',
+        environment: 'pilot-hml',
+        releaseCandidate: RC,
+        startedAt: '2026-08-01T00:00:00.000Z',
+      },
+      new Date('2026-08-01T00:00:00.000Z'),
+    ).record;
+    record = authorizePilotExit(record, { authorizedBy: 'release-engineer' }, new Date('2026-08-20T00:00:00.000Z'))
+      .record;
+    record = {
+      ...record,
+      manualUatUx: {
+        ...approvedEvidence().manualUatUx,
+        releaseCandidate: RC,
+      },
+      releaseCandidate: RC,
+      businessSignOff: {
+        ...record.businessSignOff,
+        releaseCandidate: RC,
+      },
+      pilot: {
+        ...record.pilot,
+        releaseCandidate: RC,
+      },
+    };
+
+    const result = evaluateWithEvidence(record, {
+      evaluationTime: new Date('2026-08-30T12:00:00.000Z'),
+      releaseCandidate: {
+        commitSha: RC.commitSha,
+        artifactDigest: null,
+        version: RC.version,
+        source: 'test',
+      },
+    });
+
+    expect(result.productionReadiness).toBe('GO');
   });
 });

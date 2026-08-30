@@ -16,6 +16,7 @@
     "test:visual:update": "playwright test --update-snapshots"
   },
   "dependencies": {
+    "lucide-react": "^1.37.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.18.3"
@@ -23,10 +24,10 @@
   "devDependencies": {
     "@cisne/eslint-config": "workspace:*",
     "@cisne/tsconfig": "workspace:*",
+    "@playwright/test": "^1.55.0",
     "@tailwindcss/vite": "4",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
-    "@playwright/test": "^1.55.0",
     "@testing-library/user-event": "^14.6.6",
     "@types/node": "^22.15.29",
     "@types/react": "^19.1.6",

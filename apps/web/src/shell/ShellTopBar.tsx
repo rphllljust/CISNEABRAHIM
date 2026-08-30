@@ -1,8 +1,9 @@
 import { useId } from 'react';
+import { ChevronDown, Menu, X } from 'lucide-react';
 import { useAuth } from '../auth/context/AuthProvider';
 import { AlertBadgeLink } from '../alerts/components/AlertBadgeLink';
 import { GlobalSearchBar } from '../search/components/GlobalSearchBar';
-import { formatIdentityLabel } from './format-identity';
+import { formatUserMenuLabel } from './format-identity';
 import { Dropdown } from '../ui/Dropdown';
 
 type ShellTopBarProps = {
@@ -15,58 +16,65 @@ function resolveEnvironmentLabel(): string | null {
   if (!mode || mode === 'production') {
     return null;
   }
-  return mode.toUpperCase();
+  return mode.charAt(0).toUpperCase() + mode.slice(1);
 }
 
 export function ShellTopBar({ onMenuToggle, menuExpanded }: ShellTopBarProps) {
   const menuButtonId = useId();
-  const { identityId, sessionId, logout } = useAuth();
+  const { identityId, logout } = useAuth();
   const environmentLabel = resolveEnvironmentLabel();
+  const userLabel = formatUserMenuLabel(identityId);
 
   return (
-    <header className="shell__topbar" role="banner">
-      <div className="shell__topbar-start">
-        <button
-          id={menuButtonId}
-          type="button"
-          className="shell__menu-toggle"
-          aria-expanded={menuExpanded}
-          aria-controls="shell-mobile-drawer"
-          onClick={onMenuToggle}
-        >
-          {menuExpanded ? 'Fechar menu' : 'Abrir menu'}
-        </button>
-        <div className="shell__topbar-brand-mobile">
-          <strong>Cisne Rondônia</strong>
-        </div>
-      </div>
-      <div className="shell__topbar-search">
+    <header
+      className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b border-gray-200 bg-white/90 px-4 backdrop-blur sm:px-6 lg:px-8"
+      role="banner"
+    >
+      <button
+        id={menuButtonId}
+        type="button"
+        className="inline-flex items-center gap-2 rounded-md border-0 bg-transparent p-2 font-inherit text-gray-600 hover:bg-gray-100 lg:hidden"
+        aria-expanded={menuExpanded}
+        aria-controls="shell-mobile-drawer"
+        onClick={onMenuToggle}
+      >
+        {menuExpanded ? <X className="size-5" aria-hidden /> : <Menu className="size-5" aria-hidden />}
+        <span className="sr-only">{menuExpanded ? 'Fechar menu' : 'Abrir menu'}</span>
+      </button>
+
+      <div className="max-w-md min-w-0 flex-1">
         <GlobalSearchBar compact />
       </div>
-      <div className="shell__topbar-actions">
+
+      <div className="ml-auto flex items-center gap-3">
         {environmentLabel ? (
-          <span className="shell__env-badge" aria-label={`Ambiente ${environmentLabel}`}>
+          <span
+            className="hidden items-center rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-700 ring-1 ring-inset ring-amber-600/20 sm:inline-flex"
+            aria-label={`Ambiente ${environmentLabel}`}
+          >
             {environmentLabel}
           </span>
         ) : null}
+
         <AlertBadgeLink />
+
+        <div className="hidden h-6 w-px bg-gray-200 sm:block" aria-hidden />
+
         <Dropdown
           label="Menu do usuário"
           trigger={
-            <span className="shell-user-menu__trigger">
-              <span className="shell-user-menu__identity" title={identityId ?? undefined}>
-                {formatIdentityLabel(identityId)}
+            <span className="flex cursor-pointer items-center gap-2.5 rounded-full p-1 pr-2 transition hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500">
+              <span
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-xs font-semibold text-white"
+                aria-hidden="true"
+              >
+                CN
               </span>
-              <span aria-hidden="true">▾</span>
+              <span className="hidden text-sm font-medium text-gray-700 sm:block">{userLabel}</span>
+              <ChevronDown className="hidden size-4 text-gray-400 sm:block" aria-hidden />
             </span>
           }
           items={[
-            {
-              id: 'session',
-              label: `Sessão ${formatIdentityLabel(sessionId)}`,
-              onSelect: () => undefined,
-              disabled: true,
-            },
             {
               id: 'logout',
               label: 'Sair',

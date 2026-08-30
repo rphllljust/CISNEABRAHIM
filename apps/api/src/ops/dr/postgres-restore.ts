@@ -1,4 +1,4 @@
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { BackupArtifact } from '../backup/backup-types';
 import { decryptBuffer } from '../backup/backup-crypto';

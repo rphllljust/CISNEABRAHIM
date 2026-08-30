@@ -1,10 +1,29 @@
-import { Link } from 'react-router-dom';
 import { useCallback, useEffect, useState } from 'react';
 import { listProposals, ProposalsApiError } from '../api/proposals-api';
 import { mapProposalErrorToMessage } from '../api/proposal-error-messages';
 import { useProposalCapabilities } from '../hooks/useProposalCapabilities';
 import type { Proposal } from '../types/proposal.types';
 import { formatDateTime } from '../utils/proposal-labels';
+import { Button } from '../../ui/Button';
+import {
+  FilterCard,
+  ModuleDeniedState,
+  ModuleErrorState,
+  ModuleLoadingState,
+  ModulePage,
+  ModulePageHeader,
+  ModulePagination,
+  ModulePrimaryLink,
+  ModuleTableCard,
+  ModuleTableLink,
+  filterControlClass,
+  filterLabelClass,
+  moduleTableCellClass,
+  moduleTableClass,
+  moduleTableHeadClass,
+  moduleTableHeaderCellClass,
+  moduleTableRowClass,
+} from '../../ui/module-layout';
 
 const PAGE_SIZE = 20;
 
@@ -69,39 +88,26 @@ export function ProposalsListPage() {
   }, [loadPage]);
 
   if (listState.phase === 'loading') {
-    return (
-      <main id="main-content" className="shell-page">
-        <h1>Propostas comerciais</h1>
-        <p aria-busy="true" aria-live="polite">
-          Carregando propostas…
-        </p>
-      </main>
-    );
+    return <ModuleLoadingState title="Propostas comerciais" message="Carregando propostas…" />;
   }
 
   if (listState.phase === 'denied') {
     return (
-      <main id="main-content" className="shell-page">
-        <h1>Propostas comerciais</h1>
-        <p role="alert">Você não tem permissão para listar propostas.</p>
-        <Link to="/app">Voltar ao início</Link>
-      </main>
+      <ModuleDeniedState
+        title="Propostas comerciais"
+        message="Você não tem permissão para listar propostas."
+      />
     );
   }
 
   if (listState.phase === 'error') {
     return (
-      <main id="main-content" className="shell-page">
-        <h1>Propostas comerciais</h1>
-        <p className="form-error" role="alert">
-          {listState.message}
-        </p>
-        {listState.retryable ? (
-          <button type="button" onClick={() => void loadPage(0)}>
-            Tentar novamente
-          </button>
-        ) : null}
-      </main>
+      <ModuleErrorState
+        title="Propostas comerciais"
+        message={listState.message}
+        retryable={listState.retryable}
+        onRetry={() => void loadPage(0)}
+      />
     );
   }
 
@@ -110,97 +116,113 @@ export function ProposalsListPage() {
   const hasActiveFilters = Boolean(clientFilter.trim() || unitFilter.trim());
 
   return (
-    <main id="main-content" className="shell-page requests-page">
-      <header className="requests-page__header">
-        <h1>Propostas comerciais</h1>
-        {capabilities.canCreate ? (
-          <Link to="/app/proposals/new" className="button-link">
-            Nova proposta
-          </Link>
-        ) : null}
-      </header>
+    <ModulePage>
+      <ModulePageHeader
+        title="Propostas comerciais"
+        action={
+          capabilities.canCreate ? (
+            <ModulePrimaryLink to="/app/proposals/new">Nova proposta</ModulePrimaryLink>
+          ) : null
+        }
+      />
 
-      <div className="requests-toolbar">
-        <div className="form-field requests-filter">
-          <label htmlFor="proposal-client-filter">Cliente (ID)</label>
-          <input
-            id="proposal-client-filter"
-            type="search"
-            value={clientFilter}
-            onChange={(event) => setClientFilter(event.target.value)}
-            placeholder="UUID do cliente"
-          />
-        </div>
-        <div className="form-field requests-filter">
-          <label htmlFor="proposal-unit-filter">Unidade</label>
-          <input
-            id="proposal-unit-filter"
-            type="search"
-            value={unitFilter}
-            onChange={(event) => setUnitFilter(event.target.value)}
-            placeholder="Filtrar por unidade"
-          />
+      <FilterCard>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div>
+            <label className={filterLabelClass} htmlFor="proposal-client-filter">
+              Cliente (ID)
+            </label>
+            <input
+              id="proposal-client-filter"
+              type="search"
+              className={filterControlClass}
+              value={clientFilter}
+              onChange={(event) => setClientFilter(event.target.value)}
+              placeholder="UUID do cliente"
+            />
+          </div>
+          <div>
+            <label className={filterLabelClass} htmlFor="proposal-unit-filter">
+              Unidade
+            </label>
+            <input
+              id="proposal-unit-filter"
+              type="search"
+              className={filterControlClass}
+              value={unitFilter}
+              onChange={(event) => setUnitFilter(event.target.value)}
+              placeholder="Filtrar por unidade"
+            />
+          </div>
         </div>
         {hasActiveFilters ? (
-          <button
-            type="button"
-            className="button-secondary"
-            onClick={() => {
-              setClientFilter('');
-              setUnitFilter('');
-            }}
-          >
-            Limpar filtros
-          </button>
+          <div className="mt-4">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setClientFilter('');
+                setUnitFilter('');
+              }}
+            >
+              Limpar filtros
+            </Button>
+          </div>
         ) : null}
-      </div>
+      </FilterCard>
 
       {items.length === 0 ? (
-        <p role="status">Nenhuma proposta encontrada.</p>
+        <p className="text-sm text-gray-500" role="status">
+          Nenhuma proposta encontrada.
+        </p>
       ) : (
-        <table className="requests-table" aria-label="Lista de propostas comerciais">
-          <thead>
-            <tr>
-              <th scope="col">Código</th>
-              <th scope="col">Título</th>
-              <th scope="col">Versão</th>
-              <th scope="col">Unidade</th>
-              <th scope="col">Atualizada em</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => (
-              <tr key={item.id}>
-                <td>
-                  <Link to={`/app/proposals/${item.id}`}>{item.proposalCode}</Link>
-                </td>
-                <td>{item.title}</td>
-                <td>{item.currentVersionNumber ?? '—'}</td>
-                <td>{item.unitId}</td>
-                <td>{formatDateTime(item.updatedAt)}</td>
+        <ModuleTableCard>
+          <table className={moduleTableClass} aria-label="Lista de propostas comerciais">
+            <thead className={moduleTableHeadClass}>
+              <tr>
+                <th scope="col" className={moduleTableHeaderCellClass}>
+                  Código
+                </th>
+                <th scope="col" className={moduleTableHeaderCellClass}>
+                  Título
+                </th>
+                <th scope="col" className={moduleTableHeaderCellClass}>
+                  Versão
+                </th>
+                <th scope="col" className={moduleTableHeaderCellClass}>
+                  Unidade
+                </th>
+                <th scope="col" className={moduleTableHeaderCellClass}>
+                  Atualizada em
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {items.map((item) => (
+                <tr key={item.id} className={moduleTableRowClass}>
+                  <td className={moduleTableCellClass}>
+                    <ModuleTableLink to={`/app/proposals/${item.id}`}>
+                      {item.proposalCode}
+                    </ModuleTableLink>
+                  </td>
+                  <td className={moduleTableCellClass}>{item.title}</td>
+                  <td className={moduleTableCellClass}>{item.currentVersionNumber ?? '—'}</td>
+                  <td className={moduleTableCellClass}>{item.unitId}</td>
+                  <td className={moduleTableCellClass}>{formatDateTime(item.updatedAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </ModuleTableCard>
       )}
 
-      <div className="requests-pagination">
-        <button
-          type="button"
-          disabled={offset === 0}
-          onClick={() => void loadPage(Math.max(0, offset - PAGE_SIZE))}
-        >
-          Página anterior
-        </button>
-        <span aria-live="polite">Página {pageNumber}</span>
-        <button
-          type="button"
-          disabled={!hasMore}
-          onClick={() => void loadPage(offset + PAGE_SIZE)}
-        >
-          Próxima página
-        </button>
-      </div>
-    </main>
+      <ModulePagination
+        pageNumber={pageNumber}
+        previousDisabled={offset === 0}
+        nextDisabled={!hasMore}
+        onPrevious={() => void loadPage(Math.max(0, offset - PAGE_SIZE))}
+        onNext={() => void loadPage(offset + PAGE_SIZE)}
+      />
+    </ModulePage>
   );
 }

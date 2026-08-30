@@ -10,6 +10,9 @@ type DashboardAgingChartProps = {
   buckets: ExecutiveFinancialAgingBucket[];
 };
 
+const CHART_CARD =
+  'm-0 rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-900/5';
+
 export function DashboardAgingChart({
   chartId,
   title,
@@ -25,31 +28,36 @@ export function DashboardAgingChart({
   const activeBucket = buckets.find((bucket) => bucket.bandId === activeBandId) ?? null;
 
   return (
-    <figure className="dashboard-chart" aria-labelledby={titleId} aria-describedby={`${descId} ${summaryId}`}>
+    <figure
+      className={CHART_CARD}
+      aria-labelledby={titleId}
+      aria-describedby={`${descId} ${summaryId}`}
+    >
       <figcaption>
-        <h3 id={titleId}>{title}</h3>
-        <p id={descId} className="dashboard-chart__description">
+        <h3 id={titleId} className="text-sm font-semibold text-gray-900">
+          {title}
+        </h3>
+        <p id={descId} className="mt-1 text-xs text-gray-500">
           {description}
-        </p>
-        <p id={summaryId} className="dashboard-chart__summary">
-          {summary}
         </p>
       </figcaption>
 
       {buckets.length === 0 ? (
-        <p className="dashboard-chart__empty">Faixas de aging não disponíveis.</p>
+        <p className="mt-4 text-xs text-gray-500">Faixas de aging não disponíveis.</p>
       ) : (
         <>
-          <div className="dashboard-chart__plot" role="list">
-            {buckets.map((bucket) => {
+          <div className="mt-5 space-y-3.5" role="list">
+            {buckets.map((bucket, index) => {
               const width = `${(bucket.count / maxCount) * 100}%`;
               return (
-                <div key={bucket.bandId} className="dashboard-chart__row" role="listitem">
-                  <span className="dashboard-chart__row-label">{bucket.label}</span>
-                  <div className="dashboard-chart__track">
+                <div key={bucket.bandId} className="flex items-center gap-3" role="listitem">
+                  <span className="w-16 shrink-0 text-xs text-gray-600">{bucket.label}</span>
+                  <div className="h-1.5 flex-1 rounded-full bg-gray-100">
                     <button
                       type="button"
-                      className="dashboard-chart__bar-button dashboard-chart__bar-button--warning"
+                      className={`block h-full min-w-[2px] rounded-full border-0 p-0 ${
+                        index === 0 ? 'bg-brand-500' : 'bg-gray-400'
+                      }`}
                       style={{ width }}
                       aria-label={`${bucket.label}: ${bucket.count} documentos`}
                       aria-pressed={activeBandId === bucket.bandId}
@@ -60,13 +68,20 @@ export function DashboardAgingChart({
                       }
                     />
                   </div>
-                  <span className="dashboard-chart__row-value">{bucket.count}</span>
+                  <span className="w-5 text-right text-xs font-semibold text-gray-900 tabular-nums">
+                    {bucket.count}
+                  </span>
                 </div>
               );
             })}
           </div>
-          <table className="dashboard-chart__table">
-            <caption className="sr-only">Dados de {title}</caption>
+
+          <p id={summaryId} className="mt-4 border-t border-gray-100 pt-4 text-xs text-gray-500">
+            {summary}
+          </p>
+
+          <table className="sr-only">
+            <caption>Dados de {title}</caption>
             <thead>
               <tr>
                 <th scope="col">Faixa</th>
@@ -88,7 +103,7 @@ export function DashboardAgingChart({
       )}
 
       {activeBucket ? (
-        <p className="dashboard-chart__tooltip" role="status">
+        <p className="sr-only" role="status">
           {activeBucket.label}: {activeBucket.count} documentos, {formatMoney(activeBucket.totalAmount)}
         </p>
       ) : null}

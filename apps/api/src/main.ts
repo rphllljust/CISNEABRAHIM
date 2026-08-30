@@ -9,6 +9,7 @@ import { AuthExceptionFilter } from './infrastructure/http/auth-exception.filter
 import { AuthzExceptionFilter } from './authorization/errors/authz-exception.filter';
 import { CatalogExceptionFilter } from './catalog/errors/catalog-exception.filter';
 import { ClientExceptionFilter } from './clients/errors/client-exception.filter';
+import { PersonExceptionFilter } from './people/errors/person-exception.filter';
 import { DocumentExceptionFilter } from './documents/errors/document-exception.filter';
 import { CommercialExceptionFilter } from './commercial/errors/commercial-exception.filter';
 import { RequestsExceptionFilter } from './requests/errors/requests-exception.filter';
@@ -44,6 +45,7 @@ async function bootstrap(): Promise<void> {
     new AuthExceptionFilter(),
     new AuthzExceptionFilter(),
     new ClientExceptionFilter(),
+    new PersonExceptionFilter(),
     new CatalogExceptionFilter(),
     new DocumentExceptionFilter(),
     new CommercialExceptionFilter(),

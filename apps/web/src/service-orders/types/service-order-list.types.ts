@@ -1,0 +1,17 @@
+export const SERVICE_ORDER_LIST_FILTERS = {
+  Overdue: 'overdue',
+  ApproachingDue: 'approaching-due',
+} as const;
+
+export type ServiceOrderListFilter =
+  (typeof SERVICE_ORDER_LIST_FILTERS)[keyof typeof SERVICE_ORDER_LIST_FILTERS];
+
+export const SERVICE_ORDER_LIST_EVENTS = {
+  Opened: 'opened',
+  Completed: 'completed',
+} as const;
+
+export type ServiceOrderListEvent =
+  (typeof SERVICE_ORDER_LIST_EVENTS)[keyof typeof SERVICE_ORDER_LIST_EVENTS];
+
+export const SERVICE_ORDER_ACTIVE_STATUS = 'active';

@@ -134,6 +134,13 @@
       "when": 1787987100000,
       "tag": "0018_service_requests_baseline",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1787987200000,
+      "tag": "0036_workforce_members_baseline",
+      "breakpoints": true
     }
   ]
 }

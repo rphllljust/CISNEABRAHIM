@@ -97,7 +97,11 @@ describe('Database & migration torture', () => {
     const afterClient = await pool.connect();
     try {
       const afterSnapshot = await capturePreservationSnapshot(afterClient);
-      const mismatches = comparePreservationSnapshots(beforeSnapshot!, afterSnapshot);
+      expect(beforeSnapshot).toBeDefined();
+      if (!beforeSnapshot) {
+        throw new Error('Preservation snapshot missing before incremental migrations');
+      }
+      const mismatches = comparePreservationSnapshots(beforeSnapshot, afterSnapshot);
       expect(mismatches, mismatches.join('\n')).toEqual([]);
       expect(await countOrphanReferences(afterClient)).toBe(0);
     } finally {

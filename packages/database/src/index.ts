@@ -29,3 +29,4 @@ export {
   type CisnePortfolioSeedResult,
 } from './catalog/cisne-service-portfolio-baseline';
 export { normalizeCnaeCode, portfolioServiceDefinitionCode } from './catalog/cnae-code';
+export { ensureCatalogBaselineActor, CATALOG_BASELINE_ACTOR_ID } from './catalog/catalog-baseline-actor';

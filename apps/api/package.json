@@ -48,10 +48,14 @@
     "continuity:ddp-016": "npx tsx src/ops/continuity/cli/emit-ddp-016-proposal.ts",
     "readiness:gate": "npx tsx src/ops/readiness/cli/run-readiness-gate.ts",
     "readiness:engineering": "npx tsx src/ops/readiness/cli/run-readiness-gate.ts --mode=engineering",
+    "readiness:record-milestones": "npx tsx src/ops/readiness/cli/record-readiness-milestones.ts",
     "seed:synthetic": "nest build && node dist/synthetic-seed/cli/run-synthetic-business-seed.js",
-    "test:synthetic-seed": "vitest run --config vitest.integration.config.ts src/synthetic-seed/synthetic-business-seed.integration.spec.ts"
+    "test:synthetic-seed": "vitest run --config vitest.integration.config.ts src/synthetic-seed/",
+    "test:synthetic-seed:unlock": "node scripts/release-integration-test-db-lock.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1121.0",
+    "@aws-sdk/s3-request-presigner": "^3.1121.0",
     "@cisne/database": "workspace:*",
     "@fastify/multipart": "^10.1.1",
     "@nestjs/common": "^11.1.2",

@@ -191,3 +191,9 @@ export {
   businessAlertTypeEnum,
   businessAlerts,
 } from './business-alerts';
+export {
+  wrkSchema,
+  workforceMemberStatusEnum,
+  workforceMembers,
+  workforceMemberHistoryEvents,
+} from './workforce';

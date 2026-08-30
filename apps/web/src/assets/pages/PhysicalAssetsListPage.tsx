@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { mapAssetErrorToMessage } from '../api/asset-error-messages';
 import { AssetsApiError, listPhysicalAssets } from '../api/physical-assets-api';
@@ -13,6 +12,25 @@ import {
   type PhysicalAsset,
 } from '../types/physical-asset.types';
 import { filterAssetsBySearch } from '../utils/asset-form-state';
+import {
+  FilterCard,
+  ModuleDeniedState,
+  ModuleErrorState,
+  ModuleLoadingState,
+  ModulePage,
+  ModulePageHeader,
+  ModulePagination,
+  ModulePrimaryLink,
+  ModuleTableCard,
+  ModuleTableLink,
+  filterControlClass,
+  filterLabelClass,
+  moduleTableCellClass,
+  moduleTableClass,
+  moduleTableHeadClass,
+  moduleTableHeaderCellClass,
+  moduleTableRowClass,
+} from '../../ui/module-layout';
 
 const PAGE_SIZE = 20;
 
@@ -88,39 +106,26 @@ export function PhysicalAssetsListPage() {
   }, [listState, search]);
 
   if (listState.phase === 'loading') {
-    return (
-      <main id="main-content" className="shell-page">
-        <h1>Ativos físicos</h1>
-        <p aria-busy="true" aria-live="polite">
-          Carregando ativos…
-        </p>
-      </main>
-    );
+    return <ModuleLoadingState title="Ativos físicos" message="Carregando ativos…" />;
   }
 
   if (listState.phase === 'denied') {
     return (
-      <main id="main-content" className="shell-page">
-        <h1>Ativos físicos</h1>
-        <p role="alert">Você não tem permissão para listar ativos físicos.</p>
-        <Link to="/app">Voltar ao início</Link>
-      </main>
+      <ModuleDeniedState
+        title="Ativos físicos"
+        message="Você não tem permissão para listar ativos físicos."
+      />
     );
   }
 
   if (listState.phase === 'error') {
     return (
-      <main id="main-content" className="shell-page">
-        <h1>Ativos físicos</h1>
-        <p className="form-error" role="alert">
-          {listState.message}
-        </p>
-        {listState.retryable ? (
-          <button type="button" onClick={() => void loadPage(0)}>
-            Tentar novamente
-          </button>
-        ) : null}
-      </main>
+      <ModuleErrorState
+        title="Ativos físicos"
+        message={listState.message}
+        retryable={listState.retryable}
+        onRetry={() => void loadPage(0)}
+      />
     );
   }
 
@@ -128,126 +133,142 @@ export function PhysicalAssetsListPage() {
   const pageNumber = Math.floor(offset / PAGE_SIZE) + 1;
 
   return (
-    <main id="main-content" className="shell-page assets-page">
-      <header className="assets-page__header">
-        <h1>Ativos físicos</h1>
-        {capabilities.canCreate ? (
-          <Link to="/app/assets/new" className="button-link">
-            Novo ativo
-          </Link>
-        ) : null}
-      </header>
+    <ModulePage>
+      <ModulePageHeader
+        title="Ativos físicos"
+        action={
+          capabilities.canCreate ? (
+            <ModulePrimaryLink to="/app/assets/new">Novo ativo</ModulePrimaryLink>
+          ) : null
+        }
+      />
 
-      <div className="assets-toolbar">
-        <div className="form-field assets-filter">
-          <label htmlFor="asset-search">Buscar</label>
-          <input
-            id="asset-search"
-            type="search"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Código, nome ou placa"
-          />
+      <FilterCard>
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="sm:col-span-2 lg:col-span-1">
+            <label className={filterLabelClass} htmlFor="asset-search">
+              Buscar
+            </label>
+            <input
+              id="asset-search"
+              type="search"
+              className={filterControlClass}
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Código, nome ou placa"
+            />
+          </div>
+          <div>
+            <label className={filterLabelClass} htmlFor="asset-lifecycle-filter">
+              Cadastro
+            </label>
+            <select
+              id="asset-lifecycle-filter"
+              className={filterControlClass}
+              value={lifecycleFilter}
+              onChange={(event) =>
+                setLifecycleFilter(event.target.value as '' | AssetLifecycleStatus)
+              }
+            >
+              <option value="">Todos</option>
+              <option value={ASSET_LIFECYCLE_STATUSES.Active}>Ativos</option>
+              <option value={ASSET_LIFECYCLE_STATUSES.Inactive}>Inativos</option>
+            </select>
+          </div>
+          <div>
+            <label className={filterLabelClass} htmlFor="asset-allocation-filter">
+              Alocação
+            </label>
+            <select
+              id="asset-allocation-filter"
+              className={filterControlClass}
+              value={allocationFilter}
+              onChange={(event) =>
+                setAllocationFilter(event.target.value as '' | AssetAllocationStatus)
+              }
+            >
+              <option value="">Todas</option>
+              <option value={ASSET_ALLOCATION_STATUSES.Available}>Disponíveis</option>
+              <option value={ASSET_ALLOCATION_STATUSES.Allocated}>Alocados</option>
+            </select>
+          </div>
+          <div>
+            <label className={filterLabelClass} htmlFor="asset-type-filter">
+              Tipo de recurso
+            </label>
+            <select
+              id="asset-type-filter"
+              className={filterControlClass}
+              value={resourceTypeFilter}
+              onChange={(event) => setResourceTypeFilter(event.target.value)}
+            >
+              <option value="">Todos</option>
+              {resourceTypes.map((type) => (
+                <option key={type.id} value={type.id}>
+                  {type.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
-        <div className="form-field assets-filter">
-          <label htmlFor="asset-lifecycle-filter">Cadastro</label>
-          <select
-            id="asset-lifecycle-filter"
-            value={lifecycleFilter}
-            onChange={(event) =>
-              setLifecycleFilter(event.target.value as '' | AssetLifecycleStatus)
-            }
-          >
-            <option value="">Todos</option>
-            <option value={ASSET_LIFECYCLE_STATUSES.Active}>Ativos</option>
-            <option value={ASSET_LIFECYCLE_STATUSES.Inactive}>Inativos</option>
-          </select>
-        </div>
-        <div className="form-field assets-filter">
-          <label htmlFor="asset-allocation-filter">Alocação</label>
-          <select
-            id="asset-allocation-filter"
-            value={allocationFilter}
-            onChange={(event) =>
-              setAllocationFilter(event.target.value as '' | AssetAllocationStatus)
-            }
-          >
-            <option value="">Todas</option>
-            <option value={ASSET_ALLOCATION_STATUSES.Available}>Disponíveis</option>
-            <option value={ASSET_ALLOCATION_STATUSES.Allocated}>Alocados</option>
-          </select>
-        </div>
-        <div className="form-field assets-filter">
-          <label htmlFor="asset-type-filter">Tipo de recurso</label>
-          <select
-            id="asset-type-filter"
-            value={resourceTypeFilter}
-            onChange={(event) => setResourceTypeFilter(event.target.value)}
-          >
-            <option value="">Todos</option>
-            {resourceTypes.map((type) => (
-              <option key={type.id} value={type.id}>
-                {type.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+      </FilterCard>
 
       {filteredItems.length === 0 ? (
-        <p role="status">Nenhum ativo encontrado para os filtros selecionados.</p>
+        <p className="text-sm text-gray-500" role="status">
+          Nenhum ativo encontrado para os filtros selecionados.
+        </p>
       ) : (
-        <div className="assets-table-wrap">
-          <table className="assets-table" aria-label="Lista de ativos físicos">
-            <thead>
+        <ModuleTableCard>
+          <table className={moduleTableClass} aria-label="Lista de ativos físicos">
+            <thead className={moduleTableHeadClass}>
               <tr>
-                <th scope="col">Código</th>
-                <th scope="col">Nome</th>
-                <th scope="col">Tipo</th>
-                <th scope="col">Cadastro</th>
-                <th scope="col">Alocação</th>
+                <th scope="col" className={moduleTableHeaderCellClass}>
+                  Código
+                </th>
+                <th scope="col" className={moduleTableHeaderCellClass}>
+                  Nome
+                </th>
+                <th scope="col" className={moduleTableHeaderCellClass}>
+                  Tipo
+                </th>
+                <th scope="col" className={moduleTableHeaderCellClass}>
+                  Cadastro
+                </th>
+                <th scope="col" className={moduleTableHeaderCellClass}>
+                  Alocação
+                </th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-100">
               {filteredItems.map((asset) => (
-                <tr key={asset.id}>
-                  <td>
-                    <Link to={`/app/assets/${asset.id}`}>{asset.assetCode}</Link>
+                <tr key={asset.id} className={moduleTableRowClass}>
+                  <td className={moduleTableCellClass}>
+                    <ModuleTableLink to={`/app/assets/${asset.id}`}>
+                      {asset.assetCode}
+                    </ModuleTableLink>
                   </td>
-                  <td>{asset.name}</td>
-                  <td>{asset.resourceTypeCode}</td>
-                  <td>
+                  <td className={moduleTableCellClass}>{asset.name}</td>
+                  <td className={moduleTableCellClass}>{asset.resourceTypeCode}</td>
+                  <td className={moduleTableCellClass}>
                     <AssetLifecycleStatusBadge status={asset.lifecycleStatus} />
                   </td>
-                  <td>
+                  <td className={moduleTableCellClass}>
                     <AssetAllocationStatusBadge status={asset.allocationStatus} />
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
+        </ModuleTableCard>
       )}
 
-      <nav className="assets-pagination" aria-label="Paginação de ativos">
-        <button
-          type="button"
-          className="button-secondary"
-          disabled={offset === 0}
-          onClick={() => void loadPage(Math.max(0, offset - PAGE_SIZE))}
-        >
-          Anterior
-        </button>
-        <span aria-live="polite">Página {pageNumber}</span>
-        <button
-          type="button"
-          className="button-secondary"
-          disabled={!hasMore}
-          onClick={() => void loadPage(offset + PAGE_SIZE)}
-        >
-          Próxima
-        </button>
-      </nav>
-    </main>
+      <ModulePagination
+        pageNumber={pageNumber}
+        previousDisabled={offset === 0}
+        nextDisabled={!hasMore}
+        onPrevious={() => void loadPage(Math.max(0, offset - PAGE_SIZE))}
+        onNext={() => void loadPage(offset + PAGE_SIZE)}
+      />
+    </ModulePage>
   );
 }

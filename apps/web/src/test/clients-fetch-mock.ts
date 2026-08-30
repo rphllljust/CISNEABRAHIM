@@ -67,7 +67,7 @@ export function createClientsFetchMock(options: ClientsFetchMockOptions = {}) {
   ];
 
   return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const { url, pathname, searchParams } = parseRequestPath(input);
+    const { pathname, searchParams } = parseRequestPath(input);
     const method = init?.method ?? 'GET';
 
     if (!pathname.startsWith('/api/v1/clients')) {

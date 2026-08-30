@@ -1,3 +1,4 @@
+import { Badge } from '../../ui/Badge';
 import { CLIENT_STATUSES, type ClientStatus } from '../types/client.types';
 
 type ClientStatusBadgeProps = {
@@ -6,12 +7,10 @@ type ClientStatusBadgeProps = {
 
 export function ClientStatusBadge({ status }: ClientStatusBadgeProps) {
   const label = status === CLIENT_STATUSES.Active ? 'Ativo' : 'Inativo';
-  const className =
-    status === CLIENT_STATUSES.Active ? 'client-status client-status--active' : 'client-status client-status--inactive';
 
   return (
-    <span className={className} aria-label={`Status: ${label}`}>
+    <Badge tone={status === CLIENT_STATUSES.Active ? 'success' : 'error'} aria-label={`Status: ${label}`}>
       {label}
-    </span>
+    </Badge>
   );
 }

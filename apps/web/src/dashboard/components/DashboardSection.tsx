@@ -20,13 +20,15 @@ export function DashboardSection({
   children,
 }: DashboardSectionProps) {
   return (
-    <section className="dashboard-section" aria-labelledby={`${id}-heading`}>
-      <header className="dashboard-section__header">
-        <h2 id={`${id}-heading`}>{title}</h2>
-        {description ? <p className="dashboard-section__description">{description}</p> : null}
+    <section aria-labelledby={`${id}-heading`}>
+      <header className="mb-4">
+        <h2 id={`${id}-heading`} className="text-base font-semibold text-gray-900">
+          {title}
+        </h2>
+        {description ? <p className="mt-0.5 text-sm text-gray-500">{description}</p> : null}
       </header>
       {metrics.length > 0 ? (
-        <div className="dashboard-grid" role="list">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3" role="list">
           {metrics.map((metric) => (
             <div key={metric.id} role="listitem">
               <DashboardMetricCard metric={metric} />
@@ -34,7 +36,9 @@ export function DashboardSection({
           ))}
         </div>
       ) : (
-        <p className="dashboard-section__empty">{emptyMessage}</p>
+        <p className="rounded-xl bg-white p-4 text-sm text-gray-500 shadow-sm ring-1 ring-gray-900/5">
+          {emptyMessage}
+        </p>
       )}
       {children}
     </section>

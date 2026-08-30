@@ -133,7 +133,7 @@ export function buildEngineeringChecks(env: NodeJS.ProcessEnv = process.env): Re
   return checks;
 }
 
-export function evaluateExternalIntegrationsCheck(env: NodeJS.ProcessEnv = process.env): ReadinessCheck {
+export function evaluateExternalIntegrationsCheck(_env: NodeJS.ProcessEnv = process.env): ReadinessCheck {
   const snapshot = loadIntegrationCapabilitySnapshot();
   const erpState = snapshot.erp.configured
     ? snapshot.erp.enabled

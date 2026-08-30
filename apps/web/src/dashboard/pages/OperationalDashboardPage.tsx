@@ -4,10 +4,12 @@ import { DashboardAgingChart } from '../components/charts/DashboardAgingChart';
 import { DashboardBarChart } from '../components/charts/DashboardBarChart';
 import { DashboardLineChart } from '../components/charts/DashboardLineChart';
 import { DashboardSlaChart } from '../components/charts/DashboardSlaChart';
-import { DashboardFilters } from '../components/DashboardFilters';
+import { DashboardKpiStrip } from '../components/DashboardKpiStrip';
+import { DashboardPageHeader } from '../components/DashboardPageHeader';
 import { OperationalDashboardSkeleton } from '../components/OperationalDashboardSkeleton';
 import { ProductivityPanel } from '../components/ProductivityPanel';
 import { useExecutiveDashboard } from '../hooks/useExecutiveDashboard';
+import { buildDashboardKpis } from '../utils/build-dashboard-kpis';
 import '../dashboard.css';
 
 function formatGeneratedAt(value: string): string {
@@ -21,16 +23,47 @@ function formatPeriodLabel(from: string, to: string): string {
   return `${from} — ${to}`;
 }
 
+function buildActiveFilterLabels(filters: {
+  period: string;
+  unitId?: string;
+  from?: string;
+  to?: string;
+}): string[] {
+  const labels: string[] = [];
+  if (filters.unitId) {
+    labels.push(`Unidade: ${filters.unitId}`);
+  }
+  if (filters.from) {
+    labels.push(`De: ${filters.from}`);
+  }
+  if (filters.to) {
+    labels.push(`Até: ${filters.to}`);
+  }
+  return labels;
+}
+
 export function OperationalDashboardPage() {
-  const { state, reload, filters, setFilters, periodOptions } = useExecutiveDashboard();
+  const { state, reload, filters, setFilters, periodOptions, isRefreshing } = useExecutiveDashboard();
+
+  const headerProps = {
+    title: 'Visão geral',
+    period: filters.period,
+    periodOptions,
+    onPeriodChange: (period: string) => setFilters({ period }),
+    isRefreshing,
+    onRefresh: () => void reload(),
+  };
 
   if (state.phase === 'loading') {
     return (
-      <main id="main-content" className="dashboard-page">
-        <div className="dashboard-page__header">
-          <p className="dashboard-page__eyebrow">Operação</p>
-          <h1>Painel operacional</h1>
-        </div>
+      <main id="main-content" className="dashboard-page w-full">
+        <DashboardPageHeader
+          {...headerProps}
+          periodLabel={null}
+          activeFilters={[]}
+          generatedAt={null}
+          generatedAtFormatted={null}
+        />
         <OperationalDashboardSkeleton />
       </main>
     );
@@ -38,36 +71,47 @@ export function OperationalDashboardPage() {
 
   if (state.phase === 'denied') {
     return (
-      <main id="main-content" className="dashboard-page">
-        <h1>Painel operacional</h1>
-        <p role="alert">Você não tem permissão para visualizar o painel operacional.</p>
-        <Link to="/app/requests">Ir para solicitações</Link>
+      <main id="main-content" className="dashboard-page w-full">
+        <DashboardPageHeader
+          {...headerProps}
+          periodLabel={null}
+          activeFilters={[]}
+          generatedAt={null}
+          generatedAtFormatted={null}
+          isRefreshing={false}
+        />
+        <div className="dashboard-denied" role="alert">
+          <p>Você não tem permissão para visualizar o painel operacional.</p>
+          <Link className="dashboard-denied__link" to="/app/requests">
+            Ir para solicitações
+          </Link>
+        </div>
       </main>
     );
   }
 
   const snapshot = state.phase === 'ready' ? state.snapshot : state.partial;
+  const kpis = snapshot ? buildDashboardKpis(snapshot) : [];
+  const activeFilters = buildActiveFilterLabels(filters);
+  const periodLabel = snapshot ? formatPeriodLabel(snapshot.period.from, snapshot.period.to) : null;
 
   return (
-    <main id="main-content" className="dashboard-page">
-      <div className="dashboard-page__header">
-        <p className="dashboard-page__eyebrow">Operação</p>
-        <h1>Painel operacional</h1>
-        <p className="dashboard-page__lead">
-          Central de decisão operacional — alertas primeiro, análise em seguida.
-        </p>
-        {snapshot ? (
-          <p className="dashboard-page__meta">
-            Última atualização: {formatGeneratedAt(snapshot.generatedAt)} (atualização automática a cada
-            60s)
-          </p>
-        ) : null}
-      </div>
+    <main id="main-content" className="dashboard-page w-full">
+      <DashboardPageHeader
+        {...headerProps}
+        periodLabel={periodLabel}
+        activeFilters={activeFilters}
+        onClearFilters={
+          activeFilters.length > 0 ? () => setFilters({ unitId: '', from: '', to: '' }) : undefined
+        }
+        generatedAt={snapshot?.generatedAt ?? null}
+        generatedAtFormatted={snapshot ? formatGeneratedAt(snapshot.generatedAt) : null}
+      />
 
       {state.phase === 'error' ? (
         <div className="dashboard-alert" role="alert">
-          {state.message}
-          <button type="button" onClick={() => void reload()} style={{ marginLeft: '0.75rem' }}>
+          <p>{state.message}</p>
+          <button type="button" className="dashboard-alert__retry" onClick={() => void reload()}>
             Tentar novamente
           </button>
         </div>
@@ -75,24 +119,21 @@ export function OperationalDashboardPage() {
 
       {snapshot ? (
         <>
-          <DashboardFilters
-            period={filters.period}
-            periodOptions={periodOptions}
-            onPeriodChange={(period) => setFilters({ period })}
-            periodLabel={formatPeriodLabel(snapshot.period.from, snapshot.period.to)}
-          />
-
           <AttentionBlock items={snapshot.attention} />
 
+          <DashboardKpiStrip kpis={kpis} />
+
           {snapshot.visibility.serviceOrders ? (
-            <section className="dashboard-section" aria-labelledby="analytics-heading">
-              <header className="dashboard-section__header">
-                <h2 id="analytics-heading">Análise operacional</h2>
-                <p className="dashboard-section__description">
-                  Gráficos refletem o período selecionado e o escopo autorizado.
+            <section aria-labelledby="operational-heading">
+              <header className="mb-4">
+                <h2 id="operational-heading" className="m-0 text-base font-semibold text-gray-900">
+                  Visão operacional
+                </h2>
+                <p className="mt-0.5 text-sm text-gray-500">
+                  Distribuição, evolução e cumprimento de prazos no período selecionado.
                 </p>
               </header>
-              <div className="dashboard-analytics">
+              <div className="dashboard-analytics grid grid-cols-1 gap-5 lg:grid-cols-3">
                 <DashboardBarChart
                   chartId="service-orders-by-status"
                   title={snapshot.charts.serviceOrdersByStatus.title}
@@ -127,7 +168,15 @@ export function OperationalDashboardPage() {
           ) : null}
 
           {snapshot.visibility.financialAging && snapshot.charts.financialAging.available ? (
-            <section className="dashboard-section" aria-labelledby="finance-heading">
+            <section aria-labelledby="finance-heading">
+              <header className="mb-4">
+                <h2 id="finance-heading" className="m-0 text-base font-semibold text-gray-900">
+                  Visão financeira
+                </h2>
+                <p className="mt-0.5 text-sm text-gray-500">
+                  Recebíveis vencidos por faixa de aging configurada.
+                </p>
+              </header>
               <DashboardAgingChart
                 chartId="financial-aging"
                 title={snapshot.charts.financialAging.title}
@@ -139,15 +188,17 @@ export function OperationalDashboardPage() {
           ) : null}
 
           {snapshot.shortcuts.length > 0 ? (
-            <section className="dashboard-section" aria-labelledby="shortcuts-heading">
-              <header className="dashboard-section__header">
-                <h2 id="shortcuts-heading">Atalhos</h2>
+            <section aria-labelledby="shortcuts-heading">
+              <header className="mb-4">
+                <h2 id="shortcuts-heading" className="m-0 text-base font-semibold text-gray-900">
+                  Acesso rápido
+                </h2>
               </header>
-              <nav className="dashboard-shortcuts" aria-label="Atalhos operacionais">
+              <nav className="flex flex-wrap gap-2.5" aria-label="Atalhos operacionais">
                 {snapshot.shortcuts.map((shortcut) => (
                   <Link
                     key={shortcut.id}
-                    className="dashboard-shortcuts__link"
+                    className="inline-flex min-h-9 items-center rounded-md border border-gray-200 bg-white px-4 text-sm font-medium text-gray-700 shadow-sm no-underline transition hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
                     to={shortcut.href}
                     aria-label={shortcut.ariaLabel}
                   >

@@ -14,7 +14,7 @@ export function FormSection({ title, description, children, className }: FormSec
   return (
     <section
       className={cn(
-        'rounded-[var(--radius-lg)] border border-border-subtle bg-surface-raised p-4',
+        'rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-900/5',
         className,
       )}
       aria-labelledby={headingId}

@@ -115,3 +115,24 @@ candidatos em requisitos confirmados e não substitui aceite empresarial.
 Resultado observado: Playwright `27/27 PASS`, incluindo os 18 baselines comerciais;
 Vitest web `257/257 PASS`. Screenshots comprovam renderização e regressão de layout,
 não regras empresariais pendentes, autorização backend ou aceite de produção.
+
+## Evidência complementar — réplica visual do login (2026-08-30)
+
+**Classificação:** desejo visual autorizado na solicitação atual, acompanhado de
+raster de referência `1016×510`. Não constitui fonte de regra empresarial, não
+recebe `SOURCE-ID` operacional e não promove BR/FR para `CONFIRMED`.
+
+- Rastreio técnico: `referência visual do responsável → apps/web/src/pages/LoginPage.tsx
+  + login.css + components/CisneWordmark.tsx + LoginBrandEmblem.tsx →
+  LoginPage.test.tsx + e2e/visual/login.visual.spec.ts`.
+- Baselines: mobile `390×844`, tablet `768×1024`, desktop `1280×720` e composição
+  de referência desktop `1016×510`.
+- Contrato preservado: autenticação, sessão, redirecionamento seguro, sanitização
+  de erros, Enter, exibição de senha e bloqueio de submissão dupla não foram
+  alterados.
+
+Resultado observado: Vitest web `279/279 PASS`; Playwright do login `4 PASS`
+e `2 SKIPPED` esperados (a composição `1016×510` é exclusiva do projeto desktop);
+lint dos arquivos alterados `PASS`; typecheck/build `PASS`. O lint web integral
+permanece bloqueado por dois erros fora deste escopo em `auth-api.ts` e
+`clients-fetch-mock.ts`. Aceite visual humano permanece pendente.

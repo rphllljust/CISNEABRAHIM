@@ -58,6 +58,9 @@ describe.runIf(runFull)('performance full benchmarks', () => {
   }, 600_000);
 
   it('analyzes list queries for sequential scans on indexed filters', async () => {
+    if (!pool) {
+      throw new Error('Performance pool was not initialized.');
+    }
     const datasetConfig = loadPerformanceDatasetConfig({ PERF_DATASET_PROFILE: 'smoke' });
     await seedPerformanceDataset(pool, datasetConfig);
 

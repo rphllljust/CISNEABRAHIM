@@ -7,6 +7,7 @@ import { maybeInjectFault } from '../../platform/fault-injection/fault-injection
 import { OutboxDomainEventWriter } from '../../platform/outbox/services/outbox-domain-event.writer';
 import { SERVICE_REQUEST_STATUSES } from '../../requests/domain/service-request';
 import { SERVICE_ORDER_STATUSES } from '../domain/service-order';
+import type { ServiceOrderListSqlParts } from '../domain/service-order-list.query';
 import type {
   ConvertServiceRequestPersistenceInput,
   ConvertServiceRequestPersistenceResult,
@@ -117,18 +118,29 @@ export class ServiceOrdersRepository {
   }
 
   async listServiceOrders(
-    whereClause: string,
-    params: unknown[],
+    parts: ServiceOrderListSqlParts,
     limit: number,
     offset: number,
   ): Promise<ServiceOrderRow[]> {
+    const params = [...parts.params, limit, offset];
     const result = await this.pool().query<ServiceOrderRow>(
-      `${SO_SELECT}
-       WHERE ${whereClause}
-       ORDER BY created_at DESC
-       LIMIT $${params.length + 1}
-       OFFSET $${params.length + 2}`,
-      [...params, limit, offset],
+      `SELECT
+         so.id, so.internal_code, so.order_number, so.unit_id, so.status::text AS status, so.origin::text AS origin,
+         so.client_id, so.client_snapshot, so.service_definition_id, so.service_definition_version_id,
+         so.service_snapshot, so.description, so.location, so.priority, so.operational_notes,
+         so.service_request_id, so.proposal_id, so.proposal_snapshot, so.purchase_order_id, so.purchase_order_snapshot,
+         so.rc_number, so.contract_reference, so.contract_snapshot,
+         so.prepared_at, so.prepared_by_identity_id, so.released_at, so.released_by_identity_id,
+         so.cancelled_at, so.cancelled_by_identity_id, so.cancellation_reason,
+         so.started_at, so.started_by_identity_id, so.paused_at, so.paused_by_identity_id,
+         so.completed_at, so.completed_by_identity_id,
+         so.row_version, so.created_at, so.updated_at, so.created_by_identity_id, so.updated_by_identity_id
+       FROM ${parts.fromClause}
+       WHERE ${parts.whereClause}
+       ORDER BY ${parts.orderBy}
+       LIMIT $${params.length - 1}
+       OFFSET $${params.length}`,
+      params,
     );
     return result.rows;
   }

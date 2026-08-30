@@ -7,21 +7,20 @@ type DbClient = Pool | PoolClient;
 export const CATALOG_BASELINE_ACTOR_ID = 'a0000001-0000-4000-8000-000000000001';
 
 export async function ensureCatalogBaselineActor(client: DbClient): Promise<string> {
-  const existing = await client.query<{ id: string }>(
-    `SELECT id FROM identity.identities WHERE id = $1`,
-    [CATALOG_BASELINE_ACTOR_ID],
-  );
-
-  if ((existing.rowCount ?? 0) > 0) {
-    return CATALOG_BASELINE_ACTOR_ID;
-  }
-
   await client.query(
     `INSERT INTO identity.identities (id, status)
      VALUES ($1, 'active')
-     ON CONFLICT (id) DO NOTHING`,
+     ON CONFLICT (id) DO UPDATE SET status = EXCLUDED.status`,
     [CATALOG_BASELINE_ACTOR_ID],
   );
+
+  const verified = await client.query<{ id: string }>(
+    `SELECT id FROM identity.identities WHERE id = $1`,
+    [CATALOG_BASELINE_ACTOR_ID],
+  );
+  if ((verified.rowCount ?? 0) === 0) {
+    throw new Error(`Catalog baseline actor ${CATALOG_BASELINE_ACTOR_ID} is unavailable after upsert.`);
+  }
 
   return CATALOG_BASELINE_ACTOR_ID;
 }

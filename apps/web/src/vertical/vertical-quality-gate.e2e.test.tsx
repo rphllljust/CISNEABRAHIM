@@ -83,6 +83,6 @@ describe('first vertical UI quality gate (responsive)', () => {
     await waitFor(() => {
       expect(screen.queryByRole('link', { name: /clientes/i })).not.toBeInTheDocument();
     });
-    expect(screen.getByRole('heading', { name: /painel operacional/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: /visão geral/i })).toBeInTheDocument();
   });
 });

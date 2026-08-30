@@ -379,7 +379,7 @@ export class BillingRepository {
       );
 
       await client.query('COMMIT');
-      return { outcome: 'voided', billingRecord: updated.rows[0]! };
+      return { outcome: 'voided', billingRecord: updated.rows[0] };
     } catch (error) {
       await client.query('ROLLBACK');
       throw error;

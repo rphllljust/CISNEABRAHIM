@@ -13,26 +13,30 @@ export type BreadcrumbProps = {
 
 export function Breadcrumb({ items, className }: BreadcrumbProps) {
   return (
-    <nav aria-label="Breadcrumb" className={className}>
-      <ol className="flex flex-wrap items-center gap-1 text-sm text-text-secondary">
-        {items.map((item, index) => {
-          const isLast = index === items.length - 1;
-          return (
-            <li key={`${item.label}-${index}`} className="inline-flex items-center gap-1">
-              {index > 0 ? <span aria-hidden="true">/</span> : null}
-              {item.href && !isLast ? (
-                <Link to={item.href} className="text-cisne-action hover:underline focus-visible:cisne-focus-ring">
-                  {item.label}
-                </Link>
-              ) : (
-                <span aria-current={isLast ? 'page' : undefined} className={cn(isLast && 'text-text-primary font-medium')}>
-                  {item.label}
-                </span>
-              )}
-            </li>
-          );
-        })}
-      </ol>
+    <nav aria-label="Breadcrumb" className={cn('flex flex-wrap text-sm text-gray-500', className)}>
+      {items.map((item, index) => {
+        const isLast = index === items.length - 1;
+        return (
+          <span key={`${item.label}-${index}`} className="inline-flex items-center">
+            {index > 0 ? <span className="mx-2 text-gray-300">/</span> : null}
+            {item.href && !isLast ? (
+              <Link
+                to={item.href}
+                className="text-gray-500 no-underline hover:text-gray-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
+              >
+                {item.label}
+              </Link>
+            ) : (
+              <span
+                aria-current={isLast ? 'page' : undefined}
+                className={cn(isLast && 'font-medium text-gray-900')}
+              >
+                {item.label}
+              </span>
+            )}
+          </span>
+        );
+      })}
     </nav>
   );
 }

@@ -1,4 +1,5 @@
 import { useId, useState } from 'react';
+import { cn } from '../../../ui/utils/cn';
 
 type BarItem = {
   key: string;
@@ -14,13 +15,8 @@ type DashboardBarChartProps = {
   items: BarItem[];
 };
 
-const SERIES_COLORS = [
-  'var(--chart-series-1)',
-  'var(--chart-series-2)',
-  'var(--chart-series-3)',
-  'var(--chart-series-4)',
-  'var(--chart-series-5)',
-];
+const CHART_CARD =
+  'm-0 rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-900/5';
 
 export function DashboardBarChart({
   chartId,
@@ -37,42 +33,52 @@ export function DashboardBarChart({
   const activeItem = items.find((item) => item.key === activeKey) ?? null;
 
   return (
-    <figure className="dashboard-chart" aria-labelledby={titleId} aria-describedby={`${descId} ${summaryId}`}>
+    <figure
+      className={CHART_CARD}
+      aria-labelledby={titleId}
+      aria-describedby={`${descId} ${summaryId}`}
+    >
       <figcaption>
-        <h3 id={titleId}>{title}</h3>
-        <p id={descId} className="dashboard-chart__description">
+        <h3 id={titleId} className="text-sm font-semibold text-gray-900">
+          {title}
+        </h3>
+        <p id={descId} className="mt-1 text-xs text-gray-500">
           {description}
         </p>
-        <p id={summaryId} className="dashboard-chart__summary">
+        <p id={summaryId} className="sr-only">
           {summary}
         </p>
       </figcaption>
 
       {items.length === 0 ? (
-        <p className="dashboard-chart__empty">Sem dados no período.</p>
+        <p className="mt-4 text-xs text-gray-500">Sem dados no período.</p>
       ) : (
         <>
-          <div className="dashboard-chart__plot" role="list">
+          <div className="mt-5 space-y-3.5" role="list">
             {items.map((item, index) => {
               const width = `${(item.value / maxValue) * 100}%`;
               return (
-                <div key={item.key} className="dashboard-chart__row" role="listitem">
-                  <span className="dashboard-chart__row-label">{item.label}</span>
-                  <div className="dashboard-chart__track">
+                <div key={item.key} className="flex items-center gap-3" role="listitem">
+                  <span className="w-16 shrink-0 text-xs text-gray-600">{item.label}</span>
+                  <div className="h-1.5 flex-1 rounded-full bg-gray-100">
                     <button
                       type="button"
-                      className="dashboard-chart__bar-button"
-                      style={{
-                        width,
-                        backgroundColor: SERIES_COLORS[index % SERIES_COLORS.length],
-                      }}
+                      className={cn(
+                        'block h-full min-w-[2px] rounded-full border-0 p-0',
+                        index === 0 ? 'bg-brand-500' : 'bg-gray-400',
+                      )}
+                      style={{ width }}
                       aria-label={`${item.label}: ${item.value}`}
                       aria-pressed={activeKey === item.key}
-                      onClick={() => setActiveKey((current) => (current === item.key ? null : item.key))}
+                      onClick={() =>
+                        setActiveKey((current) => (current === item.key ? null : item.key))
+                      }
                       onFocus={() => setActiveKey(item.key)}
                     />
                   </div>
-                  <span className="dashboard-chart__row-value">{item.value}</span>
+                  <span className="w-5 text-right text-xs font-semibold text-gray-900 tabular-nums">
+                    {item.value}
+                  </span>
                 </div>
               );
             })}
@@ -83,7 +89,7 @@ export function DashboardBarChart({
       )}
 
       {activeItem ? (
-        <p className="dashboard-chart__tooltip" role="status">
+        <p className="sr-only" role="status">
           {activeItem.label}: {activeItem.value}
         </p>
       ) : null}
@@ -94,8 +100,8 @@ export function DashboardBarChart({
 function AccessibleDataTable({ items, caption }: { items: BarItem[]; caption: string }) {
   const tableId = useId();
   return (
-    <table className="dashboard-chart__table" id={tableId}>
-      <caption className="sr-only">{caption}</caption>
+    <table className="sr-only" id={tableId}>
+      <caption>{caption}</caption>
       <thead>
         <tr>
           <th scope="col">Categoria</th>

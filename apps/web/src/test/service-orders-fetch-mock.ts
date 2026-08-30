@@ -320,6 +320,20 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
     return getOrder(id);
   }
 
+  function serviceOrderSummary(id: string) {
+    const order = getOrder(id);
+    return {
+      id: order.id,
+      orderNumber: order.orderNumber,
+      unitId: order.unitId,
+      status: order.status,
+      clientId: order.clientId,
+      clientSnapshot: order.clientSnapshot,
+      description: order.description,
+      updatedAt: order.updatedAt,
+    };
+  }
+
   const planningAssets: PhysicalAsset[] = [
     {
       id: MOCK_ASSET_A_ID,
@@ -1227,7 +1241,26 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
       if (!listAllowed) {
         return orderError('SERVICE_ORDERS_DENIED', 403);
       }
-      return jsonResponse({ items: [serviceOrderDetail(MOCK_SERVICE_ORDER_ID)], limit: 1, offset: 0 });
+      const limit = Number(searchParams.get('limit') ?? '20');
+      const offset = Number(searchParams.get('offset') ?? '0');
+      const status = searchParams.get('status');
+      const filter = searchParams.get('filter');
+      const q = searchParams.get('q');
+      let items = [serviceOrderSummary(MOCK_SERVICE_ORDER_ID)];
+      if (status === 'COMPLETED') {
+        items = [];
+      }
+      if (filter === 'overdue') {
+        items = [serviceOrderSummary(MOCK_SERVICE_ORDER_ID)];
+      }
+      if (q && !items.some((item) => item.orderNumber.includes(q))) {
+        items = [];
+      }
+      return jsonResponse({
+        items: items.slice(offset, offset + limit),
+        limit,
+        offset,
+      });
     }
 
     const orderMatch = pathname.match(/^\/api\/v1\/service-orders\/([^/]+)$/);

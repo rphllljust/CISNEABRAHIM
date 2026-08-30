@@ -33,7 +33,7 @@ describe('AttentionBlock', () => {
       '/app/service-orders?filter=overdue',
     );
     expect(screen.getByText('Maior atraso: 8 dia(s)')).toBeInTheDocument();
-    expect(screen.getByText('3')).toHaveClass('dashboard-attention__count--critical');
+    expect(screen.getByText('Prioridade máxima')).toBeInTheDocument();
   });
 
   it('shows empty state when there are zero attention items', () => {

@@ -6,7 +6,9 @@ export type ShellNavAccessCheck =
   | 'request-list'
   | 'proposal-list'
   | 'purchase-order-list'
-  | 'billing-list';
+  | 'billing-list'
+  | 'service-order-list'
+  | 'people-list';
 
 export type ShellNavItem = {
   id: string;

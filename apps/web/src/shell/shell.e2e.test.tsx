@@ -5,7 +5,7 @@ import { App } from '../App';
 import { tokenStore } from '../auth/storage/token-store';
 import { resetTokenStoreForTests } from '../auth/storage/token-store';
 import { loginAndReachApp, LOGIN_FORM_HEADING } from '../test/login-ui-helpers';
-import { MOCK_IDENTITY_ID, createShellFetchMock } from '../test/shell-fetch-mock';
+import { createShellFetchMock } from '../test/shell-fetch-mock';
 
 describe('protected application shell', () => {
   beforeEach(() => {
@@ -27,7 +27,8 @@ describe('protected application shell', () => {
     expect(screen.getByRole('navigation', { name: /navegação principal/i })).toBeInTheDocument();
     expect(screen.getByRole('main')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /ir para o conteúdo principal/i })).toBeInTheDocument();
-    expect(screen.getByTitle(MOCK_IDENTITY_ID)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /menu do usuário/i })).toBeInTheDocument();
+    expect(screen.getByText('Minha conta')).toBeInTheDocument();
   });
 
   it('redirects absent sessions to login', async () => {
@@ -190,7 +191,7 @@ describe('protected application shell', () => {
     await loginAndReachApp(user);
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /painel operacional/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: /visão geral/i })).toBeInTheDocument();
     });
   });
 });

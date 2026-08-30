@@ -51,7 +51,7 @@ export function Dropdown({ trigger, items, label, className }: DropdownProps) {
         aria-controls={menuId}
         aria-label={label}
         onClick={() => setOpen((value) => !value)}
-        className="focus-visible:cisne-focus-ring"
+        className="m-0 inline-flex cursor-pointer border-0 bg-transparent p-0 font-inherit text-inherit focus-visible:cisne-focus-ring"
       >
         {trigger}
       </button>

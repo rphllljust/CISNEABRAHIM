@@ -40,12 +40,13 @@ describe('auth-api', () => {
     });
   });
 
-  it('rewrites loopback API host for LAN browser access', () => {
+  it('prefers vite proxy for LAN browser access before direct API host', () => {
     const candidates = buildApiBaseUrlCandidates('http://localhost:3000', {
       isDev: true,
       browserHostname: '192.168.1.89',
     });
-    expect(candidates[0]).toBe('http://192.168.1.89:3000');
+    expect(candidates[0]).toBe('');
+    expect(candidates).toContain('http://192.168.1.89:3000');
   });
 
   it('retries another API candidate on network failure', async () => {

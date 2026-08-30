@@ -36,8 +36,16 @@ export class ServiceOrdersController {
 
   @Get()
   list(@CurrentAuth() auth: AccessTokenClaims, @Query() query: Record<string, unknown>) {
-    const parsed = parseListServiceOrdersQuery(query);
-    return this.serviceOrdersAccess.list({ identityId: auth.sub, sessionId: auth.sid }, parsed);
+    try {
+      const parsed = parseListServiceOrdersQuery(query);
+      return this.serviceOrdersAccess.list({ identityId: auth.sub, sessionId: auth.sid }, parsed);
+    } catch {
+      throw new ServiceOrdersHttpException(
+        400,
+        SERVICE_ORDERS_ERROR_CODES.VALIDATION_FAILED,
+        'Invalid query parameters.',
+      );
+    }
   }
 
   @Get(':serviceOrderId')

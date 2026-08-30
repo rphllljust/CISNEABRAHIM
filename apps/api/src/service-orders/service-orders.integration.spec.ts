@@ -664,4 +664,74 @@ describe('Service orders PostgreSQL integration', () => {
       }),
     ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.IMMUTABLE_CRITICAL_FIELD });
   });
+
+  it('lists service orders with scope, status and stable pagination', async () => {
+    const { actor } = await seedActor();
+    const client = await seedClient(actor);
+    const publishedService = await seedPublishedService(actor);
+
+    const first = await serviceOrdersAccess.create(actor, {
+      origin: SERVICE_ORDER_ORIGINS.AuthorizedDirect,
+      unitId: UNIT_A,
+      clientId: client.id,
+      serviceDefinitionId: publishedService.serviceDefinitionId,
+      serviceDefinitionVersionId: publishedService.id,
+      description: 'Primeira OS',
+    });
+    const second = await serviceOrdersAccess.create(actor, {
+      origin: SERVICE_ORDER_ORIGINS.AuthorizedDirect,
+      unitId: UNIT_A,
+      clientId: client.id,
+      serviceDefinitionId: publishedService.serviceDefinitionId,
+      serviceDefinitionVersionId: publishedService.id,
+      description: 'Segunda OS',
+    });
+
+    const page = await serviceOrdersAccess.list(actor, {
+      limit: 1,
+      offset: 0,
+      status: SERVICE_ORDER_STATUSES.Draft,
+      clientId: client.id,
+      unitId: UNIT_A,
+    });
+
+    expect(page.items).toHaveLength(1);
+    expect(page.items[0]?.id).toBe(second.id);
+    expect(page.limit).toBe(1);
+    expect(page.offset).toBe(0);
+
+    const nextPage = await serviceOrdersAccess.list(actor, {
+      limit: 1,
+      offset: 1,
+      status: SERVICE_ORDER_STATUSES.Draft,
+      clientId: client.id,
+      unitId: UNIT_A,
+    });
+    expect(nextPage.items[0]?.id).toBe(first.id);
+  });
+
+  it('denies list without list grant', async () => {
+    const { actor, identityId } = await seedActor();
+    await serviceOrdersAccess.create(actor, {
+      origin: SERVICE_ORDER_ORIGINS.AuthorizedDirect,
+      unitId: UNIT_A,
+      description: 'Protegida',
+    });
+
+    const otherLogin = normalizeLoginIdentifier(`so-list-deny-${crypto.randomUUID()}@cisne.invalid`);
+    const passwordHash = await hashPassword(AUTH_TEST_PASSWORD);
+    const { identityId: otherId } = await insertIdentity(pool, otherLogin, passwordHash);
+    await insertGrant(pool, {
+      identityId: otherId,
+      action: AUTHZ_ACTIONS.ServiceOrdersServiceOrderRead,
+      resourceType: AUTHZ_RESOURCE_TYPES.ServiceOrdersServiceOrder,
+      scopeType: AUTHZ_SCOPES.Global,
+      grantedByIdentityId: identityId,
+    });
+    void identityId;
+
+    await expect(
+      serviceOrdersAccess.list({ identityId: otherId, sessionId: 'sid' }, { limit: 20, offset: 0 }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.DENIED });
+  });
 });

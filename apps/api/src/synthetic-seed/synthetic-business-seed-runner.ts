@@ -1,7 +1,10 @@
-import type { Pool } from 'pg';
+import type { Pool, PoolClient } from 'pg';
 import {
   assertSyntheticBusinessSeedAllowed,
+  compensateSyntheticScenario,
+  ensureCatalogBaselineActor,
   ensureCisneServicePortfolioBaseline,
+  findSyntheticNamespaceClientId,
   insertCatalogCategory,
   resolveSeedReferenceDate,
   syntheticExternalRef,
@@ -28,6 +31,7 @@ import {
   SYNTHETIC_BUSINESS_SCENARIOS,
   type SyntheticBusinessScenario,
 } from './synthetic-business-scenarios';
+import { isSyntheticScenarioComplete } from './synthetic-scenario-completion';
 
 export type SyntheticSeedCounts = {
   clients: number;
@@ -63,17 +67,13 @@ export type SyntheticBusinessSeedOptions = {
   unitId?: string;
   scenarios?: SyntheticBusinessScenario[];
   failAfterScenarioKey?: string;
+  /** Test-only: throw after creating client in partial flow. */
+  injectFailureAfterClientCreate?: boolean;
 };
 
-async function findClientIdByExternalRef(pool: Pool, externalRef: string): Promise<string | null> {
-  const result = await pool.query<{ id: string }>(
-    `SELECT id FROM pty.clients WHERE external_erp_id = $1 LIMIT 1`,
-    [externalRef],
-  );
-  return result.rows[0]?.id ?? null;
-}
+type DbClient = Pool | PoolClient;
 
-async function collectSyntheticCounts(pool: Pool): Promise<SyntheticSeedCounts> {
+async function collectSyntheticCounts(client: DbClient): Promise<SyntheticSeedCounts> {
   const queries: Array<[keyof SyntheticSeedCounts, string]> = [
     ['clients', `SELECT count(*)::int AS n FROM pty.clients WHERE external_erp_id LIKE '${SYNTHETIC_SEED_NAMESPACE}:%' OR legal_name LIKE 'TESTE — %'`],
     ['serviceDefinitions', `SELECT count(*)::int AS n FROM cat.service_definitions WHERE code LIKE 'SYN-%'`],
@@ -92,7 +92,7 @@ async function collectSyntheticCounts(pool: Pool): Promise<SyntheticSeedCounts> 
 
   const counts = {} as SyntheticSeedCounts;
   for (const [key, sql] of queries) {
-    const result = await pool.query<{ n: number }>(sql);
+    const result = await client.query<{ n: number }>(sql);
     counts[key] = result.rows[0]?.n ?? 0;
   }
   return counts;
@@ -142,12 +142,9 @@ async function runPartialFlow(
   unitId: string,
   scenario: SyntheticBusinessScenario,
   _referenceDate: Date,
+  options?: SyntheticBusinessSeedOptions,
 ): Promise<SyntheticScenarioRunResult> {
   const externalRef = syntheticExternalRef(scenario.key);
-  const existing = await findClientIdByExternalRef(services.pool, externalRef);
-  if (existing) {
-    return { key: scenario.key, outcome: 'already_present' };
-  }
 
   const fictional = buildDeterministicSyntheticClient(
     scenario.displayLabel,
@@ -181,6 +178,10 @@ async function runPartialFlow(
         },
       ],
     });
+
+    if (options?.injectFailureAfterClientCreate) {
+      throw new Error('SYNTHETIC_SEED_INJECTED_FAILURE:after_client_create');
+    }
 
     if (scenario.flow.kind === 'client_inactive') {
       await services.clientAccess.deactivate(actor, client.id, client.version, 'Encerramento sintético de homologação');
@@ -354,11 +355,7 @@ async function runPartialFlow(
 
     return { key: scenario.key, outcome: 'skipped', error: `Unhandled partial flow ${scenario.flow.kind}` };
   } catch (error) {
-    return {
-      key: scenario.key,
-      outcome: 'failed',
-      error: error instanceof Error ? error.message : String(error),
-    };
+    throw error instanceof Error ? error : new Error(String(error));
   }
 }
 
@@ -368,17 +365,19 @@ async function runScenario(
   unitId: string,
   scenario: SyntheticBusinessScenario,
   referenceDate: Date,
+  options?: SyntheticBusinessSeedOptions,
 ): Promise<SyntheticScenarioRunResult> {
-  const externalRef = syntheticExternalRef(scenario.key);
-  const existing = await findClientIdByExternalRef(services.pool, externalRef);
-  if (existing && scenario.flow.kind === 'vertical') {
-    return { key: scenario.key, outcome: 'already_present' };
-  }
-  if (existing && scenario.flow.kind !== 'vertical') {
-    return { key: scenario.key, outcome: 'already_present' };
+  const existingId = await findSyntheticNamespaceClientId(services.pool, scenario.key);
+  if (existingId) {
+    const complete = await isSyntheticScenarioComplete(services.pool, scenario);
+    if (complete) {
+      return { key: scenario.key, outcome: 'already_present' };
+    }
+    await compensateSyntheticScenario(services.pool, scenario.key);
   }
 
   if (scenario.flow.kind === 'vertical') {
+    const externalRef = syntheticExternalRef(scenario.key);
     const uatScenario = getUatScenario(scenario.flow.uatScenarioId);
     const fictional = buildDeterministicSyntheticClient(
       scenario.displayLabel,
@@ -400,7 +399,17 @@ async function runScenario(
     return { key: scenario.key, outcome: 'created' };
   }
 
-  return runPartialFlow(services, actor, unitId, scenario, referenceDate);
+  return runPartialFlow(services, actor, unitId, scenario, referenceDate, options);
+}
+
+async function compensateScenarioOnFailure(client: DbClient, scenarioKey: string): Promise<void> {
+  try {
+    await compensateSyntheticScenario(client, scenarioKey);
+  } catch (compensationError) {
+    const message =
+      compensationError instanceof Error ? compensationError.message : String(compensationError);
+    throw new Error(`SYNTHETIC_SEED_COMPENSATION_FAILED:${scenarioKey}:${message}`);
+  }
 }
 
 export async function runSyntheticBusinessSeed(
@@ -415,17 +424,23 @@ export async function runSyntheticBusinessSeed(
   const scenarios = options.scenarios ?? SYNTHETIC_BUSINESS_SCENARIOS;
   const scenarioResults: SyntheticScenarioRunResult[] = [];
 
-  await withSyntheticSeedLock(pool, async () => {
-    await ensureCisneServicePortfolioBaseline(pool);
+  await ensureCatalogBaselineActor(pool);
+  await ensureCisneServicePortfolioBaseline(pool);
 
+  await withSyntheticSeedLock(pool, async (client) => {
     for (const scenario of scenarios) {
       if (options.failAfterScenarioKey === scenario.key) {
         throw new Error(`SYNTHETIC_SEED_INJECTED_FAILURE:${scenario.key}`);
       }
-      const result = await runScenario(services, actor, unitId, scenario, referenceDate);
-      scenarioResults.push(result);
-      if (result.outcome === 'failed') {
-        throw new Error(result.error ?? `Scenario ${scenario.key} failed`);
+      try {
+        const result = await runScenario(services, actor, unitId, scenario, referenceDate, options);
+        scenarioResults.push(result);
+        if (result.outcome === 'failed') {
+          throw new Error(result.error ?? `Scenario ${scenario.key} failed`);
+        }
+      } catch (error) {
+        await compensateScenarioOnFailure(client, scenario.key);
+        throw error;
       }
     }
   });
@@ -447,10 +462,10 @@ export async function cleanupSyntheticBusinessSeed(pool: Pool): Promise<{ before
     throw new Error('SYNTHETIC_SEED_CLEANUP_CONFIRM=I_UNDERSTAND is required for cleanup.');
   }
 
-  return withSyntheticSeedLock(pool, async () => {
-    const before = await collectSyntheticCounts(pool);
+  return withSyntheticSeedLock(pool, async (client) => {
+    const before = await collectSyntheticCounts(client);
     // Namespace-only cleanup: clients without operational children can be removed safely.
-    await pool.query(
+    await client.query(
       `DELETE FROM pty.clients c
        WHERE (c.external_erp_id LIKE $1 OR c.legal_name LIKE 'TESTE — %')
          AND NOT EXISTS (SELECT 1 FROM com.proposals p WHERE p.client_id = c.id)
@@ -458,7 +473,7 @@ export async function cleanupSyntheticBusinessSeed(pool: Pool): Promise<{ before
          AND NOT EXISTS (SELECT 1 FROM so.service_orders o WHERE o.client_id = c.id)`,
       [`${SYNTHETIC_SEED_NAMESPACE}:%`],
     );
-    const after = await collectSyntheticCounts(pool);
+    const after = await collectSyntheticCounts(client);
     return { before, after };
   });
 }

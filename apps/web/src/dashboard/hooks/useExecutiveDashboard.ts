@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { DashboardApiError, getExecutiveDashboard } from '../api/dashboard-api';
 import type { ExecutiveDashboardFilters, ExecutiveDashboardSnapshot } from '../types/dashboard.types';
@@ -28,6 +28,8 @@ export function useExecutiveDashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
   const filters = useMemo(() => readFilters(searchParams), [searchParams]);
   const [state, setState] = useState<ExecutiveDashboardPageState>({ phase: 'loading' });
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const requestSequenceRef = useRef(0);
 
   const setFilters = useCallback(
     (next: Partial<ExecutiveDashboardFilters>) => {
@@ -62,11 +64,22 @@ export function useExecutiveDashboard() {
   );
 
   const reload = useCallback(
-    async (signal?: AbortSignal) => {
+    async (signal?: AbortSignal, options?: { showRefreshing?: boolean }) => {
+      const requestSequence = ++requestSequenceRef.current;
+      if (options?.showRefreshing) {
+        setIsRefreshing(true);
+      }
+
       try {
         const snapshot = await getExecutiveDashboard(filters, signal);
+        if (requestSequence !== requestSequenceRef.current) {
+          return;
+        }
         setState({ phase: 'ready', snapshot });
       } catch (error) {
+        if (signal?.aborted || requestSequence !== requestSequenceRef.current) {
+          return;
+        }
         if (error instanceof DashboardApiError && error.kind === 'denied') {
           setState({ phase: 'denied' });
           return;
@@ -75,10 +88,14 @@ export function useExecutiveDashboard() {
           phase: 'error',
           message:
             error instanceof DashboardApiError && error.kind === 'network'
-              ? 'Não foi possível atualizar o painel operacional.'
-              : 'Falha ao carregar o painel operacional.',
+              ? 'Não foi possível atualizar o painel.'
+              : 'Falha ao carregar o painel.',
           partial: previous.phase === 'ready' ? previous.snapshot : undefined,
         }));
+      } finally {
+        if (requestSequence === requestSequenceRef.current) {
+          setIsRefreshing(false);
+        }
       }
     },
     [filters],
@@ -88,14 +105,27 @@ export function useExecutiveDashboard() {
     setState({ phase: 'loading' });
     const controller = new AbortController();
     void reload(controller.signal);
+
     const timer = window.setInterval(() => {
       void reload(controller.signal);
     }, POLL_INTERVAL_MS);
+
     return () => {
       controller.abort();
       window.clearInterval(timer);
     };
   }, [reload]);
 
-  return { state, reload, filters, setFilters, periodOptions: PERIOD_OPTIONS };
+  const manualRefresh = useCallback(() => {
+    void reload(undefined, { showRefreshing: true });
+  }, [reload]);
+
+  return {
+    state,
+    reload: manualRefresh,
+    filters,
+    setFilters,
+    periodOptions: PERIOD_OPTIONS,
+    isRefreshing,
+  };
 }

@@ -7,6 +7,8 @@ import { probeServiceRequestListAccess } from '../requests/api/service-requests-
 import { probeProposalListAccess } from '../proposals/api/proposals-api';
 import { probePurchaseOrderListAccess } from '../purchase-orders/api/purchase-orders-api';
 import { probeBillingCapabilities } from '../billing/api/billing-api';
+import { probeServiceOrderListAccess } from '../service-orders/api/service-orders-api';
+import { probePersonListAccess } from '../people/api/people-api';
 import { useAuth } from '../auth/context/AuthProvider';
 import { SHELL_NAV_ITEMS } from './nav-config';
 import type { NavAccessMap } from './types';
@@ -137,6 +139,30 @@ export function useNavAccess(): NavAccessState {
           try {
             const capabilities = await probeBillingCapabilities(controller.signal);
             nextAccess[item.id] = capabilities.canRead;
+          } catch {
+            if (!cancelled) {
+              nextAccess[item.id] = false;
+            }
+          }
+          continue;
+        }
+
+        if (item.accessCheck === 'service-order-list') {
+          try {
+            const allowed = await probeServiceOrderListAccess(controller.signal);
+            nextAccess[item.id] = allowed;
+          } catch {
+            if (!cancelled) {
+              nextAccess[item.id] = false;
+            }
+          }
+          continue;
+        }
+
+        if (item.accessCheck === 'people-list') {
+          try {
+            const allowed = await probePersonListAccess(controller.signal);
+            nextAccess[item.id] = allowed;
           } catch {
             if (!cancelled) {
               nextAccess[item.id] = false;

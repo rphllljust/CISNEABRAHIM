@@ -35,6 +35,7 @@ export {
   type BuiltCatalogVersion,
 } from './catalog-builders';
 export { truncateAllOperationalTables, truncateClientTables } from './client-builders';
+export { truncateWorkforceTables } from './workforce-builders';
 export { truncatePhysicalAssetTables } from './asset-builders';
 export { truncateDocumentTables } from './document-builders';
 export { truncateCommercialProposalTables } from './proposal-builders';
@@ -46,6 +47,7 @@ export { truncateDomainEventTables } from './event-builders';
 export { truncateBackgroundJobTables, truncateOutboxTables, truncateIntegrationInboxTables } from './platform-builders';
 export {
   INTEGRATION_TEST_DB_LOCK_KEY,
+  acquireAdvisoryLockWithTimeout,
   createIntegrationTestPool,
   withIntegrationTestDatabaseLock,
 } from './integration-test-db-lock';

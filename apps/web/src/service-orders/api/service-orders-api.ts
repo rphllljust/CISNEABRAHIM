@@ -118,9 +118,14 @@ export async function listServiceOrders(
   query: {
     limit?: number;
     offset?: number;
-    status?: ServiceOrderStatus;
+    status?: ServiceOrderStatus | 'active';
+    filter?: 'overdue' | 'approaching-due';
     unitId?: string;
     clientId?: string;
+    q?: string;
+    from?: string;
+    to?: string;
+    event?: 'opened' | 'completed';
   },
   signal?: AbortSignal,
 ): Promise<{ items: ServiceOrderSummary[]; limit: number; offset: number }> {
@@ -130,11 +135,26 @@ export async function listServiceOrders(
   if (query.status) {
     params.set('status', query.status);
   }
+  if (query.filter) {
+    params.set('filter', query.filter);
+  }
   if (query.unitId) {
     params.set('unitId', query.unitId);
   }
   if (query.clientId) {
     params.set('clientId', query.clientId);
+  }
+  if (query.q) {
+    params.set('q', query.q);
+  }
+  if (query.from) {
+    params.set('from', query.from);
+  }
+  if (query.to) {
+    params.set('to', query.to);
+  }
+  if (query.event) {
+    params.set('event', query.event);
   }
   return requestJson(`/api/v1/service-orders?${params.toString()}`, {
     method: 'GET',

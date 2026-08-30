@@ -156,4 +156,64 @@ describe('Service orders E2E', () => {
     const detail = JSON.parse(getResponse.body) as { id: string };
     expect(detail.id).toBe(created.id);
   });
+
+  it('lists service orders via HTTP with filters and denies unauthorized list', async () => {
+    const createResponse = await app.inject({
+      method: 'POST',
+      url: '/api/v1/service-orders',
+      headers: { authorization: `Bearer ${accessToken}` },
+      payload: {
+        origin: SERVICE_ORDER_ORIGINS.AuthorizedDirect,
+        unitId: UNIT_A,
+        description: 'Listagem E2E',
+      },
+    });
+    const created = JSON.parse(createResponse.body) as { id: string; orderNumber: string };
+
+    const listResponse = await app.inject({
+      method: 'GET',
+      url: `/api/v1/service-orders?limit=10&offset=0&status=${SERVICE_ORDER_STATUSES.Draft}&q=${encodeURIComponent(created.orderNumber)}`,
+      headers: { authorization: `Bearer ${accessToken}` },
+    });
+    expect(listResponse.statusCode).toBe(200);
+    const listed = JSON.parse(listResponse.body) as {
+      items: Array<{ id: string; orderNumber: string }>;
+      limit: number;
+      offset: number;
+    };
+    expect(listed.items.some((item) => item.id === created.id)).toBe(true);
+    expect(listed.limit).toBe(10);
+    expect(listed.offset).toBe(0);
+
+    const invalidResponse = await app.inject({
+      method: 'GET',
+      url: '/api/v1/service-orders?filter=unknown',
+      headers: { authorization: `Bearer ${accessToken}` },
+    });
+    expect(invalidResponse.statusCode).toBe(400);
+
+    const login = normalizeLoginIdentifier(`so-list-http-deny-${crypto.randomUUID()}@cisne.invalid`);
+    const passwordHash = await hashPassword(AUTH_TEST_PASSWORD);
+    const { identityId } = await insertIdentity(pool, login, passwordHash);
+    await insertGrant(pool, {
+      identityId,
+      action: AUTHZ_ACTIONS.ServiceOrdersServiceOrderRead,
+      resourceType: AUTHZ_RESOURCE_TYPES.ServiceOrdersServiceOrder,
+      scopeType: AUTHZ_SCOPES.Global,
+      grantedByIdentityId: identityId,
+    });
+    const deniedLogin = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      payload: { login, password: AUTH_TEST_PASSWORD },
+    });
+    const deniedToken = parseAuthTokenResponse(deniedLogin.body).accessToken;
+
+    const deniedResponse = await app.inject({
+      method: 'GET',
+      url: '/api/v1/service-orders?limit=1&offset=0',
+      headers: { authorization: `Bearer ${deniedToken}` },
+    });
+    expect(deniedResponse.statusCode).toBe(403);
+  });
 });

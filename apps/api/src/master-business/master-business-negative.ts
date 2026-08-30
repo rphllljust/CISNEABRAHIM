@@ -1,7 +1,6 @@
 import { expect } from 'vitest';
 import type { Pool } from 'pg';
 import { BILLING_ERROR_CODES } from '../billing/errors/billing-error-codes';
-import { MEASUREMENTS_ERROR_CODES } from '../measurements/errors/measurements-error-codes';
 import { REQUESTS_ERROR_CODES } from '../requests/errors/requests-error-codes';
 import { SERVICE_ORDERS_ERROR_CODES } from '../service-orders/errors/service-orders-error-codes';
 import type { UatActor, UatVerticalServices } from '../uat/uat-vertical-runner';

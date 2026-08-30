@@ -7,7 +7,8 @@ export function isDeadlockError(error: unknown): boolean {
 
 export function countDeadlocks(results: PromiseSettledResult<unknown>[]): number {
   return results.filter(
-    (result) => result.status === 'rejected' && isDeadlockError((result as PromiseRejectedResult).reason),
+    (result): result is PromiseRejectedResult =>
+      result.status === 'rejected' && isDeadlockError(result.reason),
   ).length;
 }
 

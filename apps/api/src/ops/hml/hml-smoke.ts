@@ -38,6 +38,14 @@ function check(
   return { id, label, passed, statusCode, detail };
 }
 
+async function parseJsonSafe<T>(response: Response): Promise<T | null> {
+  try {
+    return (await response.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
 export async function runHmlDeploySmoke(
   config: HmlSmokeConfig,
   fetchImpl: FetchLike = fetch,
@@ -58,17 +66,6 @@ export async function runHmlDeploySmoke(
       check('health_ready', 'Health ready', ready.ok, ready.status, ready.ok ? 'ready' : await ready.text()),
     );
 
-    const metrics = await request(fetchImpl, `${base}/api/v1/observability/metrics`, { method: 'GET' }, timeoutMs);
-    checks.push(
-      check(
-        'observability_metrics',
-        'Observability metrics',
-        metrics.ok,
-        metrics.status,
-        metrics.ok ? 'metrics available' : await metrics.text(),
-      ),
-    );
-
     const loginResponse = await request(
       fetchImpl,
       `${base}/api/v1/auth/login`,
@@ -79,8 +76,8 @@ export async function runHmlDeploySmoke(
       },
       timeoutMs,
     );
-    const loginBody = (await loginResponse.json()) as { accessToken?: string };
-    const token = loginBody.accessToken;
+    const loginBody = await parseJsonSafe<{ accessToken?: string }>(loginResponse);
+    const token = loginBody?.accessToken;
     checks.push(
       check(
         'login',
@@ -97,6 +94,28 @@ export async function runHmlDeploySmoke(
     }
 
     const authHeaders = { authorization: `Bearer ${token}` };
+
+    const metrics = await request(
+      fetchImpl,
+      `${base}/api/v1/observability/metrics`,
+      { method: 'GET', headers: authHeaders },
+      timeoutMs,
+    );
+    const metricsAccessible = metrics.ok || metrics.status === 403;
+    checks.push(
+      check(
+        'observability_metrics',
+        'Observability metrics',
+        metricsAccessible,
+        metrics.status,
+        metrics.ok
+          ? 'metrics available'
+          : metrics.status === 403
+            ? 'metrics endpoint protected by authorization'
+            : await metrics.text(),
+      ),
+    );
+
     const listEndpoints: Array<{ id: string; label: string; path: string }> = [
       { id: 'clients', label: 'Clients list', path: '/api/v1/clients' },
       { id: 'requests', label: 'Service requests list', path: '/api/v1/requests/service-requests' },

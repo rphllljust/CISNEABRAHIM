@@ -9,6 +9,9 @@ type DashboardSlaChartProps = {
   points: ExecutiveSlaPoint[];
 };
 
+const CHART_CARD =
+  'm-0 rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-900/5';
+
 export function DashboardSlaChart({
   chartId,
   title,
@@ -24,32 +27,35 @@ export function DashboardSlaChart({
   const activePoint = points.find((point) => point.periodLabel === activeLabel) ?? null;
 
   return (
-    <figure className="dashboard-chart" aria-labelledby={titleId} aria-describedby={`${descId} ${summaryId}`}>
+    <figure
+      className={CHART_CARD}
+      aria-labelledby={titleId}
+      aria-describedby={`${descId} ${summaryId}`}
+    >
       <figcaption>
-        <h3 id={titleId}>{title}</h3>
-        <p id={descId} className="dashboard-chart__description">
+        <h3 id={titleId} className="text-sm font-semibold text-gray-900">
+          {title}
+        </h3>
+        <p id={descId} className="mt-1 text-xs leading-relaxed text-gray-500">
           {description}
-        </p>
-        <p id={summaryId} className="dashboard-chart__summary">
-          {summary}
         </p>
       </figcaption>
 
       {points.length === 0 ? (
-        <p className="dashboard-chart__empty">Sem conclusões elegíveis no período.</p>
+        <p className="mt-4 text-xs text-gray-500">Sem conclusões elegíveis no período.</p>
       ) : (
         <>
-          <div className="dashboard-chart__plot" role="list">
+          <div className="mt-5 space-y-3.5" role="list">
             {points.map((point) => {
               const onTimeWidth = `${(point.onTime / maxEligible) * 100}%`;
               const overdueWidth = `${(point.overdue / maxEligible) * 100}%`;
               return (
-                <div key={point.periodLabel} className="dashboard-chart__row" role="listitem">
-                  <span className="dashboard-chart__row-label">{point.periodLabel}</span>
-                  <div className="dashboard-chart__track dashboard-chart__track--stacked">
+                <div key={point.periodLabel} className="flex items-center gap-3" role="listitem">
+                  <span className="w-16 shrink-0 text-xs text-gray-500">{point.periodLabel}</span>
+                  <div className="flex h-4 flex-1 overflow-hidden rounded bg-gray-100">
                     <button
                       type="button"
-                      className="dashboard-chart__bar-button dashboard-chart__bar-button--positive"
+                      className="h-full min-w-0 border-0 bg-emerald-500 p-0"
                       style={{ width: onTimeWidth }}
                       aria-label={`${point.periodLabel}: ${point.onTime} no prazo de ${point.eligible} elegíveis`}
                       aria-pressed={activeLabel === point.periodLabel}
@@ -61,7 +67,7 @@ export function DashboardSlaChart({
                     />
                     <button
                       type="button"
-                      className="dashboard-chart__bar-button dashboard-chart__bar-button--critical"
+                      className="h-full min-w-0 border-0 bg-red-500 p-0"
                       style={{ width: overdueWidth }}
                       aria-label={`${point.periodLabel}: ${point.overdue} vencidas de ${point.eligible} elegíveis`}
                       aria-pressed={activeLabel === point.periodLabel}
@@ -72,24 +78,31 @@ export function DashboardSlaChart({
                       }
                     />
                   </div>
-                  <span className="dashboard-chart__row-value">{point.eligible}</span>
+                  <span className="w-4 text-right text-xs font-semibold text-gray-900 tabular-nums">
+                    {point.eligible}
+                  </span>
                 </div>
               );
             })}
           </div>
-          <ul className="dashboard-chart__legend" aria-hidden="true">
-            <li>
-              <span className="dashboard-chart__legend-swatch dashboard-chart__legend-swatch--positive" />
+
+          <div className="mt-3 flex gap-4" aria-hidden="true">
+            <div className="flex items-center gap-1.5 text-xs text-gray-600">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
               No prazo
-            </li>
-            <li>
-              <span className="dashboard-chart__legend-swatch dashboard-chart__legend-swatch--critical" />
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-gray-600">
+              <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
               Vencidas
-            </li>
-            <li>Denominador = elegíveis com prazo</li>
-          </ul>
-          <table className="dashboard-chart__table">
-            <caption className="sr-only">Dados de {title}</caption>
+            </div>
+          </div>
+
+          <p id={summaryId} className="mt-4 border-t border-gray-100 pt-4 text-xs text-gray-500">
+            {summary}
+          </p>
+
+          <table className="sr-only">
+            <caption>Dados de {title}</caption>
             <thead>
               <tr>
                 <th scope="col">Período</th>
@@ -113,7 +126,7 @@ export function DashboardSlaChart({
       )}
 
       {activePoint ? (
-        <p className="dashboard-chart__tooltip" role="status">
+        <p className="sr-only" role="status">
           {activePoint.periodLabel}: {activePoint.onTime} no prazo, {activePoint.overdue} vencidas (
           {activePoint.eligible} elegíveis)
         </p>

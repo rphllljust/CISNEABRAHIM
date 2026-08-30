@@ -92,6 +92,22 @@ export class ScopeEnforcementService {
     return { clause: 'FALSE', params: [] };
   }
 
+  buildPersonListFilter(grants: GrantRow[]): ScopeSqlPredicate {
+    const hasGlobalListGrant = grants.some(
+      (grant) => grant.scope_type === AUTHZ_SCOPES.Global && grant.resource_id === null,
+    );
+    if (hasGlobalListGrant) {
+      return { clause: 'TRUE', params: [] };
+    }
+    return { clause: 'FALSE', params: [] };
+  }
+
+  assertValidPersonResourceId(resourceId: string): void {
+    if (!UUID_V4ISH.test(resourceId)) {
+      throw new Error('INVALID_RESOURCE_ID');
+    }
+  }
+
   buildPhysicalAssetListFilter(grants: GrantRow[]): ScopeSqlPredicate {
     const hasGlobal = grants.some(
       (grant) => grant.scope_type === AUTHZ_SCOPES.Global && grant.resource_id === null,

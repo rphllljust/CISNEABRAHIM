@@ -25,7 +25,7 @@ export function Pagination({
           Anterior
         </Button>
       ) : null}
-      <span className="text-sm text-text-secondary" aria-current="page">
+      <span className="text-sm text-gray-600" aria-current="page">
         {pageLabel}
       </span>
       {onNext ? (

@@ -1,4 +1,6 @@
 import { NavLink } from 'react-router-dom';
+import { cn } from '../ui/utils/cn';
+import { resolveNavIcon } from './nav-icons';
 import { isNavItemVisible, useNavAccess } from './useNavAccess';
 import { SHELL_NAV_GROUPS } from './nav-config';
 
@@ -6,15 +8,55 @@ type ShellNavListProps = {
   onNavigate?: () => void;
   alertCount?: number;
   alertsLoading?: boolean;
+  theme?: 'dark' | 'light';
 };
 
-export function ShellNavList({ onNavigate, alertCount = 0, alertsLoading = false }: ShellNavListProps) {
+function buildNavLinkClass(isActive: boolean, theme: 'dark' | 'light') {
+  if (theme === 'dark') {
+    return cn(
+      'group flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium no-underline transition',
+      'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500',
+      isActive
+        ? 'bg-gray-800/80 text-white'
+        : 'text-gray-400 hover:bg-gray-800/60 hover:text-white',
+    );
+  }
+
+  return cn(
+    'group flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium no-underline transition',
+    'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500',
+    isActive ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
+  );
+}
+
+function iconClass(isActive: boolean, theme: 'dark' | 'light') {
+  if (theme === 'dark') {
+    return cn(
+      'h-[18px] w-[18px] shrink-0',
+      isActive ? 'text-brand-400' : 'text-gray-500 group-hover:text-gray-300',
+    );
+  }
+  return cn('h-[18px] w-[18px] shrink-0', isActive ? 'text-brand-600' : 'text-gray-400');
+}
+
+export function ShellNavList({
+  onNavigate,
+  alertCount = 0,
+  alertsLoading = false,
+  theme = 'dark',
+}: ShellNavListProps) {
   const { loading, access } = useNavAccess();
 
   return (
-    <nav className="shell-nav" aria-label="Navegação principal">
+    <nav
+      className={cn(
+        'sidebar-scroll flex-1 space-y-6 overflow-y-auto px-3 py-5',
+        theme === 'dark' ? 'bg-gray-950' : 'bg-white',
+      )}
+      aria-label="Navegação principal"
+    >
       {loading ? (
-        <p className="shell-nav__status" aria-live="polite">
+        <p className="px-3 text-sm text-gray-500" aria-live="polite">
           Carregando navegação…
         </p>
       ) : null}
@@ -25,28 +67,44 @@ export function ShellNavList({ onNavigate, alertCount = 0, alertsLoading = false
         }
 
         return (
-          <section key={group.id} className="shell-nav__group" aria-label={group.label}>
-            <h2 className="shell-nav__group-label">{group.label}</h2>
-            <ul className="shell-nav__list">
-              {visibleItems.map((item) => (
-                <li key={item.id}>
-                  <NavLink
-                    to={item.path}
-                    className={({ isActive }) =>
-                      `shell-nav__link${isActive ? ' shell-nav__link--active' : ''}`
-                    }
-                    end={item.path === '/app'}
-                    onClick={onNavigate}
-                  >
-                    {item.label}
-                    {item.id === 'alerts' && !alertsLoading && alertCount > 0 ? (
-                      <span className="shell-nav__badge" aria-hidden="true">
-                        {alertCount > 99 ? '99+' : alertCount}
-                      </span>
-                    ) : null}
-                  </NavLink>
-                </li>
-              ))}
+          <section key={group.id} aria-label={group.label}>
+            <p
+              className={cn(
+                'mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider',
+                theme === 'dark' ? 'text-gray-500' : 'text-gray-400',
+              )}
+            >
+              {group.label}
+            </p>
+            <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
+              {visibleItems.map((item) => {
+                const Icon = resolveNavIcon(item.id);
+                return (
+                  <li key={item.id}>
+                    <NavLink
+                      to={item.path}
+                      className={({ isActive }) => buildNavLinkClass(isActive, theme)}
+                      end={item.path === '/app'}
+                      onClick={onNavigate}
+                    >
+                      {({ isActive }) => (
+                        <>
+                          <Icon className={iconClass(isActive, theme)} strokeWidth={2} aria-hidden />
+                          <span className="min-w-0 flex-1">{item.label}</span>
+                          {item.id === 'alerts' && !alertsLoading && alertCount > 0 ? (
+                            <span
+                              className="inline-flex min-w-5 justify-center rounded-full bg-red-500/15 px-1.5 text-xs font-medium text-red-400"
+                              aria-hidden="true"
+                            >
+                              {alertCount > 99 ? '99+' : alertCount}
+                            </span>
+                          ) : null}
+                        </>
+                      )}
+                    </NavLink>
+                  </li>
+                );
+              })}
             </ul>
           </section>
         );

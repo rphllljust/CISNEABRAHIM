@@ -51,6 +51,8 @@ type FaultingDatabaseServiceOptions = {
   sharedPool?: Pool;
 };
 
+type ProxyQueryArgs = [textOrConfig: string | QueryConfig, values?: unknown[]];
+
 export class FaultingDatabaseService extends DatabaseService {
   private readonly ownsConnectionPool: boolean;
 
@@ -85,7 +87,7 @@ export class FaultingDatabaseService extends DatabaseService {
     const pool = connection.pool;
 
     const proxy = new Proxy(pool, {
-      get(target, property, receiver) {
+      get(target, property, receiver): unknown {
         if (property === 'connect') {
           return async () => {
             const hook = faults.getActiveHook();
@@ -98,19 +100,23 @@ export class FaultingDatabaseService extends DatabaseService {
         }
         if (property === 'query') {
           return async <R extends QueryResultRow = QueryResultRow>(
-            ...args: Parameters<Pool['query']>
+            ...args: ProxyQueryArgs
           ): Promise<QueryResult<R>> => {
             const hook = faults.getActiveHook();
             if (hook === FAULT_HOOKS.DbConnectionLost || hook === FAULT_HOOKS.DbPoolUnavailable) {
               throw new InjectedFaultError(hook);
             }
-            return (await target.query(...args)) as unknown as QueryResult<R>;
+            const [textOrConfig, values] = args;
+            if (typeof textOrConfig === 'string') {
+              return values ? target.query<R>(textOrConfig, values) : target.query<R>(textOrConfig);
+            }
+            return values ? target.query<R>(textOrConfig, values) : target.query<R>(textOrConfig);
           };
         }
         return Reflect.get(target, property, receiver);
       },
     });
 
-    return { ...connection, pool: proxy as Pool };
+    return { ...connection, pool: proxy };
   }
 }

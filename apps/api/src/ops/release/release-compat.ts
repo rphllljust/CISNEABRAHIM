@@ -25,7 +25,7 @@ export function assertRollbackSafeFeatureChange(
       }
       return;
     default:
-      throw new Error(`Unknown compatibility strategy: ${strategy satisfies never}`);
+      throw new Error(`Unknown compatibility strategy: ${String(strategy)}`);
   }
 }
 

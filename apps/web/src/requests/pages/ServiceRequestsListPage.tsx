@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import { useCallback, useEffect, useState } from 'react';
 import { listServiceRequests, ServiceRequestsApiError } from '../api/service-requests-api';
 import { mapRequestErrorToMessage } from '../api/request-error-messages';
@@ -14,6 +13,25 @@ import {
   formatServiceRequestOrigin,
   formatServiceRequestStatus,
 } from '../utils/service-request-labels';
+import {
+  FilterCard,
+  ModuleDeniedState,
+  ModuleErrorState,
+  ModuleLoadingState,
+  ModulePage,
+  ModulePageHeader,
+  ModulePagination,
+  ModulePrimaryLink,
+  ModuleTableCard,
+  ModuleTableLink,
+  filterControlClass,
+  filterLabelClass,
+  moduleTableCellClass,
+  moduleTableClass,
+  moduleTableHeadClass,
+  moduleTableHeaderCellClass,
+  moduleTableRowClass,
+} from '../../ui/module-layout';
 
 const PAGE_SIZE = 20;
 
@@ -79,38 +97,27 @@ export function ServiceRequestsListPage() {
 
   if (listState.phase === 'loading') {
     return (
-      <main id="main-content" className="shell-page">
-        <h1>Solicitações de serviço</h1>
-        <p aria-busy="true" aria-live="polite">
-          Carregando solicitações…
-        </p>
-      </main>
+      <ModuleLoadingState title="Solicitações de serviço" message="Carregando solicitações…" />
     );
   }
 
   if (listState.phase === 'denied') {
     return (
-      <main id="main-content" className="shell-page">
-        <h1>Solicitações de serviço</h1>
-        <p role="alert">Você não tem permissão para listar solicitações.</p>
-        <Link to="/app">Voltar ao início</Link>
-      </main>
+      <ModuleDeniedState
+        title="Solicitações de serviço"
+        message="Você não tem permissão para listar solicitações."
+      />
     );
   }
 
   if (listState.phase === 'error') {
     return (
-      <main id="main-content" className="shell-page">
-        <h1>Solicitações de serviço</h1>
-        <p className="form-error" role="alert">
-          {listState.message}
-        </p>
-        {listState.retryable ? (
-          <button type="button" onClick={() => void loadPage(0)}>
-            Tentar novamente
-          </button>
-        ) : null}
-      </main>
+      <ModuleErrorState
+        title="Solicitações de serviço"
+        message={listState.message}
+        retryable={listState.retryable}
+        onRetry={() => void loadPage(0)}
+      />
     );
   }
 
@@ -118,94 +125,110 @@ export function ServiceRequestsListPage() {
   const pageNumber = Math.floor(offset / PAGE_SIZE) + 1;
 
   return (
-    <main id="main-content" className="shell-page requests-page">
-      <header className="requests-page__header">
-        <h1>Solicitações de serviço</h1>
-        {capabilities.canCreate ? (
-          <Link to="/app/requests/new" className="button-link">
-            Nova solicitação
-          </Link>
-        ) : null}
-      </header>
+    <ModulePage>
+      <ModulePageHeader
+        title="Solicitações de serviço"
+        action={
+          capabilities.canCreate ? (
+            <ModulePrimaryLink to="/app/requests/new">Nova solicitação</ModulePrimaryLink>
+          ) : null
+        }
+      />
 
-      <div className="requests-toolbar">
-        <div className="form-field requests-filter">
-          <label htmlFor="request-status-filter">Status</label>
-          <select
-            id="request-status-filter"
-            value={statusFilter}
-            onChange={(event) =>
-              setStatusFilter(event.target.value as '' | ServiceRequestStatus)
-            }
-          >
-            <option value="">Todos</option>
-            {Object.values(SERVICE_REQUEST_STATUSES).map((status) => (
-              <option key={status} value={status}>
-                {formatServiceRequestStatus(status)}
-              </option>
-            ))}
-          </select>
+      <FilterCard>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div>
+            <label className={filterLabelClass} htmlFor="request-status-filter">
+              Status
+            </label>
+            <select
+              id="request-status-filter"
+              className={filterControlClass}
+              value={statusFilter}
+              onChange={(event) =>
+                setStatusFilter(event.target.value as '' | ServiceRequestStatus)
+              }
+            >
+              <option value="">Todos</option>
+              {Object.values(SERVICE_REQUEST_STATUSES).map((status) => (
+                <option key={status} value={status}>
+                  {formatServiceRequestStatus(status)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={filterLabelClass} htmlFor="request-unit-filter">
+              Unidade
+            </label>
+            <input
+              id="request-unit-filter"
+              type="search"
+              className={filterControlClass}
+              value={unitFilter}
+              onChange={(event) => setUnitFilter(event.target.value)}
+              placeholder="Filtrar por unidade"
+            />
+          </div>
         </div>
-        <div className="form-field requests-filter">
-          <label htmlFor="request-unit-filter">Unidade</label>
-          <input
-            id="request-unit-filter"
-            type="search"
-            value={unitFilter}
-            onChange={(event) => setUnitFilter(event.target.value)}
-            placeholder="Filtrar por unidade"
-          />
-        </div>
-      </div>
+      </FilterCard>
 
       {items.length === 0 ? (
-        <p role="status">Nenhuma solicitação encontrada.</p>
+        <p className="text-sm text-gray-500" role="status">
+          Nenhuma solicitação encontrada.
+        </p>
       ) : (
-        <table className="requests-table" aria-label="Lista de solicitações de serviço">
-          <thead>
-            <tr>
-              <th scope="col">Código</th>
-              <th scope="col">Origem</th>
-              <th scope="col">Status</th>
-              <th scope="col">Unidade</th>
-              <th scope="col">Atualizada em</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => (
-              <tr key={item.id}>
-                <td>
-                  <Link to={`/app/requests/${item.id}`}>{item.requestCode}</Link>
-                </td>
-                <td>{formatServiceRequestOrigin(item.originSource)}</td>
-                <td>
-                  <ServiceRequestStatusBadge status={item.status} />
-                </td>
-                <td>{item.unitId}</td>
-                <td>{formatDateTime(item.updatedAt)}</td>
+        <ModuleTableCard>
+          <table className={moduleTableClass} aria-label="Lista de solicitações de serviço">
+            <thead className={moduleTableHeadClass}>
+              <tr>
+                <th scope="col" className={moduleTableHeaderCellClass}>
+                  Código
+                </th>
+                <th scope="col" className={moduleTableHeaderCellClass}>
+                  Origem
+                </th>
+                <th scope="col" className={moduleTableHeaderCellClass}>
+                  Status
+                </th>
+                <th scope="col" className={moduleTableHeaderCellClass}>
+                  Unidade
+                </th>
+                <th scope="col" className={moduleTableHeaderCellClass}>
+                  Atualizada em
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {items.map((item) => (
+                <tr key={item.id} className={moduleTableRowClass}>
+                  <td className={moduleTableCellClass}>
+                    <ModuleTableLink to={`/app/requests/${item.id}`}>
+                      {item.requestCode}
+                    </ModuleTableLink>
+                  </td>
+                  <td className={moduleTableCellClass}>
+                    {formatServiceRequestOrigin(item.originSource)}
+                  </td>
+                  <td className={moduleTableCellClass}>
+                    <ServiceRequestStatusBadge status={item.status} />
+                  </td>
+                  <td className={moduleTableCellClass}>{item.unitId}</td>
+                  <td className={moduleTableCellClass}>{formatDateTime(item.updatedAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </ModuleTableCard>
       )}
 
-      <div className="requests-pagination">
-        <button
-          type="button"
-          disabled={offset === 0}
-          onClick={() => void loadPage(Math.max(0, offset - PAGE_SIZE))}
-        >
-          Página anterior
-        </button>
-        <span aria-live="polite">Página {pageNumber}</span>
-        <button
-          type="button"
-          disabled={!hasMore}
-          onClick={() => void loadPage(offset + PAGE_SIZE)}
-        >
-          Próxima página
-        </button>
-      </div>
-    </main>
+      <ModulePagination
+        pageNumber={pageNumber}
+        previousDisabled={offset === 0}
+        nextDisabled={!hasMore}
+        onPrevious={() => void loadPage(Math.max(0, offset - PAGE_SIZE))}
+        onNext={() => void loadPage(offset + PAGE_SIZE)}
+      />
+    </ModulePage>
   );
 }

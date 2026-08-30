@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { ShellBrandMark } from './ShellBrandMark';
 import { ShellNavList } from './ShellNavList';
 import { useBodyScrollLock } from './hooks/useBodyScrollLock';
 
@@ -54,7 +55,12 @@ export function ShellMobileDrawer({ open, onClose, alertCount, alertsLoading }: 
       />
       <aside className="shell-drawer" role="dialog" aria-modal="true" aria-label="Menu de navegação">
         <header className="shell-drawer__header">
-          <p className="shell-drawer__title">Cisne Rondônia</p>
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500">
+              <ShellBrandMark className="h-4 w-4 text-white" />
+            </div>
+            <p className="shell-drawer__title">CISNE RONDÔNIA</p>
+          </div>
           <button
             ref={closeButtonRef}
             type="button"
@@ -68,6 +74,7 @@ export function ShellMobileDrawer({ open, onClose, alertCount, alertsLoading }: 
           onNavigate={onClose}
           alertCount={alertCount}
           alertsLoading={alertsLoading}
+          theme="dark"
         />
       </aside>
     </div>
