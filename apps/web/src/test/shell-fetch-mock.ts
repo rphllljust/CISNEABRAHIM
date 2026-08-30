@@ -96,6 +96,15 @@ export function createShellFetchMock(options: ShellFetchMockOptions = {}) {
       return jsonResponse([]);
     }
 
+    if (url.includes('/api/v1/search') && method === 'GET') {
+      return jsonResponse({
+        query: { raw: 'test', kind: 'text' },
+        groups: [],
+        pagination: { limit: 20, offset: 0, hasMore: false },
+        allowedTypes: ['CLIENT'],
+      });
+    }
+
     if (url.includes('/api/v1/dashboard/executive') && method === 'GET') {
       return jsonResponse({
         generatedAt: new Date().toISOString(),

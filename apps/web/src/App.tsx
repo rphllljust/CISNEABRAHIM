@@ -38,6 +38,7 @@ import { ServiceRequestEditPage } from './requests/pages/ServiceRequestEditPage'
 import { ServiceRequestsListPage } from './requests/pages/ServiceRequestsListPage';
 import { OperationalDashboardPage } from './dashboard/pages/OperationalDashboardPage';
 import { AlertCenterPage } from './alerts/pages/AlertCenterPage';
+import { SearchResultsPage } from './search/pages/SearchResultsPage';
 import { LoginPage } from './pages/LoginPage';
 import { PlatformDiagnosticsPage } from './pages/PlatformDiagnosticsPage';
 import { ServiceUnavailablePage } from './pages/ServiceUnavailablePage';
@@ -67,6 +68,7 @@ export function App() {
             <Route element={<AppShellLayout />}>
               <Route path="/app" element={<OperationalDashboardPage />} />
               <Route path="/app/alerts" element={<AlertCenterPage />} />
+              <Route path="/app/search" element={<SearchResultsPage />} />
               <Route
                 path="/app/platform"
                 element={

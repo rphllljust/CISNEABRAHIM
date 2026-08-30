@@ -4257,7 +4257,7 @@ NEXT_PROMPT_EXECUTED: NO
 NOTES:
   Scheduler bootstrap movido para BackgroundJobsModule (evita dependência circular).
   Alertas persistidos em alt.business_alerts (separado de ntf.notifications).
-  Prompt 77 não executado.
+  Prompt 77 executado (PASS).
 ```
 
 ## Quality gate Prompt 76 (evidência)
@@ -4273,6 +4273,53 @@ NOTES:
 | duplicate worker cycle (touch not create) | PASS | business-alerts.integration.spec.ts |
 | resolve when SO completed | PASS | business-alerts.integration.spec.ts |
 | alert center + entity link | PASS | alerts.components.test.tsx |
+| API typecheck | PASS | tsc --noEmit |
+| web typecheck | PASS | tsc --noEmit |
+
+---
+
+## Prompt 77 — Busca avançada
+
+```
+PROMPT_ID: 77
+PROMPT_TITLE: Busca avançada
+EXECUTED_AT: 2026-08-29
+EXECUTION_STATUS: PASS
+COMMIT: feat(search): implement permission-aware advanced search
+ARTIFACTS:
+  packages/database/migrations/0033_search_trigram_indexes.sql
+  apps/api/src/search/**
+  apps/web/src/search/**
+ENDPOINT: GET /api/v1/search?q=&types=&status=&clientId=&serviceDefinitionId=&from=&to=&limit=&offset=
+ENTITIES: CLIENT, SERVICE_REQUEST, PROPOSAL, PURCHASE_ORDER, SERVICE_ORDER, ASSET, DOCUMENT, MEASUREMENT, BILLING_RECORD
+NORMALIZATION: CNPJ, placa, códigos (OS/PO/RC), UUID, texto (pg_trgm)
+INDEXES: pg_trgm GIN (nomes), text_pattern_ops (códigos OS)
+AUTHZ: escopo por grant de list/read existente — sem buscar tudo e filtrar no frontend
+FRONTEND: GlobalSearchBar no header, /app/search, debounce 300ms, AbortController, highlight seguro
+RECENT_SEARCHES: sessionStorage apenas com VITE_SEARCH_RECENT_ENABLED=true
+QUALITY_GATE: PASS
+NEXT_ALLOWED_PROMPT: 78
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  PostgreSQL suficiente para fase inicial; search engine externo não introduzido.
+  Prompt 78 não executado.
+```
+
+## Quality gate Prompt 77 (evidência)
+
+| Cenário de teste | Resultado | Evidência |
+|------------------|-----------|-----------|
+| CNPJ formatado/dígitos | PASS | search-query-normalizer.spec.ts, search.integration.spec.ts |
+| código OS/PO | PASS | search-query-normalizer.spec.ts |
+| nome parcial | PASS | search.integration.spec.ts (paginate) |
+| sem resultado | PASS | search.integration.spec.ts |
+| paginação/limite | PASS | search.integration.spec.ts |
+| SQL injection (parametrizado) | PASS | search-query-normalizer.spec.ts |
+| IDOR/escopo | PASS | search.integration.spec.ts |
+| race rapid typing | PASS | search.components.test.tsx |
+| keyboard Enter | PASS | search.components.test.tsx |
+| highlight seguro | PASS | search.components.test.tsx |
+| merge scope SQL params | PASS | search-sql.helper.spec.ts |
 | API typecheck | PASS | tsc --noEmit |
 | web typecheck | PASS | tsc --noEmit |
 

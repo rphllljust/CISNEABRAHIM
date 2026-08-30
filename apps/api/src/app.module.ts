@@ -20,9 +20,10 @@ import { ResourcesModule } from './resources/resources.module';
 import { MeasurementsModule } from './measurements/measurements.module';
 import { BillingModule } from './billing/billing.module';
 import { EventsModule } from './events/events.module';
+import { SearchModule } from './search/search.module';
 import { ServiceOrdersModule } from './service-orders/service-orders.module';
 
 @Module({
-  imports: [HealthModule, AuditModule, AuthModule, AuthorizationModule, ClientsModule, CatalogModule, CommercialModule, RequestsModule, ServiceOrdersModule, MeasurementsModule, BillingModule, ResourcesModule, DocumentsModule, EventsModule, NotificationsModule, DashboardModule, AnalyticsModule, AlertsModule, BackgroundJobsModule, OutboxModule, IntegrationsAclModule, IntegrationsInboxModule],
+  imports: [HealthModule, AuditModule, AuthModule, AuthorizationModule, ClientsModule, CatalogModule, CommercialModule, RequestsModule, ServiceOrdersModule, MeasurementsModule, BillingModule, ResourcesModule, DocumentsModule, EventsModule, NotificationsModule, DashboardModule, AnalyticsModule, AlertsModule, SearchModule, BackgroundJobsModule, OutboxModule, IntegrationsAclModule, IntegrationsInboxModule],
 })
 export class AppModule {}
