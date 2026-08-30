@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { statfs } from 'node:fs/promises';
 import type { Pool } from 'pg';
+import { readBackupStatusSnapshot } from '../../ops/backup/backup-status-reader';
 import { DatabaseService } from '../../infrastructure/database/database.service';
 import { OUTBOX_EVENT_STATUSES } from '../../platform/outbox/domain/outbox-status';
 import { BACKGROUND_JOB_STATUSES } from '../../platform/background-jobs/domain/background-job-kind';
@@ -20,6 +21,9 @@ export type PlatformBacklogSnapshot = {
 export type BackupStatusSnapshot = {
   status: 'unknown' | 'ok' | 'failed';
   checkedAt: string | null;
+  durationMs: number | null;
+  sizeBytes: number | null;
+  artifactCount: number | null;
 };
 
 export type DiskUsageSnapshot = {
@@ -83,15 +87,7 @@ export class PlatformMetricsCollectorService {
   }
 
   collectBackupStatus(): BackupStatusSnapshot {
-    const statusRaw = process.env['TECH_BACKUP_LAST_STATUS']?.trim().toLowerCase();
-    const checkedAt = process.env['TECH_BACKUP_LAST_CHECKED_AT']?.trim() ?? null;
-    if (!statusRaw) {
-      return { status: 'unknown', checkedAt };
-    }
-    if (statusRaw === 'failed' || statusRaw === 'failure') {
-      return { status: 'failed', checkedAt };
-    }
-    return { status: 'ok', checkedAt };
+    return readBackupStatusSnapshot(process.env);
   }
 
   async collectDiskUsage(): Promise<DiskUsageSnapshot> {

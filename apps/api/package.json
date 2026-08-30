@@ -13,7 +13,9 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "test:perf:smoke": "vitest run --config vitest.perf.config.ts src/performance/performance-smoke.perf-smoke.spec.ts",
-    "test:perf": "vitest run --config vitest.perf.config.ts"
+    "test:perf": "vitest run --config vitest.perf.config.ts",
+    "test:backup": "vitest run src/ops/backup",
+    "backup:run": "npx tsx src/ops/backup/cli/run-backup.ts"
   },
   "dependencies": {
     "@cisne/database": "workspace:*",

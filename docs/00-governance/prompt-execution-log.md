@@ -4589,3 +4589,41 @@ NOTES:
 | API typecheck | PASS | tsc --noEmit |
 
 ---
+
+## Prompt 84 — Backup
+
+```
+PROMPT_ID: 84
+PROMPT_TITLE: Backup
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: PASS
+COMMIT: (pending) ops(backup): implement monitored backup strategy
+ARTIFACTS:
+  apps/api/src/ops/backup/**
+  docs/19-operations/backup-strategy.md
+RPO_RTO: TARGET_NOT_DEFINED (DDP-016) — PRODUCTION_BLOCKER registrado
+POSTGRES: pg_dump -Fc (local/docker); WAL/PITR documentado para infra gerenciada
+OBJECT_STORAGE: snapshot + manifest sha256 + tar criptografado opcional
+SECURITY: BACKUP_ENCRYPTION_KEY separada; chave nunca no artefato
+MONITORING: BACKUP_STATUS_FILE + alerta técnico imediato em falha
+RETENTION: BACKUP_RETENTION_DAILY (engenharia) — separado de retenção legal (DDP-019)
+QUALITY_GATE: PASS
+NEXT_ALLOWED_PROMPT: 85
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Prompt 85 não executado.
+```
+
+## Quality gate Prompt 84 (evidência)
+
+| Cenário de teste | Resultado | Evidência |
+|------------------|-----------|-----------|
+| backup executado (postgres + object storage) | PASS | backup-runner.spec.ts |
+| artefato válido e storage acessível | PASS | backup-runner.spec.ts |
+| checksum / criptografia | PASS | backup-crypto.spec.ts |
+| falha registra status monitorável | PASS | backup-runner.spec.ts |
+| alerta em falha de backup | PASS | technical-alert.engine.spec.ts |
+| RPO/RTO não inventados | PASS | backup-strategy.md |
+| API typecheck | PASS | tsc --noEmit |
+
+---

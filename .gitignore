@@ -82,6 +82,9 @@ playwright-report/
 test-results/
 artifacts/ci/
 
+# Backup artifacts (local / CI scratch)
+.backup/
+
 # Do not ignore project documentation
 # docs/ is versioned
 # AGENTS.md and README.md are versioned
