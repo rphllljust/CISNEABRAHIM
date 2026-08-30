@@ -6438,3 +6438,58 @@ COMMIT: f2adb59 feat(seed): add deterministic business scenarios
 WORKING_TREE: DIRTY
 NEXT_ACTION: VALIDATE FULL STACK
 ```
+
+## PROMPT — Validação full stack (dados, tabelas, gráficos)
+
+```text
+EXECUTED_AT: 2026-08-30
+PROMPT: VALIDAÇÃO FULL STACK DOS DADOS, TABELAS E GRÁFICOS
+STATUS: PASS
+
+PRECONDITION:
+  CONTROLLED SEED = PASS (f2adb59)
+  NEXT_ACTION = VALIDATE FULL STACK
+
+RECONCILIATION (cisne_local_dev, dev-operator GLOBAL grants):
+  clients: DB 17 = API 17
+  catalog_defs: DB 65 = API 65
+  assets: DB 8 = API 8
+  requests: DB 11 = API 11
+  proposals: DB 16 = API 16
+  purchase_orders: DB 12 = API 12
+  service_orders: DB 11 = API 11
+  documents: DB 14 = API 14
+  dashboard OS-by-status chart: 10 (exclui CANCELLED; 11 total − 1 cancelada)
+  productivity sampleSize: 6 (medições elegíveis)
+
+FRONTEND:
+  Propostas/Pedidos: list pages usam API real (sem mock em src de produção)
+  Vitest e2e: proposals 4/4, purchase-orders 4/4, dashboard 2/2 — PASS
+  test:frontend-resilience 99/99 — PASS
+  web test 279/279 — PASS
+  FAKE FRONTEND DATA: ABSENT (mocks restritos a src/test)
+
+AUTHORIZATION:
+  proposals sem token: 401 | login senha errada: 401
+
+GATES EXECUTADOS:
+  test:synthetic-seed 3/3 — PASS
+  web build — PASS
+  api build — PASS
+  LINT api full — FAIL (pré-existente)
+  TYPECHECK api full — FAIL (pré-existente performance specs)
+  Playwright visual — NOT_RUN (login snapshots dirty no working tree)
+
+SEED REEXECUTION: PASS (15 cenários already_present)
+
+LIMITATIONS:
+  SEED RECOVERY transacional global — PARTIAL (falha intercena não reverte cenários anteriores)
+  Playwright contra stack live — não executado nesta sessão
+  Medições/faturamento sem listagem global — validados via fluxo OS (e2e)
+
+NON-PRODUCTION DATA READINESS: CERTIFIED
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY (login visual + scripts de validação locais)
+NEXT_ACTION: CONTINUE FRONTEND VALIDATION | ONBOARD REAL PRODUCTION DATA
+```
