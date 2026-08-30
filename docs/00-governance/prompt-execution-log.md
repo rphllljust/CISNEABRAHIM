@@ -4824,7 +4824,7 @@ QUALITY_GATE: PASS
 NEXT_ALLOWED_PROMPT: 90
 NEXT_PROMPT_EXECUTED: NO
 NOTES:
-  Prompt 90 não executado — requer aprovação real de negócio para go-live.
+  Prompt 90 executado (PASS).
 ```
 
 ## Quality gate Prompt 89 (evidência)
@@ -4838,6 +4838,47 @@ NOTES:
 | severidade BLOCKER/CRITICAL | PASS | uat-verdict.spec.ts |
 | vertical regressão obra | PASS | first-vertical-quality-gate.integration.spec.ts |
 | UX shell responsivo | PASS | vertical-quality-gate.e2e.test.tsx |
+| API typecheck | PASS | tsc --noEmit |
+
+---
+
+## Prompt 90 — Piloto controlado
+
+```
+PROMPT_ID: 90
+PROMPT_TITLE: Piloto controlado
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: PASS
+COMMIT: 77a0da9 ops(pilot): establish controlled pilot program
+ARTIFACTS:
+  apps/api/src/ops/pilot/**
+  scripts/pilot/status.mjs
+  .env.pilot.example
+  docs/19-operations/pilot-program.md
+SCOPE: poucos usuários/OS/volume; archetypes UAT 89; sem migração total
+FEATURE_FLAGS: env gates mínimos somente com PILOT_INFRA_EXTENDED
+OBSERVATION: errors, latency, DB, worker, OS overdue, allocation, support, billing
+FEEDBACK: bug | ux_improvement | new_feature | business_rule_change (separados)
+EXIT: ACTIVE | EXIT_READY | BLOCKED — sem BLOCKER aberto
+QUALITY_GATE: PASS
+NEXT_ALLOWED_PROMPT: 91
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Prompt 91 não executado.
+  Piloto ativo; go-live completo ainda bloqueado por sign-off empresarial.
+```
+
+## Quality gate Prompt 90 (evidência)
+
+| Cenário de teste | Resultado | Evidência |
+|------------------|-----------|-----------|
+| escopo limitado | PASS | pilot-scope.ts |
+| bloqueio migração total | PASS | pilot-runner.spec.ts |
+| flags sem framework | PASS | pilot-flags.ts |
+| categorias feedback separadas | PASS | pilot-feedback.ts |
+| observação thresholds | PASS | pilot-observation.ts |
+| exit criteria EXIT_READY/BLOCKED | PASS | pilot-runner.spec.ts |
+| janela mínima observação | PASS | pilot-exit.ts |
 | API typecheck | PASS | tsc --noEmit |
 
 ---
