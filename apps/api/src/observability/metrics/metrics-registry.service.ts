@@ -30,6 +30,7 @@ export class MetricsRegistryService {
   private storageFailures = 0;
   private notificationFailures = 0;
   private integrationFailures = 0;
+  private workerLastActivityAt: string | null = null;
   private workerMetrics: WorkerMetricsRegistrySnapshot = {
     processed: 0,
     succeeded: 0,
@@ -65,6 +66,14 @@ export class MetricsRegistryService {
 
   recordIntegrationFailure(): void {
     this.integrationFailures += 1;
+  }
+
+  recordWorkerActivity(at: Date = new Date()): void {
+    this.workerLastActivityAt = at.toISOString();
+  }
+
+  getWorkerLastActivityAt(): string | null {
+    return this.workerLastActivityAt;
   }
 
   setWorkerMetrics(snapshot: WorkerMetricsRegistrySnapshot): void {

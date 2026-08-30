@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common';
+import { statfs } from 'node:fs/promises';
 import type { Pool } from 'pg';
 import { DatabaseService } from '../../infrastructure/database/database.service';
 import { OUTBOX_EVENT_STATUSES } from '../../platform/outbox/domain/outbox-status';
 import { BACKGROUND_JOB_STATUSES } from '../../platform/background-jobs/domain/background-job-kind';
+import { loadTechnicalAlertPolicy } from '../alerts/technical-alert-policy';
 import { MetricsRegistryService } from '../metrics/metrics-registry.service';
 
 export type PlatformBacklogSnapshot = {
@@ -11,10 +13,24 @@ export type PlatformBacklogSnapshot = {
   outboxFailed: number;
   notificationFailures: number;
   integrationFailures: number;
+  erpFailures: number;
+  trackingFailures: number;
+};
+
+export type BackupStatusSnapshot = {
+  status: 'unknown' | 'ok' | 'failed';
+  checkedAt: string | null;
+};
+
+export type DiskUsageSnapshot = {
+  path: string | null;
+  usagePercent: number | null;
 };
 
 @Injectable()
 export class PlatformMetricsCollectorService {
+  private readonly alertPolicy = loadTechnicalAlertPolicy();
+
   constructor(
     private readonly databaseService: DatabaseService,
     private readonly metrics: MetricsRegistryService,
@@ -26,7 +42,7 @@ export class PlatformMetricsCollectorService {
       return this.emptyBacklog();
     }
 
-    const [workerPending, outboxPending, outboxFailed, notificationFailures, integrationFailures] =
+    const [workerPending, outboxPending, outboxFailed, notificationFailures, integrationFailures, erpFailures, trackingFailures] =
       await Promise.all([
         this.count(
           pool,
@@ -51,6 +67,8 @@ export class PlatformMetricsCollectorService {
           pool,
           `SELECT COUNT(*)::text AS count FROM int.integration_inbox WHERE status = 'FAILED'`,
         ),
+        this.countIntegrationFailures(pool, this.alertPolicy.erpProviderPatterns),
+        this.countIntegrationFailures(pool, this.alertPolicy.trackingProviderPatterns),
       ]);
 
     return {
@@ -59,7 +77,40 @@ export class PlatformMetricsCollectorService {
       outboxFailed,
       notificationFailures,
       integrationFailures,
+      erpFailures,
+      trackingFailures,
     };
+  }
+
+  collectBackupStatus(): BackupStatusSnapshot {
+    const statusRaw = process.env['TECH_BACKUP_LAST_STATUS']?.trim().toLowerCase();
+    const checkedAt = process.env['TECH_BACKUP_LAST_CHECKED_AT']?.trim() ?? null;
+    if (!statusRaw) {
+      return { status: 'unknown', checkedAt };
+    }
+    if (statusRaw === 'failed' || statusRaw === 'failure') {
+      return { status: 'failed', checkedAt };
+    }
+    return { status: 'ok', checkedAt };
+  }
+
+  async collectDiskUsage(): Promise<DiskUsageSnapshot> {
+    const path = this.alertPolicy.objectStoragePath;
+    if (!path) {
+      return { path: null, usagePercent: null };
+    }
+    try {
+      const stats = await statfs(path);
+      const total = stats.bsize * stats.blocks;
+      const available = stats.bsize * stats.bavail;
+      if (total <= 0) {
+        return { path, usagePercent: null };
+      }
+      const used = total - available;
+      return { path, usagePercent: (used / total) * 100 };
+    } catch {
+      return { path, usagePercent: null };
+    }
   }
 
   async collectDbPoolSnapshot(): Promise<{
@@ -96,7 +147,20 @@ export class PlatformMetricsCollectorService {
       outboxFailed: 0,
       notificationFailures: counters.notificationFailures,
       integrationFailures: counters.integrationFailures,
+      erpFailures: 0,
+      trackingFailures: 0,
     };
+  }
+
+  private async countIntegrationFailures(pool: Pool, patterns: string[]): Promise<number> {
+    if (patterns.length === 0) {
+      return 0;
+    }
+    const clauses = patterns.map((_, index) => `provider ILIKE $${index + 2}`);
+    const sql = `SELECT COUNT(*)::text AS count
+      FROM int.integration_inbox
+      WHERE status = $1 AND (${clauses.join(' OR ')})`;
+    return this.count(pool, sql, ['FAILED', ...patterns.map((pattern) => `%${pattern}%`)]);
   }
 
   private async count(pool: Pool, sql: string, params: unknown[] = []): Promise<number> {

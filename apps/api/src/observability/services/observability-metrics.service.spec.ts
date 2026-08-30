@@ -37,6 +37,8 @@ describe('ObservabilityMetricsService', () => {
               outboxFailed: 1,
               notificationFailures: 0,
               integrationFailures: 0,
+              erpFailures: 0,
+              trackingFailures: 0,
             }),
             getRuntimeFailureCounters: () => ({ storageFailures: 0, notificationFailures: 0, integrationFailures: 0 }),
           },

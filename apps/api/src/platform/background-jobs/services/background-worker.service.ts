@@ -201,6 +201,7 @@ export class BackgroundWorkerService {
       );
       await this.repository.markCompleted(job.id);
       this.metrics.succeeded += 1;
+      this.metricsRegistry?.recordWorkerActivity();
       this.structuredLogger?.operation({
         level: 'info',
         message: 'background_job_completed',
@@ -240,6 +241,7 @@ export class BackgroundWorkerService {
       const runAfter = new Date(Date.now() + delayMs).toISOString();
       await this.repository.scheduleRetry(job.id, message, failureClass, runAfter);
       this.metrics.retried += 1;
+      this.metricsRegistry?.recordWorkerActivity();
       this.logger.warn(
         `Job scheduled for retry id=${job.id} kind=${job.job_kind} attempt=${job.attempt_count}/${job.max_attempts} in ${delayMs}ms: ${message}`,
       );

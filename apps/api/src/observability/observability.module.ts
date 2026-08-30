@@ -9,6 +9,7 @@ import { BusinessMetricsCollectorService } from './services/business-metrics-col
 import { DatabaseInstrumentationService } from './services/database-instrumentation.service';
 import { ObservabilityMetricsService } from './services/observability-metrics.service';
 import { PlatformMetricsCollectorService } from './services/platform-metrics-collector.service';
+import { TechnicalAlertService } from './services/technical-alert.service';
 
 @Global()
 @Module({
@@ -26,6 +27,7 @@ import { PlatformMetricsCollectorService } from './services/platform-metrics-col
     PlatformMetricsCollectorService,
     BusinessMetricsCollectorService,
     ObservabilityMetricsService,
+    TechnicalAlertService,
   ],
   exports: [
     MetricsRegistryService,
@@ -35,6 +37,7 @@ import { PlatformMetricsCollectorService } from './services/platform-metrics-col
     PlatformMetricsCollectorService,
     BusinessMetricsCollectorService,
     ObservabilityMetricsService,
+    TechnicalAlertService,
   ],
 })
 export class ObservabilityModule {}
