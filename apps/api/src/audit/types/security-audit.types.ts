@@ -84,6 +84,7 @@ export const SECURITY_AUDIT_ACTIONS = {
   BillingBillingDocumentCancel: 'security:billing:billing-document:cancel',
   BillingBillingDocumentReplace: 'security:billing:billing-document:replace',
   BillingBillingDocumentDownload: 'security:billing:billing-document:download',
+  ReportsExportGenerate: 'security:reports:export:generate',
 } as const;
 
 export type SecurityAuditAction =
@@ -123,6 +124,7 @@ export const SECURITY_AUDIT_RESOURCE_TYPES = {
   CommercialPurchaseOrder: 'security:commercial:purchase-order',
   RequestsServiceRequest: 'security:requests:service-request',
   ServiceOrdersServiceOrder: 'security:service-orders:service-order',
+  ReportsExport: 'security:reports:export',
 } as const;
 
 export type SecurityAuditResourceType =

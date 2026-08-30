@@ -1,0 +1,133 @@
+.reports-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 1100px;
+}
+
+.reports-page__header h1 {
+  margin: 0 0 0.35rem;
+}
+
+.reports-page__lead {
+  margin: 0;
+  color: var(--shell-muted, #5c6570);
+}
+
+.reports-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 280px) 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 800px) {
+  .reports-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.reports-panel {
+  border: 1px solid var(--shell-border, #d8dee6);
+  border-radius: 8px;
+  padding: 1rem;
+  background: var(--shell-surface, #fff);
+}
+
+.reports-filters {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.reports-filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.reports-filters select,
+.reports-filters input {
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--shell-border, #d8dee6);
+  border-radius: 6px;
+}
+
+.reports-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.reports-actions button {
+  padding: 0.45rem 0.85rem;
+  border-radius: 6px;
+  border: 1px solid var(--shell-border, #d8dee6);
+  background: var(--shell-surface, #fff);
+  cursor: pointer;
+}
+
+.reports-actions button.primary {
+  background: var(--shell-accent, #1f4f82);
+  border-color: var(--shell-accent, #1f4f82);
+  color: #fff;
+}
+
+.reports-preview-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+  color: var(--shell-muted, #5c6570);
+}
+
+.reports-table-wrap {
+  overflow: auto;
+  max-height: 420px;
+  border: 1px solid var(--shell-border, #d8dee6);
+  border-radius: 6px;
+}
+
+.reports-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.reports-table th,
+.reports-table td {
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid var(--shell-border, #d8dee6);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.reports-table th {
+  position: sticky;
+  top: 0;
+  background: var(--shell-surface-muted, #f4f6f8);
+}
+
+.reports-status {
+  padding: 0.65rem 0.75rem;
+  border-radius: 6px;
+  background: var(--shell-surface-muted, #f4f6f8);
+  font-size: 0.9rem;
+}
+
+.reports-status[role='alert'] {
+  background: #fdecea;
+  color: #8a1f11;
+}
+
+.reports-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.reports-sensitive {
+  font-size: 0.85rem;
+  color: #8a5a00;
+}

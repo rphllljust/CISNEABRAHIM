@@ -105,6 +105,69 @@ export function createShellFetchMock(options: ShellFetchMockOptions = {}) {
       });
     }
 
+    if (url.includes('/api/v1/reports/catalog') && method === 'GET') {
+      return jsonResponse([
+        {
+          reportType: 'SERVICE_ORDERS_BY_PERIOD',
+          label: 'OS por período',
+          formats: ['CSV'],
+          sensitive: false,
+          columns: ['Número OS', 'Unidade', 'Cliente', 'Status', 'Criada em', 'Concluída em'],
+        },
+      ]);
+    }
+
+    if (url.includes('/api/v1/reports/exports/preview') && method === 'GET') {
+      return jsonResponse({
+        contract: {
+          name: 'OS por período',
+          filters: { period: 'month' },
+          columns: ['Número OS', 'Unidade', 'Cliente', 'Status', 'Criada em', 'Concluída em'],
+          sort: { field: 'createdAt', direction: 'DESC' },
+          timezone: 'America/Porto_Velho',
+          generatedAt: null,
+          actor: { identityId: MOCK_IDENTITY_ID, sessionId: MOCK_SESSION_ID },
+          scope: { summary: 'scoped_by_existing_grants' },
+        },
+        preview: [
+          {
+            orderNumber: 'SO-001',
+            unitId: 'unit-a',
+            clientName: 'Cliente Alfa',
+            status: 'PREPARED',
+            createdAt: '2026-08-29T12:00:00.000Z',
+            completedAt: null,
+          },
+        ],
+        total: 1,
+      });
+    }
+
+    if (url.includes('/api/v1/reports/exports') && method === 'POST') {
+      return jsonResponse({
+        id: 'export-1',
+        reportType: 'SERVICE_ORDERS_BY_PERIOD',
+        format: 'CSV',
+        status: 'COMPLETED',
+        contract: {
+          name: 'OS por período',
+          filters: { period: 'month' },
+          columns: ['Número OS'],
+          sort: { field: 'createdAt', direction: 'DESC' },
+          timezone: 'America/Porto_Velho',
+          generatedAt: new Date().toISOString(),
+          actor: { identityId: MOCK_IDENTITY_ID, sessionId: MOCK_SESSION_ID },
+          scope: { summary: 'scoped_by_existing_grants' },
+        },
+        rowCount: 1,
+        fileSizeBytes: 128,
+        errorMessage: null,
+        createdAt: new Date().toISOString(),
+        completedAt: new Date().toISOString(),
+        downloadReady: true,
+      });
+    }
+
     if (url.includes('/api/v1/dashboard/executive') && method === 'GET') {
       return jsonResponse({
         generatedAt: new Date().toISOString(),

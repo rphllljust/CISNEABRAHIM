@@ -15,6 +15,7 @@ import { RequestsExceptionFilter } from './requests/errors/requests-exception.fi
 import { ServiceOrdersExceptionFilter } from './service-orders/errors/service-orders-exception.filter';
 import { BillingExceptionFilter } from './billing/errors/billing-exception.filter';
 import { SearchExceptionFilter } from './search/errors/search-exception.filter';
+import { ReportExceptionFilter } from './reports/errors/report-exception.filter';
 import { CorrelationIdInterceptor } from './infrastructure/http/correlation-id.interceptor';
 import { SecurityHeadersInterceptor } from './infrastructure/http/security-headers.interceptor';
 
@@ -48,6 +49,7 @@ async function bootstrap(): Promise<void> {
     new ServiceOrdersExceptionFilter(),
     new BillingExceptionFilter(),
     new SearchExceptionFilter(),
+    new ReportExceptionFilter(),
   );
   app.useGlobalInterceptors(new CorrelationIdInterceptor(), new SecurityHeadersInterceptor());
 

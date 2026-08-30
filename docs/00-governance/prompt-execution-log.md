@@ -4302,7 +4302,7 @@ NEXT_ALLOWED_PROMPT: 78
 NEXT_PROMPT_EXECUTED: NO
 NOTES:
   PostgreSQL suficiente para fase inicial; search engine externo não introduzido.
-  Prompt 78 não executado.
+  Prompt 78 executado (PASS).
 ```
 
 ## Quality gate Prompt 77 (evidência)
@@ -4320,6 +4320,57 @@ NOTES:
 | keyboard Enter | PASS | search.components.test.tsx |
 | highlight seguro | PASS | search.components.test.tsx |
 | merge scope SQL params | PASS | search-sql.helper.spec.ts |
+| API typecheck | PASS | tsc --noEmit |
+| web typecheck | PASS | tsc --noEmit |
+
+---
+
+## Prompt 78 — Relatórios e exportações
+
+```
+PROMPT_ID: 78
+PROMPT_TITLE: Relatórios e exportações
+EXECUTED_AT: 2026-08-29
+EXECUTION_STATUS: PASS
+COMMIT: (pending) feat(reporting): implement auditable reports and exports
+ARTIFACTS:
+  packages/database/migrations/0034_report_exports.sql
+  apps/api/src/reports/**
+  apps/web/src/reports/**
+ENDPOINT:
+  GET /api/v1/reports/catalog
+  GET /api/v1/reports/exports/preview
+  POST /api/v1/reports/exports
+  GET /api/v1/reports/exports/:exportId
+  GET /api/v1/reports/exports/:exportId/download
+  DELETE /api/v1/reports/exports/:exportId
+REPORTS: OS por período/cliente/serviço, vencidas, produtividade, utilização de ativos, medições, aging financeiro, faturamentos, recebimentos
+CONTRACT: name, filters, columns, sort, timezone, generatedAt, actor, scope
+EXPORT: CSV (v1); XLSX/PDF retornam FORMAT_UNSUPPORTED até implementação dedicada
+LARGE_VOLUME: batch LIMIT/OFFSET + background job REPORT_GENERATION acima de syncRowThreshold (500)
+CSV_INJECTION: sanitização = + - @ com testes explícitos
+SECURITY: escopo por grants existentes; auditoria em export sensível (actor, timestamp, report, filters, rowCount, correlation)
+FRONTEND: /app/reports — filtros, preview limitado, generate, progress/poll, download não bloqueante
+QUALITY_GATE: PASS
+NEXT_ALLOWED_PROMPT: 79
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  XLSX e PDF não implementados neste prompt (CSV prioritário).
+  Prompt 79 não executado.
+```
+
+## Quality gate Prompt 78 (evidência)
+
+| Cenário de teste | Resultado | Evidência |
+|------------------|-----------|-----------|
+| filtros/preview | PASS | reports.components.test.tsx, reports.integration.spec.ts |
+| totals vs preview limit | PASS | reports.integration.spec.ts |
+| escopo/IDOR | PASS | reports.integration.spec.ts |
+| CSV injection | PASS | csv-export.spec.ts, reports.integration.spec.ts |
+| async/cancel signal | PASS | report-generation.service.spec.ts |
+| timezone no contrato | PASS | reports.integration.spec.ts |
+| precisão monetária (texto CSV) | PASS | csv-export.spec.ts |
+| acessibilidade UI | PASS | reports.components.test.tsx |
 | API typecheck | PASS | tsc --noEmit |
 | web typecheck | PASS | tsc --noEmit |
 
