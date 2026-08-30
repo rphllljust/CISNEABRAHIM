@@ -4903,7 +4903,7 @@ QUALITY_GATE: PASS
 NEXT_ALLOWED_PROMPT: 92
 NEXT_PROMPT_EXECUTED: NO
 NOTES:
-  Prompt 92 não executado.
+  Prompt 92 executado (PASS — decisão NO-GO).
   Rollback de banco não assumido (databaseRollbackSupported=false).
 ```
 
@@ -4917,6 +4917,47 @@ NOTES:
 | idempotência notifications/ERP/billing/outbox | PASS | release-idempotency.ts |
 | critérios objetivos de rollback | PASS | release-decision.ts |
 | validação pós-rollback (7 domínios) | PASS | release-drill.spec.ts |
+| API typecheck | PASS | tsc --noEmit |
+
+---
+
+## Prompt 92 — Production readiness gate
+
+```
+PROMPT_ID: 92
+PROMPT_TITLE: Production readiness gate
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: PASS
+PRODUCTION_READINESS: NO-GO
+COMMIT: e790781 ops(readiness): evaluate production readiness gate NO-GO
+ARTIFACTS:
+  apps/api/src/ops/readiness/**
+  scripts/readiness/gate.mjs
+  .env.readiness.example
+  docs/19-operations/production-readiness-gate.md
+ENGINEERING_GATES: CI, CD, Security, Load, Backup, Restore, DR, Observability, Alerts, Rollback, TLS, Secrets, Migrations, E2E — PASS
+BUSINESS_BLOCKERS:
+  BUSINESS_STAKEHOLDER_SIGN_OFF_PENDING
+  RPO_RTO_TARGET_NOT_DEFINED (DDP-016)
+  PILOT_NOT_EXIT_READY
+  UAT_MANUAL_UX_CHECKLIST_PENDING
+SUPPORT: technical owner, incident channel, rollback authority, escalation — definidos (roles; atribuição nominal pendente)
+QUALITY_GATE: PASS
+NEXT_ALLOWED_PROMPT: 93 (somente se GO)
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Prompt 93 não executado — decisão NO-GO honesta.
+  Não alterado para cumprir cronograma.
+```
+
+## Quality gate Prompt 92 (evidência)
+
+| Cenário de teste | Resultado | Evidência |
+|------------------|-----------|-----------|
+| engineering gates PASS | PASS | readiness-gate.spec.ts |
+| NO-GO com blockers reais | PASS | readiness-gate.spec.ts |
+| GO somente com flags explícitas | PASS | readiness-gate.spec.ts |
+| support model definido | PASS | readiness-gate.ts |
 | API typecheck | PASS | tsc --noEmit |
 
 ---
