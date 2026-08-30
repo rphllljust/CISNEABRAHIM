@@ -4285,7 +4285,7 @@ PROMPT_ID: 77
 PROMPT_TITLE: Busca avançada
 EXECUTED_AT: 2026-08-29
 EXECUTION_STATUS: PASS
-COMMIT: feat(search): implement permission-aware advanced search
+COMMIT: 9cf1225 feat(search): implement permission-aware advanced search
 ARTIFACTS:
   packages/database/migrations/0033_search_trigram_indexes.sql
   apps/api/src/search/**
