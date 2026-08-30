@@ -40,7 +40,7 @@ export class BillingDocumentController {
       { identityId: auth.sub, sessionId: auth.sid },
       serviceOrderId,
       billingRecordId,
-      validateIssueBillingDocumentInput(request.body as never),
+      validateIssueBillingDocumentInput(request.body),
     );
   }
 
@@ -95,7 +95,7 @@ export class BillingDocumentController {
       serviceOrderId,
       billingRecordId,
       billingDocumentId,
-      validateCancelBillingDocumentInput(request.body as never),
+      validateCancelBillingDocumentInput(request.body),
     );
   }
 
@@ -113,7 +113,7 @@ export class BillingDocumentController {
       serviceOrderId,
       billingRecordId,
       billingDocumentId,
-      validateReplaceBillingDocumentInput(request.body as never),
+      validateReplaceBillingDocumentInput(request.body),
     );
   }
 }

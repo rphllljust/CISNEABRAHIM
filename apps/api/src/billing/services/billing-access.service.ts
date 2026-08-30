@@ -6,7 +6,6 @@ import {
   SECURITY_AUDIT_RESOURCE_TYPES,
 } from '../../audit/types/security-audit.types';
 import { SecurityAuditService } from '../../audit/services/security-audit.service';
-import { DomainEventsRecorderService } from '../../events/services/domain-events-recorder.service';
 import { AuthorizationRepository } from '../../authorization/repositories/authorization.repository';
 import { PolicyDecisionPointService } from '../../authorization/services/policy-decision-point.service';
 import { toResourceContextFromServiceOrder } from '../../authorization/scope/scope-matcher';
@@ -52,7 +51,6 @@ export class BillingAccessService {
     private readonly authorizationRepository: AuthorizationRepository,
     private readonly policyDecisionPoint: PolicyDecisionPointService,
     private readonly securityAudit: SecurityAuditService,
-    private readonly domainEventsRecorder: DomainEventsRecorderService,
   ) {}
 
   async getByServiceOrder(
@@ -208,15 +206,6 @@ export class BillingAccessService {
       billingRecordId: result.billingRecord.id,
       measurementId: measurement.id,
       totalAmount: computedTotal,
-    });
-
-    await this.domainEventsRecorder.recordBillingReady({
-      billingRecordId: result.billingRecord.id,
-      serviceOrderId: order.id,
-      measurementId: measurement.id,
-      unitId: order.unit_id,
-      totalAmount: computedTotal,
-      preparedAt: result.billingRecord.prepared_at,
     });
 
     return this.loadDetail(result.billingRecord);

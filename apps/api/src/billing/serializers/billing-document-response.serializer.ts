@@ -83,11 +83,22 @@ function toItemResponse(row: BillingDocumentItemRow): BillingDocumentItemRespons
   };
 }
 
+function sanitizeHistoryPayload(payload: Record<string, unknown>): Record<string, unknown> {
+  const sanitized: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(payload)) {
+    if (key.toLowerCase().includes('storage_key') || key.toLowerCase() === 'storagekey') {
+      continue;
+    }
+    sanitized[key] = value;
+  }
+  return sanitized;
+}
+
 function toHistoryResponse(row: BillingDocumentHistoryEventRow): BillingDocumentHistoryEventResponse {
   return {
     id: row.id,
     eventType: row.event_type,
-    payload: row.payload,
+    payload: sanitizeHistoryPayload(row.payload),
     actorIdentityId: row.actor_identity_id,
     occurredAt: row.occurred_at,
   };

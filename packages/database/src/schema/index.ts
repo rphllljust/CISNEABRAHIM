@@ -168,3 +168,4 @@ export {
   backgroundJobFailureClassEnum,
   backgroundJobs,
 } from './background-jobs';
+export { outboxEventStatusEnum, outboxEvents } from './outbox-events';

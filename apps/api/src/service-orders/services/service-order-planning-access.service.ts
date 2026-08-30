@@ -6,7 +6,6 @@ import {
   SECURITY_AUDIT_RESOURCE_TYPES,
 } from '../../audit/types/security-audit.types';
 import { SecurityAuditService } from '../../audit/services/security-audit.service';
-import { DomainEventsRecorderService } from '../../events/services/domain-events-recorder.service';
 import { AuthorizationRepository } from '../../authorization/repositories/authorization.repository';
 import { PolicyDecisionPointService } from '../../authorization/services/policy-decision-point.service';
 import { toResourceContextFromServiceOrder } from '../../authorization/scope/scope-matcher';
@@ -53,7 +52,6 @@ export class ServiceOrderPlanningAccessService {
     private readonly authorizationRepository: AuthorizationRepository,
     private readonly policyDecisionPoint: PolicyDecisionPointService,
     private readonly securityAudit: SecurityAuditService,
-    private readonly domainEventsRecorder: DomainEventsRecorderService,
   ) {}
 
   async listPlannedResources(
@@ -249,16 +247,6 @@ export class ServiceOrderPlanningAccessService {
     });
 
     const response = await this.mapAllocationResult(actor, serviceOrderId, result);
-    if (result.outcome === 'allocated' && result.allocation) {
-      await this.domainEventsRecorder.recordServiceOrderAssigned({
-        serviceOrderId: order.id,
-        unitId: order.unit_id,
-        allocationId: result.allocation.id,
-        physicalAssetId: result.allocation.physical_asset_id,
-        resourceTypeCode: result.allocation.resource_type_code,
-        assignedAt: result.allocation.created_at,
-      });
-    }
     return response;
   }
 

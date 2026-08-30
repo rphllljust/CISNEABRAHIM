@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { Pool, PoolClient } from 'pg';
 import { DatabaseService } from '../../infrastructure/database/database.service';
+import { OutboxDomainEventWriter } from '../../platform/outbox/services/outbox-domain-event.writer';
 import { SERVICE_REQUEST_STATUSES } from '../../requests/domain/service-request';
 import { SERVICE_ORDER_STATUSES } from '../domain/service-order';
 import type {
@@ -51,7 +52,10 @@ const SO_SELECT = `
 
 @Injectable()
 export class ServiceOrdersRepository {
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly outboxWriter: OutboxDomainEventWriter,
+  ) {}
 
   private pool(): Pool {
     const connection = this.databaseService.getConnection();
@@ -661,6 +665,24 @@ export class ServiceOrdersRepository {
         },
         actorIdentityId: input.actorIdentityId,
       });
+      if (input.transition === 'release' && updated.released_at) {
+        await this.outboxWriter.appendServiceOrderReleased(client, {
+          serviceOrderId: updated.id,
+          unitId: updated.unit_id,
+          clientId: updated.client_id,
+          orderNumber: updated.order_number,
+          releasedAt: updated.released_at,
+        });
+      }
+      if (input.transition === 'complete' && updated.completed_at) {
+        await this.outboxWriter.appendServiceOrderCompleted(client, {
+          serviceOrderId: updated.id,
+          unitId: updated.unit_id,
+          clientId: updated.client_id,
+          orderNumber: updated.order_number,
+          completedAt: updated.completed_at,
+        });
+      }
       await client.query('COMMIT');
       return updated;
     } catch (error) {

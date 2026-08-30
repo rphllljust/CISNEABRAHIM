@@ -43,4 +43,4 @@ export { truncateServiceRequestTables } from './service-request-builders';
 export { truncateServiceOrderTables } from './service-order-builders';
 export { truncateBillingTables } from './billing-builders';
 export { truncateDomainEventTables } from './event-builders';
-export { truncateBackgroundJobTables } from './platform-builders';
+export { truncateBackgroundJobTables, truncateOutboxTables } from './platform-builders';

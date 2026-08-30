@@ -382,7 +382,7 @@ describe('Service requests PostgreSQL integration', () => {
       pricingStructure: PROPOSAL_PRICING_STRUCTURES.GlobalPrice,
       globalSalePrice: '5000.0000',
     });
-    const issued = await proposalsAccess.issue(
+    await proposalsAccess.issue(
       actor,
       proposal.proposal.id,
       1,

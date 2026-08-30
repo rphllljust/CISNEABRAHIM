@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { Pool } from 'pg';
 import { DatabaseService } from '../../infrastructure/database/database.service';
+import { OutboxDomainEventWriter } from '../../platform/outbox/services/outbox-domain-event.writer';
 import { SERVICE_REQUEST_STATUSES } from '../domain/service-request';
 import type {
   CreateServiceRequestPersistenceInput,
@@ -28,7 +29,10 @@ const SR_SELECT = `
 
 @Injectable()
 export class ServiceRequestsRepository {
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly outboxWriter: OutboxDomainEventWriter,
+  ) {}
 
   private pool(): Pool {
     const connection = this.databaseService.getConnection();
@@ -275,51 +279,71 @@ export class ServiceRequestsRepository {
   async transition(
     input: TransitionServiceRequestPersistenceInput,
   ): Promise<ServiceRequestRow | 'VERSION_CONFLICT' | 'INVALID_STATE'> {
-    const { transitionSql, extraParams } = this.buildTransitionSql(input);
-    const params = [
-      input.serviceRequestId,
-      input.rowVersion,
-      input.nextStatus,
-      input.actorIdentityId,
-      input.currentStatus,
-      ...extraParams,
-    ];
-    const result = await this.pool().query<ServiceRequestRow>(
-      `UPDATE sr.service_requests
-       SET
-         status = $3::sr.service_request_status,
-         ${transitionSql},
-         updated_by_identity_id = $4,
-         updated_at = NOW(),
-         row_version = row_version + 1
-       WHERE id = $1
-         AND row_version = $2
-         AND status = $5::sr.service_request_status
-       RETURNING
-         id, request_code, unit_id, status::text AS status, origin_source::text AS origin_source,
-         external_contact, external_origin_reference, client_id,
-         service_definition_id, service_definition_version_id, description, location,
-         desired_start_at, desired_end_at, priority::text AS priority, operational_notes,
-         proposal_id, purchase_order_id, submitted_at, submitted_by_identity_id,
-         review_started_at, review_started_by_identity_id, approved_at, approved_by_identity_id,
-         rejected_at, rejected_by_identity_id, rejection_reason,
-         cancelled_at, cancelled_by_identity_id, cancellation_reason,
-         converted_at, converted_by_identity_id, converted_service_order_id,
-         idempotency_key, row_version, created_at, updated_at,
-         created_by_identity_id, updated_by_identity_id`,
-      params,
-    );
-    if ((result.rowCount ?? 0) === 0) {
-      const current = await this.findById(input.serviceRequestId);
-      if (!current) {
-        return 'VERSION_CONFLICT';
+    const client = await this.pool().connect();
+    try {
+      await client.query('BEGIN');
+      const { transitionSql, extraParams } = this.buildTransitionSql(input);
+      const params = [
+        input.serviceRequestId,
+        input.rowVersion,
+        input.nextStatus,
+        input.actorIdentityId,
+        input.currentStatus,
+        ...extraParams,
+      ];
+      const result = await client.query<ServiceRequestRow>(
+        `UPDATE sr.service_requests
+         SET
+           status = $3::sr.service_request_status,
+           ${transitionSql},
+           updated_by_identity_id = $4,
+           updated_at = NOW(),
+           row_version = row_version + 1
+         WHERE id = $1
+           AND row_version = $2
+           AND status = $5::sr.service_request_status
+         RETURNING
+           id, request_code, unit_id, status::text AS status, origin_source::text AS origin_source,
+           external_contact, external_origin_reference, client_id,
+           service_definition_id, service_definition_version_id, description, location,
+           desired_start_at, desired_end_at, priority::text AS priority, operational_notes,
+           proposal_id, purchase_order_id, submitted_at, submitted_by_identity_id,
+           review_started_at, review_started_by_identity_id, approved_at, approved_by_identity_id,
+           rejected_at, rejected_by_identity_id, rejection_reason,
+           cancelled_at, cancelled_by_identity_id, cancellation_reason,
+           converted_at, converted_by_identity_id, converted_service_order_id,
+           idempotency_key, row_version, created_at, updated_at,
+           created_by_identity_id, updated_by_identity_id`,
+        params,
+      );
+      if ((result.rowCount ?? 0) === 0) {
+        await client.query('ROLLBACK');
+        const current = await this.findById(input.serviceRequestId);
+        if (!current) {
+          return 'VERSION_CONFLICT';
+        }
+        if (current.row_version !== input.rowVersion) {
+          return 'VERSION_CONFLICT';
+        }
+        return 'INVALID_STATE';
       }
-      if (current.row_version !== input.rowVersion) {
-        return 'VERSION_CONFLICT';
+      const updated = result.rows[0]!;
+      if (input.transitionField === 'submit' && updated.submitted_at) {
+        await this.outboxWriter.appendServiceRequestSubmitted(client, {
+          serviceRequestId: updated.id,
+          unitId: updated.unit_id,
+          clientId: updated.client_id,
+          submittedAt: updated.submitted_at,
+        });
       }
-      return 'INVALID_STATE';
+      await client.query('COMMIT');
+      return updated;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
     }
-    return result.rows[0]!;
   }
 
   async linkDocument(

@@ -3665,3 +3665,45 @@ NOTES:
 | concurrency | PASS | WORKER_CONCURRENCY=2 |
 
 ---
+
+## Prompt 66 — Transactional outbox
+
+```
+PROMPT_ID: 66
+PROMPT_TITLE: Transactional outbox — eventos atômicos com processamento assíncrono
+EXECUTED_AT: 2026-08-29
+EXECUTION_STATUS: PASS
+COMMIT: feat(platform): implement transactional outbox
+ARTIFACTS:
+  packages/database/migrations/0028_transactional_outbox.sql
+  packages/database/src/schema/outbox-events.ts
+  apps/api/src/platform/outbox/**
+  apps/api/src/worker/worker-app.module.ts (OutboxPublisherWorkerService)
+  apps/api/src/requests|service-orders|measurements|billing repositories (outbox append in TX)
+  apps/api/src/test/ensure-migrations.ts
+  packages/database/scripts/ci-database-gate.mjs
+DELIVERY_SEMANTICS: AT_LEAST_ONCE
+EXACTLY_ONCE: NOT_PROMISED
+QUALITY_GATE: PASS
+NEXT_ALLOWED_PROMPT: 67
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  evt.outbox_events inserido na mesma transação das mutações empresariais; publicação via OutboxPublisherWorker.
+  Removido publish pós-commit dos access services; DomainEventsRecorder permanece para PAYMENT_OVERDUE/legado.
+  Publicação idempotente em evt.domain_events + enqueue de jobs NOTIFICATION.
+  Evidência: lint/typecheck PASS; api unit 141; transactional-outbox integration 6.
+  Prompt 67 não executado.
+```
+
+## Quality gate Prompt 66 (evidência)
+
+| Cenário de teste | Resultado | Evidência |
+|------------------|-----------|-----------|
+| rollback | PASS | outbox ausente após ROLLBACK |
+| committed event | PASS | PENDING → publish → domain_events |
+| duplicate worker | PASS | SKIP LOCKED — um worker por row |
+| crash after external action | PASS | republish idempotente |
+| retry | PASS | scheduleRetry → republish |
+| ordering when required | PASS | sequence_number + ordering_key |
+
+---

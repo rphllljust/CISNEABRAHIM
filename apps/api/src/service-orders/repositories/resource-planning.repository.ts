@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { Pool, PoolClient } from 'pg';
 import { DatabaseService } from '../../infrastructure/database/database.service';
+import { OutboxDomainEventWriter } from '../../platform/outbox/services/outbox-domain-event.writer';
 import { ASSET_LIFECYCLE_STATUSES } from '../../resources/domain/physical-asset';
 import {
   ALLOCATION_HISTORY_EVENTS,
@@ -44,7 +45,10 @@ const ALLOCATION_SELECT = `
 
 @Injectable()
 export class ResourcePlanningRepository {
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly outboxWriter: OutboxDomainEventWriter,
+  ) {}
 
   private pool(): Pool {
     const connection = this.databaseService.getConnection();
@@ -321,6 +325,19 @@ export class ResourcePlanningRepository {
         return { outcome: 'allocation_conflict' };
       }
 
+      const order = await client.query<{ unit_id: string }>(
+        `SELECT unit_id FROM so.service_orders WHERE id = $1`,
+        [input.serviceOrderId],
+      );
+      await this.outboxWriter.appendServiceOrderAssigned(client, {
+        serviceOrderId: input.serviceOrderId,
+        unitId: order.rows[0]?.unit_id ?? '',
+        allocationId: inserted.id,
+        physicalAssetId: inserted.physical_asset_id,
+        resourceTypeCode: inserted.resource_type_code,
+        assignedAt: inserted.created_at,
+      });
+
       await client.query('COMMIT');
       return { outcome: 'allocated', allocation: inserted };
     } catch (error) {
@@ -417,6 +434,19 @@ export class ResourcePlanningRepository {
         eventType: ALLOCATION_HISTORY_EVENTS.ReallocateResource,
         payload: { toAllocationId: newAllocation.id },
         actorIdentityId: input.actorIdentityId,
+      });
+
+      const order = await client.query<{ unit_id: string }>(
+        `SELECT unit_id FROM so.service_orders WHERE id = $1`,
+        [input.serviceOrderId],
+      );
+      await this.outboxWriter.appendServiceOrderAssigned(client, {
+        serviceOrderId: input.serviceOrderId,
+        unitId: order.rows[0]?.unit_id ?? '',
+        allocationId: newAllocation.id,
+        physicalAssetId: newAllocation.physical_asset_id,
+        resourceTypeCode: newAllocation.resource_type_code,
+        assignedAt: newAllocation.created_at,
       });
 
       await client.query('COMMIT');

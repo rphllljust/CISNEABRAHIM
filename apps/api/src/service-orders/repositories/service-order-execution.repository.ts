@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { Pool, PoolClient } from 'pg';
 import { DatabaseService } from '../../infrastructure/database/database.service';
+import { OutboxDomainEventWriter } from '../../platform/outbox/services/outbox-domain-event.writer';
 import { EXECUTION_ENTRY_HISTORY_EVENTS } from '../domain/service-order-execution';
 import type {
   ExecutionCommandIdempotencyRow,
@@ -33,7 +34,10 @@ const ENTRY_RETURNING = `
 
 @Injectable()
 export class ServiceOrderExecutionRepository {
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly outboxWriter: OutboxDomainEventWriter,
+  ) {}
 
   private pool(): Pool {
     const connection = this.databaseService.getConnection();
@@ -189,6 +193,31 @@ export class ServiceOrderExecutionRepository {
             JSON.stringify({ ...input.responsePayload, rowVersion: updated.rows[0].row_version }),
           ],
         );
+      }
+
+      if (input.transition === 'complete') {
+        const order = await client.query<{
+          id: string;
+          unit_id: string;
+          client_id: string | null;
+          order_number: string;
+          completed_at: string | null;
+        }>(
+          `SELECT id, unit_id, client_id, order_number, completed_at
+           FROM so.service_orders
+           WHERE id = $1`,
+          [input.serviceOrderId],
+        );
+        const completed = order.rows[0];
+        if (completed?.completed_at) {
+          await this.outboxWriter.appendServiceOrderCompleted(client, {
+            serviceOrderId: completed.id,
+            unitId: completed.unit_id,
+            clientId: completed.client_id,
+            orderNumber: completed.order_number,
+            completedAt: completed.completed_at,
+          });
+        }
       }
 
       await client.query('COMMIT');

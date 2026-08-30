@@ -7,7 +7,6 @@ import {
   SECURITY_AUDIT_RESOURCE_TYPES,
 } from '../../audit/types/security-audit.types';
 import { SecurityAuditService } from '../../audit/services/security-audit.service';
-import { DomainEventsRecorderService } from '../../events/services/domain-events-recorder.service';
 import { AuthorizationRepository } from '../../authorization/repositories/authorization.repository';
 import { PolicyDecisionPointService } from '../../authorization/services/policy-decision-point.service';
 import { ScopeEnforcementService } from '../../authorization/services/scope-enforcement.service';
@@ -65,7 +64,6 @@ export class ServiceRequestsAccessService {
     private readonly policyDecisionPoint: PolicyDecisionPointService,
     private readonly scopeEnforcement: ScopeEnforcementService,
     private readonly securityAudit: SecurityAuditService,
-    private readonly domainEventsRecorder: DomainEventsRecorderService,
     @Inject(SERVICE_REQUEST_CONVERSION_PORT)
     private readonly conversionPort: ServiceRequestConversionPort,
   ) {}
@@ -546,15 +544,6 @@ export class ServiceRequestsAccessService {
     }
 
     await this.recordTransitionAudit(actor, serviceRequestId, transition);
-
-    if (transition === 'submit' && updated.submitted_at) {
-      await this.domainEventsRecorder.recordServiceRequestSubmitted({
-        serviceRequestId: updated.id,
-        unitId: updated.unit_id,
-        clientId: updated.client_id,
-        submittedAt: updated.submitted_at,
-      });
-    }
 
     const links = await this.repository.listDocumentLinks(serviceRequestId);
     return toServiceRequestDetailResponse(updated, links);

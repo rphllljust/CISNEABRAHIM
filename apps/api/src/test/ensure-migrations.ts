@@ -208,6 +208,11 @@ export default async function ensureMigrations(): Promise<void> {
     if (!hasBackgroundJobs) {
       await applySqlFile(pool, '0027_background_jobs.sql');
     }
+
+    const hasOutboxEvents = await tableExists(pool, 'evt.outbox_events');
+    if (!hasOutboxEvents) {
+      await applySqlFile(pool, '0028_transactional_outbox.sql');
+    }
   } finally {
     await pool.end();
   }

@@ -7,7 +7,6 @@ import {
   SECURITY_AUDIT_RESOURCE_TYPES,
 } from '../../audit/types/security-audit.types';
 import { SecurityAuditService } from '../../audit/services/security-audit.service';
-import { DomainEventsRecorderService } from '../../events/services/domain-events-recorder.service';
 import { AuthorizationRepository } from '../../authorization/repositories/authorization.repository';
 import { PolicyDecisionPointService } from '../../authorization/services/policy-decision-point.service';
 import { ScopeEnforcementService } from '../../authorization/services/scope-enforcement.service';
@@ -81,7 +80,6 @@ export class ServiceOrdersAccessService {
     private readonly policyDecisionPoint: PolicyDecisionPointService,
     private readonly scopeEnforcement: ScopeEnforcementService,
     private readonly securityAudit: SecurityAuditService,
-    private readonly domainEventsRecorder: DomainEventsRecorderService,
   ) {}
 
   async create(
@@ -480,16 +478,6 @@ export class ServiceOrdersAccessService {
       classification: SECURITY_AUDIT_CLASSIFICATIONS.Standard,
       metadata: { fromStatus: current.status, toStatus: nextStatus },
     });
-
-    if (updated.released_at) {
-      await this.domainEventsRecorder.recordServiceOrderReleased({
-        serviceOrderId: updated.id,
-        unitId: updated.unit_id,
-        clientId: updated.client_id,
-        orderNumber: updated.order_number,
-        releasedAt: updated.released_at,
-      });
-    }
 
     const history = await this.repository.listHistoryEvents(serviceOrderId);
     return toServiceOrderDetailResponse(updated, history);

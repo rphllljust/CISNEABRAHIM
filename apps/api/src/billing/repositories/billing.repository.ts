@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { Pool, PoolClient } from 'pg';
 import { DatabaseService } from '../../infrastructure/database/database.service';
+import { OutboxDomainEventWriter } from '../../platform/outbox/services/outbox-domain-event.writer';
 import { BILLING_COMMANDS, BILLING_HISTORY_EVENTS } from '../domain/billing';
 import type {
   BillingCommandIdempotencyRow,
@@ -37,7 +38,10 @@ const BILLING_ITEM_RETURNING = `
 
 @Injectable()
 export class BillingRepository {
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly outboxWriter: OutboxDomainEventWriter,
+  ) {}
 
   private pool(): Pool {
     const connection = this.databaseService.getConnection();
@@ -290,6 +294,15 @@ export class BillingRepository {
           ],
         );
       }
+
+      await this.outboxWriter.appendBillingReady(client, {
+        billingRecordId: billingRecord.id,
+        serviceOrderId: input.serviceOrderId,
+        measurementId: input.measurementId,
+        unitId: input.unitId,
+        totalAmount: input.totalAmount,
+        preparedAt: billingRecord.prepared_at,
+      });
 
       await client.query('COMMIT');
       return { outcome: 'created', billingRecord };

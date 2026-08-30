@@ -412,7 +412,7 @@ describe('Billing document PostgreSQL integration', () => {
       billingDocumentAccess.issue(actor, completed.id, billing.id, {}),
     ).rejects.toBeTruthy();
 
-    const active = await pool.query(
+    const active = await pool.query<{ count: string }>(
       `SELECT COUNT(*)::text AS count FROM bil.billing_documents WHERE billing_record_id = $1`,
       [billing.id],
     );

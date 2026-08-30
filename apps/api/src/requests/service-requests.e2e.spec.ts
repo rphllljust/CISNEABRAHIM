@@ -200,14 +200,21 @@ describe('Service requests E2E', () => {
     });
     expect(reviewResponse.statusCode).toBe(200);
 
+    const reviewed = JSON.parse(reviewResponse.body) as {
+      serviceRequest: { rowVersion: number };
+    };
+
     const approveResponse = await app.inject({
       method: 'POST',
       url: `/api/v1/requests/service-requests/${created.serviceRequest.id}/approve`,
       headers: { authorization: `Bearer ${accessToken}` },
-      payload: { rowVersion: JSON.parse(reviewResponse.body).serviceRequest.rowVersion, priority: 'NORMAL' },
+      payload: { rowVersion: reviewed.serviceRequest.rowVersion, priority: 'NORMAL' },
     });
     expect(approveResponse.statusCode).toBe(200);
-    expect(JSON.parse(approveResponse.body).serviceRequest.status).toBe(SERVICE_REQUEST_STATUSES.Approved);
+    const approved = JSON.parse(approveResponse.body) as {
+      serviceRequest: { status: string };
+    };
+    expect(approved.serviceRequest.status).toBe(SERVICE_REQUEST_STATUSES.Approved);
   });
 
   it('returns 403 for unauthorized service request read', async () => {

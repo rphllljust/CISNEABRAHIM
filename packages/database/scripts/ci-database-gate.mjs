@@ -46,6 +46,7 @@ const MIGRATION_FILES = [
   '0025_billing_documents.sql',
   '0026_domain_events_notifications.sql',
   '0027_background_jobs.sql',
+  '0028_transactional_outbox.sql',
 ];
 
 const INCREMENTAL_BASELINE_FILES = MIGRATION_FILES.slice(0, -1);
@@ -93,6 +94,7 @@ const EXPECTED_TABLES = [
   'evt.domain_events',
   'evt.notification_intents',
   'plt.background_jobs',
+  'evt.outbox_events',
 ];
 
 function adminConnectionString() {
@@ -390,6 +392,22 @@ async function assertPreDeltaState(connectionString, deltaFile) {
       );
       if ((enumValues.rowCount ?? 0) > 0) {
         throw new Error('Incremental baseline incorrectly contains OBSERVATION evidence_kind before 0013');
+      }
+      return;
+    }
+
+    if (deltaFile === '0028_transactional_outbox.sql') {
+      const backgroundJobs = await client.query('SELECT to_regclass($1) AS regclass', [
+        'plt.background_jobs',
+      ]);
+      if (!backgroundJobs.rows[0]?.regclass) {
+        throw new Error('Expected plt.background_jobs before 0028 delta');
+      }
+      const outboxEvents = await client.query('SELECT to_regclass($1) AS regclass', [
+        'evt.outbox_events',
+      ]);
+      if (outboxEvents.rows[0]?.regclass) {
+        throw new Error('Incremental baseline incorrectly contains evt.outbox_events before 0028');
       }
       return;
     }

@@ -345,7 +345,7 @@ export class BillingDocumentRepository {
           JSON.stringify({
             documentNumber: allocation.documentNumber,
             artifactSha256: artifact.sha256,
-            storageKey: artifact.storageKey,
+            storedDocumentId: artifact.storedDocumentId,
           }),
           input.actorIdentityId,
         ],
@@ -376,9 +376,10 @@ export class BillingDocumentRepository {
     } catch (error) {
       await client.query('ROLLBACK');
       if (artifact) {
-        error = Object.assign(error instanceof Error ? error : new Error(String(error)), {
+        const enriched = Object.assign(error instanceof Error ? error : new Error(String(error)), {
           storageKey: artifact.storageKey,
         });
+        throw enriched;
       }
       throw error;
     } finally {
@@ -587,9 +588,10 @@ export class BillingDocumentRepository {
     } catch (error) {
       await client.query('ROLLBACK');
       if (artifact) {
-        error = Object.assign(error instanceof Error ? error : new Error(String(error)), {
+        const enriched = Object.assign(error instanceof Error ? error : new Error(String(error)), {
           storageKey: artifact.storageKey,
         });
+        throw enriched;
       }
       throw error;
     } finally {

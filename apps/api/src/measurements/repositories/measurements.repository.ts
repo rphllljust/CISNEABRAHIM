@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { Pool, PoolClient } from 'pg';
 import { DatabaseService } from '../../infrastructure/database/database.service';
+import { OutboxDomainEventWriter } from '../../platform/outbox/services/outbox-domain-event.writer';
 import { MEASUREMENT_HISTORY_EVENTS } from '../domain/measurement';
 import type {
   AuthorizeAdjustmentInput,
@@ -41,7 +42,10 @@ const ITEM_RETURNING = `
 
 @Injectable()
 export class MeasurementsRepository {
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly outboxWriter: OutboxDomainEventWriter,
+  ) {}
 
   private pool(): Pool {
     const connection = this.databaseService.getConnection();
@@ -599,6 +603,36 @@ export class MeasurementsRepository {
             JSON.stringify({ rowVersion: updated.rows[0].row_version }),
           ],
         );
+      }
+
+      const measurement = await client.query<{
+        id: string;
+        service_order_id: string;
+        unit_id: string;
+        submitted_at: string | null;
+        decided_at: string | null;
+      }>(
+        `SELECT id, service_order_id, unit_id, submitted_at, decided_at
+         FROM msr.measurements
+         WHERE id = $1`,
+        [input.measurementId],
+      );
+      const row = measurement.rows[0];
+      if (row?.submitted_at && input.transition === 'submit') {
+        await this.outboxWriter.appendMeasurementSubmitted(client, {
+          measurementId: row.id,
+          serviceOrderId: row.service_order_id,
+          unitId: row.unit_id,
+          submittedAt: row.submitted_at,
+        });
+      }
+      if (row?.decided_at && input.transition === 'approve') {
+        await this.outboxWriter.appendMeasurementApproved(client, {
+          measurementId: row.id,
+          serviceOrderId: row.service_order_id,
+          unitId: row.unit_id,
+          approvedAt: row.decided_at,
+        });
       }
 
       await client.query('COMMIT');
