@@ -4636,7 +4636,7 @@ PROMPT_TITLE: Restore e disaster recovery
 EXECUTED_AT: 2026-08-30
 EXECUTION_STATUS: PASS
 DR_STATUS: PASS (restore comprovado em ambiente isolado)
-COMMIT: (pending) ops(dr): validate disaster recovery procedure
+COMMIT: cc386bf ops(dr): validate disaster recovery procedure
 ARTIFACTS:
   apps/api/src/ops/dr/**
   docs/19-operations/dr-restore-runbook.md
