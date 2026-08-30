@@ -27,6 +27,7 @@ import { ServiceOrdersRoute } from './service-orders/ServiceOrdersRoute';
 import { ServiceOrderPlanningPage } from './service-orders/pages/ServiceOrderPlanningPage';
 import { ExecutionShellLayout } from './service-orders/layout/ExecutionShellLayout';
 import { ServiceOrderExecutionPage } from './service-orders/pages/ServiceOrderExecutionPage';
+import { ServiceOrderMeasurementPage } from './service-orders/pages/ServiceOrderMeasurementPage';
 import { ServiceRequestCreatePage } from './requests/pages/ServiceRequestCreatePage';
 import { ServiceRequestDetailPage } from './requests/pages/ServiceRequestDetailPage';
 import { ServiceRequestEditPage } from './requests/pages/ServiceRequestEditPage';
@@ -225,6 +226,14 @@ export function App() {
                 element={
                   <ServiceOrdersRoute>
                     <ServiceOrderPlanningPage />
+                  </ServiceOrdersRoute>
+                }
+              />
+              <Route
+                path="/app/service-orders/:serviceOrderId/measurement"
+                element={
+                  <ServiceOrdersRoute>
+                    <ServiceOrderMeasurementPage />
                   </ServiceOrdersRoute>
                 }
               />

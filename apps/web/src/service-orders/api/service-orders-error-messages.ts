@@ -1,7 +1,7 @@
-import { SERVICE_ORDERS_ERROR_CODES, type ServiceOrdersErrorCode } from '../types/service-order.types';
+import { SERVICE_ORDERS_ERROR_CODES } from '../types/service-order.types';
 
 export function mapServiceOrdersErrorToMessage(
-  code: ServiceOrdersErrorCode | undefined,
+  code: string | undefined,
   status: number,
 ): string {
   switch (code) {

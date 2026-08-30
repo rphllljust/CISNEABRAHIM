@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { ConfirmDialog } from '../../clients/components/ConfirmDialog';
 import { useAuth } from '../../auth/context/AuthProvider';
 import { formatIdentityLabel } from '../../shell/format-identity';
@@ -481,6 +481,17 @@ export function ServiceOrderExecutionPage() {
       ) : null}
 
       <RequirementChecklist items={coverage} instructions={order.description} />
+
+      {order.status === SERVICE_ORDER_STATUSES.Completed ? (
+        <section className="execution-section" aria-labelledby="execution-measurement-next">
+          <h2 id="execution-measurement-next">Conferência de medição</h2>
+          <p className="execution-hint">
+            A execução foi concluída. Revise planejado, realizado e medido antes de aprovar para
+            faturamento candidato.
+          </p>
+          <Link to={`/app/service-orders/${serviceOrderId}/measurement`}>Abrir conferência de medição</Link>
+        </section>
+      ) : null}
 
       {fileEvidenceKinds.length > 0 && showOperationalActions ? (
         <EvidenceUploader

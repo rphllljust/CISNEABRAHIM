@@ -18,10 +18,10 @@ export type ServiceOrdersApiErrorKind =
 
 export class ServiceOrdersApiError extends Error {
   readonly status: number;
-  readonly code?: ServiceOrdersErrorCode;
+  readonly code?: string;
   readonly kind: ServiceOrdersApiErrorKind;
 
-  constructor(status: number, code: ServiceOrdersErrorCode | undefined, kind: ServiceOrdersApiErrorKind) {
+  constructor(status: number, code: string | undefined, kind: ServiceOrdersApiErrorKind) {
     super(kind);
     this.status = status;
     this.code = code;

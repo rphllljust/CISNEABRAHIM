@@ -12,10 +12,18 @@ import { SERVICE_ORDER_STATUSES } from '../service-orders/types/service-order.ty
 
 export const MOCK_SERVICE_ORDER_ID = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 export const MOCK_PLANNED_RESOURCE_ID = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+export const MOCK_MEASUREMENT_ID = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
 export const MOCK_ASSET_A_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 export const MOCK_ASSET_B_ID = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
 const PROBE_SERVICE_ORDER_ID = '00000000-0000-4000-8000-000000000010';
+const PROBE_MEASUREMENT_ID = '00000000-0000-4000-8000-000000000020';
 const TRUCK_TYPE_ID = '11111111-1111-4111-8111-111111111111';
+
+export type MeasurementSeedKind =
+  | 'draft-aligned'
+  | 'draft-divergent'
+  | 'submitted'
+  | 'under_review';
 
 export type ServiceOrdersFetchMockOptions = {
   serviceOrderListAllowed?: boolean;
@@ -28,6 +36,10 @@ export type ServiceOrdersFetchMockOptions = {
   executionNetworkFailure?: boolean;
   executionVersionConflict?: boolean;
   executionDelayedStartMs?: number;
+  measurementAllowed?: boolean;
+  measurementVersionConflict?: boolean;
+  orderCompleted?: boolean;
+  seedMeasurement?: MeasurementSeedKind;
 };
 
 function orderError(code: string, status: number): Response {
@@ -65,6 +77,41 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
   const allocateAllowed = options.allocateAllowed ?? true;
   const removeAllocationAllowed = options.removeAllocationAllowed ?? true;
   const executionAllowed = options.executionAllowed ?? true;
+  const measurementAllowed = options.measurementAllowed ?? true;
+
+  type MockMeasurementItem = {
+    id: string;
+    lineNumber: number;
+    sourceExecutionEntryId: string;
+    unitCode: string;
+    actualQuantity: string;
+    measuredQuantity: string;
+    unitPrice: string | null;
+    lineAmount: string | null;
+    pricingLineSnapshot: Record<string, unknown>;
+    notes: string | null;
+  };
+
+  type MockMeasurement = {
+    id: string;
+    serviceOrderId: string;
+    unitId: string;
+    status: string;
+    commercialReferenceSnapshot: Record<string, unknown>;
+    submittedAt: string | null;
+    submittedByIdentityId: string | null;
+    reviewStartedAt: string | null;
+    reviewStartedByIdentityId: string | null;
+    decidedAt: string | null;
+    decidedByIdentityId: string | null;
+    rejectionReason: string | null;
+    rowVersion: number;
+    createdAt: string;
+    updatedAt: string;
+    items: MockMeasurementItem[];
+    adjustments: unknown[];
+    historyEvents: unknown[];
+  };
 
   type MockOrder = {
     id: string;
@@ -284,6 +331,143 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
 
   const planned: PlannedResource[] = [];
   const allocations: ResourceAllocation[] = [];
+  const measurements = new Map<string, MockMeasurement>();
+
+  function measurementStatusForSeed(seed: MeasurementSeedKind): string {
+    switch (seed) {
+      case 'submitted':
+        return 'SUBMITTED';
+      case 'under_review':
+        return 'UNDER_REVIEW';
+      default:
+        return 'DRAFT';
+    }
+  }
+
+  function buildMeasurementItems(orderId: string, divergent: boolean): MockMeasurementItem[] {
+    const order = getOrder(orderId);
+    const defaultUnit = order.serviceSnapshot.measurementModel?.defaultUnitCode ?? 'SERVICE';
+    const quantityEntries = (entries.get(orderId) ?? []).filter((item) => item.entryType === 'QUANTITY');
+    if (quantityEntries.length > 0) {
+      return quantityEntries.map((entry, index) => ({
+        id: crypto.randomUUID(),
+        lineNumber: index + 1,
+        sourceExecutionEntryId: entry.id,
+        unitCode: entry.quantityUnitCode ?? defaultUnit,
+        actualQuantity: entry.quantityValue ?? '1',
+        measuredQuantity: divergent ? '2' : (entry.quantityValue ?? '1'),
+        unitPrice: '1000.0000',
+        lineAmount: divergent ? '2000.0000' : '1000.0000',
+        pricingLineSnapshot: { salePrice: '1000.0000' },
+        notes: null,
+      }));
+    }
+    const entryId = crypto.randomUUID();
+    return [
+      {
+        id: crypto.randomUUID(),
+        lineNumber: 1,
+        sourceExecutionEntryId: entryId,
+        unitCode: defaultUnit,
+        actualQuantity: '1',
+        measuredQuantity: divergent ? '2' : '1',
+        unitPrice: '1000.0000',
+        lineAmount: divergent ? '2000.0000' : '1000.0000',
+        pricingLineSnapshot: { salePrice: '1000.0000' },
+        notes: null,
+      },
+    ];
+  }
+
+  function createMockMeasurement(
+    orderId: string,
+    status: string,
+    divergent = false,
+    measurementId = MOCK_MEASUREMENT_ID,
+  ): MockMeasurement {
+    const now = new Date().toISOString();
+    return {
+      id: measurementId,
+      serviceOrderId: orderId,
+      unitId: 'unit-demo',
+      status,
+      commercialReferenceSnapshot: { capturedAt: now },
+      submittedAt: status === 'SUBMITTED' || status === 'UNDER_REVIEW' ? now : null,
+      submittedByIdentityId: status === 'SUBMITTED' || status === 'UNDER_REVIEW' ? 'actor-demo' : null,
+      reviewStartedAt: status === 'UNDER_REVIEW' ? now : null,
+      reviewStartedByIdentityId: status === 'UNDER_REVIEW' ? 'actor-demo' : null,
+      decidedAt: null,
+      decidedByIdentityId: null,
+      rejectionReason: null,
+      rowVersion: 1,
+      createdAt: now,
+      updatedAt: now,
+      items: buildMeasurementItems(orderId, divergent),
+      adjustments: [],
+      historyEvents: [],
+    };
+  }
+
+  function saveMeasurement(measurement: MockMeasurement): MockMeasurement {
+    measurements.set(measurement.serviceOrderId, measurement);
+    return measurement;
+  }
+
+  if (options.orderCompleted) {
+    saveOrder({
+      ...getOrder(MOCK_SERVICE_ORDER_ID),
+      status: SERVICE_ORDER_STATUSES.Completed,
+    });
+    entries.set(MOCK_SERVICE_ORDER_ID, [
+      {
+        id: crypto.randomUUID(),
+        serviceOrderId: MOCK_SERVICE_ORDER_ID,
+        entryType: 'OBSERVATION',
+        evidenceKind: 'OBSERVATION',
+        quantityValue: null,
+        quantityUnitCode: null,
+        textValue: 'Execução concluída para medição.',
+        context: {},
+        actorIdentityId: 'actor-demo',
+        recordedAt: new Date().toISOString(),
+        rowVersion: 1,
+      },
+      {
+        id: crypto.randomUUID(),
+        serviceOrderId: MOCK_SERVICE_ORDER_ID,
+        entryType: 'QUANTITY',
+        evidenceKind: 'QUANTITY',
+        quantityValue: '1',
+        quantityUnitCode: 'SERVICE',
+        textValue: null,
+        context: {},
+        actorIdentityId: 'actor-demo',
+        recordedAt: new Date().toISOString(),
+        rowVersion: 1,
+      },
+    ]);
+  }
+
+  if (options.seedMeasurement) {
+    const divergent = options.seedMeasurement === 'draft-divergent';
+    const status = measurementStatusForSeed(options.seedMeasurement);
+    saveMeasurement(createMockMeasurement(MOCK_SERVICE_ORDER_ID, status, divergent));
+    if (!planned.some((item) => item.serviceOrderId === MOCK_SERVICE_ORDER_ID)) {
+      planned.push({
+        id: MOCK_PLANNED_RESOURCE_ID,
+        serviceOrderId: MOCK_SERVICE_ORDER_ID,
+        requirementKind: 'PHYSICAL_RESOURCE',
+        resourceTypeCode: 'TRUCK',
+        laborTypeCode: null,
+        plannedQuantity: '1',
+        operationalStart: null,
+        operationalEnd: null,
+        notes: null,
+        status: 'ACTIVE',
+        rowVersion: 1,
+      });
+    }
+  }
 
   function readString(value: unknown, fallback = ''): string {
     return typeof value === 'string' ? value : fallback;
@@ -482,6 +666,154 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
     return null;
   }
 
+  async function handleMeasurementRoute(
+    orderId: string,
+    suffix: string,
+    method: string,
+    init?: RequestInit,
+  ): Promise<Response | null> {
+    if (!measurementAllowed) {
+      return orderError('MEASUREMENTS_DENIED', 403);
+    }
+    if (orderId !== MOCK_SERVICE_ORDER_ID && orderId !== PROBE_SERVICE_ORDER_ID) {
+      return orderError('MEASUREMENTS_SERVICE_ORDER_NOT_FOUND', 404);
+    }
+
+    const body = parseBody(init);
+    const rowVersion = Number(body.rowVersion);
+    const measurementIdFromPath = suffix.match(/^\/([^/]+)/)?.[1];
+    const actionSuffix = measurementIdFromPath
+      ? suffix.slice(measurementIdFromPath.length + 1)
+      : suffix;
+
+    if (suffix === '' && method === 'GET') {
+      const measurement = measurements.get(orderId);
+      return jsonResponse(measurement ?? null);
+    }
+
+    if (suffix === '' && method === 'POST') {
+      const order = getOrder(orderId);
+      if (order.status !== SERVICE_ORDER_STATUSES.Completed) {
+        return orderError('MEASUREMENTS_SERVICE_ORDER_NOT_COMPLETED', 409);
+      }
+      if (measurements.has(orderId)) {
+        return orderError('MEASUREMENTS_MEASUREMENT_ALREADY_EXISTS', 409);
+      }
+      const created = saveMeasurement(
+        createMockMeasurement(orderId, 'DRAFT', false, crypto.randomUUID()),
+      );
+      return jsonResponse(created, 201);
+    }
+
+    if (!measurementIdFromPath) {
+      return null;
+    }
+
+    const existing =
+      orderId === PROBE_SERVICE_ORDER_ID
+        ? createMockMeasurement(orderId, 'DRAFT', false, PROBE_MEASUREMENT_ID)
+        : measurements.get(orderId);
+
+    if (!existing && orderId !== PROBE_SERVICE_ORDER_ID) {
+      return orderError('MEASUREMENTS_NOT_FOUND', 404);
+    }
+
+    const measurement =
+      existing ?? createMockMeasurement(orderId, 'DRAFT', false, PROBE_MEASUREMENT_ID);
+
+    if (actionSuffix === '' && method === 'GET') {
+      return jsonResponse(measurement);
+    }
+
+    if (method !== 'POST') {
+      return null;
+    }
+
+    if (options.measurementVersionConflict && actionSuffix !== '') {
+      return orderError('MEASUREMENTS_VERSION_CONFLICT', 409);
+    }
+
+    if (
+      orderId !== PROBE_SERVICE_ORDER_ID &&
+      Number.isFinite(rowVersion) &&
+      rowVersion > 0 &&
+      rowVersion !== measurement.rowVersion
+    ) {
+      return orderError('MEASUREMENTS_VERSION_CONFLICT', 409);
+    }
+
+    if (actionSuffix === '/submit') {
+      if (measurement.status !== 'DRAFT') {
+        return orderError('MEASUREMENTS_INVALID_STATE', 409);
+      }
+      const updated = saveMeasurement({
+        ...measurement,
+        status: 'SUBMITTED',
+        submittedAt: new Date().toISOString(),
+        submittedByIdentityId: 'actor-demo',
+        rowVersion: measurement.rowVersion + 1,
+        updatedAt: new Date().toISOString(),
+      });
+      return jsonResponse(updated);
+    }
+
+    if (actionSuffix === '/start-review') {
+      if (measurement.status !== 'SUBMITTED') {
+        return orderError('MEASUREMENTS_INVALID_STATE', 409);
+      }
+      const updated = saveMeasurement({
+        ...measurement,
+        status: 'UNDER_REVIEW',
+        reviewStartedAt: new Date().toISOString(),
+        reviewStartedByIdentityId: 'actor-demo',
+        rowVersion: measurement.rowVersion + 1,
+        updatedAt: new Date().toISOString(),
+      });
+      return jsonResponse(updated);
+    }
+
+    if (actionSuffix === '/approve') {
+      if (measurement.status !== 'UNDER_REVIEW') {
+        return orderError('MEASUREMENTS_INVALID_STATE', 409);
+      }
+      const updated = saveMeasurement({
+        ...measurement,
+        status: 'APPROVED',
+        decidedAt: new Date().toISOString(),
+        decidedByIdentityId: 'actor-demo',
+        rowVersion: measurement.rowVersion + 1,
+        updatedAt: new Date().toISOString(),
+      });
+      return jsonResponse(updated);
+    }
+
+    if (actionSuffix === '/reject') {
+      if (measurement.status !== 'UNDER_REVIEW') {
+        return orderError('MEASUREMENTS_INVALID_STATE', 409);
+      }
+      const reason = readString(body.rejectionReason);
+      if (reason.trim().length < 3) {
+        return orderError('MEASUREMENTS_VALIDATION_FAILED', 400);
+      }
+      const updated = saveMeasurement({
+        ...measurement,
+        status: 'REJECTED',
+        decidedAt: new Date().toISOString(),
+        decidedByIdentityId: 'actor-demo',
+        rejectionReason: reason.trim(),
+        rowVersion: measurement.rowVersion + 1,
+        updatedAt: new Date().toISOString(),
+      });
+      return jsonResponse(updated);
+    }
+
+    if (actionSuffix === '/regenerate') {
+      return jsonResponse(measurement);
+    }
+
+    return null;
+  }
+
   return vi.fn(async (input: RequestInfo, init?: RequestInit) => {
     const url = requestUrl(input);
     const method = init?.method ?? 'GET';
@@ -667,6 +999,19 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
       const response = await handleExecutionRoute(
         executionMatch[1]!,
         executionMatch[2] ?? '',
+        method,
+        init,
+      );
+      if (response) {
+        return response;
+      }
+    }
+
+    const measurementMatch = pathname.match(/^\/api\/v1\/service-orders\/([^/]+)\/measurements(\/.*)?$/);
+    if (measurementMatch) {
+      const response = await handleMeasurementRoute(
+        measurementMatch[1]!,
+        measurementMatch[2] ?? '',
         method,
         init,
       );

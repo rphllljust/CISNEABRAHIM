@@ -3230,3 +3230,64 @@ NOTES:
 - [x] Prompt 56 não executado
 
 ---
+
+## Prompt 57 — Medição: conferência comparativa (frontend)
+
+```
+PROMPT_ID: 57
+PROMPT_TITLE: Medição — frontend de conferência comparativa
+EXECUTED_AT: 2026-08-29
+EXECUTION_STATUS: PASS
+COMMIT: feat(web): implement measurement review experience
+ARTIFACTS:
+  apps/web/src/service-orders/pages/ServiceOrderMeasurementPage.tsx
+  apps/web/src/service-orders/components/MeasurementComparisonTable.tsx
+  apps/web/src/service-orders/components/MeasurementComparisonCards.tsx
+  apps/web/src/service-orders/components/MeasurementSummaryPanel.tsx
+  apps/web/src/service-orders/components/MeasurementApprovalDialog.tsx
+  apps/web/src/service-orders/components/MeasurementVarianceBadge.tsx
+  apps/web/src/service-orders/components/MeasurementStatusBadge.tsx
+  apps/web/src/service-orders/components/MeasurementVersionConflictBanner.tsx
+  apps/web/src/service-orders/api/measurement-api.ts
+  apps/web/src/service-orders/api/measurements-error-messages.ts
+  apps/web/src/service-orders/types/measurement.types.ts
+  apps/web/src/service-orders/utils/measurement-comparison.ts
+  apps/web/src/service-orders/utils/measurement-variance.ts
+  apps/web/src/service-orders/utils/measurement-format.ts
+  apps/web/src/service-orders/hooks/useMeasurementCapabilities.ts
+  apps/web/src/service-orders/pages/ServiceOrderMeasurementPage.test.tsx
+  apps/web/src/service-orders/service-order-measurement.e2e.test.tsx
+  apps/web/src/service-orders/utils/measurement-variance.test.ts
+  apps/web/src/test/service-orders-fetch-mock.ts
+  apps/web/src/test/render-service-order-routes.tsx
+  apps/web/src/index.css
+  apps/web/src/App.tsx
+  docs/implementation/57-measurement-frontend.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  UX comparativa Planejado · Realizado · Medido (tabela desktop + cards mobile).
+  Divergências com tokens semânticos (.measurement-variance--*), não só verde/vermelho.
+  Aprovação exige diálogo com resumo + checkbox de confirmação.
+  VERSION_CONFLICT bloqueia ações críticas (botões visíveis e desabilitados) + banner de reload.
+  CSS com tokens .measurement-* em index.css (sem Tailwind — convenção do repo).
+  Link da execução concluída para conferência de medição.
+  Prompt 58 não executado.
+```
+
+## Quality gate Prompt 57 (evidência)
+
+- [x] UX comparativa planejado / realizado / medido com origem, UoM, valor e status
+- [x] Divergências semânticas (quantidade, adicional, ausente, unidade, preço, evidência)
+- [x] Desktop: tabela densa, sticky header, tabular-nums
+- [x] Mobile: cards responsivos (breakpoint 48rem)
+- [x] Aprovação com resumo e confirmação explícita (checkbox)
+- [x] Version conflict bloqueia ações e solicita reload
+- [x] Tokens CSS consistentes (.measurement-*)
+- [x] Testes: no divergence, divergence, submit, approve, reject, stale, forbidden, responsive, a11y, monetary, E2E
+- [x] typecheck + lint + vitest (123) PASS
+- [x] Prompt 58 não executado
+
+---
