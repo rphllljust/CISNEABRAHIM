@@ -13,3 +13,12 @@ export async function truncateOutboxTables(client: DbClient): Promise<void> {
     TRUNCATE TABLE evt.outbox_events RESTART IDENTITY CASCADE
   `);
 }
+
+export async function truncateIntegrationInboxTables(client: DbClient): Promise<void> {
+  await client.query(`
+    TRUNCATE TABLE
+      int.integration_inbox_effects,
+      int.integration_inbox
+    RESTART IDENTITY CASCADE
+  `);
+}

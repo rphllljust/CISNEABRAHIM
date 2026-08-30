@@ -3707,3 +3707,48 @@ NOTES:
 | ordering when required | PASS | sequence_number + ordering_key |
 
 ---
+
+## Prompt 67 — Inbox e deduplicação
+
+```
+PROMPT_ID: 67
+PROMPT_TITLE: Inbox e deduplicação — processamento idempotente de callbacks externos
+EXECUTED_AT: 2026-08-29
+EXECUTION_STATUS: PASS
+COMMIT: feat(integrations): implement inbox deduplication
+ARTIFACTS:
+  packages/database/migrations/0029_integration_inbox.sql
+  packages/database/src/schema/integration-inbox.ts
+  packages/database/src/test-builders/platform-builders.ts
+  packages/database/scripts/ci-database-gate.mjs
+  apps/api/src/integrations/inbox/**
+  apps/api/src/app.module.ts
+  apps/api/src/worker/worker-app.module.ts
+  apps/api/src/test/ensure-migrations.ts
+DEDUP_KEY: (provider, external_message_id)
+INBOX_STATUSES: RECEIVED, PROCESSING, PROCESSED, FAILED, INVALID
+ERROR_CLASSES: TRANSIENT, PERMANENT, INVALID_PAYLOAD, AUTH_FAILURE
+QUALITY_GATE: PASS
+NEXT_ALLOWED_PROMPT: 68
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  int.integration_inbox com unique (provider, external_message_id); efeitos idempotentes em int.integration_inbox_effects.
+  Fluxo receive → persist/deduplicate → validate → process → mark processed; worker com SKIP LOCKED e retry backoff.
+  Validação HMAC opcional por provider via INTEGRATION_WEBHOOK_SECRET_<PROVIDER>.
+  Evidência: typecheck PASS; inbox unit 2; integration-inbox 7.
+  Prompt 68 não executado.
+```
+
+## Quality gate Prompt 67 (evidência)
+
+| Cenário de teste | Resultado | Evidência |
+|------------------|-----------|-----------|
+| same message twice | PASS | dedup + 1 effect |
+| same id different provider | PASS | 2 rows + 2 effects |
+| invalid payload | PASS | status INVALID |
+| processing failure | PASS | status FAILED PERMANENT |
+| retry | PASS | TRANSIENT → scheduleRetry → PROCESSED |
+| concurrency | PASS | SKIP LOCKED — um worker por row |
+| webhook auth | PASS | assinatura inválida rejeitada |
+
+---

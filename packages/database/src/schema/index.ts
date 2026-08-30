@@ -169,3 +169,10 @@ export {
   backgroundJobs,
 } from './background-jobs';
 export { outboxEventStatusEnum, outboxEvents } from './outbox-events';
+export {
+  intSchema,
+  integrationInboxStatusEnum,
+  integrationInboxErrorClassEnum,
+  integrationInbox,
+  integrationInboxEffects,
+} from './integration-inbox';

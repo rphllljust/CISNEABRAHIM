@@ -47,6 +47,7 @@ const MIGRATION_FILES = [
   '0026_domain_events_notifications.sql',
   '0027_background_jobs.sql',
   '0028_transactional_outbox.sql',
+  '0029_integration_inbox.sql',
 ];
 
 const INCREMENTAL_BASELINE_FILES = MIGRATION_FILES.slice(0, -1);
@@ -69,6 +70,7 @@ const EXPECTED_SCHEMAS = [
   'bil',
   'evt',
   'plt',
+  'int',
 ];
 
 const EXPECTED_TABLES = [
@@ -95,6 +97,8 @@ const EXPECTED_TABLES = [
   'evt.notification_intents',
   'plt.background_jobs',
   'evt.outbox_events',
+  'int.integration_inbox',
+  'int.integration_inbox_effects',
 ];
 
 function adminConnectionString() {
@@ -408,6 +412,22 @@ async function assertPreDeltaState(connectionString, deltaFile) {
       ]);
       if (outboxEvents.rows[0]?.regclass) {
         throw new Error('Incremental baseline incorrectly contains evt.outbox_events before 0028');
+      }
+      return;
+    }
+
+    if (deltaFile === '0029_integration_inbox.sql') {
+      const outboxEvents = await client.query('SELECT to_regclass($1) AS regclass', [
+        'evt.outbox_events',
+      ]);
+      if (!outboxEvents.rows[0]?.regclass) {
+        throw new Error('Expected evt.outbox_events before 0029 delta');
+      }
+      const integrationInbox = await client.query('SELECT to_regclass($1) AS regclass', [
+        'int.integration_inbox',
+      ]);
+      if (integrationInbox.rows[0]?.regclass) {
+        throw new Error('Incremental baseline incorrectly contains int.integration_inbox before 0029');
       }
       return;
     }

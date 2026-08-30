@@ -213,6 +213,11 @@ export default async function ensureMigrations(): Promise<void> {
     if (!hasOutboxEvents) {
       await applySqlFile(pool, '0028_transactional_outbox.sql');
     }
+
+    const hasIntegrationInbox = await tableExists(pool, 'int.integration_inbox');
+    if (!hasIntegrationInbox) {
+      await applySqlFile(pool, '0029_integration_inbox.sql');
+    }
   } finally {
     await pool.end();
   }
