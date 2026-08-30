@@ -29,6 +29,12 @@ export type ServiceOrderRow = {
   cancelled_at: string | null;
   cancelled_by_identity_id: string | null;
   cancellation_reason: string | null;
+  started_at: string | null;
+  started_by_identity_id: string | null;
+  paused_at: string | null;
+  paused_by_identity_id: string | null;
+  completed_at: string | null;
+  completed_by_identity_id: string | null;
   row_version: number;
   created_at: string;
   updated_at: string;
@@ -137,7 +143,14 @@ export type TransitionServiceOrderPersistenceInput = {
   actorIdentityId: string;
   currentStatus: string;
   nextStatus: string;
-  transition: 'prepare' | 'release' | 'cancel';
+  transition:
+    | 'prepare'
+    | 'release'
+    | 'cancel'
+    | 'start'
+    | 'pause'
+    | 'resume'
+    | 'complete';
   clientSnapshot?: Record<string, unknown> | null;
   cancellationReason?: string | null;
 };

@@ -168,6 +168,11 @@ export default async function ensureMigrations(): Promise<void> {
     if (!hasPlannedResources) {
       await applySqlFile(pool, '0021_planning_allocation_baseline.sql');
     }
+
+    const hasExecutionEntries = await tableExists(pool, 'so.execution_entries');
+    if (!hasExecutionEntries) {
+      await applySqlFile(pool, '0022_service_order_execution_baseline.sql');
+    }
   } finally {
     await pool.end();
   }

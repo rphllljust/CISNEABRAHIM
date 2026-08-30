@@ -42,4 +42,19 @@ describe('service-order.state-machine', () => {
     expect(isTerminalServiceOrderStatus(SERVICE_ORDER_STATUSES.Cancelled)).toBe(true);
     expect(isTerminalServiceOrderStatus(SERVICE_ORDER_STATUSES.Draft)).toBe(false);
   });
+
+  it('allows execution lifecycle transitions', () => {
+    expect(assertTransition(SERVICE_ORDER_STATUSES.Released, 'start')).toBe(
+      SERVICE_ORDER_STATUSES.InExecution,
+    );
+    expect(assertTransition(SERVICE_ORDER_STATUSES.InExecution, 'pause')).toBe(
+      SERVICE_ORDER_STATUSES.Paused,
+    );
+    expect(assertTransition(SERVICE_ORDER_STATUSES.Paused, 'resume')).toBe(
+      SERVICE_ORDER_STATUSES.InExecution,
+    );
+    expect(assertTransition(SERVICE_ORDER_STATUSES.InExecution, 'complete')).toBe(
+      SERVICE_ORDER_STATUSES.Completed,
+    );
+  });
 });

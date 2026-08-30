@@ -3,6 +3,7 @@ export const SERVICE_ORDER_STATUSES = {
   Prepared: 'PREPARED',
   Released: 'RELEASED',
   InExecution: 'IN_EXECUTION',
+  Paused: 'PAUSED',
   Completed: 'COMPLETED',
   Cancelled: 'CANCELLED',
 } as const;
@@ -27,6 +28,10 @@ export const SERVICE_ORDER_HISTORY_EVENTS = {
   Released: 'RELEASED',
   Cancelled: 'CANCELLED',
   Updated: 'UPDATED',
+  Started: 'STARTED',
+  Paused: 'PAUSED',
+  Resumed: 'RESUMED',
+  Completed: 'COMPLETED',
 } as const;
 
 export type ServiceOrderHistoryEventType =

@@ -3,7 +3,14 @@ import {
   type ServiceOrderStatus,
 } from './service-order';
 
-export type ServiceOrderTransition = 'prepare' | 'release' | 'cancel';
+export type ServiceOrderTransition =
+  | 'prepare'
+  | 'release'
+  | 'cancel'
+  | 'start'
+  | 'pause'
+  | 'resume'
+  | 'complete';
 
 export class ServiceOrderStateError extends Error {
   constructor(readonly code: string) {
@@ -30,6 +37,22 @@ const TRANSITIONS: Record<
       SERVICE_ORDER_STATUSES.Released,
     ],
     to: SERVICE_ORDER_STATUSES.Cancelled,
+  },
+  start: {
+    from: [SERVICE_ORDER_STATUSES.Released],
+    to: SERVICE_ORDER_STATUSES.InExecution,
+  },
+  pause: {
+    from: [SERVICE_ORDER_STATUSES.InExecution],
+    to: SERVICE_ORDER_STATUSES.Paused,
+  },
+  resume: {
+    from: [SERVICE_ORDER_STATUSES.Paused],
+    to: SERVICE_ORDER_STATUSES.InExecution,
+  },
+  complete: {
+    from: [SERVICE_ORDER_STATUSES.InExecution],
+    to: SERVICE_ORDER_STATUSES.Completed,
   },
 };
 

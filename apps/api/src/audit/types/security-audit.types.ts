@@ -65,6 +65,11 @@ export const SECURITY_AUDIT_ACTIONS = {
   ServiceOrdersResourceAllocate: 'security:service-orders:resource-allocation:allocate',
   ServiceOrdersResourceReallocate: 'security:service-orders:resource-allocation:reallocate',
   ServiceOrdersResourceRemoveAllocation: 'security:service-orders:resource-allocation:remove',
+  ServiceOrdersExecutionStart: 'security:service-orders:execution:start',
+  ServiceOrdersExecutionPause: 'security:service-orders:execution:pause',
+  ServiceOrdersExecutionResume: 'security:service-orders:execution:resume',
+  ServiceOrdersExecutionComplete: 'security:service-orders:execution:complete',
+  ServiceOrdersExecutionRecord: 'security:service-orders:execution:record',
 } as const;
 
 export type SecurityAuditAction =

@@ -3079,3 +3079,54 @@ NOTES:
 - [x] Prompt 54 não executado
 
 ---
+
+## Prompt 54 — Execução operacional e evidências (backend)
+
+```
+PROMPT_ID: 54
+PROMPT_TITLE: Execução operacional e evidências — backend
+EXECUTED_AT: 2026-08-29
+EXECUTION_STATUS: PASS
+COMMIT: feat(execution): implement transactional service execution
+ARTIFACTS:
+  packages/database/migrations/0022_service_order_execution_baseline.sql
+  packages/database/src/schema/service-order-execution.ts
+  apps/api/src/service-orders/domain/service-order-execution.ts
+  apps/api/src/service-orders/domain/service-order-execution.validation.ts
+  apps/api/src/service-orders/repositories/service-order-execution.repository.ts
+  apps/api/src/service-orders/services/service-order-execution-access.service.ts
+  apps/api/src/service-orders/controllers/service-order-execution.controller.ts
+  apps/api/src/service-orders/service-order-execution.integration.spec.ts
+  apps/api/src/service-orders/service-order-execution.e2e.spec.ts
+  apps/api/src/authorization/types/authz-actions.ts
+  apps/api/src/audit/types/security-audit.types.ts
+  apps/api/src/test/ensure-migrations.ts
+  docs/implementation/54-service-order-execution-backend.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  PLANNED ≠ ALLOCATED ≠ ACTUAL ≠ MEASURED — execução em tabelas execution_* separadas.
+  Comandos explícitos start/pause/resume/complete/record (sem PATCH status).
+  Status PAUSED adicionado; complete valida evidências REQUIRED antes da transição.
+  Idempotência via execution_command_idempotency; checagem antes da máquina de estados.
+  Prompt 55 não executado.
+```
+
+## Quality gate Prompt 54 (evidência)
+
+- [x] Start válido com planejamento mínimo satisfeito
+- [x] Start inválido (recursos mínimos não planejados)
+- [x] Unauthorized (E2E HTTP 403)
+- [x] Wrong state (E2E HTTP 409 INVALID_STATE)
+- [x] Required evidence antes de complete
+- [x] Pause/resume preservando dados
+- [x] Idempotência de start (retry mesma chave)
+- [x] Concorrência start×start (apenas um vence)
+- [x] Security audit em start/complete
+- [x] Unit (10) + integration (8) + service-orders regression (34) + e2e (2) PASS
+- [x] typecheck + lint PASS
+- [x] Prompt 55 não executado
+
+---

@@ -29,6 +29,8 @@ const SO_RETURNING = `
   rc_number, contract_reference, contract_snapshot,
   prepared_at, prepared_by_identity_id, released_at, released_by_identity_id,
   cancelled_at, cancelled_by_identity_id, cancellation_reason,
+  started_at, started_by_identity_id, paused_at, paused_by_identity_id,
+  completed_at, completed_by_identity_id,
   row_version, created_at, updated_at, created_by_identity_id, updated_by_identity_id
 `;
 
@@ -41,6 +43,8 @@ const SO_SELECT = `
     rc_number, contract_reference, contract_snapshot,
     prepared_at, prepared_by_identity_id, released_at, released_by_identity_id,
     cancelled_at, cancelled_by_identity_id, cancellation_reason,
+    started_at, started_by_identity_id, paused_at, paused_by_identity_id,
+    completed_at, completed_by_identity_id,
     row_version, created_at, updated_at, created_by_identity_id, updated_by_identity_id
   FROM so.service_orders
 `;
@@ -687,6 +691,26 @@ export class ServiceOrdersRepository {
           sql: 'cancelled_at = NOW(), cancelled_by_identity_id = $4, cancellation_reason = $6',
           params: [input.cancellationReason ?? null],
         };
+      case 'start':
+        return {
+          sql: 'started_at = NOW(), started_by_identity_id = $4, paused_at = NULL, paused_by_identity_id = NULL',
+          params: [],
+        };
+      case 'pause':
+        return {
+          sql: 'paused_at = NOW(), paused_by_identity_id = $4',
+          params: [],
+        };
+      case 'resume':
+        return {
+          sql: 'paused_at = NULL, paused_by_identity_id = NULL',
+          params: [],
+        };
+      case 'complete':
+        return {
+          sql: 'completed_at = NOW(), completed_by_identity_id = $4',
+          params: [],
+        };
       default:
         return { sql: '', params: [] };
     }
@@ -702,6 +726,14 @@ export class ServiceOrdersRepository {
         return 'RELEASED';
       case 'cancel':
         return 'CANCELLED';
+      case 'start':
+        return 'STARTED';
+      case 'pause':
+        return 'PAUSED';
+      case 'resume':
+        return 'RESUMED';
+      case 'complete':
+        return 'COMPLETED';
       default:
         return transition;
     }

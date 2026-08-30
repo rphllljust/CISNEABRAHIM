@@ -24,6 +24,7 @@ export const serviceOrderStatusEnum = soSchema.enum('service_order_status', [
   'PREPARED',
   'RELEASED',
   'IN_EXECUTION',
+  'PAUSED',
   'COMPLETED',
   'CANCELLED',
 ]);
@@ -83,6 +84,18 @@ export const serviceOrders = soSchema.table(
       onDelete: 'restrict',
     }),
     cancellationReason: text('cancellation_reason'),
+    startedAt: timestamp('started_at', { withTimezone: true, mode: 'string' }),
+    startedByIdentityId: uuid('started_by_identity_id').references(() => identities.id, {
+      onDelete: 'restrict',
+    }),
+    pausedAt: timestamp('paused_at', { withTimezone: true, mode: 'string' }),
+    pausedByIdentityId: uuid('paused_by_identity_id').references(() => identities.id, {
+      onDelete: 'restrict',
+    }),
+    completedAt: timestamp('completed_at', { withTimezone: true, mode: 'string' }),
+    completedByIdentityId: uuid('completed_by_identity_id').references(() => identities.id, {
+      onDelete: 'restrict',
+    }),
     rowVersion: integer('row_version').notNull().default(1),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).notNull().defaultNow(),

@@ -31,6 +31,9 @@ export type ServiceOrderResponse = {
   releasedAt: string | null;
   cancelledAt: string | null;
   cancellationReason: string | null;
+  startedAt: string | null;
+  pausedAt: string | null;
+  completedAt: string | null;
 };
 
 export type ServiceOrderHistoryEventResponse = {
@@ -77,6 +80,9 @@ export function toServiceOrderResponse(row: ServiceOrderRow): ServiceOrderRespon
     releasedAt: row.released_at,
     cancelledAt: row.cancelled_at,
     cancellationReason: row.cancellation_reason,
+    startedAt: row.started_at,
+    pausedAt: row.paused_at,
+    completedAt: row.completed_at,
   };
 }
 

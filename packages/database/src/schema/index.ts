@@ -83,6 +83,14 @@ export {
   srSchema,
 } from './service-requests';
 export {
+  executionCommandIdempotency,
+  executionEntries,
+  executionEntryHistoryEvents,
+  executionEntryTypeEnum,
+  executionEvidence,
+  executionOccurrences,
+} from './service-order-execution';
+export {
   serviceOrderHistoryEvents,
   serviceOrderOriginEnum,
   serviceOrders,

@@ -27,7 +27,6 @@ import { PURCHASE_ORDER_STATUSES } from '../../commercial/domain/purchase-order'
 import {
   SERVICE_ORDER_HISTORY_EVENTS,
   SERVICE_ORDER_ORIGINS,
-  SERVICE_ORDER_STATUSES,
   isServiceOrderStatus,
   type ServiceOrderStatus,
 } from '../domain/service-order';
