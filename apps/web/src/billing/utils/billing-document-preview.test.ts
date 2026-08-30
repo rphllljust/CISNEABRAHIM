@@ -1,0 +1,113 @@
+import { describe, expect, it } from 'vitest';
+import type { BillingRecordDetail } from '../types/billing.types';
+import {
+  BILLING_EMITTER_PREVIEW,
+  buildBillingDocumentPreview,
+  hasActiveFinalizedDocument,
+  resolveBillingRecordTermsDivergence,
+} from './billing-document-preview';
+
+function buildBillingFixture(overrides: Partial<BillingRecordDetail> = {}): BillingRecordDetail {
+  return {
+    id: 'billing-1',
+    serviceOrderId: 'order-1',
+    measurementId: 'measurement-1',
+    clientId: 'client-1',
+    unitId: 'unit-1',
+    status: 'PREPARED',
+    proposalId: null,
+    purchaseOrderId: 'po-1',
+    contractReference: 'CTR-2026',
+    clientLegalNameSnapshot: 'Cliente Demo LTDA',
+    clientTaxIdSnapshot: '11222333000181',
+    billingAddressSnapshot: { city: 'Porto Velho', state: 'RO', postalCode: '76801000' },
+    commercialReferenceSnapshot: { label: 'PO Demo' },
+    currencyCode: 'BRL',
+    paymentTerms: '30 DDL',
+    paymentTermsSource: 'PURCHASE_ORDER',
+    paymentTermsAuthoritative: '30 DDL',
+    totalAmount: '1000.0000',
+    preparedAt: '2026-01-15T10:00:00.000Z',
+    preparedByIdentityId: 'actor-1',
+    voidedAt: null,
+    voidedByIdentityId: null,
+    voidReason: null,
+    rowVersion: 1,
+    createdAt: '2026-01-15T10:00:00.000Z',
+    updatedAt: '2026-01-15T10:00:00.000Z',
+    items: [
+      {
+        id: 'item-1',
+        lineNumber: 1,
+        measurementItemId: 'mi-1',
+        sourceExecutionEntryId: null,
+        unitCode: 'SERVICE',
+        quantity: '1',
+        unitPrice: '1000.0000',
+        lineAmount: '1000.0000',
+        pricingLineSnapshot: {},
+        lineLabel: 'Serviço demo',
+      },
+    ],
+    historyEvents: [],
+    ...overrides,
+  };
+}
+
+describe('buildBillingDocumentPreview', () => {
+  it('builds preview from billing snapshots without arbitrary text fields', () => {
+    const billing = buildBillingFixture();
+    const preview = buildBillingDocumentPreview(billing, {
+      dueDate: '2026-02-14',
+      documentNumber: null,
+      purchaseOrderNumber: 'PO-DEMO-01',
+      commercialReferenceLabel: 'Pedido PO-DEMO-01',
+    });
+
+    expect(preview.documentCategory).toBe(BILLING_EMITTER_PREVIEW.documentCategory);
+    expect(preview.documentNumberLabel).toBe('Atribuído na emissão');
+    expect(preview.clientLegalName).toBe('Cliente Demo LTDA');
+    expect(preview.emitterLegalName).toBe(BILLING_EMITTER_PREVIEW.legalName);
+    expect(preview.dueDate).toBe('2026-02-14');
+    expect(preview.purchaseOrderNumber).toBe('PO-DEMO-01');
+    expect(preview.items).toHaveLength(1);
+    expect(preview.fiscalDisclaimer).toContain('Não constitui NF-e');
+  });
+
+  it('uses issued document number when available', () => {
+    const preview = buildBillingDocumentPreview(buildBillingFixture(), {
+      documentNumber: 'NF-2026-000042',
+      commercialReferenceLabel: 'Ref',
+    });
+    expect(preview.documentNumberLabel).toBe('NF-2026-000042');
+  });
+});
+
+describe('resolveBillingRecordTermsDivergence', () => {
+  it('returns null when terms match authoritative source', () => {
+    expect(resolveBillingRecordTermsDivergence(buildBillingFixture())).toBeNull();
+  });
+
+  it('detects mismatch between declared and authoritative terms', () => {
+    const divergence = resolveBillingRecordTermsDivergence(
+      buildBillingFixture({
+        paymentTerms: 'À vista',
+        paymentTermsAuthoritative: '07 DDL',
+      }),
+    );
+    expect(divergence).toEqual({
+      authoritativeValue: '07 DDL',
+      declaredValue: 'À vista',
+    });
+  });
+});
+
+describe('hasActiveFinalizedDocument', () => {
+  it('returns true when a finalized document exists', () => {
+    expect(hasActiveFinalizedDocument([{ status: 'CANCELLED' }, { status: 'FINALIZED' }])).toBe(true);
+  });
+
+  it('returns false when no finalized document exists', () => {
+    expect(hasActiveFinalizedDocument([{ status: 'CANCELLED' }])).toBe(false);
+  });
+});

@@ -20,6 +20,14 @@ export function mapBillingErrorToMessage(code: string | undefined, status: numbe
       return 'O registro foi alterado por outra pessoa. Recarregue para revisar os dados atuais.';
     case BILLING_ERROR_CODES.INVALID_STATE:
       return 'A operação não é permitida no estado atual do faturamento.';
+    case BILLING_ERROR_CODES.BILLING_DOCUMENT_ALREADY_EXISTS:
+      return 'Já existe uma Nota Fatura ativa para esta preparação.';
+    case BILLING_ERROR_CODES.BILLING_DOCUMENT_NOT_FOUND:
+      return 'Documento de faturamento não encontrado.';
+    case BILLING_ERROR_CODES.BILLING_DOCUMENT_IMMUTABLE:
+      return 'Documentos finalizados não podem ser alterados. Use cancelamento ou substituição.';
+    case BILLING_ERROR_CODES.BILLING_DOCUMENT_STORAGE_FAILED:
+      return 'Falha ao armazenar o PDF. Tente novamente.';
     case BILLING_ERROR_CODES.VALIDATION_FAILED:
       return 'Verifique os campos informados.';
     default:

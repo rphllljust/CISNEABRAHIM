@@ -14,6 +14,7 @@ export const MOCK_SERVICE_ORDER_ID = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 export const MOCK_PLANNED_RESOURCE_ID = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 export const MOCK_MEASUREMENT_ID = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
 export const MOCK_BILLING_ID = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+export const MOCK_BILLING_DOCUMENT_ID = '11111111-1111-4111-8111-111111111112';
 export const MOCK_ASSET_A_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 export const MOCK_ASSET_B_ID = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
 const PROBE_SERVICE_ORDER_ID = '00000000-0000-4000-8000-000000000010';
@@ -48,8 +49,13 @@ export type ServiceOrdersFetchMockOptions = {
   billingReadAllowed?: boolean;
   billingTermsMismatch?: boolean;
   billingVersionConflict?: boolean;
+  billingDocumentAllowed?: boolean;
+  billingDocumentReadAllowed?: boolean;
+  billingDocumentAlreadyExists?: boolean;
+  billingDocumentTermsMismatch?: boolean;
   seedBilling?: BillingSeedKind;
   purchaseOrderPaymentTerms?: string;
+  preparedPaymentTerms?: string;
 };
 
 function orderError(code: string, status: number): Response {
@@ -90,6 +96,8 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
   const measurementAllowed = options.measurementAllowed ?? true;
   const billingAllowed = options.billingAllowed ?? true;
   const billingReadAllowed = options.billingReadAllowed ?? true;
+  const billingDocumentAllowed = options.billingDocumentAllowed ?? true;
+  const billingDocumentReadAllowed = options.billingDocumentReadAllowed ?? true;
 
   type MockMeasurementItem = {
     id: string;
@@ -395,6 +403,118 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
   };
 
   const billings = new Map<string, MockBilling>();
+  const billingDocuments = new Map<string, Array<Record<string, unknown>>>();
+  let billingDocumentSequence = 1;
+
+  function buildBillingDocument(orderId: string, billing: MockBilling, dueDate: string | null) {
+    const number = `NF-2026-${String(billingDocumentSequence++).padStart(6, '0')}`;
+    const now = new Date().toISOString();
+    return {
+      id: MOCK_BILLING_DOCUMENT_ID,
+      billingRecordId: billing.id,
+      serviceOrderId: orderId,
+      measurementId: billing.measurementId,
+      clientId: billing.clientId,
+      unitId: billing.unitId,
+      documentNumber: number,
+      sequenceYear: 2026,
+      sequenceNumber: billingDocumentSequence - 1,
+      versionNumber: 1,
+      replacesDocumentId: null,
+      status: 'FINALIZED',
+      documentCategory: 'NOTA_FATURA',
+      emitterLegalName: 'CISNE RONDÔNIA COMÉRCIO E SERVIÇOS LTDA',
+      emitterTaxId: '11897171000181',
+      emitterAddressSnapshot: {},
+      clientLegalNameSnapshot: billing.clientLegalNameSnapshot,
+      clientTaxIdSnapshot: billing.clientTaxIdSnapshot,
+      billingAddressSnapshot: billing.billingAddressSnapshot,
+      commercialReferenceSnapshot: billing.commercialReferenceSnapshot,
+      proposalId: billing.proposalId,
+      purchaseOrderId: billing.purchaseOrderId,
+      purchaseOrderNumberSnapshot: options.purchaseOrderPaymentTerms ? 'PO-DEMO' : null,
+      contractReference: billing.contractReference,
+      currencyCode: billing.currencyCode,
+      paymentTerms: billing.paymentTerms,
+      dueDate,
+      totalAmount: billing.totalAmount,
+      issuedAt: now,
+      storedDocumentId: 'doc-demo',
+      artifactSha256: 'a'.repeat(64),
+      artifactByteSize: 1024,
+      cancelledAt: null,
+      cancelledByIdentityId: null,
+      cancelReason: null,
+      rowVersion: 1,
+      createdAt: now,
+      updatedAt: now,
+      items: billing.items.map((item) => ({
+        ...item,
+        billingItemId: item.id,
+        measurementItemId: item.measurementItemId,
+      })),
+      historyEvents: [],
+    };
+  }
+
+  function handleBillingDocumentsRoute(
+    orderId: string,
+    billing: MockBilling,
+    docSuffix: string,
+    method: string,
+    init?: RequestInit,
+  ): Response | null {
+    if (!billingDocumentReadAllowed) {
+      return orderError('BILLING_DENIED', 403);
+    }
+    const body = parseBody(init);
+
+    if (docSuffix === '' && method === 'GET') {
+      return jsonResponse(billingDocuments.get(orderId) ?? []);
+    }
+
+    if (docSuffix === '' && method === 'POST') {
+      if (!billingDocumentAllowed) {
+        return orderError('BILLING_DENIED', 403);
+      }
+      if (options.billingDocumentTermsMismatch) {
+        return orderError('BILLING_COMMERCIAL_TERMS_MISMATCH', 409);
+      }
+      const existing = (billingDocuments.get(orderId) ?? []).some((doc) => doc.status === 'FINALIZED');
+      if (existing || options.billingDocumentAlreadyExists) {
+        return orderError('BILLING_DOCUMENT_ALREADY_EXISTS', 409);
+      }
+      const dueDate = readString(body.dueDate) || null;
+      const created = buildBillingDocument(orderId, billing, dueDate);
+      billingDocuments.set(orderId, [created]);
+      return jsonResponse(created, 201);
+    }
+
+    const pdfMatch = docSuffix.match(/^\/([^/]+)\/pdf$/);
+    if (pdfMatch && method === 'GET') {
+      if (!billingDocumentAllowed) {
+        return orderError('BILLING_DENIED', 403);
+      }
+      return {
+        ok: true,
+        status: 200,
+        headers: new Headers({
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': 'attachment; filename="nota-fatura-demo.pdf"',
+          'X-Content-Sha256': 'a'.repeat(64),
+        }),
+        blob: async () => new Blob(['%PDF-1.4 demo'], { type: 'application/pdf' }),
+      } as unknown as Response;
+    }
+
+    const docIdMatch = docSuffix.match(/^\/([^/]+)$/);
+    if (docIdMatch && method === 'GET') {
+      const doc = (billingDocuments.get(orderId) ?? []).find((entry) => entry.id === docIdMatch[1]);
+      return doc ? jsonResponse(doc) : orderError('BILLING_DOCUMENT_NOT_FOUND', 404);
+    }
+
+    return null;
+  }
 
   function buildBillingRecord(orderId: string, measurement: MockMeasurement, status: string): MockBilling {
     const order = getOrder(orderId);
@@ -597,14 +717,15 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
     const measurement =
       measurements.get(MOCK_SERVICE_ORDER_ID) ??
       saveMeasurement(createMockMeasurement(MOCK_SERVICE_ORDER_ID, 'APPROVED'));
-    billings.set(
+    const record = buildBillingRecord(
       MOCK_SERVICE_ORDER_ID,
-      buildBillingRecord(
-        MOCK_SERVICE_ORDER_ID,
-        measurement,
-        options.seedBilling === 'voided' ? 'VOIDED' : 'PREPARED',
-      ),
+      measurement,
+      options.seedBilling === 'voided' ? 'VOIDED' : 'PREPARED',
     );
+    if (options.preparedPaymentTerms) {
+      record.paymentTerms = options.preparedPaymentTerms;
+    }
+    billings.set(MOCK_SERVICE_ORDER_ID, record);
   }
 
   function readString(value: unknown, fallback = ''): string {
@@ -1036,6 +1157,17 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
       };
       billings.set(orderId, voided);
       return jsonResponse(voided);
+    }
+
+    const documentsMatch = actionSuffix.match(/^\/documents(\/.*)?$/);
+    if (documentsMatch) {
+      return handleBillingDocumentsRoute(
+        orderId,
+        billing,
+        documentsMatch[1] ?? '',
+        method,
+        init,
+      );
     }
 
     return null;

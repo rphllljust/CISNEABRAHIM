@@ -3428,47 +3428,54 @@ NOTES:
 
 ---
 
-## Prompt 60 — Nota Fatura digital (BillingDocument)
+## Prompt 61 — Nota Fatura digital (frontend)
 
 ```
-PROMPT_ID: 60
-PROMPT_TITLE: Nota Fatura digital — BillingDocument interno
+PROMPT_ID: 61
+PROMPT_TITLE: Nota Fatura digital — frontend workflow
 EXECUTED_AT: 2026-08-29
 EXECUTION_STATUS: PASS
-COMMIT: feat(billing): implement digital billing document generation
+COMMIT: feat(web): implement digital billing document workflow
 ARTIFACTS:
-  packages/database/migrations/0025_billing_documents.sql
-  packages/database/src/schema/billing.ts
-  packages/database/src/test-builders/billing-builders.ts
-  apps/api/src/billing/
-  apps/api/src/documents/documents.module.ts
-  apps/api/src/documents/domain/document-categories.ts
-  apps/api/src/authorization/types/authz-actions.ts
-  apps/api/src/audit/types/security-audit.types.ts
-  apps/api/src/test/ensure-migrations.ts
-  docs/implementation/60-billing-document.md
+  apps/web/src/billing/api/billing-document-api.ts
+  apps/web/src/billing/components/BillingDocumentPreview.tsx
+  apps/web/src/billing/components/BillingDocumentIssueDialog.tsx
+  apps/web/src/billing/components/BillingDocumentIssuedList.tsx
+  apps/web/src/billing/pages/ServiceOrderBillingDocumentPage.tsx
+  apps/web/src/billing/utils/billing-document-preview.ts
+  apps/web/src/billing/utils/billing-document-format.ts
+  apps/web/src/billing/pages/BillingDocumentPages.test.tsx
+  apps/web/src/billing/billing-document.e2e.test.tsx
+  apps/web/src/billing/utils/billing-document-preview.test.ts
+  apps/web/src/index.css
+  apps/web/src/App.tsx
+  apps/web/src/test/render-billing-routes.tsx
+  apps/web/src/test/service-orders-fetch-mock.ts
+  docs/implementation/61-billing-document-frontend.md
   docs/00-governance/prompt-execution-log.md
 QUALITY_GATE: PASS
 FUNCTIONAL_CODE_CREATED: YES
 NEXT_PROMPT_EXECUTED: NO
 NOTES:
-  BillingDocument interno NOTA FATURA (não NF-e/NFS-e).
-  Numeração NF-{ANO}-{SEQ} com sequência transacional FOR UPDATE.
-  PDF server-side determinístico (pdfkit), hash SHA-256, storage doc.*.
-  FINALIZED imutável; correção via cancel/replace com nova versão.
-  Prompt 61 não executado.
+  Workflow em /billing/document: resumo → cliente → referências → itens → pagamento → divergências → preview → emitir.
+  Snapshots somente leitura; dueDate opcional na emissão.
+  Preview fiel; PDF oficial exclusivo do backend.
+  Bloqueio de emissão em mismatch comercial ou documento FINALIZED existente.
+  Dialog de confirmação com cliente, CNPJ, PO, total, vencimento e condições.
+  Estilos billing-doc-* + @media print.
+  Prompt 62 não executado.
 ```
 
-## Quality gate Prompt 60 (evidência)
+## Quality gate Prompt 61 (evidência)
 
-- [x] BillingDocument ligado a BillingRecord, Client, Measurement, OS, referência comercial
-- [x] Numeração concorrente sem duplicata (sequência transacional + teste paralelo)
-- [x] Snapshots completos (emitente, cliente, itens, PO, condição, vencimento)
-- [x] PDF A4 server-side, hash persistido, download autorizado
-- [x] Imutabilidade FINALIZED; cancelamento e substituição versionada
-- [x] Sem integração fiscal NF-e/NFS-e; categoria NOTA FATURA
-- [x] Testes: domain (3), integration (7), E2E (1)
-- [x] typecheck + integration billing-document PASS
-- [x] Prompt 61 não executado
+- [x] Workflow completo com seções navegáveis e sticky actions
+- [x] Dados derivados não editáveis (exceto dueDate autorizado)
+- [x] Preview fiel sem DOM screenshot como documento oficial
+- [x] Confirmação pré-emissão com resumo e bloqueio em mismatch
+- [x] Download PDF via API backend
+- [x] Layout responsivo e print-friendly
+- [x] Testes: preview (6), pages (8), E2E (2)
+- [x] typecheck + lint + vitest web (153) PASS
+- [x] Prompt 62 não executado
 
 ---

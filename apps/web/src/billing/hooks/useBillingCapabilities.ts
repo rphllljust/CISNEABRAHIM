@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react';
 import { probeBillingCapabilities } from '../api/billing-api';
+import { probeBillingDocumentCapabilities } from '../api/billing-document-api';
 import type { BillingCapabilities } from '../types/billing.types';
 
 const DEFAULT_CAPABILITIES: BillingCapabilities = {
   canRead: false,
   canPrepare: false,
   canVoid: false,
+  canIssueDocument: false,
+  canReadDocument: false,
+  canDownloadDocument: false,
 };
 
 export function useBillingCapabilities(): { capabilities: BillingCapabilities; loading: boolean } {
@@ -16,10 +20,16 @@ export function useBillingCapabilities(): { capabilities: BillingCapabilities; l
     const controller = new AbortController();
     let cancelled = false;
 
-    void probeBillingCapabilities(controller.signal)
-      .then((result) => {
+    void Promise.all([
+      probeBillingCapabilities(controller.signal),
+      probeBillingDocumentCapabilities(controller.signal),
+    ])
+      .then(([billing, documents]) => {
         if (!cancelled) {
-          setCapabilities(result);
+          setCapabilities({
+            ...billing,
+            ...documents,
+          });
         }
       })
       .catch(() => {

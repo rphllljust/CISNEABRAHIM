@@ -198,5 +198,5 @@ export async function probeBillingCapabilities(signal?: AbortSignal): Promise<Bi
     }
   }
 
-  return { canRead, canPrepare, canVoid };
+  return { canRead, canPrepare, canVoid, canIssueDocument: false, canReadDocument: false, canDownloadDocument: false };
 }

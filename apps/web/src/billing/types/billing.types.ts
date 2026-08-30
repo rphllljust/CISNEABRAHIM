@@ -29,7 +29,11 @@ export const BILLING_ERROR_CODES = {
   COMMERCIAL_TERMS_MISMATCH: 'BILLING_COMMERCIAL_TERMS_MISMATCH',
   INVALID_STATE: 'BILLING_INVALID_STATE',
   VERSION_CONFLICT: 'BILLING_VERSION_CONFLICT',
-  CLIENT_NOT_FOUND: 'BILLING_CLIENT_NOT_FOUND',
+  BILLING_DOCUMENT_NOT_FOUND: 'BILLING_DOCUMENT_NOT_FOUND',
+  BILLING_DOCUMENT_ALREADY_EXISTS: 'BILLING_DOCUMENT_ALREADY_EXISTS',
+  BILLING_DOCUMENT_INVALID_STATE: 'BILLING_DOCUMENT_INVALID_STATE',
+  BILLING_DOCUMENT_IMMUTABLE: 'BILLING_DOCUMENT_IMMUTABLE',
+  BILLING_DOCUMENT_STORAGE_FAILED: 'BILLING_DOCUMENT_STORAGE_FAILED',
 } as const;
 
 export type BillingErrorCode = (typeof BILLING_ERROR_CODES)[keyof typeof BILLING_ERROR_CODES];
@@ -102,6 +106,78 @@ export type BillingCapabilities = {
   canRead: boolean;
   canPrepare: boolean;
   canVoid: boolean;
+  canIssueDocument: boolean;
+  canReadDocument: boolean;
+  canDownloadDocument: boolean;
+};
+
+export const BILLING_DOCUMENT_STATUSES = {
+  Finalized: 'FINALIZED',
+  Cancelled: 'CANCELLED',
+} as const;
+
+export type BillingDocumentStatus =
+  (typeof BILLING_DOCUMENT_STATUSES)[keyof typeof BILLING_DOCUMENT_STATUSES];
+
+export type BillingDocumentItem = {
+  id: string;
+  lineNumber: number;
+  billingItemId: string | null;
+  measurementItemId: string | null;
+  unitCode: string;
+  quantity: string;
+  unitPrice: string | null;
+  lineAmount: string;
+  lineLabel: string;
+  pricingLineSnapshot: Record<string, unknown>;
+};
+
+export type BillingDocumentDetail = {
+  id: string;
+  billingRecordId: string;
+  serviceOrderId: string;
+  measurementId: string;
+  clientId: string;
+  unitId: string;
+  documentNumber: string;
+  sequenceYear: number;
+  sequenceNumber: number;
+  versionNumber: number;
+  replacesDocumentId: string | null;
+  status: BillingDocumentStatus;
+  documentCategory: string;
+  emitterLegalName: string;
+  emitterTaxId: string;
+  emitterAddressSnapshot: Record<string, unknown>;
+  clientLegalNameSnapshot: string;
+  clientTaxIdSnapshot: string | null;
+  billingAddressSnapshot: Record<string, unknown>;
+  commercialReferenceSnapshot: Record<string, unknown>;
+  proposalId: string | null;
+  purchaseOrderId: string | null;
+  purchaseOrderNumberSnapshot: string | null;
+  contractReference: string | null;
+  currencyCode: string;
+  paymentTerms: string;
+  dueDate: string | null;
+  totalAmount: string;
+  issuedAt: string;
+  storedDocumentId: string | null;
+  artifactSha256: string | null;
+  artifactByteSize: number | null;
+  cancelledAt: string | null;
+  cancelledByIdentityId: string | null;
+  cancelReason: string | null;
+  rowVersion: number;
+  createdAt: string;
+  updatedAt: string;
+  items: BillingDocumentItem[];
+  historyEvents: unknown[];
+};
+
+export type IssueBillingDocumentPayload = {
+  dueDate?: string | null;
+  idempotencyKey?: string;
 };
 
 export const BILLING_PROCESS_BUCKETS = {

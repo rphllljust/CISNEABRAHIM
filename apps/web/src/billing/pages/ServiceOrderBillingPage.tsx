@@ -394,6 +394,14 @@ export function ServiceOrderBillingPage() {
       </section>
 
       <footer className="billing-actions">
+        {billing?.status === BILLING_RECORD_STATUSES.Prepared && capabilities.canIssueDocument ? (
+          <Link
+            to={`/app/service-orders/${order.id}/billing/document`}
+            className="billing-button billing-button--primary"
+          >
+            Emitir Nota Fatura
+          </Link>
+        ) : null}
         {canPrepare ? (
           <button
             type="button"
