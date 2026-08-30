@@ -4780,8 +4780,7 @@ QUALITY_GATE: PASS
 NEXT_ALLOWED_PROMPT: 89
 NEXT_PROMPT_EXECUTED: NO
 NOTES:
-  Prompt 89 não executado.
-  RPO/RTO e provedor cloud permanecem TARGET_NOT_DEFINED / ADR-006 PROPOSED.
+  Prompt 89 executado (PASS).
 ```
 
 ## Quality gate Prompt 88 (evidência)
@@ -4796,6 +4795,49 @@ NOTES:
 | service account least privilege | PASS | prod-validation.spec.ts |
 | security scan embedded secrets | PASS | prod-validation.spec.ts |
 | secret store gate | PASS | prod-validation.spec.ts |
+| API typecheck | PASS | tsc --noEmit |
+
+---
+
+## Prompt 89 — UAT Empresarial
+
+```
+PROMPT_ID: 89
+PROMPT_TITLE: UAT Empresarial
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: PASS
+COMMIT: f791744 test(uat): establish business acceptance validation
+ARTIFACTS:
+  apps/api/src/uat/**
+  apps/api/src/vertical/first-vertical-quality-gate.integration.spec.ts (refatorado)
+  docs/16-testing/uat-*.md
+  scripts/uat/run.mjs
+SCENARIOS: locação (RENTAL), transporte (TRANSPORT), obra composto (CIVIL_WORK)
+FLOW: Cliente→Solicitação→Proposta/PO→OS→Planejamento→Alocação→Execução→Evidência→Medição→Faturamento→Nota Fatura→Documentos
+PROFILES: control_admin, executor, finance — visibilidade e SoD
+UX: shell responsivo automatizado; checklist manual PENDING (sem falsificar)
+DEFECTS: nenhum BLOCKER/CRITICAL aberto
+UAT_ENGINEERING: APPROVED
+BUSINESS_SIGN_OFF: PENDING (não falsificado)
+GO_LIVE: BLOCKED por sign-off empresarial + RPO/RTO TARGET_NOT_DEFINED
+QUALITY_GATE: PASS
+NEXT_ALLOWED_PROMPT: 90
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Prompt 90 não executado — requer aprovação real de negócio para go-live.
+```
+
+## Quality gate Prompt 89 (evidência)
+
+| Cenário de teste | Resultado | Evidência |
+|------------------|-----------|-----------|
+| locação end-to-end | PASS | uat-business.integration.spec.ts |
+| transporte end-to-end | PASS | uat-business.integration.spec.ts |
+| obra composto end-to-end | PASS | uat-business.integration.spec.ts |
+| perfis Admin/Executor/Finance | PASS | uat-profile-checks.ts |
+| severidade BLOCKER/CRITICAL | PASS | uat-verdict.spec.ts |
+| vertical regressão obra | PASS | first-vertical-quality-gate.integration.spec.ts |
+| UX shell responsivo | PASS | vertical-quality-gate.e2e.test.tsx |
 | API typecheck | PASS | tsc --noEmit |
 
 ---
