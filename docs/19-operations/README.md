@@ -8,3 +8,4 @@ Documentação operacional (backup, continuidade, runbooks).
 | [dr-restore-runbook.md](dr-restore-runbook.md) | 85 |
 | [hml-environment.md](hml-environment.md) | 86 |
 | [cd-pipeline.md](cd-pipeline.md) | 87 |
+| [production-infrastructure.md](production-infrastructure.md) | 88 |

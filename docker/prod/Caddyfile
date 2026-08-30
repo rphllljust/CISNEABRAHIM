@@ -1,0 +1,17 @@
+{
+  email internal
+}
+
+{$PROD_DOMAIN} {
+  encode gzip
+  reverse_proxy api:3000
+}
+
+{$PROD_WEB_DOMAIN} {
+  encode gzip
+  reverse_proxy web:80
+}
+
+:80 {
+  redir https://{host}{uri} permanent
+}
