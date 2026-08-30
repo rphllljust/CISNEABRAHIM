@@ -3130,3 +3130,103 @@ NOTES:
 - [x] Prompt 55 não executado
 
 ---
+
+## Prompt 56 — Medição (backend)
+
+```
+PROMPT_ID: 56
+PROMPT_TITLE: Medição — backend
+EXECUTED_AT: 2026-08-29
+EXECUTION_STATUS: PASS
+COMMIT: feat(measurement): implement traceable measurement domain
+ARTIFACTS:
+  packages/database/migrations/0023_measurement_baseline.sql
+  packages/database/src/schema/measurements.ts
+  apps/api/src/measurements/
+  apps/api/src/authorization/types/authz-actions.ts
+  apps/api/src/audit/types/security-audit.types.ts
+  apps/api/src/app.module.ts
+  apps/api/src/test/ensure-migrations.ts
+  packages/database/src/test-builders/service-order-builders.ts
+  docs/implementation/56-measurement-backend.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Measurement agregado próprio (msr.*); deriva de ACTUAL + adjustments autorizados.
+  Estados DRAFT/SUBMITTED/UNDER_REVIEW/APPROVED/REJECTED; snapshot comercial na criação.
+  Divergência 10→17 M3 bloqueada sem adjustment formal; SoD em approve.
+  Prompt 57 não executado.
+```
+
+## Quality gate Prompt 56 (evidência)
+
+- [x] Create com item origin (sourceExecutionEntryId)
+- [x] Invalid UoM / divergence sem adjustment
+- [x] Adjustment autorizado permite divergência
+- [x] Submit / approve / reject workflow
+- [x] SoD submitter ≠ approver
+- [x] Stale version / concurrent approve / concurrent regenerate
+- [x] Unauthorized / OS not completed
+- [x] Commercial snapshot imutável após mudança de catálogo
+- [x] Unit (6) + integration (11) + e2e (2) PASS
+- [x] typecheck + lint PASS
+- [x] Prompt 57 não executado
+
+---
+
+## Prompt 55 — Execução operacional responsiva (frontend)
+
+```
+PROMPT_ID: 55
+PROMPT_TITLE: Execução operacional responsiva — frontend
+EXECUTED_AT: 2026-08-29
+EXECUTION_STATUS: PASS
+COMMIT: feat(web): implement responsive field execution experience
+ARTIFACTS:
+  apps/web/src/service-orders/layout/ExecutionShellLayout.tsx
+  apps/web/src/service-orders/pages/ServiceOrderExecutionPage.tsx
+  apps/web/src/service-orders/components/ExecutionHeader.tsx
+  apps/web/src/service-orders/components/ExecutionTimeline.tsx
+  apps/web/src/service-orders/components/RequirementChecklist.tsx
+  apps/web/src/service-orders/components/EvidenceUploader.tsx
+  apps/web/src/service-orders/components/OperationalActionBar.tsx
+  apps/web/src/service-orders/components/OccurrenceForm.tsx
+  apps/web/src/service-orders/components/ExecutionActivityPanel.tsx
+  apps/web/src/service-orders/api/service-order-execution-api.ts
+  apps/web/src/service-orders/types/service-order-execution.types.ts
+  apps/web/src/service-orders/utils/execution-requirements.ts
+  apps/web/src/service-orders/utils/execution-primary-action.ts
+  apps/web/src/service-orders/service-order-execution.e2e.test.tsx
+  apps/web/src/index.css
+  apps/web/src/App.tsx
+  docs/implementation/55-service-order-execution-frontend.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Shell de campo separado do painel administrativo (sem nav lateral em mobile).
+  Mobile-first CSS em index.css (sem Tailwind no repo — convenção existente).
+  Uma ação primária por estado; confirmação para concluir/pausar.
+  Upload de evidências com progresso, retry e sem persistência local prolongada.
+  Idempotência em transições; retry de rede preserva chave pendente.
+  Prompt 56 não executado.
+```
+
+## Quality gate Prompt 55 (evidência)
+
+- [x] Mobile-first layout (360px+) com action bar inferior
+- [x] Header operacional com OS, status, cliente, serviço, local, horário, equipamento, função
+- [x] Checklist de requisitos + timeline + evidências + ocorrências
+- [x] Ação primária única por estado (start / record / complete / resume)
+- [x] Confirmação para concluir e pausar
+- [x] Upload com progresso, falha, retry, sucesso (não bloqueia tela)
+- [x] Tratamento de timeout/rede, version conflict, 403
+- [x] Acessibilidade: labels, aria-live, focus, error summary
+- [x] Unit (7) + E2E execution (9) + regressão web (105) PASS
+- [x] typecheck + lint PASS
+- [x] Prompt 56 não executado
+
+---

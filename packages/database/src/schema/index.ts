@@ -98,6 +98,15 @@ export {
   soSchema,
 } from './service-orders';
 export {
+  measurementAdjustments,
+  measurementCommandIdempotency,
+  measurementHistoryEvents,
+  measurementItems,
+  measurements,
+  measurementStatusEnum,
+  msrSchema,
+} from './measurements';
+export {
   plannedResourceKindEnum,
   plannedResources,
   plannedResourceStatusEnum,

@@ -173,6 +173,11 @@ export default async function ensureMigrations(): Promise<void> {
     if (!hasExecutionEntries) {
       await applySqlFile(pool, '0022_service_order_execution_baseline.sql');
     }
+
+    const hasMeasurements = await tableExists(pool, 'msr.measurements');
+    if (!hasMeasurements) {
+      await applySqlFile(pool, '0023_measurement_baseline.sql');
+    }
   } finally {
     await pool.end();
   }

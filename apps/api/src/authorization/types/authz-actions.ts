@@ -100,6 +100,13 @@ export const AUTHZ_ACTIONS = {
   ServiceOrdersExecutionResume: 'service-orders:execution:resume',
   ServiceOrdersExecutionComplete: 'service-orders:execution:complete',
   ServiceOrdersExecutionRecord: 'service-orders:execution:record',
+  MeasurementsMeasurementCreate: 'measurements:measurement:create',
+  MeasurementsMeasurementRead: 'measurements:measurement:read',
+  MeasurementsMeasurementUpdate: 'measurements:measurement:update',
+  MeasurementsMeasurementSubmit: 'measurements:measurement:submit',
+  MeasurementsMeasurementReview: 'measurements:measurement:review',
+  MeasurementsMeasurementApprove: 'measurements:measurement:approve',
+  MeasurementsMeasurementReject: 'measurements:measurement:reject',
 } as const;
 
 export type AuthzAction = (typeof AUTHZ_ACTIONS)[keyof typeof AUTHZ_ACTIONS];

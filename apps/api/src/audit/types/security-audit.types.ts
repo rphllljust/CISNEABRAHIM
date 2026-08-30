@@ -70,6 +70,12 @@ export const SECURITY_AUDIT_ACTIONS = {
   ServiceOrdersExecutionResume: 'security:service-orders:execution:resume',
   ServiceOrdersExecutionComplete: 'security:service-orders:execution:complete',
   ServiceOrdersExecutionRecord: 'security:service-orders:execution:record',
+  MeasurementsMeasurementCreate: 'security:measurements:measurement:create',
+  MeasurementsMeasurementUpdate: 'security:measurements:measurement:update',
+  MeasurementsMeasurementSubmit: 'security:measurements:measurement:submit',
+  MeasurementsMeasurementReview: 'security:measurements:measurement:review',
+  MeasurementsMeasurementApprove: 'security:measurements:measurement:approve',
+  MeasurementsMeasurementReject: 'security:measurements:measurement:reject',
 } as const;
 
 export type SecurityAuditAction =
