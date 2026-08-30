@@ -25,6 +25,8 @@ import { AssetsRoute } from './assets/AssetsRoute';
 import { RequestsRoute } from './requests/RequestsRoute';
 import { ServiceOrdersRoute } from './service-orders/ServiceOrdersRoute';
 import { ServiceOrderPlanningPage } from './service-orders/pages/ServiceOrderPlanningPage';
+import { ExecutionShellLayout } from './service-orders/layout/ExecutionShellLayout';
+import { ServiceOrderExecutionPage } from './service-orders/pages/ServiceOrderExecutionPage';
 import { ServiceRequestCreatePage } from './requests/pages/ServiceRequestCreatePage';
 import { ServiceRequestDetailPage } from './requests/pages/ServiceRequestDetailPage';
 import { ServiceRequestEditPage } from './requests/pages/ServiceRequestEditPage';
@@ -46,6 +48,16 @@ export function App() {
           <Route path="/session-expired" element={<SessionExpiredPage />} />
           <Route path="/unavailable" element={<ServiceUnavailablePage />} />
           <Route element={<ProtectedRoute />}>
+            <Route element={<ExecutionShellLayout />}>
+              <Route
+                path="/app/service-orders/:serviceOrderId/execution"
+                element={
+                  <ServiceOrdersRoute>
+                    <ServiceOrderExecutionPage />
+                  </ServiceOrdersRoute>
+                }
+              />
+            </Route>
             <Route element={<AppShellLayout />}>
               <Route path="/app" element={<AppHomePage />} />
               <Route

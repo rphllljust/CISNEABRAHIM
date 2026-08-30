@@ -24,6 +24,10 @@ export type ServiceOrdersFetchMockOptions = {
   allocateAllowed?: boolean;
   removeAllocationAllowed?: boolean;
   assetListAllowed?: boolean;
+  executionAllowed?: boolean;
+  executionNetworkFailure?: boolean;
+  executionVersionConflict?: boolean;
+  executionDelayedStartMs?: number;
 };
 
 function orderError(code: string, status: number): Response {
@@ -60,6 +64,188 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
   const planAllowed = options.planAllowed ?? true;
   const allocateAllowed = options.allocateAllowed ?? true;
   const removeAllocationAllowed = options.removeAllocationAllowed ?? true;
+  const executionAllowed = options.executionAllowed ?? true;
+
+  type MockOrder = {
+    id: string;
+    internalCode: string;
+    orderNumber: string;
+    unitId: string;
+    status: string;
+    origin: string;
+    clientId: string | null;
+    clientSnapshot: Record<string, unknown> | null;
+    serviceDefinitionId: string | null;
+    serviceDefinitionVersionId: string | null;
+    serviceSnapshot: {
+      serviceCode: string;
+      serviceName: string;
+      measurementModel?: {
+        mode: string;
+        basis: string;
+        defaultUnitCode: string | null;
+      };
+      allowedUnits?: Array<{ unitCode: string; isDefault?: boolean; sortOrder?: number }>;
+      requirements: {
+        resources: Array<{
+          physicalResourceTypeCode: string;
+          requirementLevel: string;
+          minQuantity: string | null;
+          sortOrder: number;
+        }>;
+        labor: Array<{
+          laborTypeCode: string;
+          requirementLevel: string;
+          minQuantity: string | null;
+          sortOrder: number;
+        }>;
+        execution: Array<{
+          evidenceKind: string;
+          requirementLevel: string;
+          config: Record<string, unknown> | null;
+          sortOrder: number;
+        }>;
+      };
+    };
+    description: string | null;
+    rowVersion: number;
+    preparedAt: string | null;
+    releasedAt: string | null;
+    cancelledAt: string | null;
+    historyEvents: unknown[];
+  };
+  type MockEntry = {
+    id: string;
+    serviceOrderId: string;
+    entryType: string;
+    evidenceKind: string | null;
+    quantityValue: string | null;
+    quantityUnitCode: string | null;
+    textValue: string | null;
+    context: Record<string, unknown>;
+    actorIdentityId: string;
+    recordedAt: string;
+    rowVersion: number;
+  };
+  type MockEvidence = {
+    id: string;
+    serviceOrderId: string;
+    evidenceKind: string;
+    payload: Record<string, unknown>;
+    actorIdentityId: string;
+    recordedAt: string;
+  };
+  type MockOccurrence = {
+    id: string;
+    serviceOrderId: string;
+    occurrenceCode: string;
+    description: string;
+    payload: Record<string, unknown>;
+    actorIdentityId: string;
+    recordedAt: string;
+  };
+
+  const orders = new Map<string, MockOrder>();
+  const entries = new Map<string, MockEntry[]>();
+  const evidence = new Map<string, MockEvidence[]>();
+  const occurrences = new Map<string, MockOccurrence[]>();
+  const idempotency = new Map<string, unknown>();
+
+  function buildOrderDetail(id: string): MockOrder {
+    return {
+      id,
+      internalCode: 'OS-INT-001',
+      orderNumber: 'OS-2026-DEMO01',
+      unitId: 'unit-demo',
+      status: SERVICE_ORDER_STATUSES.Released,
+      origin: 'SERVICE_REQUEST',
+      clientId: 'client-demo',
+      clientSnapshot: {
+        legalName: 'Cliente Demo LTDA',
+        tradeName: 'Cliente Demo',
+      },
+      serviceDefinitionId: null,
+      serviceDefinitionVersionId: null,
+      serviceSnapshot: {
+        serviceCode: 'SVC-DEMO',
+        serviceName: 'Serviço Demo',
+        measurementModel: {
+          mode: 'UNIT',
+          basis: 'SERVICE',
+          defaultUnitCode: 'SERVICE',
+        },
+        allowedUnits: [{ unitCode: 'SERVICE', isDefault: true, sortOrder: 0 }],
+        requirements: {
+          resources: [
+            {
+              physicalResourceTypeCode: 'TRUCK',
+              requirementLevel: 'REQUIRED',
+              minQuantity: '2',
+              sortOrder: 1,
+            },
+          ],
+          labor: [
+            {
+              laborTypeCode: 'OPERATOR',
+              requirementLevel: 'REQUIRED',
+              minQuantity: '1',
+              sortOrder: 1,
+            },
+          ],
+          execution: [
+            {
+              evidenceKind: 'OBSERVATION',
+              requirementLevel: 'REQUIRED',
+              config: null,
+              sortOrder: 1,
+            },
+            {
+              evidenceKind: 'QUANTITY',
+              requirementLevel: 'REQUIRED',
+              config: null,
+              sortOrder: 2,
+            },
+          ],
+        },
+      },
+      description: 'Local: pátio central',
+      rowVersion: 1,
+      preparedAt: '2026-01-01T08:00:00.000Z',
+      releasedAt: '2026-01-01T09:00:00.000Z',
+      cancelledAt: null,
+      historyEvents: [],
+    };
+  }
+
+  function getOrder(id: string): MockOrder {
+    if (!orders.has(id)) {
+      orders.set(id, buildOrderDetail(id));
+      entries.set(id, []);
+      evidence.set(id, []);
+      occurrences.set(id, []);
+    }
+    return { ...orders.get(id)! };
+  }
+
+  function saveOrder(order: MockOrder): MockOrder {
+    orders.set(order.id, order);
+    return order;
+  }
+
+  function executionBundle(orderId: string) {
+    const order = getOrder(orderId);
+    return {
+      serviceOrderId: orderId,
+      status: order.status,
+      entries: entries.get(orderId) ?? [],
+      evidence: evidence.get(orderId) ?? [],
+      occurrences: occurrences.get(orderId) ?? [],
+    };
+  }
+
+  function serviceOrderDetail(id: string) {
+    return getOrder(id);
+  }
 
   const planningAssets: PhysicalAsset[] = [
     {
@@ -99,48 +285,201 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
   const planned: PlannedResource[] = [];
   const allocations: ResourceAllocation[] = [];
 
-  function serviceOrderDetail(id: string) {
-    return {
-      id,
-      internalCode: 'OS-INT-001',
-      orderNumber: 'OS-2026-DEMO01',
-      unitId: 'unit-demo',
-      status: SERVICE_ORDER_STATUSES.Released,
-      origin: 'SERVICE_REQUEST',
-      clientId: null,
-      clientSnapshot: null,
-      serviceDefinitionId: null,
-      serviceDefinitionVersionId: null,
-      serviceSnapshot: {
-        serviceCode: 'SVC-DEMO',
-        serviceName: 'Serviço Demo',
-        requirements: {
-          resources: [
-            {
-              physicalResourceTypeCode: 'TRUCK',
-              requirementLevel: 'REQUIRED',
-              minQuantity: '2',
-              sortOrder: 1,
-            },
-          ],
-          labor: [
-            {
-              laborTypeCode: 'OPERATOR',
-              requirementLevel: 'REQUIRED',
-              minQuantity: '1',
-              sortOrder: 1,
-            },
-          ],
-          execution: [],
-        },
-      },
-      description: 'Ordem de demonstração',
-      rowVersion: 1,
-      preparedAt: '2026-01-01T08:00:00.000Z',
-      releasedAt: '2026-01-01T09:00:00.000Z',
-      cancelledAt: null,
-      historyEvents: [],
-    };
+  function readString(value: unknown, fallback = ''): string {
+    return typeof value === 'string' ? value : fallback;
+  }
+
+  function parseBody(init?: RequestInit): Record<string, unknown> {
+    return JSON.parse(typeof init?.body === 'string' ? init.body : '{}') as Record<string, unknown>;
+  }
+
+  function satisfiedKinds(orderId: string): Set<string> {
+    const kinds = new Set<string>();
+    for (const item of evidence.get(orderId) ?? []) {
+      kinds.add(item.evidenceKind);
+    }
+    for (const entry of entries.get(orderId) ?? []) {
+      if (entry.evidenceKind) {
+        kinds.add(entry.evidenceKind);
+      }
+      if (entry.entryType === 'QUANTITY') {
+        kinds.add('QUANTITY');
+      }
+      if (entry.entryType === 'OBSERVATION') {
+        kinds.add('OBSERVATION');
+      }
+    }
+    return kinds;
+  }
+
+  async function handleExecutionRoute(
+    orderId: string,
+    suffix: string,
+    method: string,
+    init?: RequestInit,
+  ): Promise<Response | null> {
+    if (!executionAllowed) {
+      return orderError('SERVICE_ORDERS_DENIED', 403);
+    }
+    if (orderId !== MOCK_SERVICE_ORDER_ID && orderId !== PROBE_SERVICE_ORDER_ID) {
+      return orderError('SERVICE_ORDERS_NOT_FOUND', 404);
+    }
+    if (options.executionNetworkFailure && method === 'POST') {
+      throw new TypeError('Failed to fetch');
+    }
+
+    if (suffix === '' && method === 'GET') {
+      return jsonResponse(executionBundle(orderId));
+    }
+
+    const body = parseBody(init);
+    const rowVersion = Number(body.rowVersion);
+    const idempotencyKey = typeof body.idempotencyKey === 'string' ? body.idempotencyKey : undefined;
+    const order = getOrder(orderId);
+
+    if (idempotencyKey) {
+      const cached = idempotency.get(`${orderId}:${suffix}:${idempotencyKey}`);
+      if (cached) {
+        return jsonResponse(cached);
+      }
+    }
+
+    if (options.executionVersionConflict && suffix !== '') {
+      return orderError('SERVICE_ORDERS_VERSION_CONFLICT', 409);
+    }
+
+    if (suffix === '/start' && method === 'POST') {
+      if (order.status !== SERVICE_ORDER_STATUSES.Released) {
+        return orderError('SERVICE_ORDERS_INVALID_STATE', 409);
+      }
+      if (options.executionDelayedStartMs) {
+        await new Promise((resolve) => setTimeout(resolve, options.executionDelayedStartMs));
+      }
+      const updated = saveOrder({
+        ...order,
+        status: SERVICE_ORDER_STATUSES.InExecution,
+        rowVersion: rowVersion + 1,
+      });
+      const response = updated;
+      if (idempotencyKey) {
+        idempotency.set(`${orderId}:${suffix}:${idempotencyKey}`, response);
+      }
+      return jsonResponse(response);
+    }
+
+    if (suffix === '/pause' && method === 'POST') {
+      if (order.status !== SERVICE_ORDER_STATUSES.InExecution) {
+        return orderError('SERVICE_ORDERS_INVALID_STATE', 409);
+      }
+      const updated = saveOrder({
+        ...order,
+        status: SERVICE_ORDER_STATUSES.Paused,
+        rowVersion: rowVersion + 1,
+      });
+      return jsonResponse(updated);
+    }
+
+    if (suffix === '/resume' && method === 'POST') {
+      if (order.status !== SERVICE_ORDER_STATUSES.Paused) {
+        return orderError('SERVICE_ORDERS_INVALID_STATE', 409);
+      }
+      const updated = saveOrder({
+        ...order,
+        status: SERVICE_ORDER_STATUSES.InExecution,
+        rowVersion: rowVersion + 1,
+      });
+      return jsonResponse(updated);
+    }
+
+    if (suffix === '/complete' && method === 'POST') {
+      if (order.status !== SERVICE_ORDER_STATUSES.InExecution) {
+        return orderError('SERVICE_ORDERS_INVALID_STATE', 409);
+      }
+      const required = order.serviceSnapshot.requirements.execution.filter(
+        (item: { requirementLevel: string }) => item.requirementLevel === 'REQUIRED',
+      );
+      const missing = required.some(
+        (item: { evidenceKind: string }) => !satisfiedKinds(orderId).has(item.evidenceKind),
+      );
+      if (missing) {
+        return orderError('SERVICE_ORDERS_REQUIRED_EVIDENCE_MISSING', 409);
+      }
+      const updated = saveOrder({
+        ...order,
+        status: SERVICE_ORDER_STATUSES.Completed,
+        rowVersion: rowVersion + 1,
+      });
+      return jsonResponse(updated);
+    }
+
+    if (suffix === '/entries/observation' && method === 'POST') {
+      const entry: MockEntry = {
+        id: crypto.randomUUID(),
+        serviceOrderId: orderId,
+        entryType: 'OBSERVATION',
+        evidenceKind: 'OBSERVATION',
+        quantityValue: null,
+        quantityUnitCode: null,
+        textValue: readString(body.text),
+        context: {},
+        actorIdentityId: 'actor-demo',
+        recordedAt: new Date().toISOString(),
+        rowVersion: 1,
+      };
+      entries.set(orderId, [...(entries.get(orderId) ?? []), entry]);
+      const updated = saveOrder({ ...order, rowVersion: rowVersion + 1 });
+      return jsonResponse({ entry, rowVersion: updated.rowVersion }, 201);
+    }
+
+    if (suffix === '/entries/quantity' && method === 'POST') {
+      const entry: MockEntry = {
+        id: crypto.randomUUID(),
+        serviceOrderId: orderId,
+        entryType: 'QUANTITY',
+        evidenceKind: 'QUANTITY',
+        quantityValue: readString(body.quantityValue),
+        quantityUnitCode: readString(body.unitCode),
+        textValue: null,
+        context: {},
+        actorIdentityId: 'actor-demo',
+        recordedAt: new Date().toISOString(),
+        rowVersion: 1,
+      };
+      entries.set(orderId, [...(entries.get(orderId) ?? []), entry]);
+      const updated = saveOrder({ ...order, rowVersion: rowVersion + 1 });
+      return jsonResponse({ entry, rowVersion: updated.rowVersion }, 201);
+    }
+
+    if (suffix === '/occurrences' && method === 'POST') {
+      const occurrence: MockOccurrence = {
+        id: crypto.randomUUID(),
+        serviceOrderId: orderId,
+        occurrenceCode: readString(body.occurrenceCode),
+        description: readString(body.description),
+        payload: {},
+        actorIdentityId: 'actor-demo',
+        recordedAt: new Date().toISOString(),
+      };
+      occurrences.set(orderId, [...(occurrences.get(orderId) ?? []), occurrence]);
+      const updated = saveOrder({ ...order, rowVersion: rowVersion + 1 });
+      return jsonResponse({ occurrence, rowVersion: updated.rowVersion }, 201);
+    }
+
+    if (suffix === '/evidence' && method === 'POST') {
+      const item: MockEvidence = {
+        id: crypto.randomUUID(),
+        serviceOrderId: orderId,
+        evidenceKind: readString(body.evidenceKind, 'PHOTO'),
+        payload: (body.payload as Record<string, unknown>) ?? {},
+        actorIdentityId: 'actor-demo',
+        recordedAt: new Date().toISOString(),
+      };
+      evidence.set(orderId, [...(evidence.get(orderId) ?? []), item]);
+      const updated = saveOrder({ ...order, rowVersion: rowVersion + 1 });
+      return jsonResponse({ evidence: item, rowVersion: updated.rowVersion }, 201);
+    }
+
+    return null;
   }
 
   return vi.fn(async (input: RequestInfo, init?: RequestInit) => {
@@ -321,6 +660,19 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
         return orderError('SERVICE_ORDERS_DENIED', 403);
       }
       return orderError('SERVICE_ORDERS_NOT_FOUND', 404);
+    }
+
+    const executionMatch = pathname.match(/^\/api\/v1\/service-orders\/([^/]+)\/execution(\/.*)?$/);
+    if (executionMatch) {
+      const response = await handleExecutionRoute(
+        executionMatch[1]!,
+        executionMatch[2] ?? '',
+        method,
+        init,
+      );
+      if (response) {
+        return response;
+      }
     }
 
     return upstream(input, init);

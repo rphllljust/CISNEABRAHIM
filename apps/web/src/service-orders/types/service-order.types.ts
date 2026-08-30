@@ -3,6 +3,7 @@ export const SERVICE_ORDER_STATUSES = {
   Prepared: 'PREPARED',
   Released: 'RELEASED',
   InExecution: 'IN_EXECUTION',
+  Paused: 'PAUSED',
   Completed: 'COMPLETED',
   Cancelled: 'CANCELLED',
 } as const;
@@ -20,6 +21,12 @@ export type ServiceOrderHistoryEvent = {
 export type ServiceOrderServiceSnapshot = {
   serviceCode: string;
   serviceName: string;
+  measurementModel?: {
+    mode: string;
+    basis: string;
+    defaultUnitCode: string | null;
+  };
+  allowedUnits?: Array<{ unitCode: string; isDefault?: boolean; sortOrder?: number }>;
   requirements: {
     resources: Array<{
       physicalResourceTypeCode: string;
@@ -33,7 +40,12 @@ export type ServiceOrderServiceSnapshot = {
       minQuantity: string | null;
       sortOrder: number;
     }>;
-    execution: unknown[];
+    execution: Array<{
+      evidenceKind: string;
+      requirementLevel: string;
+      config: Record<string, unknown> | null;
+      sortOrder: number;
+    }>;
   };
 };
 
@@ -71,6 +83,8 @@ export const SERVICE_ORDERS_ERROR_CODES = {
   ALLOCATION_OUTSIDE_WINDOW: 'SERVICE_ORDERS_ALLOCATION_OUTSIDE_WINDOW',
   PLANNED_RESOURCE_NOT_FOUND: 'SERVICE_ORDERS_PLANNED_RESOURCE_NOT_FOUND',
   ALLOCATION_NOT_FOUND: 'SERVICE_ORDERS_ALLOCATION_NOT_FOUND',
+  MINIMUM_RESOURCES_NOT_MET: 'SERVICE_ORDERS_MINIMUM_RESOURCES_NOT_MET',
+  REQUIRED_EVIDENCE_MISSING: 'SERVICE_ORDERS_REQUIRED_EVIDENCE_MISSING',
 } as const;
 
 export type ServiceOrdersErrorCode =

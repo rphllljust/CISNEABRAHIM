@@ -31,6 +31,10 @@ export function mapServiceOrdersErrorToMessage(
       return 'Alocação não encontrada.';
     case SERVICE_ORDERS_ERROR_CODES.VALIDATION_FAILED:
       return 'Verifique os campos informados.';
+    case SERVICE_ORDERS_ERROR_CODES.MINIMUM_RESOURCES_NOT_MET:
+      return 'O planejamento mínimo ainda não foi atendido. Conclua o planejamento antes de iniciar.';
+    case SERVICE_ORDERS_ERROR_CODES.REQUIRED_EVIDENCE_MISSING:
+      return 'Registre todas as evidências obrigatórias antes de concluir.';
     default:
       if (status === 0) {
         return 'Falha de rede. Verifique sua conexão e tente novamente.';
