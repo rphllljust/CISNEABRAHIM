@@ -4946,8 +4946,8 @@ QUALITY_GATE: PASS
 NEXT_ALLOWED_PROMPT: 93 (somente se GO)
 NEXT_PROMPT_EXECUTED: NO
 NOTES:
-  Prompt 93 não executado — decisão NO-GO honesta.
-  Não alterado para cumprir cronograma.
+  Prompt 93 bloqueado (Prompt 92 NO-GO) — go-live não executado.
+  Não falsificar SUCCESS nem alterar decisão para cumprir cronograma.
 ```
 
 ## Quality gate Prompt 92 (evidência)
@@ -4959,5 +4959,39 @@ NOTES:
 | GO somente com flags explícitas | PASS | readiness-gate.spec.ts |
 | support model definido | PASS | readiness-gate.ts |
 | API typecheck | PASS | tsc --noEmit |
+
+---
+
+## Prompt 93 — GO-LIVE
+
+```
+PROMPT_ID: 93
+PROMPT_TITLE: GO-LIVE
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: BLOCKED
+PRECONDITION: Prompt 92 PRODUCTION_READINESS = GO — NOT MET (NO-GO em e790781)
+GO_LIVE: FAILED (não iniciado)
+PRODUCTION_VERSION: N/A — deploy não executado
+COMMIT: N/A — nenhuma promoção PRD
+SMOKE: FAIL — não executado (pré-requisito ausente)
+DATA_INTEGRITY: FAIL — não validado (go-live não iniciado)
+BLOCKERS (herdados do Prompt 92):
+  BUSINESS_STAKEHOLDER_SIGN_OFF_PENDING
+  RPO_RTO_TARGET_NOT_DEFINED (DDP-016)
+  PILOT_NOT_EXIT_READY
+  UAT_MANUAL_UX_CHECKLIST_PENDING
+ACTIONS_NOT_PERFORMED:
+  - promoção de artifact
+  - aplicação de migrations em produção
+  - smoke pós-deploy
+  - janela de observação
+  - rollback (não aplicável — sem deploy)
+QUALITY_GATE: N/A (prompt não autorizado)
+NEXT_ALLOWED_PROMPT: 93 (reexecutar somente após Prompt 92 = GO)
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Governança: não publicar produção com gate NO-GO aberto.
+  Não falsificar SUCCESS nem alterar decisão para cumprir cronograma.
+```
 
 ---
