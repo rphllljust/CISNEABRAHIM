@@ -48,6 +48,7 @@ const MIGRATION_FILES = [
   '0027_background_jobs.sql',
   '0028_transactional_outbox.sql',
   '0029_integration_inbox.sql',
+  '0030_notification_delivery.sql',
 ];
 
 const INCREMENTAL_BASELINE_FILES = MIGRATION_FILES.slice(0, -1);
@@ -71,6 +72,7 @@ const EXPECTED_SCHEMAS = [
   'evt',
   'plt',
   'int',
+  'ntf',
 ];
 
 const EXPECTED_TABLES = [
@@ -99,6 +101,8 @@ const EXPECTED_TABLES = [
   'evt.outbox_events',
   'int.integration_inbox',
   'int.integration_inbox_effects',
+  'ntf.notifications',
+  'ntf.delivery_attempts',
 ];
 
 function adminConnectionString() {

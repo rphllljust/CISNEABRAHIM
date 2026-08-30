@@ -218,6 +218,11 @@ export default async function ensureMigrations(): Promise<void> {
     if (!hasIntegrationInbox) {
       await applySqlFile(pool, '0029_integration_inbox.sql');
     }
+
+    const hasNotifications = await tableExists(pool, 'ntf.notifications');
+    if (!hasNotifications) {
+      await applySqlFile(pool, '0030_notification_delivery.sql');
+    }
   } finally {
     await pool.end();
   }

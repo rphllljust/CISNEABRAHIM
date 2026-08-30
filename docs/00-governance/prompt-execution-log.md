@@ -3799,3 +3799,240 @@ NOTES:
 | circuit breaker | PASS | circuit-breaker.spec.ts |
 
 ---
+
+## Prompt 69 — ERP adapter
+
+```
+PROMPT_ID: 69
+PROMPT_TITLE: ERP adapter — integração com ERP confirmado
+EXECUTED_AT: 2026-08-29
+EXECUTION_STATUS: BLOCKED
+COMMIT: NONE
+ARTIFACTS: (nenhum — gate bloqueou implementação)
+QUALITY_GATE: BLOCKED
+INTEGRATION_GATE: BLOCKED_PENDING_EXTERNAL_DOCUMENTATION
+ERP_ADAPTER: NOT_IMPLEMENTED
+ERP_READINESS: WAITING_EXTERNAL_DEPENDENCY
+PROJECT_PROGRESSION_BLOCKED: NO
+FEATURE_BLOCKED: YES
+REEXECUTION_REQUIRED: YES
+NEXT_PROJECT_PROMPT: 71
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Business/Integration Gate executado antes de qualquer código. ERP real não confirmado; documentação de API ausente.
+  Dygnus em apps/api/src/integrations/acl/adapters/dygnus/ é scaffold de engenharia do Prompt 68 (ACL), não contrato ERP validado.
+  DDP-014 OPEN; INT-REQ-001 PENDING_EXTERNAL_DOCUMENTATION; SGAR-001 P2 "Documentação ERP atual" NOT_PROVIDED.
+  SRC-002 Q01: integrações no primeiro release UNKNOWN; sem integração ERP fictícia (BR explícito).
+  Nenhuma API inventada; nenhuma documentação curta de integração criada (regra do prompt).
+  Prompt 70 não executado.
+```
+
+## Business / Integration Gate Prompt 69 (evidência)
+
+| Critério | Status | Evidência |
+|----------|--------|-----------|
+| ERP confirmado | **FAIL** | DDP-014 `OPEN`; nenhum vendor ERP nomeado em fonte `CONFIRMED` |
+| API/documentação | **FAIL** | SGAR-001 P2 NOT_PROVIDED; INT-REQ-001 `PENDING_EXTERNAL_DOCUMENTATION` |
+| Autenticação | **FAIL** | Sem contrato; Dygnus scaffold usa Bearer hipotético sem fonte |
+| Homologação/sandbox | **FAIL** | Nenhum endpoint ou credencial de homologação registrada |
+| Rate limits | **FAIL** | Não documentado |
+| Identifiers | **PARTIAL** | BR-031 + `externalErpId` modelado internamente; mapeamento ERP↔CISNE sem contrato externo |
+| Source-of-truth matrix | **PARTIAL** | DBND-SOT-001: cliente=CISNE master; PO/preço/pagamento ERP candidato sem integração definida |
+| Erros | **FAIL** | Sem catálogo de erros do fornecedor |
+| Paginação | **FAIL** | Não documentado |
+| Webhook/polling | **FAIL** | DDP-014 OPEN; inbox (Prompt 67) genérico, sem eventos ERP confirmados |
+| Credenciais | **FAIL** | Nenhuma credencial ou vault path registrado em fonte |
+
+**Decisão:** gate **BLOCKED** — implementação de adapter real proibida (AGENTS.md §19; Prompt 69 regra explícita).
+
+**Desbloqueio exigido:** depositar em `docs/inputs/` documentação ERP (API, auth, sandbox, rate limits, identifiers, erros, paginação, webhook/polling); fechar DDP-014 com SoT por campo; nova ordem explícita para Prompt 69.
+
+---
+
+## Prompt 70 — Tracking adapter
+
+```
+PROMPT_ID: 70
+PROMPT_TITLE: Tracking adapter — integração com telemetria/rastreamento veicular
+EXECUTED_AT: 2026-08-29
+EXECUTION_STATUS: BLOCKED
+COMMIT: NONE
+ARTIFACTS: (nenhum — gate bloqueou implementação)
+QUALITY_GATE: BLOCKED
+INTEGRATION_GATE: BLOCKED_PENDING_EXTERNAL_DOCUMENTATION
+TRACKING_ADAPTER: NOT_IMPLEMENTED
+TRACKING_READINESS: WAITING_EXTERNAL_DEPENDENCY
+PROJECT_PROGRESSION_BLOCKED: NO
+FEATURE_BLOCKED: YES
+REEXECUTION_REQUIRED: YES
+NEXT_PROJECT_PROMPT: 71
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Gate executado antes de qualquer código. Nenhum provedor de telemetria confirmado; documentação de API ausente.
+  INT-REQ-003 PENDING_EXTERNAL_DOCUMENTATION; source-registry "Documentação de rastreamento" NOT_PROVIDED.
+  EVA-001: rastreamento veicular candidato; contrato técnico não confirmado (DDP-014 OPEN).
+  TrackingProvider (Prompt 68 ACL) permanece stub; IntegrationTrackingSnapshot não modela posição GPS — sem base para adapter real.
+  Nenhuma integração simulada como concluída; nenhuma API inventada.
+  Prompt 71 não executado.
+```
+
+## Business / Integration Gate Prompt 70 (evidência)
+
+| Critério | Status | Evidência |
+|----------|--------|-----------|
+| API/documentação real | **FAIL** | INT-REQ-003 `PENDING_EXTERNAL_DOCUMENTATION`; source-registry `NOT_PROVIDED` |
+| Provedor confirmado | **FAIL** | DDP-014 `OPEN`; EVA-001 contrato técnico não confirmado |
+| Autenticação | **FAIL** | Sem contrato de API |
+| Homologação/sandbox | **FAIL** | Ausente |
+| Identifiers (`externalVehicleId` ↔ asset) | **FAIL** | Sem contrato provider; placa/chassi DDP-034 `OPEN` |
+| Modelo interno (lat/long/timestamp/ignition…) | **PARTIAL** | Porta ACL existe; snapshot atual só `trackingCode/status` — insuficiente sem contrato real |
+| Stale threshold / timestamp provider | **FAIL** | Sem regra nem API para definir threshold |
+| Segurança / autorização operacional | **PARTIAL** | Requisito do prompt registrado; sem provider para implementar controle de escopo |
+| Webhook/polling | **FAIL** | Não documentado |
+| Credenciais | **FAIL** | Ausente |
+
+**Decisão:** gate **BLOCKED** — implementação de vehicle tracking adapter proibida (Prompt 70 regra explícita; AGENTS.md §19).
+
+**Desbloqueio exigido:** depositar em `docs/inputs/` documentação do provedor de telemetria (API, auth, sandbox, identifiers estáveis, campos suportados, erros, rate limits, webhook/polling); definir mapeamento `externalVehicleId` ↔ asset interno e stale threshold; nova ordem explícita para Prompt 70.
+
+---
+
+## Prompt 70-A — Correção de governança e isolamento de integrações externas
+
+```
+PROMPT_ID: 70-A
+PROMPT_TITLE: Correção de governança e isolamento de integrações externas
+EXECUTED_AT: 2026-08-29
+EXECUTION_STATUS: PASS
+COMMIT: fix(integrations): isolate unavailable external providers
+ARTIFACTS:
+  apps/api/src/integrations/acl/adapters/unconfigured/**
+  apps/api/src/integrations/acl/config/integration-capability.config.ts
+  apps/api/src/integrations/acl/domain/integration-not-configured.ts
+  apps/api/src/integrations/acl/services/integration-availability.service.ts
+  apps/api/src/integrations/acl/adapters/provider-classification.ts
+  apps/api/src/integrations/acl/integration-bootstrap.spec.ts
+  apps/api/src/integrations/acl/integrations-acl.module.ts
+  docs/03-requirements/integration-requirements.md
+  docs/00-governance/prompt-execution-log.md
+ERP_ADAPTER: NOT_IMPLEMENTED
+ERP_READINESS: WAITING_EXTERNAL_DEPENDENCY
+TRACKING_ADAPTER: NOT_IMPLEMENTED
+TRACKING_READINESS: WAITING_EXTERNAL_DEPENDENCY
+PROJECT_PROGRESSION_BLOCKED: NO
+FEATURE_BLOCKED_ERP: YES
+FEATURE_BLOCKED_TRACKING: YES
+FAKE_ERP_IN_PRODUCTION: ABSENT (corrigido — StubErpProvider removido do bootstrap)
+FAKE_TRACKING_IN_PRODUCTION: ABSENT (corrigido — StubTrackingProvider removido do bootstrap)
+PRODUCTION_DEFAULT: UnconfiguredErpProvider / UnconfiguredTrackingProvider → INTEGRATION_NOT_CONFIGURED
+QUALITY_GATE: PASS
+NEXT_ALLOWED_PROMPT: 71
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Gates Prompt 69/70 preservados; nenhuma API inventada; Dygnus permanece TEST_ONLY scaffold.
+  UI audit: sem botões de sync ERP/GPS; externalErpId é campo manual opcional (BR-031).
+  DBND-SOT-001 inalterado. Prompt 71 não executado.
+```
+
+## Quality gate Prompt 70-A (evidência)
+
+| Cenário | Resultado | Evidência |
+|---------|-----------|-----------|
+| production bootstrap sem ERP | PASS | integration-bootstrap.spec.ts AppModule |
+| production bootstrap sem Tracking | PASS | integration-bootstrap.spec.ts IntegrationsAclModule |
+| stub não registrado em produção | PASS | Unconfigured* binding; provider-classification.ts |
+| ERP unavailable → INTEGRATION_NOT_CONFIGURED | PASS | integration-bootstrap.spec.ts |
+| Tracking unavailable → INTEGRATION_NOT_CONFIGURED | PASS | integration-bootstrap.spec.ts |
+| TEST_ONLY stub em módulo isolado | PASS | integration-bootstrap.spec.ts |
+| capability configured/enabled false | PASS | integration-capability.config.spec.ts |
+| UI sem ação falsa ERP/GPS | PASS | audit web — apenas externalErpId manual |
+| api unit | PASS | 170 |
+| typecheck | PASS | |
+| lint | PASS | |
+
+## Reexecution contract — ERP (Prompt 69)
+
+- [ ] fornecedor ERP confirmado
+- [ ] documentação oficial da API
+- [ ] versão da API
+- [ ] base URL homologação
+- [ ] autenticação
+- [ ] credenciais HML
+- [ ] identifiers
+- [ ] paginação
+- [ ] rate limits
+- [ ] error contract
+- [ ] webhook/polling
+- [ ] Source-of-Truth aprovado
+- [ ] exemplos reais de requests/responses
+
+## Reexecution contract — Tracking (Prompt 70)
+
+- [ ] provider confirmado
+- [ ] documentação oficial
+- [ ] base URL
+- [ ] authentication
+- [ ] HML/sandbox
+- [ ] stable vehicle identifier
+- [ ] supported fields
+- [ ] timestamp semantics
+- [ ] coordinate semantics
+- [ ] error contract
+- [ ] rate limits
+- [ ] webhook/polling
+- [ ] credentials
+- [ ] mapping externo ↔ Asset aprovado
+- [ ] regra de stale data aprovada
+
+---
+
+## Prompt 71 — Canais de notificação
+
+```
+PROMPT_ID: 71
+PROMPT_TITLE: Canais de notificação — entrega confiável sem acoplamento de domínio
+EXECUTED_AT: 2026-08-29
+EXECUTION_STATUS: PASS
+COMMIT: feat(notifications): implement reliable notification delivery
+ARTIFACTS:
+  packages/database/migrations/0030_notification_delivery.sql
+  packages/database/src/schema/notifications.ts
+  packages/database/scripts/ci-database-gate.mjs
+  apps/api/src/notifications/**
+  apps/api/src/platform/background-jobs/handlers/notification-dispatch.handler.ts
+  apps/api/src/platform/background-jobs/background-jobs.module.ts
+  apps/api/src/worker/worker-app.module.ts
+  apps/api/src/app.module.ts
+  apps/api/src/test/ensure-migrations.ts
+CHANNELS: IN_APP (confirmed internal), EMAIL (env-gated), WHATSAPP (env-gated)
+CONFIRMED_PROVIDERS_ONLY: IN_APP default; EMAIL/WHATSAPP require explicit env configuration
+DELIVERY_ATTEMPT_FIELDS: notificationId, channel, recipientRef, provider, attempt, status, providerMessageId, sentAt, deliveredAt, failureCode
+RETRY_POLICY: transient/timeout/rate-limit only; no re-dispatch after provider acceptance (providerMessageId)
+PRIVACY: minimal template variables; sensitive payload keys excluded from external templates
+QUALITY_GATE: PASS
+NEXT_ALLOWED_PROMPT: 72
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Schema ntf.notifications + ntf.delivery_attempts; handler NOTIFICATION delega a NotificationDeliveryService.
+  UnconfiguredEmail/WhatsApp providers retornam erro permanente sem provider fictício em produção.
+  NotificationWebhookService atualiza deliveredAt via providerMessageId (webhook-ready).
+  Evidência: typecheck PASS; notifications unit 13; notifications integration 7.
+  Prompt 72 não executado.
+```
+
+## Quality gate Prompt 71 (evidência)
+
+| Cenário de teste | Resultado | Evidência |
+|------------------|-----------|-----------|
+| success | PASS | notification-delivery.integration.spec.ts IN_APP delivered |
+| transient failure | PASS | notification-delivery.service.spec.ts + integration retry |
+| permanent failure | PASS | notification-delivery.service.spec.ts + integration email |
+| retry | PASS | notification-delivery.integration.spec.ts attempt 2 |
+| duplicate | PASS | notification-delivery.integration.spec.ts skip re-dispatch |
+| invalid recipient | PASS | notification-delivery.integration.spec.ts INVALID_RECIPIENT |
+| provider timeout | PASS | notification-delivery.service.spec.ts + integration |
+| webhook delivery update | PASS | notification-delivery.integration.spec.ts applyDeliveryUpdate |
+| minimal template payload | PASS | notification-delivery.service.spec.ts privacy |
+| channel config gating | PASS | notification-channel.config.spec.ts |
+
+---

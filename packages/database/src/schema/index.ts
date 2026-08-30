@@ -176,3 +176,11 @@ export {
   integrationInbox,
   integrationInboxEffects,
 } from './integration-inbox';
+export {
+  ntfSchema,
+  notificationChannelEnum,
+  notificationStatusEnum,
+  deliveryAttemptStatusEnum,
+  notifications,
+  deliveryAttempts,
+} from './notifications';
