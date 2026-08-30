@@ -11,9 +11,10 @@ import { RequestsModule } from './requests/requests.module';
 import { ResourcesModule } from './resources/resources.module';
 import { MeasurementsModule } from './measurements/measurements.module';
 import { BillingModule } from './billing/billing.module';
+import { EventsModule } from './events/events.module';
 import { ServiceOrdersModule } from './service-orders/service-orders.module';
 
 @Module({
-  imports: [HealthModule, AuditModule, AuthModule, AuthorizationModule, ClientsModule, CatalogModule, CommercialModule, RequestsModule, ServiceOrdersModule, MeasurementsModule, BillingModule, ResourcesModule, DocumentsModule],
+  imports: [HealthModule, AuditModule, AuthModule, AuthorizationModule, ClientsModule, CatalogModule, CommercialModule, RequestsModule, ServiceOrdersModule, MeasurementsModule, BillingModule, ResourcesModule, DocumentsModule, EventsModule],
 })
 export class AppModule {}

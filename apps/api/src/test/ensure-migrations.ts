@@ -198,6 +198,11 @@ export default async function ensureMigrations(): Promise<void> {
         FOREIGN KEY (billing_item_id) REFERENCES bil.billing_items(id) ON DELETE SET NULL
       `);
     }
+
+    const hasDomainEvents = await tableExists(pool, 'evt.domain_events');
+    if (!hasDomainEvents) {
+      await applySqlFile(pool, '0026_domain_events_notifications.sql');
+    }
   } finally {
     await pool.end();
   }

@@ -32,12 +32,41 @@ const MIGRATION_FILES = [
   '0011_operational_labor_types.sql',
   '0012_commercial_pricing_measurement.sql',
   '0013_execution_requirements.sql',
+  '0014_physical_assets_baseline.sql',
+  '0015_documents_baseline.sql',
+  '0016_commercial_proposals_baseline.sql',
+  '0017_commercial_purchase_orders_baseline.sql',
+  '0018_service_requests_baseline.sql',
+  '0019_service_orders_baseline.sql',
+  '0020_service_orders_state_transitions.sql',
+  '0021_planning_allocation_baseline.sql',
+  '0022_service_order_execution_baseline.sql',
+  '0023_measurement_baseline.sql',
+  '0024_billing_baseline.sql',
+  '0025_billing_documents.sql',
+  '0026_domain_events_notifications.sql',
 ];
 
 const INCREMENTAL_BASELINE_FILES = MIGRATION_FILES.slice(0, -1);
 const INCREMENTAL_DELTA_FILE = MIGRATION_FILES.at(-1);
 
-const EXPECTED_SCHEMAS = ['infrastructure', 'identity', 'authorization', 'audit', 'pty', 'cat'];
+const EXPECTED_SCHEMAS = [
+  'infrastructure',
+  'identity',
+  'authorization',
+  'audit',
+  'pty',
+  'cat',
+  'ast',
+  'doc',
+  'com',
+  'sr',
+  'so',
+  'res',
+  'msr',
+  'bil',
+  'evt',
+];
 
 const EXPECTED_TABLES = [
   'infrastructure.schema_baseline',
@@ -47,16 +76,20 @@ const EXPECTED_TABLES = [
   'pty.clients',
   'cat.service_definitions',
   'cat.service_definition_versions',
-  'cat.service_categories',
-  'cat.service_legal_classifications',
-  'cat.service_allowed_units',
-  'cat.service_pricing_models',
-  'cat.service_resource_requirements',
-  'cat.service_evidence_requirements',
-  'cat.units_of_measure',
-  'cat.physical_resource_types',
-  'cat.operational_labor_types',
-  'cat.service_labor_requirements',
+  'ast.physical_assets',
+  'doc.documents',
+  'com.proposals',
+  'com.purchase_orders',
+  'sr.service_requests',
+  'so.service_orders',
+  'so.planned_resources',
+  'res.resource_allocations',
+  'so.execution_entries',
+  'msr.measurements',
+  'bil.billing_records',
+  'bil.billing_documents',
+  'evt.domain_events',
+  'evt.notification_intents',
 ];
 
 function adminConnectionString() {
@@ -354,6 +387,38 @@ async function assertPreDeltaState(connectionString, deltaFile) {
       );
       if ((enumValues.rowCount ?? 0) > 0) {
         throw new Error('Incremental baseline incorrectly contains OBSERVATION evidence_kind before 0013');
+      }
+      return;
+    }
+
+    if (deltaFile === '0026_domain_events_notifications.sql') {
+      const billingDocuments = await client.query('SELECT to_regclass($1) AS regclass', [
+        'bil.billing_documents',
+      ]);
+      if (!billingDocuments.rows[0]?.regclass) {
+        throw new Error('Expected bil.billing_documents before 0026 delta');
+      }
+      const domainEvents = await client.query('SELECT to_regclass($1) AS regclass', [
+        'evt.domain_events',
+      ]);
+      if (domainEvents.rows[0]?.regclass) {
+        throw new Error('Incremental baseline incorrectly contains evt.domain_events before 0026');
+      }
+      return;
+    }
+
+    if (deltaFile === '0025_billing_documents.sql') {
+      const billingRecords = await client.query('SELECT to_regclass($1) AS regclass', [
+        'bil.billing_records',
+      ]);
+      if (!billingRecords.rows[0]?.regclass) {
+        throw new Error('Expected bil.billing_records before 0025 delta');
+      }
+      const billingDocuments = await client.query('SELECT to_regclass($1) AS regclass', [
+        'bil.billing_documents',
+      ]);
+      if (billingDocuments.rows[0]?.regclass) {
+        throw new Error('Incremental baseline incorrectly contains bil.billing_documents before 0025');
       }
       return;
     }

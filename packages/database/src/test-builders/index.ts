@@ -42,3 +42,4 @@ export { truncateCommercialPurchaseOrderTables } from './purchase-order-builders
 export { truncateServiceRequestTables } from './service-request-builders';
 export { truncateServiceOrderTables } from './service-order-builders';
 export { truncateBillingTables } from './billing-builders';
+export { truncateDomainEventTables } from './event-builders';

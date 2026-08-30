@@ -3520,3 +3520,103 @@ NOTES:
 - [x] Prompt 63 não executado
 
 ---
+
+## Prompt 63 — Quality gate integrado da primeira vertical
+
+```
+PROMPT_ID: 63
+PROMPT_TITLE: Quality gate integrado da primeira vertical empresarial
+EXECUTED_AT: 2026-08-29
+EXECUTION_STATUS: PASS
+COMMIT: (não solicitado)
+ARTIFACTS:
+  apps/api/src/vertical/first-vertical-quality-gate.integration.spec.ts
+  apps/web/src/vertical/vertical-quality-gate.e2e.test.tsx
+  packages/database/scripts/ci-database-gate.mjs
+  packages/database/src/test-builders/catalog-builders.ts
+  apps/api/src/billing/repositories/billing-document.repository.ts
+  apps/api/src/billing/serializers/billing-document-response.serializer.ts
+  docs/00-governance/prompt-execution-log.md
+VERTICAL QUALITY GATE: PASS
+BUSINESS FLOW: PASS
+CONCURRENCY: PASS
+SECURITY: PASS
+ACCESSIBILITY: PASS
+MIGRATIONS: PASS
+RESPONSIVE: PASS
+E2E: PASS
+REGRESSIONS: NONE
+NEXT_ALLOWED_PROMPT: 64
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Happy path integrado (Client→Catálogo→Request→Proposal/PO→OS→Planning→Allocation→Execution→Evidence→Measurement→Billing→Nota Fatura→Documents) sem mocks internos.
+  Correção de segurança: storageKey removido do payload de histórico de billing document e sanitizado no serializer.
+  gate:database estendido até 0025; idempotência de migration 0012 em DB com catálogo publicado.
+  Evidência: lint/typecheck/build PASS; database integration 49; api integration 173; api e2e 40; web 171.
+  Prompt 64 não executado.
+```
+
+## Quality gate Prompt 63 (evidência)
+
+| Gate | Resultado | Evidência principal |
+|------|-----------|---------------------|
+| BUSINESS FLOW | PASS | `first-vertical-quality-gate.integration.spec.ts` |
+| CONCURRENCY | PASS | clients.audit-closure, service-orders, planning, execution, measurements, billing-document integration |
+| SECURITY | PASS | IDOR/cross-scope documents; audit redaction; storageKey leak corrigido em billing document |
+| MIGRATIONS | PASS | `gate:database` fresh + incremental (0000→0025); persistence integration 49 |
+| RESPONSIVE | PASS | `vertical-quality-gate.e2e.test.tsx` mobile/tablet/desktop |
+| ACCESSIBILITY | PASS | shell skip-link/aria; ServiceDefinitionForm + DocumentManagementPanel a11y tests |
+| E2E | PASS | api e2e 40; web e2e suites 171 |
+| REGRESSIONS | NONE | lint + typecheck + test + integration + e2e + build |
+
+---
+
+## Prompt 64 — Eventos e notificações (domínio)
+
+```
+PROMPT_ID: 64
+PROMPT_TITLE: Eventos e notificações — desacoplamento de canais externos
+EXECUTED_AT: 2026-08-29
+EXECUTION_STATUS: PASS
+COMMIT: feat(events): establish domain notification events
+ARTIFACTS:
+  packages/database/migrations/0026_domain_events_notifications.sql
+  packages/database/src/schema/domain-events.ts
+  packages/database/src/test-builders/event-builders.ts
+  packages/database/scripts/ci-database-gate.mjs
+  apps/api/src/events/domain/domain-event-type.ts
+  apps/api/src/events/domain/event-payloads.v1.ts
+  apps/api/src/events/domain/notification-intent-catalog.ts
+  apps/api/src/events/repositories/domain-events.repository.ts
+  apps/api/src/events/services/domain-events-recorder.service.ts
+  apps/api/src/events/events.module.ts
+  apps/api/src/events/domain-events.integration.spec.ts
+  apps/api/src/events/domain/event-payloads.v1.spec.ts
+  apps/api/src/test/ensure-migrations.ts
+  apps/api/src/app.module.ts
+  apps/api/src/requests|service-orders|measurements|billing (hooks EventsModule)
+DOMAIN_EVENTS: SERVICE_REQUEST_SUBMITTED, SERVICE_ORDER_RELEASED, SERVICE_ORDER_ASSIGNED, SERVICE_ORDER_COMPLETED, MEASUREMENT_SUBMITTED, MEASUREMENT_APPROVED, BILLING_READY, PAYMENT_OVERDUE
+EXTERNAL_CHANNELS_IN_DOMAIN: NONE
+TRANSACTION_COUPLED_DISPATCH: NONE
+QUALITY_GATE: PASS
+NEXT_ALLOWED_PROMPT: 65
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  DomainEvent + NotificationIntent persistidos em evt.*; intents PENDING com template_key/audience_scope sem SDK de canal.
+  Idempotência via idempotency_key; rollback transacional; payloads v1 sem campos de autorização.
+  PAYMENT_OVERDUE exposto via recorder (detecção agendada fora do escopo deste prompt).
+  Evidência: lint/typecheck PASS; api unit 139; api integration 178 (incl. domain-events 5); gate:database 0026.
+  Prompt 65 não executado.
+```
+
+## Quality gate Prompt 64 (evidência)
+
+| Cenário de teste | Resultado | Evidência |
+|------------------|-----------|-----------|
+| correct event | PASS | `domain-events.integration.spec.ts` — event + intent |
+| no duplicate event | PASS | idempotency_key dedup |
+| transaction rollback | PASS | ROLLBACK sem linhas em evt.domain_events |
+| authorization-independent semantics | PASS | payload sem actor/session/grants |
+| payload versioning | PASS | `event-payloads.v1.spec.ts` + payload_version=1 |
+
+---

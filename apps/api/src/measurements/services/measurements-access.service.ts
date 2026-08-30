@@ -6,6 +6,7 @@ import {
   SECURITY_AUDIT_RESOURCE_TYPES,
 } from '../../audit/types/security-audit.types';
 import { SecurityAuditService } from '../../audit/services/security-audit.service';
+import { DomainEventsRecorderService } from '../../events/services/domain-events-recorder.service';
 import { AuthorizationRepository } from '../../authorization/repositories/authorization.repository';
 import { PolicyDecisionPointService } from '../../authorization/services/policy-decision-point.service';
 import { toResourceContextFromServiceOrder } from '../../authorization/scope/scope-matcher';
@@ -60,6 +61,7 @@ export class MeasurementsAccessService {
     private readonly authorizationRepository: AuthorizationRepository,
     private readonly policyDecisionPoint: PolicyDecisionPointService,
     private readonly securityAudit: SecurityAuditService,
+    private readonly domainEventsRecorder: DomainEventsRecorderService,
   ) {}
 
   async getByServiceOrder(
@@ -509,6 +511,25 @@ export class MeasurementsAccessService {
     await this.audit(actor, auditAction, order.id, { measurementId, rowVersion: result.rowVersion });
 
     const refreshed = await this.measurementsRepository.findById(measurementId);
+    if (refreshed) {
+      if (transition === 'submit' && refreshed.submitted_at) {
+        await this.domainEventsRecorder.recordMeasurementSubmitted({
+          measurementId: refreshed.id,
+          serviceOrderId: order.id,
+          unitId: refreshed.unit_id,
+          submittedAt: refreshed.submitted_at,
+        });
+      }
+      if (transition === 'approve' && refreshed.decided_at) {
+        await this.domainEventsRecorder.recordMeasurementApproved({
+          measurementId: refreshed.id,
+          serviceOrderId: order.id,
+          unitId: refreshed.unit_id,
+          approvedAt: refreshed.decided_at,
+        });
+      }
+    }
+
     return this.loadDetail(refreshed!);
   }
 

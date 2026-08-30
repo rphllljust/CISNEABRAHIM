@@ -4,6 +4,7 @@ import { AuthModule } from '../auth/auth.module';
 import { AuthorizationModule } from '../authorization/authorization.module';
 import { DocumentsModule } from '../documents/documents.module';
 import { DatabaseModule } from '../infrastructure/database/database.module';
+import { EventsModule } from '../events/events.module';
 import { MeasurementsModule } from '../measurements/measurements.module';
 import { ServiceOrdersModule } from '../service-orders/service-orders.module';
 import { BillingController } from './controllers/billing.controller';
@@ -19,6 +20,7 @@ import { BillingDocumentAccessService } from './services/billing-document-access
     AuthModule,
     AuthorizationModule,
     AuditModule,
+    EventsModule,
     DocumentsModule,
     ServiceOrdersModule,
     MeasurementsModule,

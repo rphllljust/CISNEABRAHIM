@@ -6,6 +6,7 @@ import {
   SECURITY_AUDIT_RESOURCE_TYPES,
 } from '../../audit/types/security-audit.types';
 import { SecurityAuditService } from '../../audit/services/security-audit.service';
+import { DomainEventsRecorderService } from '../../events/services/domain-events-recorder.service';
 import { AuthorizationRepository } from '../../authorization/repositories/authorization.repository';
 import { PolicyDecisionPointService } from '../../authorization/services/policy-decision-point.service';
 import { toResourceContextFromServiceOrder } from '../../authorization/scope/scope-matcher';
@@ -74,6 +75,7 @@ export class ServiceOrderExecutionAccessService {
     private readonly authorizationRepository: AuthorizationRepository,
     private readonly policyDecisionPoint: PolicyDecisionPointService,
     private readonly securityAudit: SecurityAuditService,
+    private readonly domainEventsRecorder: DomainEventsRecorderService,
   ) {}
 
   async getExecution(
@@ -173,6 +175,15 @@ export class ServiceOrderExecutionAccessService {
 
     const history = await this.serviceOrdersRepository.listHistoryEvents(serviceOrderId);
     const refreshed = await this.serviceOrdersRepository.findById(serviceOrderId);
+    if (refreshed?.completed_at) {
+      await this.domainEventsRecorder.recordServiceOrderCompleted({
+        serviceOrderId: refreshed.id,
+        unitId: refreshed.unit_id,
+        clientId: refreshed.client_id,
+        orderNumber: refreshed.order_number,
+        completedAt: refreshed.completed_at,
+      });
+    }
     return toServiceOrderDetailResponse(refreshed!, history);
   }
 

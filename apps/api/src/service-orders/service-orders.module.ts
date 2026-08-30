@@ -3,6 +3,7 @@ import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
 import { AuthorizationModule } from '../authorization/authorization.module';
 import { DatabaseModule } from '../infrastructure/database/database.module';
+import { EventsModule } from '../events/events.module';
 import { SERVICE_REQUEST_CONVERSION_PORT } from '../requests/domain/service-request-conversion.port';
 import { ServiceOrderExecutionController } from './controllers/service-order-execution.controller';
 import { ServiceOrdersController } from './controllers/service-orders.controller';
@@ -16,7 +17,7 @@ import { ServiceOrderPlanningAccessService } from './services/service-order-plan
 import { ServiceRequestConversionService } from './services/service-request-conversion.service';
 
 @Module({
-  imports: [DatabaseModule, AuthModule, AuthorizationModule, AuditModule],
+  imports: [DatabaseModule, AuthModule, AuthorizationModule, AuditModule, EventsModule],
   controllers: [ServiceOrdersController, ServiceOrderPlanningController, ServiceOrderExecutionController],
   providers: [
     ServiceOrdersRepository,
