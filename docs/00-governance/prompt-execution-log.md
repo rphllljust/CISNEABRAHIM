@@ -4990,8 +4990,36 @@ QUALITY_GATE: N/A (prompt não autorizado)
 NEXT_ALLOWED_PROMPT: 93 (reexecutar somente após Prompt 92 = GO)
 NEXT_PROMPT_EXECUTED: NO
 NOTES:
+  Prompt 94 bloqueado — go-live (Prompt 93) não bem-sucedido.
   Governança: não publicar produção com gate NO-GO aberto.
   Não falsificar SUCCESS nem alterar decisão para cumprir cronograma.
+```
+
+---
+
+## Prompt 94 — Hypercare pós-go-live
+
+```
+PROMPT_ID: 94
+PROMPT_TITLE: Hypercare pós-go-live
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: BLOCKED
+PRECONDITION: Go-live bem-sucedido (Prompt 93 SUCCESS) — NOT MET (Prompt 93 FAILED/BLOCKED)
+SYSTEM: UNSTABLE (hypercare não iniciado — sem produção ativa)
+MONITORING: N/A — sem janela pós-go-live
+DEFECT_TRIAGE: N/A — sem operação real em produção
+HOTFIX_POLICY: N/A — sem incidentes de produção
+METRICS_COMPARISON: N/A — expected vs actual requer baseline pós-deploy
+HYPERCARE_CLOSURE: N/A — critérios de fechamento não avaliáveis
+BLOCKERS (cadeia):
+  Prompt 92 NO-GO (e790781)
+  Prompt 93 BLOCKED (ea21f99) — GO_LIVE FAILED
+QUALITY_GATE: N/A (prompt não autorizado)
+NEXT_ALLOWED_PROMPT: 94 (reexecutar somente após Prompt 93 SUCCESS)
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Hypercare pressupõe primeira operação real em produção.
+  Não transformar pré-go-live em hypercare fictício.
 ```
 
 ---
