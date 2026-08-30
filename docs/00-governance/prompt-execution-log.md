@@ -4236,7 +4236,7 @@ PROMPT_ID: 76
 PROMPT_TITLE: Alertas operacionais de negócio
 EXECUTED_AT: 2026-08-29
 EXECUTION_STATUS: PASS
-COMMIT: feat(alerts): implement SLA and overdue business alerts
+COMMIT: 4459440 feat(alerts): implement SLA and overdue business alerts
 ARTIFACTS:
   packages/database/migrations/0031_operational_business_alerts.sql
   packages/database/migrations/0032_background_job_operational_alert_scan.sql
