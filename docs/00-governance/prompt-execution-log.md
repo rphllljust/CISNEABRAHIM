@@ -4547,3 +4547,45 @@ NOTES:
 | API typecheck | PASS | tsc --noEmit |
 
 ---
+
+## Prompt 83 — Cache controlado
+
+```
+PROMPT_ID: 83
+PROMPT_TITLE: Cache controlado
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: PASS
+CACHE_DECISION: NOT_REQUIRED
+COMMIT: (none for perf(cache) — cache not justified by load tests)
+ARTIFACTS:
+  apps/api/src/performance/cache/cache-decision.ts
+  apps/api/src/performance/cache/cache-decision.spec.ts
+  docs/16-testing/cache-control-assessment.md
+EVALUATION:
+  catalog reads: NOT_REQUIRED (no measured hot path)
+  static reference: NOT_REQUIRED (small indexed tables)
+  dashboard aggregates: NOT_REQUIRED (p95 ~73ms smoke; scope-sensitive)
+  expensive read models/search: NOT_REQUIRED (p95 ~130ms; fixed in P82 without cache)
+EXCLUDED: authorization, mutable OS, resource availability, financial commands
+THRESHOLD: CACHE_JUSTIFICATION_P95_MS=500 (engineering interpretation, not business SLA)
+HYPOTHETICAL_POLICY: documented in cache-decision.ts for future use only
+STAMPEDE: not required at current measured load
+QUALITY_GATE: PASS
+NEXT_ALLOWED_PROMPT: 84
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Sem commit perf(cache): add measured application caching — load tests não justificam.
+  Prompt 84 não executado.
+```
+
+## Quality gate Prompt 83 (evidência)
+
+| Cenário de teste | Resultado | Evidência |
+|------------------|-----------|-----------|
+| gate NOT_REQUIRED vs P82 baselines | PASS | cache-decision.spec.ts |
+| no CacheModule in app | PASS | cache-decision.spec.ts |
+| excluded surfaces documented | PASS | cache-control-assessment.md |
+| hypothetical scope-aware keys | PASS | cache-decision.spec.ts |
+| API typecheck | PASS | tsc --noEmit |
+
+---

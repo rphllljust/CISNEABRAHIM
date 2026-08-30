@@ -62,3 +62,7 @@ Derivados de medição + headroom 2.5× (`performance-budgets.ts`). Não são SL
 
 - Smoke perf pode entrar em CI (`test:perf:smoke`).
 - Load test completo não bloqueia cada PR (custo desproporcional).
+
+## Cache (Prompt 83)
+
+**NOT_REQUIRED** — ver `cache-control-assessment.md`. Gate: `apps/api/src/performance/cache/cache-decision.spec.ts`.
