@@ -3,7 +3,8 @@ export type ShellNavAccessCheck =
   | 'client-list'
   | 'catalog-list'
   | 'asset-list'
-  | 'request-list';
+  | 'request-list'
+  | 'billing-list';
 
 export type ShellNavItem = {
   id: string;

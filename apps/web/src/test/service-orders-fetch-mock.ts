@@ -13,6 +13,7 @@ import { SERVICE_ORDER_STATUSES } from '../service-orders/types/service-order.ty
 export const MOCK_SERVICE_ORDER_ID = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 export const MOCK_PLANNED_RESOURCE_ID = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 export const MOCK_MEASUREMENT_ID = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
+export const MOCK_BILLING_ID = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 export const MOCK_ASSET_A_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 export const MOCK_ASSET_B_ID = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
 const PROBE_SERVICE_ORDER_ID = '00000000-0000-4000-8000-000000000010';
@@ -23,7 +24,10 @@ export type MeasurementSeedKind =
   | 'draft-aligned'
   | 'draft-divergent'
   | 'submitted'
-  | 'under_review';
+  | 'under_review'
+  | 'approved';
+
+export type BillingSeedKind = 'none' | 'prepared' | 'voided';
 
 export type ServiceOrdersFetchMockOptions = {
   serviceOrderListAllowed?: boolean;
@@ -40,6 +44,12 @@ export type ServiceOrdersFetchMockOptions = {
   measurementVersionConflict?: boolean;
   orderCompleted?: boolean;
   seedMeasurement?: MeasurementSeedKind;
+  billingAllowed?: boolean;
+  billingReadAllowed?: boolean;
+  billingTermsMismatch?: boolean;
+  billingVersionConflict?: boolean;
+  seedBilling?: BillingSeedKind;
+  purchaseOrderPaymentTerms?: string;
 };
 
 function orderError(code: string, status: number): Response {
@@ -78,6 +88,8 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
   const removeAllocationAllowed = options.removeAllocationAllowed ?? true;
   const executionAllowed = options.executionAllowed ?? true;
   const measurementAllowed = options.measurementAllowed ?? true;
+  const billingAllowed = options.billingAllowed ?? true;
+  const billingReadAllowed = options.billingReadAllowed ?? true;
 
   type MockMeasurementItem = {
     id: string;
@@ -159,6 +171,10 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
     preparedAt: string | null;
     releasedAt: string | null;
     cancelledAt: string | null;
+    updatedAt: string;
+    purchaseOrderSnapshot?: Record<string, unknown> | null;
+    proposalSnapshot?: Record<string, unknown> | null;
+    contractSnapshot?: Record<string, unknown> | null;
     historyEvents: unknown[];
   };
   type MockEntry = {
@@ -260,6 +276,7 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
       preparedAt: '2026-01-01T08:00:00.000Z',
       releasedAt: '2026-01-01T09:00:00.000Z',
       cancelledAt: null,
+      updatedAt: '2026-01-01T10:00:00.000Z',
       historyEvents: [],
     };
   }
@@ -333,12 +350,109 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
   const allocations: ResourceAllocation[] = [];
   const measurements = new Map<string, MockMeasurement>();
 
+  type MockBillingItem = {
+    id: string;
+    lineNumber: number;
+    measurementItemId: string;
+    sourceExecutionEntryId: string | null;
+    unitCode: string;
+    quantity: string;
+    unitPrice: string | null;
+    lineAmount: string;
+    pricingLineSnapshot: Record<string, unknown>;
+    lineLabel: string;
+  };
+
+  type MockBilling = {
+    id: string;
+    serviceOrderId: string;
+    measurementId: string;
+    clientId: string;
+    unitId: string;
+    status: string;
+    proposalId: string | null;
+    purchaseOrderId: string | null;
+    contractReference: string | null;
+    clientLegalNameSnapshot: string;
+    clientTaxIdSnapshot: string | null;
+    billingAddressSnapshot: Record<string, unknown>;
+    commercialReferenceSnapshot: Record<string, unknown>;
+    currencyCode: string;
+    paymentTerms: string;
+    paymentTermsSource: string;
+    paymentTermsAuthoritative: string | null;
+    totalAmount: string;
+    preparedAt: string;
+    preparedByIdentityId: string;
+    voidedAt: string | null;
+    voidedByIdentityId: string | null;
+    voidReason: string | null;
+    rowVersion: number;
+    createdAt: string;
+    updatedAt: string;
+    items: MockBillingItem[];
+    historyEvents: unknown[];
+  };
+
+  const billings = new Map<string, MockBilling>();
+
+  function buildBillingRecord(orderId: string, measurement: MockMeasurement, status: string): MockBilling {
+    const order = getOrder(orderId);
+    const now = new Date().toISOString();
+    return {
+      id: MOCK_BILLING_ID,
+      serviceOrderId: orderId,
+      measurementId: measurement.id,
+      clientId: order.clientId ?? 'client-demo',
+      unitId: order.unitId,
+      status,
+      proposalId: null,
+      purchaseOrderId: null,
+      contractReference: null,
+      clientLegalNameSnapshot:
+        typeof order.clientSnapshot?.legalName === 'string'
+          ? order.clientSnapshot.legalName
+          : 'Cliente Demo LTDA',
+      clientTaxIdSnapshot: '11222333000181',
+      billingAddressSnapshot: { city: 'Porto Velho', state: 'RO' },
+      commercialReferenceSnapshot: measurement.commercialReferenceSnapshot,
+      currencyCode: 'BRL',
+      paymentTerms: options.purchaseOrderPaymentTerms ?? '30 DDL',
+      paymentTermsSource: options.purchaseOrderPaymentTerms ? 'PURCHASE_ORDER' : 'DECLARED',
+      paymentTermsAuthoritative: options.purchaseOrderPaymentTerms ?? null,
+      totalAmount: '1000.0000',
+      preparedAt: now,
+      preparedByIdentityId: 'actor-demo',
+      voidedAt: status === 'VOIDED' ? now : null,
+      voidedByIdentityId: status === 'VOIDED' ? 'actor-demo' : null,
+      voidReason: status === 'VOIDED' ? 'Teste' : null,
+      rowVersion: 1,
+      createdAt: now,
+      updatedAt: now,
+      items: measurement.items.map((item, index) => ({
+        id: crypto.randomUUID(),
+        lineNumber: item.lineNumber ?? index + 1,
+        measurementItemId: item.id,
+        sourceExecutionEntryId: item.sourceExecutionEntryId,
+        unitCode: item.unitCode,
+        quantity: item.measuredQuantity,
+        unitPrice: item.unitPrice,
+        lineAmount: item.lineAmount ?? '1000.0000',
+        pricingLineSnapshot: item.pricingLineSnapshot,
+        lineLabel: `Linha ${item.lineNumber ?? index + 1}`,
+      })),
+      historyEvents: [],
+    };
+  }
+
   function measurementStatusForSeed(seed: MeasurementSeedKind): string {
     switch (seed) {
       case 'submitted':
         return 'SUBMITTED';
       case 'under_review':
         return 'UNDER_REVIEW';
+      case 'approved':
+        return 'APPROVED';
       default:
         return 'DRAFT';
     }
@@ -467,6 +581,30 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
         rowVersion: 1,
       });
     }
+  }
+
+  if (options.purchaseOrderPaymentTerms) {
+    saveOrder({
+      ...getOrder(MOCK_SERVICE_ORDER_ID),
+      purchaseOrderSnapshot: {
+        paymentTerms: options.purchaseOrderPaymentTerms,
+        poNumber: 'PO-DEMO-01',
+      },
+    });
+  }
+
+  if (options.seedBilling && options.seedBilling !== 'none') {
+    const measurement =
+      measurements.get(MOCK_SERVICE_ORDER_ID) ??
+      saveMeasurement(createMockMeasurement(MOCK_SERVICE_ORDER_ID, 'APPROVED'));
+    billings.set(
+      MOCK_SERVICE_ORDER_ID,
+      buildBillingRecord(
+        MOCK_SERVICE_ORDER_ID,
+        measurement,
+        options.seedBilling === 'voided' ? 'VOIDED' : 'PREPARED',
+      ),
+    );
   }
 
   function readString(value: unknown, fallback = ''): string {
@@ -814,6 +952,95 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
     return null;
   }
 
+  async function handleBillingRoute(
+    orderId: string,
+    suffix: string,
+    method: string,
+    init?: RequestInit,
+  ): Promise<Response | null> {
+    if (!billingReadAllowed) {
+      return orderError('BILLING_DENIED', 403);
+    }
+
+    if (!billingAllowed && orderId !== PROBE_SERVICE_ORDER_ID) {
+      return orderError('BILLING_DENIED', 403);
+    }
+
+    const body = parseBody(init);
+    const billingIdFromPath = suffix.match(/^\/([^/]+)/)?.[1];
+    const actionSuffix = billingIdFromPath ? suffix.slice(billingIdFromPath.length + 1) : suffix;
+
+    if (suffix === '' && method === 'GET') {
+      const billing = billings.get(orderId);
+      return jsonResponse(billing ?? null);
+    }
+
+    if (suffix === '' && method === 'POST') {
+      if (!billingAllowed) {
+        return orderError('BILLING_DENIED', 403);
+      }
+      const measurement = measurements.get(orderId);
+      if (!measurement || measurement.status !== 'APPROVED') {
+        return orderError('BILLING_MEASUREMENT_NOT_APPROVED', 409);
+      }
+      const paymentTerms = readString(body.paymentTerms);
+      if (options.billingTermsMismatch) {
+        return orderError('BILLING_COMMERCIAL_TERMS_MISMATCH', 409);
+      }
+      if (billings.get(orderId)?.status === 'PREPARED') {
+        return orderError('BILLING_BILLING_ALREADY_EXISTS', 409);
+      }
+      const created = buildBillingRecord(orderId, measurement, 'PREPARED');
+      created.paymentTerms = paymentTerms || created.paymentTerms;
+      billings.set(orderId, created);
+      return jsonResponse(created, 201);
+    }
+
+    if (!billingIdFromPath) {
+      return null;
+    }
+
+    const billing =
+      billings.get(orderId) ??
+      (orderId === PROBE_SERVICE_ORDER_ID
+        ? buildBillingRecord(orderId, createMockMeasurement(orderId, 'APPROVED', false, PROBE_MEASUREMENT_ID), 'PREPARED')
+        : undefined);
+
+    if (!billing) {
+      return orderError('BILLING_NOT_FOUND', 404);
+    }
+
+    if (actionSuffix === '' && method === 'GET') {
+      return jsonResponse(billing);
+    }
+
+    if (actionSuffix === '/void' && method === 'POST') {
+      if (!billingAllowed) {
+        return orderError('BILLING_DENIED', 403);
+      }
+      if (options.billingVersionConflict) {
+        return orderError('BILLING_VERSION_CONFLICT', 409);
+      }
+      const rowVersion = Number(body.rowVersion);
+      if (rowVersion !== billing.rowVersion) {
+        return orderError('BILLING_VERSION_CONFLICT', 409);
+      }
+      const voided = {
+        ...billing,
+        status: 'VOIDED',
+        voidedAt: new Date().toISOString(),
+        voidedByIdentityId: 'actor-demo',
+        voidReason: readString(body.voidReason) || null,
+        rowVersion: billing.rowVersion + 1,
+        updatedAt: new Date().toISOString(),
+      };
+      billings.set(orderId, voided);
+      return jsonResponse(voided);
+    }
+
+    return null;
+  }
+
   return vi.fn(async (input: RequestInfo, init?: RequestInit) => {
     const url = requestUrl(input);
     const method = init?.method ?? 'GET';
@@ -1012,6 +1239,19 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
       const response = await handleMeasurementRoute(
         measurementMatch[1]!,
         measurementMatch[2] ?? '',
+        method,
+        init,
+      );
+      if (response) {
+        return response;
+      }
+    }
+
+    const billingMatch = pathname.match(/^\/api\/v1\/service-orders\/([^/]+)\/billing-records(\/.*)?$/);
+    if (billingMatch) {
+      const response = await handleBillingRoute(
+        billingMatch[1]!,
+        billingMatch[2] ?? '',
         method,
         init,
       );

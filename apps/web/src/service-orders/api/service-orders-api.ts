@@ -4,6 +4,7 @@ import {
   SERVICE_ORDERS_ERROR_CODES,
   type ServiceOrderDetail,
   type ServiceOrdersErrorCode,
+  type ServiceOrderStatus,
 } from '../types/service-order.types';
 
 export type ServiceOrdersApiErrorKind =
@@ -100,6 +101,46 @@ async function requestJson<T>(path: string, init: RequestInit): Promise<T> {
     }
     throw new ServiceOrdersApiError(0, undefined, 'unknown');
   }
+}
+
+export type ServiceOrderSummary = {
+  id: string;
+  orderNumber: string;
+  unitId: string;
+  status: ServiceOrderStatus;
+  clientId: string | null;
+  clientSnapshot: Record<string, unknown> | null;
+  description: string | null;
+  updatedAt: string;
+};
+
+export async function listServiceOrders(
+  query: {
+    limit?: number;
+    offset?: number;
+    status?: ServiceOrderStatus;
+    unitId?: string;
+    clientId?: string;
+  },
+  signal?: AbortSignal,
+): Promise<{ items: ServiceOrderSummary[]; limit: number; offset: number }> {
+  const params = new URLSearchParams();
+  params.set('limit', String(query.limit ?? 20));
+  params.set('offset', String(query.offset ?? 0));
+  if (query.status) {
+    params.set('status', query.status);
+  }
+  if (query.unitId) {
+    params.set('unitId', query.unitId);
+  }
+  if (query.clientId) {
+    params.set('clientId', query.clientId);
+  }
+  return requestJson(`/api/v1/service-orders?${params.toString()}`, {
+    method: 'GET',
+    headers: authHeaders(),
+    signal,
+  });
 }
 
 export async function getServiceOrder(

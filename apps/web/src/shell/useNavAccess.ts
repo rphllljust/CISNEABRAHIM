@@ -4,6 +4,7 @@ import { probeClientListAccess } from '../clients/api/clients-api';
 import { probeCatalogListAccess } from '../catalog/api/service-catalog-api';
 import { probeAssetListAccess } from '../assets/api/physical-assets-api';
 import { probeServiceRequestListAccess } from '../requests/api/service-requests-api';
+import { probeBillingCapabilities } from '../billing/api/billing-api';
 import { useAuth } from '../auth/context/AuthProvider';
 import { SHELL_NAV_ITEMS } from './nav-config';
 import type { NavAccessMap } from './types';
@@ -98,6 +99,18 @@ export function useNavAccess(): NavAccessState {
           try {
             const allowed = await probeServiceRequestListAccess(controller.signal);
             nextAccess[item.id] = allowed;
+          } catch {
+            if (!cancelled) {
+              nextAccess[item.id] = false;
+            }
+          }
+          continue;
+        }
+
+        if (item.accessCheck === 'billing-list') {
+          try {
+            const capabilities = await probeBillingCapabilities(controller.signal);
+            nextAccess[item.id] = capabilities.canRead;
           } catch {
             if (!cancelled) {
               nextAccess[item.id] = false;

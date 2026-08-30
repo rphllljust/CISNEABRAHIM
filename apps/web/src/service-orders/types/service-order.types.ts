@@ -58,6 +58,12 @@ export type ServiceOrderDetail = {
   origin: string;
   clientId: string | null;
   clientSnapshot: Record<string, unknown> | null;
+  proposalId?: string | null;
+  proposalSnapshot?: Record<string, unknown> | null;
+  purchaseOrderId?: string | null;
+  purchaseOrderSnapshot?: Record<string, unknown> | null;
+  contractReference?: string | null;
+  contractSnapshot?: Record<string, unknown> | null;
   serviceDefinitionId: string | null;
   serviceDefinitionVersionId: string | null;
   serviceSnapshot: ServiceOrderServiceSnapshot;

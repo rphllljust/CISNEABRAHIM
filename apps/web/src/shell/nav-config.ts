@@ -46,6 +46,13 @@ export const SHELL_NAV_ITEMS: ShellNavItem[] = [
     capabilityId: 'requests:service-request:list',
     accessCheck: 'request-list',
   },
+  {
+    id: 'billing',
+    label: 'Faturamento',
+    path: '/app/billing',
+    capabilityId: 'billing:billing-record:read',
+    accessCheck: 'billing-list',
+  },
 ];
 
 export function findNavItemByPath(pathname: string): ShellNavItem | undefined {

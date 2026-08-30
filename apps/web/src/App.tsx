@@ -16,6 +16,9 @@ import { ServiceDefinitionDraftEditPage } from './catalog/pages/ServiceDefinitio
 import { ServiceDefinitionVersionCreatePage } from './catalog/pages/ServiceDefinitionVersionCreatePage';
 import { ServiceDefinitionVersionDetailPage } from './catalog/pages/ServiceDefinitionVersionDetailPage';
 import { ServiceDefinitionsListPage } from './catalog/pages/ServiceDefinitionsListPage';
+import { BillingRoute } from './billing/BillingRoute';
+import { BillingDashboardPage } from './billing/pages/BillingDashboardPage';
+import { ServiceOrderBillingPage } from './billing/pages/ServiceOrderBillingPage';
 import { AccessDeniedPage } from './pages/AccessDeniedPage';
 import { PhysicalAssetCreatePage } from './assets/pages/PhysicalAssetCreatePage';
 import { PhysicalAssetDetailPage } from './assets/pages/PhysicalAssetDetailPage';
@@ -234,6 +237,22 @@ export function App() {
                 element={
                   <ServiceOrdersRoute>
                     <ServiceOrderMeasurementPage />
+                  </ServiceOrdersRoute>
+                }
+              />
+              <Route
+                path="/app/billing"
+                element={
+                  <BillingRoute>
+                    <BillingDashboardPage />
+                  </BillingRoute>
+                }
+              />
+              <Route
+                path="/app/service-orders/:serviceOrderId/billing"
+                element={
+                  <ServiceOrdersRoute>
+                    <ServiceOrderBillingPage />
                   </ServiceOrdersRoute>
                 }
               />

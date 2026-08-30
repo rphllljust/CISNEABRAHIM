@@ -3299,7 +3299,7 @@ PROMPT_ID: 58
 PROMPT_TITLE: Preparação de faturamento — backend
 EXECUTED_AT: 2026-08-29
 EXECUTION_STATUS: PASS
-COMMIT: 2d7db5b feat(billing): implement billing preparation domain
+COMMIT: 648e5e9 feat(billing): implement billing preparation domain
 ARTIFACTS:
   packages/database/migrations/0024_billing_baseline.sql
   packages/database/src/schema/billing.ts
@@ -3334,5 +3334,51 @@ NOTES:
 - [x] Testes: domain (4), integration (9), E2E (1)
 - [x] typecheck + eslint billing PASS
 - [x] Prompt 59 não executado
+
+---
+
+## Prompt 59 — Faturamento: administração (frontend)
+
+```
+PROMPT_ID: 59
+PROMPT_TITLE: Faturamento — interface de administração
+EXECUTED_AT: 2026-08-29
+EXECUTION_STATUS: PASS
+COMMIT: feat(web): implement billing administration interface
+ARTIFACTS:
+  apps/web/src/billing/
+  apps/web/src/App.tsx
+  apps/web/src/index.css
+  apps/web/src/shell/nav-config.ts
+  apps/web/src/shell/useNavAccess.ts
+  apps/web/src/shell/types.ts
+  apps/web/src/service-orders/api/service-orders-api.ts
+  apps/web/src/service-orders/types/service-order.types.ts
+  apps/web/src/test/render-billing-routes.tsx
+  apps/web/src/test/service-orders-fetch-mock.ts
+  docs/implementation/59-billing-frontend.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Painel /app/billing com colunas reais: pronto, em preparação, divergência.
+  Etapas fiscais/pagamento exibidas como indisponíveis (fora do Prompt 58).
+  Detalhe por OS com itens, totais tabular-nums, condição comercial e mismatch A×B.
+  Mobile com cards; desktop com tabela financeira.
+  Testes: list, detail, mismatch, amount, forbidden, stale, responsive, a11y, E2E.
+  Prompt 60 não executado.
+```
+
+## Quality gate Prompt 59 (evidência)
+
+- [x] Painel do processo com estados reais (pronto / preparação / divergência)
+- [x] Detalhe: cliente, OS, medição, PO/proposta, itens, valores, condição, vencimento, documentos
+- [x] COMMERCIAL_TERMS_MISMATCH visível com fonte A × fonte B e ação administrativa
+- [x] Formatação financeira pt-BR, tabular-nums, R$
+- [x] Layout responsivo (tabela desktop + cards mobile)
+- [x] Testes: BillingPages (8), billing-format (3), E2E (3)
+- [x] typecheck + lint + vitest web (137) PASS
+- [x] Prompt 60 não executado
 
 ---
