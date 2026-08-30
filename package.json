@@ -30,6 +30,7 @@
     "test:uat": "pnpm --filter @cisne/api test:uat",
     "pilot:status": "node scripts/pilot/status.mjs",
     "release:drill": "node scripts/release/drill.mjs",
+    "readiness:gate": "node scripts/readiness/gate.mjs",
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",
     "db:up": "docker compose -f docker/compose.yaml up -d --wait",

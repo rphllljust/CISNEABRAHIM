@@ -11,3 +11,4 @@ Documentação operacional (backup, continuidade, runbooks).
 | [production-infrastructure.md](production-infrastructure.md) | 88 |
 | [pilot-program.md](pilot-program.md) | 90 |
 | [release-rollback-strategy.md](release-rollback-strategy.md) | 91 |
+| [production-readiness-gate.md](production-readiness-gate.md) | 92 |

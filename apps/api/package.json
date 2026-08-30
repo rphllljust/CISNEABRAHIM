@@ -30,7 +30,9 @@
     "test:pilot": "vitest run src/ops/pilot",
     "pilot:status": "npx tsx src/ops/pilot/cli/run-pilot-status.ts",
     "test:release": "vitest run src/ops/release",
-    "release:drill": "npx tsx src/ops/release/cli/run-release-drill.ts"
+    "release:drill": "npx tsx src/ops/release/cli/run-release-drill.ts",
+    "test:readiness": "vitest run src/ops/readiness",
+    "readiness:gate": "npx tsx src/ops/readiness/cli/run-readiness-gate.ts"
   },
   "dependencies": {
     "@cisne/database": "workspace:*",
