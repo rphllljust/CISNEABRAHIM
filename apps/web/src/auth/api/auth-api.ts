@@ -38,21 +38,21 @@ export function mapAuthErrorToUserMessage(code: string | undefined): AuthUserMes
 export function userMessageText(message: AuthUserMessage): string {
   switch (message) {
     case 'invalid_credentials':
-      return 'Invalid login or password.';
+      return 'Não foi possível entrar. Verifique suas credenciais e tente novamente.';
     case 'account_disabled':
-      return 'This account is not available.';
+      return 'Esta conta não está disponível.';
     case 'rate_limited':
-      return 'Too many attempts. Try again later.';
+      return 'Muitas tentativas. Aguarde e tente novamente.';
     case 'validation_failed':
-      return 'Check the entered data and try again.';
+      return 'Verifique os dados informados e tente novamente.';
     case 'session_expired':
-      return 'Your session has expired. Sign in again.';
+      return 'Sua sessão expirou. Entre novamente.';
     case 'network_error':
-      return 'Unable to reach the server. Check your connection.';
+      return 'Não foi possível conectar ao servidor. Verifique sua conexão.';
     case 'service_unavailable':
-      return 'The service is temporarily unavailable.';
+      return 'O serviço está temporariamente indisponível.';
     default:
-      return 'Something went wrong. Try again.';
+      return 'Algo deu errado. Tente novamente.';
   }
 }
 

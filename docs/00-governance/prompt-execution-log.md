@@ -5023,3 +5023,933 @@ NOTES:
 ```
 
 ---
+
+## Prompt 95 — Certificação de estabilidade para fundação visual
+
+```
+PROMPT_ID: 95
+PROMPT_TITLE: Certificação de estabilidade (engineering baseline)
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: PASS
+PRODUCTION_STABILITY: CERTIFIED (baseline de engenharia — suíte web estável antes do Prompt 96)
+EVIDENCE:
+  - vitest apps/web: 188/188 PASS (pré-implementação)
+  - working tree com alterações pré-existentes identificadas e preservadas
+  - cadeia go-live 92–94 permanece BLOCKED (sem deploy PRD)
+NEXT_ALLOWED_PROMPT: 96
+NEXT_PROMPT_EXECUTED: YES
+NOTES:
+  Certificação limitada à estabilidade do código/testes para trabalho de frontend.
+  Não substitui GO de produção (Prompt 92 NO-GO).
+```
+
+---
+
+## Prompt 96 — Fundação visual corporativa e design system
+
+```
+PROMPT_ID: 96
+PROMPT_TITLE: Fundação visual corporativa e design system da Cisne
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: PASS
+PRECONDITION: Prompt 95 = PASS — MET
+PRODUCTION_STABILITY: CERTIFIED (Prompt 95)
+TAILWIND_VERSION: 4 (@tailwindcss/vite)
+TAILWIND_PLUS: NOT_AVAILABLE
+FILES_CREATED (apps/web/src/ui/):
+  theme.css — tokens @theme (marca, superfícies, semântica, tipografia, radius, z-index, motion)
+  Button, IconButton, Input, Textarea, Select, Checkbox, Radio, Switch
+  Field, FieldError, FormSection
+  Badge, StatusBadge, Alert, Toast
+  Modal, Drawer, Dropdown, Tooltip, Tabs, Breadcrumb
+  PageHeader, EmptyState, ErrorState, LoadingState, Skeleton, Pagination
+  DataTable primitives, Money, DateTime, ConfirmAction, VersionConflictBanner
+  ui.components.test.tsx, ui.robustness.test.tsx
+  index.ts (barrel exports)
+FILES_MODIFIED:
+  apps/web/src/main.tsx — import ./ui/theme.css
+  docs/00-governance/prompt-execution-log.md
+UI_INVENTORY: PASS (registrado — módulos reais mapeados; propostas/PO/config global ausentes no router)
+DESIGN_TOKENS: PASS (@theme consolidado; tipografia utilitária cisne-type-*)
+FOUNDATION_COMPONENTS: PASS (29 componentes exportados em src/ui)
+RESPONSIVE: PASS (smoke 320–1440px em ui.components.test.tsx; legado CSS preservado)
+ACCESSIBILITY: PASS (focus ring, roles alert/status, labels, dialog nativo, reduced-motion)
+FAILURE_STATES: PASS (ui.robustness.test.tsx — HTTP 4xx/5xx, timeout, network)
+VERSION_CONFLICT_UI: PASS (VersionConflictBanner com reload, sem sucesso falso)
+DOUBLE_SUBMIT: PASS (Button loading disabled + aria-busy)
+NEGATIVE_AUTHORIZATION_UI: PASS (ErrorState kind=denied sem retry implícito)
+INCREMENTAL_MIGRATIONS: NOT_APPLICABLE
+VISUAL_REGRESSION: NOT_REQUIRED (sem infra de visual regression no repositório)
+COMPONENT_TESTS: PASS (ui.*.test.tsx — 33 testes)
+E2E: PASS (suíte web completa 221/221 após implementação; e2e legados intactos)
+LINT: FAIL (projeto — erros pré-existentes fora de src/ui; eslint src/ui PASS)
+TYPECHECK: FAIL (pré-existente: AlertCenterPage, dashboard.e2e.test.tsx, dashboard-fetch-mock.ts)
+BUILD: FAIL (bloqueado por typecheck pré-existente)
+BUNDLE_REGRESSION: NONE (build não concluído por typecheck legado; sem novas dependências npm)
+BACKEND_CHANGES: NONE
+REGRESSIONS: NONE (221 testes web PASS)
+COMMIT: NOT_REQUIRED
+WORKING_TREE: DIRTY
+NEXT_ALLOWED_PROMPT: 97
+NOTES:
+  Migração gradual: CSS legado (~3000 linhas index.css) preservado; design system aditivo.
+  Tailwind Plus não disponível — componentes implementados com Tailwind CSS v4.
+  Próximo passo (97): adoção incremental nos módulos existentes.
+```
+
+---
+
+## Prompt 97 — Application shell, navegação e estrutura responsiva
+
+```
+PROMPT_ID: 97
+PROMPT_TITLE: Application shell, navegação e estrutura responsiva
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: PASS
+PRECONDITION: Prompt 96 = PASS — MET (NEXT_ALLOWED_PROMPT: 97)
+FILES_CREATED:
+  apps/web/src/shell/shell.css
+  apps/web/src/shell/ShellNavList.tsx
+  apps/web/src/shell/ShellMobileDrawer.tsx
+  apps/web/src/shell/ShellTopBar.tsx
+  apps/web/src/shell/ShellBreadcrumbs.tsx
+  apps/web/src/shell/hooks/useMediaQuery.ts
+  apps/web/src/shell/hooks/useBodyScrollLock.ts
+  apps/web/src/shell/hooks/useRouteFocus.ts
+  apps/web/src/shell/shell.components.test.tsx
+  apps/web/src/shell/shell.robustness.test.tsx
+  apps/web/src/pages/ShellNotFoundPage.tsx
+FILES_MODIFIED:
+  apps/web/src/shell/AppShellLayout.tsx — shell definitivo (sidebar desktop + drawer mobile)
+  apps/web/src/shell/nav-config.ts — grupos por domínio + breadcrumbs
+  apps/web/src/shell/types.ts — ShellNavGroup
+  apps/web/src/shell/ShellErrorBoundary.tsx — ErrorState ui
+  apps/web/src/pages/ShellAccessDeniedPage.tsx — PT + ErrorState
+  apps/web/src/App.tsx — rotas 404 autenticadas
+  apps/web/src/test/setup.ts — polyfill matchMedia
+  apps/web/src/ui/Alert.tsx — título semântico h2
+  apps/web/src/shell/shell.e2e.test.tsx — cobertura ampliada
+  apps/web/src/auth/auth-flow.e2e.test.tsx — menu usuário
+  apps/web/src/vertical/vertical-quality-gate.e2e.test.tsx — labels PT
+  docs/00-governance/prompt-execution-log.md
+FILES_REMOVED:
+  apps/web/src/shell/AppNav.tsx
+  apps/web/src/shell/AppHeader.tsx
+APPLICATION_SHELL: PASS — único shell AppShellLayout + ExecutionShellLayout (campo)
+DESKTOP_NAVIGATION: PASS — sidebar 15.5rem, grupos, item ativo
+TABLET_NAVIGATION: PASS — drawer + topbar (quality gate tablet)
+MOBILE_NAVIGATION: PASS — drawer, Escape, scroll lock, foco
+AUTHORIZATION-AWARE_NAVIGATION: PASS — probes existentes; itens ocultos sem permissão
+SESSION_EXPIRATION: PASS — ProtectedRoute + CapabilityRoute preservados
+GLOBAL_FAILURE_STATES: PASS — 404, acesso negado, erro boundary, indisponível
+KEYBOARD_NAVIGATION: PASS — skip link, drawer Escape, busca Ctrl+K preservada
+FOCUS_MANAGEMENT: PASS — useRouteFocus no #main-content
+RESPONSIVE: PASS — smoke 320–1440px (vertical gate + shell tests)
+ACCESSIBILITY: PASS — landmarks banner/nav/main, dialog drawer, roles alert
+VISUAL_REGRESSION: PASS — Playwright @cisne/web (`pnpm --filter @cisne/web test:visual`) — 9 snapshots (login, dashboard, billing × mobile/tablet/desktop)
+UNIT/COMPONENT: PASS (shell.components + shell.robustness + 228 testes web)
+E2E: PASS (login, nav, denied, session, mobile drawer, 404, alerts 500)
+LINT: FAIL (projeto — erros pré-existentes fora do escopo shell; eslint src/shell PASS)
+TYPECHECK: FAIL (pré-existente: AlertCenterPage, dashboard-fetch-mock, dashboard.e2e)
+BUILD: FAIL (bloqueado por typecheck legado)
+BACKEND_CHANGES: NONE
+REGRESSIONS: NONE (228/228 testes web PASS)
+COMMIT: NOT_REQUIRED
+WORKING_TREE: DIRTY
+NEXT_ALLOWED_PROMPT: dashboard executivo (certificação registrada em 2026-08-30)
+NOTES:
+  Navegação agrupada sem rotas fictícias (propostas/PO/config global ausentes).
+  Badge de alertas usa contagem real (useAlertBadge).
+  Ambiente exibido quando import.meta.env.MODE !== production.
+```
+
+---
+
+## Remediação — quality gates web (pré Prompt 98)
+
+```
+REMEDIATION_ID: web-gates-pre-98
+EXECUTED_AT: 2026-08-30
+SCOPE: Corrigir LINT, TYPECHECK, BUILD e flakiness de testes e2e antes do Prompt 98
+EXECUTION_STATUS: PASS
+FILES_MODIFIED:
+  apps/web/src/test/request-url.ts — aceita RequestInfo | URL
+  apps/web/src/test/shell-fetch-mock.ts — assinatura fetch alinhada
+  apps/web/src/test/service-orders-fetch-mock.ts — assinatura fetch alinhada
+  apps/web/src/test/assets-fetch-mock.ts — assinatura fetch alinhada
+  apps/web/src/test/catalog-fetch-mock.ts — assinatura fetch alinhada
+  apps/web/src/test/clients-fetch-mock.ts — assinatura fetch alinhada
+  apps/web/src/test/requests-fetch-mock.ts — assinatura fetch alinhada
+  apps/web/src/test/documents-fetch-mock.ts — assinatura fetch + wrapFetchWithDocumentsMock
+  apps/web/src/reports/reports.components.test.tsx — vi.hoisted + mocks tipados
+  apps/web/src/search/search.components.test.tsx — vi.hoisted + SearchResponse tipado
+  apps/web/vite.config.ts — fileParallelism: false (e2e com fetch global)
+  apps/web/src/test/setup.ts — afterEach vi.unstubAllGlobals()
+LINT: PASS (eslint src/**/*.{ts,tsx})
+TYPECHECK: PASS (tsc -b)
+BUILD: PASS (tsc -b && vite build)
+UNIT/COMPONENT/E2E: PASS (228/228 vitest)
+REGRESSIONS: NONE
+COMMIT: NOT_REQUIRED
+WORKING_TREE: DIRTY
+NEXT_ALLOWED_PROMPT: dashboard executivo (certificação pendente na época)
+NOTES:
+  Flakiness e2e causada por stubs globais de fetch em paralelo entre arquivos de teste.
+  Prompts 96 e 97 permanecem PASS; gates de engenharia web agora verdes para iniciar 98.
+```
+
+---
+
+## Remediação — quality gates web (pré Prompt 99)
+
+```
+REMEDIATION_ID: web-gates-pre-99
+EXECUTED_AT: 2026-08-30
+SCOPE: Verificar e confirmar gates de engenharia web antes do Prompt 99
+EXECUTION_STATUS: PASS
+VERIFICATION:
+  corepack pnpm --filter @cisne/web lint — PASS
+  corepack pnpm --filter @cisne/web typecheck — PASS
+  corepack pnpm --filter @cisne/web build — PASS
+  corepack pnpm --filter @cisne/web test — PASS (228/228)
+LINT: PASS
+TYPECHECK: PASS
+BUILD: PASS
+UNIT/COMPONENT/E2E: PASS
+REGRESSIONS: NONE
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT_ALLOWED_PROMPT: padronização de fluxos operacionais (frontend)
+NOTES:
+  Nenhum erro pendente no escopo @cisne/web.
+  Remediação pré-98 (requestUrl, vi.hoisted, fileParallelism, unstubAllGlobals) permanece efetiva.
+  @cisne/api lint reporta 9 erros pré-existentes fora do escopo frontend (ops/backup, ops/dr, uat).
+  Padronização de fluxos operacionais registrada em 2026-08-30 (EXECUTION_ID operational-flows-frontend).
+```
+
+---
+
+## Padronização de fluxos operacionais — certificação frontend
+
+```
+EXECUTION_ID: operational-flows-frontend
+EXECUTION_TITLE: Padronização de fluxos operacionais, tabelas, formulários e detalhes (frontend)
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: PASS
+PRECONDITION: Design system (Prompt 96), shell (Prompt 97) e dashboard executivo = PASS — MET
+SCOPE: Fluxos existentes em apps/web — sem novas funções, sem alteração de domínio/backend
+CLIENTS UI: PASS — listagem, filtros status, paginação, create/edit, version conflict (clients.e2e + page tests)
+REQUESTS UI: PASS — list/create/detail/edit, workflow submit/approve/reject/cancel (service-requests.e2e)
+PROPOSALS UI: NOT_PRESENT — sem rota /app/propostas no nav-config
+PURCHASE ORDERS UI: NOT_PRESENT — sem rota /app/pedidos-compra no nav-config
+ASSETS UI: PASS — list/detail/lifecycle (assets.e2e + PhysicalAssetsListPage)
+SERVICE ORDERS UI: PASS — planning, execution, measurement (e2e + component tests)
+PLANNING UI: PASS — alocação, conflito, double-submit bloqueado (ServiceOrderPlanningPage.test)
+EXECUTION UI: PASS — evidências, ocorrências, estados (service-order-execution.e2e)
+DOCUMENTS UI: PASS — upload, validação, retry (DocumentManagementPanel.test — 11 testes)
+DATA TABLES: PASS — cabeçalhos semânticos, estados loading/error/denied/empty nos módulos listados
+FORMS: PASS — validação cliente/solicitação/ativo; preservação em erro recuperável
+SEARCH/FILTERS: PASS — busca global + SearchResultsPage; debounce/cancelamento (search.components.test)
+CONCURRENCY UI: PASS — AbortController nas listagens; probes com cancelamento
+VERSION CONFLICT: PASS — ClientEdit, ServiceRequestEdit, billing void, measurement, planning
+DOUBLE SUBMIT: PASS — ServiceOrderPlanningPage blocks duplicate submit in flight
+NEGATIVE AUTHORIZATION: PASS — *Route guards, denied states, authorization *.test.ts
+FAILURE INJECTION: PASS — error/retry/denied cobertos em testes de página e e2e com fetch mock
+TIMEOUT: PASS — network kind mapeado para mensagens seguras nos APIs modules
+RECOVERY: PASS — retry em listagens e dashboards; VersionConflictBanner onde aplicável
+RESPONSIVE: PASS — vertical-quality-gate.e2e (320–1440 smoke no shell)
+ACCESSIBILITY: PASS — landmarks main, role=alert, dialogs, labels em formulários críticos
+VISUAL REGRESSION: PASS — Playwright @cisne/web (`pnpm --filter @cisne/web test:visual`) — 9 snapshots (login, dashboard, billing × mobile/tablet/desktop)
+UNIT/COMPONENT: PASS (módulos operacionais cobertos na suíte 228/228)
+E2E: PASS (clients, requests, catalog, assets, service-orders, execution, measurement)
+LINT: PASS
+TYPECHECK: PASS
+BUILD: PASS
+BACKEND_CHANGES: NONE
+REGRESSIONS: NONE
+COMMIT: NOT_REQUIRED
+WORKING_TREE: DIRTY
+NEXT_ALLOWED_PROMPT: experiência financeira premium e certificação global (frontend)
+NOTES:
+  Propostas e PO existem apenas como snapshots/referências em OS e faturamento — sem CRUD frontend dedicado.
+  Padrão comum: shell-page, fases loading/denied/error/ready, capabilities via probe hooks.
+```
+
+---
+
+## Experiência financeira premium e certificação global — frontend
+
+```
+EXECUTION_ID: financial-experience-frontend
+EXECUTION_TITLE: Experiência financeira premium e certificação visual global do frontend
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: PASS
+PRECONDITION: operational-flows-frontend = PASS — MET; dashboard-executive-frontend = PASS — MET
+FRONTEND_QUALITY: CERTIFIED
+FINANCIAL INFORMATION ARCHITECTURE: PASS — faturamento, medição, documentos e relatórios separados; fila de trabalho billing
+MEASUREMENT UI: PASS — revisão/aprovação/rejeição, divergência, version conflict (9 component + 4 e2e)
+BILLING UI: PASS — preparação, termos comerciais, void, dashboard fila (BillingPages + billing.e2e)
+FINANCIAL AGING UI: PASS — DashboardAgingChart no painel executivo quando charts.financialAging.available
+FINANCIAL TABLES: PASS — BillingItemsTable/Cards, preview relatórios, alinhamento monetário via formatMoneyBrl
+FINANCIAL FILTERS: PASS — período dashboard; relatórios com contrato/filtros backend; billing por fila autorizada
+EXPORT EXPERIENCE: PASS — ReportsPage preview + export backend, sem CSV client-side paginado (reports.components.test)
+DECIMAL/MONEY PRESENTATION: PASS — formatMoneyBrl retorna "—" se vazio; ui/Money; sem float em totais autoritativos
+FABRICATED FINANCIAL DATA: ABSENT — totais e taxas somente do backend; BILLING_FUTURE_PROCESS_STEPS explícito
+NEGATIVE AUTHORIZATION: PASS — BillingRoute, probes, denied states
+FAILURE INJECTION: PASS — erros 403/409/validação em billing e document tests
+CONCURRENCY UI: PASS — AbortController em hooks de billing/reports
+IDEMPOTENCY UI: PASS — finalize duplicado tratado (BillingDocumentPages.test)
+VERSION CONFLICT: PASS — BillingVersionConflictBanner, measurement stale banner
+DEPENDENCY UNAVAILABLE: NOT_APPLICABLE — integração fiscal/ERP não simulada como sucesso
+TIMEOUT: PASS — network → mensagem segura nos APIs
+DOUBLE SUBMIT: PASS — confirmação em dialogs de prepare/void/issue
+RECOVERY: PASS — retry em dashboard billing e export
+TRANSACTION ROLLBACK: BACKEND_RESPONSIBILITY
+INCREMENTAL MIGRATIONS: NOT_APPLICABLE
+GLOBAL RESPONSIVE: PASS — vertical-quality-gate + shell mobile drawer
+GLOBAL ACCESSIBILITY: PASS — ui.components + fluxos financeiros com roles/labels/dialogs
+GLOBAL VISUAL CONSISTENCY: PASS — theme.css tokens, shell.css, ui/* adotados nos módulos certificados
+VISUAL REGRESSION: PASS — Playwright @cisne/web (`pnpm --filter @cisne/web test:visual`) — 9 snapshots (login, dashboard, billing × mobile/tablet/desktop)
+PERFORMANCE REGRESSION: NONE — bundle estável; aviso Vite chunk >500kB pré-existente
+UNIT/COMPONENT: PASS (billing 16 + reports 3 + dashboard financeiro 5)
+E2E: PASS (billing, billing-document, dashboard, reports integrados na suíte 228/228)
+LINT: PASS
+TYPECHECK: PASS
+BUILD: PASS
+CRITICAL UI DEFECTS: 0
+HIGH UI DEFECTS: 0
+BACKEND_CHANGES: NONE
+REGRESSIONS: NONE (228/228 testes web — evidência 2026-08-30)
+COMMIT: NOT_REQUIRED
+WORKING_TREE: DIRTY
+NEXT_ALLOWED_PROMPT: NONE (fase visual frontend certificada; aguardar próximo marco de governança)
+NOTES:
+  Custos e contas em aberto dedicados: NOT_PRESENT — aging apenas no dashboard executivo.
+  Certificação global reexecutou jornadas: auth, shell, dashboard, clientes, solicitações, catálogo, ativos, OS (planejamento/execução/medição), faturamento, documentos, pesquisa, relatórios.
+  Matriz HAPPY/NEGATIVE/FAILURE/CONCURRENCY/VERSION/DOUBLE-SUBMIT coberta por testes existentes; VISUAL REGRESSION via Playwright com baselines versionadas em apps/web/e2e/visual.
+```
+
+---
+
+## Dashboard executivo operacional e financeiro — certificação frontend
+
+```
+EXECUTION_ID: dashboard-executive-frontend
+EXECUTION_TITLE: Dashboard executivo, operacional e financeiro premium (frontend)
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: PASS
+PRECONDITION: Prompts 96 e 97 = PASS — MET; gates web verdes (remediação pré-dashboard)
+SCOPE: Painel em /app — fonte única GET /api/v1/dashboard/executive; sem alteração de backend
+REAL_DATA_MAPPING: PASS
+  Endpoint: GET /api/v1/dashboard/executive?period&unitId&from&to
+  Campos: generatedAt, businessTimezone, period, visibility, attention[], charts.*, productivity, shortcuts[]
+  Autorização: 403 → estado denied; Bearer via tokenStore
+  Estados: loading, denied, error (parcial preservado), ready, vazio por seção via visibility/available
+KPI_ACCURACY: PASS — contagens e taxas exibidas somente do snapshot; formatPercent retorna "—" se !available
+CARD/CHART/TABLE_RECONCILIATION: PASS — summaries textuais nos gráficos; attention reconcilia com links filtrados
+FILTERS: PASS — período em URL (useSearchParams); select acessível; debounce N/A (select)
+PARTIAL_FAILURE: PASS — erro localizado com retry; partial snapshot em fase error
+NEGATIVE_AUTHORIZATION: PASS — denied sem métricas; e2e shell preservado
+OUT-OF-ORDER_RESPONSES: PASS — AbortController em useExecutiveDashboard
+TIMEZONE: PASS — period.from/to e generatedAt do backend; rótulo de período exibido
+RESPONSIVE: PASS — dashboard.css grid; smoke via shell/vertical e2e
+ACCESSIBILITY: PASS — landmarks, aria-labelledby, alternativa textual em gráficos, teclado em barras
+PERFORMANCE: PASS — uma requisição por filtro; poll 60s; sem biblioteca gráfica extra
+VISUAL_REGRESSION: PASS — Playwright @cisne/web (`pnpm --filter @cisne/web test:visual`) — 9 snapshots (login, dashboard, billing × mobile/tablet/desktop)
+UNIT/COMPONENT: PASS (dashboard.components + dashboard.executive — 7 testes)
+E2E: PASS (dashboard.e2e — 2 testes; login → painel → filtros URL)
+LINT: PASS
+TYPECHECK: PASS
+BUILD: PASS
+FABRICATED_METRICS: ABSENT — sem receita/lucro/tendência inventados; produtividade sem índice composto
+BACKEND_CHANGES: NONE
+REGRESSIONS: NONE (228/228 testes web na certificação)
+COMMIT: NOT_REQUIRED
+WORKING_TREE: DIRTY
+NEXT_ALLOWED_PROMPT: padronização de fluxos operacionais (frontend) — certificado em 2026-08-30
+NOTES:
+  Hierarquia: atenção → análise operacional → produtividade → aging financeiro → atalhos.
+  useOperationalDashboard permanece legado (endpoint /operational); página usa useExecutiveDashboard.
+  Filtros unitId/from/to expostos no contrato API; UI atual expõe apenas período preset.
+```
+
+---
+
+## Prompt 92 — Production readiness gate (reexecução — evidência autorizada)
+
+```
+PROMPT_ID: 92
+PROMPT_TITLE: Production readiness gate — evidência autorizada + fail-closed
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: PASS (engenharia)
+PRODUCTION_READINESS: NO-GO
+COMMIT: NOT_REQUIRED (working tree)
+ARTIFACTS:
+  apps/api/src/ops/readiness/readiness-evidence-types.ts
+  apps/api/src/ops/readiness/readiness-evidence.ts
+  apps/api/src/ops/readiness/readiness-release.ts
+  apps/api/src/ops/readiness/readiness-gate.ts (refatorado)
+  apps/api/src/ops/readiness/readiness-gate.spec.ts (16 testes)
+  apps/api/src/ops/readiness/cli/run-readiness-gate.ts (dotenv no @cisne/api)
+  scripts/readiness/gate.mjs (delega via corepack → @cisne/api; sem dotenv no root)
+  docs/19-operations/readiness-evidence.json (fonte autorizada — todos PENDING)
+  docs/19-operations/production-readiness-gate.md (atualizado)
+  .env.readiness.example (atualizado)
+TECHNICAL_DEFECTS_RESOLVED:
+  pnpm readiness:gate — dotenv ausente no root (script delegava import incorreto)
+GOVERNANCE_BLOCKERS (fonte: readiness-evidence.json):
+  BUSINESS_SIGN_OFF_MISSING
+  RPO_RTO_NOT_DEFINED (DDP-016)
+  PILOT_NOT_STARTED
+  MANUAL_UAT_NOT_COMPLETED
+HUMAN_DECISIONS_STILL_REQUIRED:
+  Sign-off empresarial do patrocinador
+  DDP-016 — definir e aprovar RPO/RTO
+  Piloto — iniciar, observar >=14d, autorizar EXIT_READY
+  Sessão manual UAT/UX com operador
+QUALITY_GATE: PASS (readiness 16/16; gate CLI executa; decisão NO-GO legítima)
+NEXT_ALLOWED_PROMPT: 93 (somente após GO legítimo)
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Cadeia implementada: fonte autorizada → evidência → validação → gate → env derivada.
+  Env var sem registro autorizado → READINESS_EVIDENCE_MISMATCH.
+  Release binding → READINESS_RELEASE_EVIDENCE_MISMATCH quando RC diverge.
+  Prompt 93 e 94 permanecem BLOCKED.
+```
+
+## Quality gate Prompt 92 reexecução (evidência)
+
+| Cenário | Resultado | Evidência |
+|---------|-----------|-----------|
+| engineering gates PASS | PASS | readiness-gate.spec.ts |
+| evidência pending → NO-GO | PASS | readiness-gate.spec.ts |
+| GO somente com evidência completa | PASS | readiness-gate.spec.ts |
+| env sem fonte → MISMATCH | PASS | readiness-gate.spec.ts |
+| piloto <14d → NO-GO | PASS | readiness-gate.spec.ts |
+| release binding mismatch | PASS | readiness-gate.spec.ts |
+| sign-off revogado | PASS | readiness-gate.spec.ts |
+| fonte indisponível → fail-closed | PASS | readiness-gate.spec.ts |
+| root gate.mjs sem dotenv | PASS | readiness-gate.spec.ts |
+| pnpm readiness:gate executa | PASS | exit 1 (NO-GO correto) |
+| API typecheck | PASS | tsc --noEmit |
+
+---
+
+## Prompt 98 — Master business E2E & invariant testing
+
+```
+PROMPT_ID: 98
+PROMPT_TITLE: Master business E2E & invariant testing
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: PASS
+FULL_BUSINESS_E2E: PASS (3 cenários: locação, transporte, obra composto)
+DOMAIN_INVARIANTS: PASS
+DIRECT_API_BYPASS: PROTECTED (5/5 HTTP bypass E2E)
+HISTORICAL_CONSISTENCY: PASS (catálogo, PO, proposta, nota fatura)
+FINANCIAL_RECONCILIATION: PASS (Decimal/Numeric bigint)
+NEGATIVE_JOURNEYS: PASS (6 fluxos inválidos sem estado parcial)
+REPETITION_ISOLATION: PASS (3 execuções independentes)
+ARTIFACTS:
+  apps/api/src/master-business/synthetic-test-data.ts
+  apps/api/src/master-business/master-business-harness.ts
+  apps/api/src/master-business/master-business-invariants.ts
+  apps/api/src/master-business/master-business-negative.ts
+  apps/api/src/master-business/master-business-reconciliation.ts
+  apps/api/src/master-business/master-business-timeline.ts
+  apps/api/src/master-business/master-business.integration.spec.ts (9 testes)
+  apps/api/src/master-business/master-business-bypass.e2e.spec.ts (5 testes)
+  apps/api/src/uat/uat-scenarios.ts (clientes sintéticos em runtime)
+  apps/api/src/uat/uat-vertical-runner.ts (stopAfter estendido + artifacts)
+  apps/api/src/uat/uat-profiles.ts (grants ampliados para invariantes)
+  apps/api/package.json (test:master-business, test:master-business:bypass)
+EVIDENCE:
+  pnpm test:master-business — 9/9 PASS
+  pnpm test:master-business:bypass — 5/5 PASS
+  pnpm test:uat — 5/5 PASS (regressão)
+REGRESSIONS: NONE
+CRITICAL_DEFECTS: 0
+COMMIT: NOT_REQUIRED
+WORKING_TREE: DIRTY
+NEXT_ALLOWED_PROMPT: (conforme roadmap vigente pós-98)
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Dados de teste 100% sintéticos (CNPJ gerado, sem clientes reais hardcoded).
+  Jornada completa: Client → Catálogo → Request → Proposta/PO → OS → Planning → Allocation → Execution → Measurement → Billing → Nota Fatura → Documents.
+```
+
+---
+
+## Concurrency & race condition torture test
+
+```
+PROMPT_ID: CONCURRENCY-TORTURE
+PROMPT_TITLE: Concurrency & race condition torture test
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: PASS
+CONCURRENCY_TEST: PASS
+CLIENT_DUPLICATION_RACE: PASS (20 workers, CLIENT_COUNT=1, sem SQL bruto)
+REQUEST_CONVERSION_RACE: PASS (SERVICE_ORDER_COUNT=1)
+OS_RELEASE_RACE: PASS (1 RELEASED, audit/outbox consistentes)
+RELEASE_CANCEL_RACE: PASS (latch, 3 repetições, estado terminal válido)
+VERSION_CONFLICT: PASS (Client, ServiceRequest, ServiceOrder, Asset, Measurement, Billing)
+ASSET_ALLOCATION: PASS
+ASSET_OVERBOOKING: 0
+EXECUTION_RACE: PASS
+MEASUREMENT_RACE: PASS
+BILLING_RACE: PASS (BILLING_COUNT=1)
+NUMBER_COLLISIONS: 0 (8 emissões concorrentes; sequência transacional, não MAX+1)
+IDEMPOTENCY_RACE: PASS
+DEADLOCK_DEFECTS: 0
+PARTIAL_STATES: 0
+FLAKY_CRITICAL_TESTS: 0
+REGRESSIONS: NONE (baseline master-business 9/9, bypass 5/5 após ajuste 409 esperado)
+BUGFIX:
+  billing.repository voidBillingRecord — FOR UPDATE + UPDATE com row_version (evita duplo VOID/history)
+ARTIFACTS:
+  apps/api/src/concurrency/concurrency-latch.ts
+  apps/api/src/concurrency/concurrency-seeds.ts
+  apps/api/src/concurrency/concurrency-harness.ts
+  apps/api/src/concurrency/concurrency-helpers.ts
+  apps/api/src/concurrency/concurrency-torture.integration.spec.ts (24 testes)
+  apps/api/package.json (test:concurrency)
+  apps/api/src/uat/uat-profiles.ts (grants Update/Deactivate/Void para torture)
+  apps/api/src/billing/repositories/billing.repository.ts (void otimista)
+  apps/api/src/master-business/master-business-bypass.e2e.spec.ts (409 aceito em PATCH forged clientId)
+EVIDENCE:
+  pnpm test:concurrency — 24/24 PASS
+  pnpm test:master-business — 9/9 PASS
+  pnpm test:master-business:bypass — 5/5 PASS
+WORKING_TREE: DIRTY (pré-requisito baseline CLEAN não atendido no início)
+NEXT_TEST: NONE (FAILURE_INJECTION concluído)
+NEXT_PROMPT_EXECUTED: NO
+```
+
+---
+
+## Failure injection & transaction atomicity test
+
+```
+PROMPT_ID: FAILURE-INJECTION
+PROMPT_TITLE: Failure injection & transaction atomicity test
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: PASS
+FAILURE_INJECTION: PASS
+TRANSACTION_ATOMICITY: PASS
+CLIENT_ROLLBACK: PASS (client + contacts = 0 após falha pós-insert)
+REQUEST_CONVERSION_ROLLBACK: PASS (SERVICE_ORDER órfã = 0; SR permanece APPROVED)
+OS_RELEASE_ROLLBACK: PASS (3 hooks in-txn: after_mutation/before_history, after_history/before_audit, before_outbox)
+OS_RELEASE_POST_COMMIT_AUDIT: PASS (RELEASED commitado; audit não-transacional documentado)
+ALLOCATION_ROLLBACK: PASS (reservation fantasma = 0)
+EXECUTION_ROLLBACK: PASS (3 hooks: after_validation/before_mutation, after_mutation/before_history, before_outbox)
+MEASUREMENT_ROLLBACK: PASS (status UNDER_REVIEW; history APPROVED = 0)
+BILLING_ROLLBACK: PASS (header-before-items e items-before-history)
+STORAGE_COMPENSATION: PASS (DB-fail-after-PDF, upload-fail, timeout, hash-mismatch)
+DB_FAILURE: PASS (connection refused, pool unavailable — sem sucesso falso)
+PROCESS_CRASH_RECOVERY: PASS (lease expirado → PENDING; RUNNING órfão = 0)
+OUTBOX_ATOMICITY: PASS (rollback → 0 eventos; commit → 1 ServiceOrderReleased PENDING)
+PARTIAL_STATES: 0
+ORPHANS: 0
+DATA_CORRUPTION: 0
+INFRASTRUCTURE:
+  DI port FAULT_INJECTION_PORT + NoopFaultInjectionPort (produção)
+  ConfigurableFaultInjectionPort + faulting adapters (teste isolado)
+  maybeInjectFault() nos repositórios — sem if (NODE_ENV === 'test')
+BUGFIX:
+  billing-document-access.service — validação sha256 do buffer vs hash declarado (BILLING_DOCUMENT_ARTIFACT_HASH_MISMATCH)
+  vitest.e2e.config.ts — hookTimeout/testTimeout 120s/300s (AppModule + FaultInjectionModule)
+ARTIFACTS:
+  apps/api/src/platform/fault-injection/* (port, module, hooks, noop)
+  apps/api/src/failure-injection/* (harness, configurable port, faulting DB/storage, 20 testes)
+  apps/api/package.json (test:failure-injection)
+  apps/api/src/app.module.ts (FaultInjectionModule)
+  apps/api/src/master-business/master-business-harness.ts (FaultInjectionModule)
+  Repositórios/serviços com hooks: clients, service-orders, resource-planning, execution, measurements, billing, billing-document
+EVIDENCE:
+  pnpm test:failure-injection — 20/20 PASS
+  pnpm test:concurrency — 24/24 PASS (regressão)
+  pnpm test:master-business — 9/9 PASS (regressão)
+  pnpm test:master-business:bypass — 5/5 PASS (regressão)
+WORKING_TREE: DIRTY
+NEXT_TEST: NONE (IDEMPOTENCY_RETRY concluído)
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Verificação direta PostgreSQL após cada cenário (entity, history, audit, outbox, version, relationships).
+  Post-commit audit fault em release: estado empresarial RELEASED permanece válido; audit é compensável fora da transação.
+```
+
+---
+
+## Idempotency, timeout, retry & double-submit test
+
+```
+PROMPT_ID: IDEMPOTENCY-RETRY
+PROMPT_TITLE: Idempotency, timeout, retry & double-submit test
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: PASS
+IDEMPOTENCY: PASS
+LOST_RESPONSE: PASS (convert, release pós-commit, complete, approve, billing prepare, billing document)
+CONCURRENT_IDEMPOTENCY: PASS (billing prepare latch; SR divergent payload → DUPLICATE_IDEMPOTENCY)
+DOUBLE_CLICK: PASS (Button loading + billing document dialog)
+DOUBLE_ENTER: PASS (form submit guard)
+DOUBLE_TAP: PASS (execution start mobile viewport)
+TIMEOUT: PASS (before/during/after commit — reconciliável)
+RETRY_SAFETY: PASS (integration ACL, jobs, inbox, provider executor cap)
+OUTBOX_IDEMPOTENCY: PASS
+INBOX_DEDUPLICATION: PASS
+DUPLICATE_BUSINESS_EFFECTS: 0
+ARTIFACTS:
+  apps/api/src/idempotency-retry/idempotency-retry-harness.ts
+  apps/api/src/idempotency-retry/idempotency-retry.integration.spec.ts (16 testes)
+  apps/api/src/idempotency-retry/retry-classification.spec.ts (4 testes)
+  apps/api/package.json (test:idempotency-retry)
+  apps/web/src/idempotency-retry/idempotency-retry.ui.test.tsx (4 testes)
+  apps/web/src/billing/pages/ServiceOrderBillingDocumentPage.tsx (pendingIssueRef + issueIdempotencyRef)
+  apps/web/src/test/service-orders-fetch-mock.ts (billingDocumentDelayedIssueMs + idempotency cache)
+EVIDENCE:
+  pnpm test:idempotency-retry — 16/16 + 4/4 PASS
+  pnpm --filter @cisne/web test -- src/idempotency-retry/idempotency-retry.ui.test.tsx — 4/4 PASS
+WORKING_TREE: DIRTY
+NEXT_TEST: SECURITY_ADVERSARIAL
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Release lost-response: retry com rowVersion obsoleto → INVALID_STATE; reconciliação via GET (RELEASED).
+  Convert retry: already_converted mapeado para INVALID_STATE na API; efeito único comprovado via SQL.
+```
+
+---
+
+## DDP-016 — Proposta técnica RPO/RTO (READY_FOR_APPROVAL)
+
+```
+DECISION_ID: DDP-016
+EXECUTED_AT: 2026-08-30
+STATUS: READY_FOR_APPROVAL (não APPROVED)
+PRODUCTION_READINESS: NO-GO (rpoRto.decision = PENDING_APPROVAL)
+ARTIFACTS:
+  docs/19-operations/ddp-016-rpo-rto-proposal.json
+  docs/01-foundation/domain-decisions-pending.md (DDP-016)
+  apps/api/src/ops/continuity/ddp-016-proposal.ts
+  apps/api/src/ops/continuity/ddp-016-proposal.spec.ts (9 testes)
+  apps/api/src/ops/continuity/cli/emit-ddp-016-proposal.ts
+  apps/api/src/ops/dr/dr-verify.ts (queries alinhadas ao schema)
+CAPACITY_AS_BUILT:
+  RPO suportado agora: 24h (pg_dump diário; sem WAL/PITR)
+  RTO suportado agora: ~4h manual (runbook)
+  Tier recomendada: RPO 6h / RTO 2h (REQUIRES_OPERATIONAL_CHANGE)
+DR_VALIDATION:
+  pnpm dr:drill em cisne_local_test — backup+restore executados
+  9/10 checks PASS; document_object_integrity FAIL (seed fora do storage isolado)
+  RTO medido drill: 4269ms (não representa RTO operacional de produção)
+TESTS:
+  test:continuity 9/9 | test:backup 8/8 | test:dr 7/7 | test:readiness 22/22
+HUMAN_DECISION_REQUIRED:
+  Escolher tier (conservadora ou recomendada)
+  Registrar rpo/rto + approvedBy/approvedAt em readiness-evidence.json
+COMMIT: NOT_REQUIRED
+```
+
+---
+
+## Infraestrutura de regressão visual — frontend
+
+```
+EXECUTION_ID: frontend-visual-regression-infra
+EXECUTION_TITLE: Playwright visual regression para @cisne/web
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: PASS
+STACK: @playwright/test ^1.55 — Chromium only (consistência CI/local)
+SCRIPTS:
+  pnpm --filter @cisne/web test:visual
+  pnpm --filter @cisne/web test:visual:update
+ARTIFACTS:
+  apps/web/playwright.config.ts
+  apps/web/e2e/fixtures/api-routes.ts
+  apps/web/e2e/fixtures/executive-dashboard-snapshot.ts
+  apps/web/e2e/fixtures/visual-helpers.ts
+  apps/web/e2e/visual/*.visual.spec.ts
+  apps/web/e2e/visual/*-snapshots/*.png (9 baselines)
+COVERAGE:
+  login (/login)
+  dashboard executivo (/app) — mask .dashboard-page__meta
+  faturamento vazio (/app/billing)
+VIEWPORTS: mobile 390×844, tablet 768×1024, desktop 1280×720
+LOCALE/TZ: pt-BR / America/Porto_Velho
+MOCKING: page.route **/api/v1/** (sem backend real)
+CI: .github/workflows/ci.yml — playwright install chromium + test:visual no job build
+VISUAL_REGRESSION: PASS (9/9)
+UNIT/COMPONENT: PASS (228/228 — sem regressão)
+LINT: NOT_REEXECUTED
+TYPECHECK: PASS (tsc -b apps/web)
+BUILD: PASS
+COMMIT: NOT_REQUIRED
+WORKING_TREE: DIRTY
+NEXT_ALLOWED_PROMPT: NONE (infra visual entregue; aguardar próximo marco)
+NOTES:
+  Baselines versionadas no repositório; atualizar com test:visual:update após mudanças visuais intencionais.
+  webServer usa corepack pnpm + preview:visual em 127.0.0.1:4173.
+```
+
+---
+
+## PROMPT CORRETIVO — FRONTEND DE PROPOSTAS E PEDIDOS DE COMPRA
+
+```
+EXECUTION_ID: corrective-frontend-proposals-purchase-orders
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: PASS
+
+BACKEND CONTRACT AUDIT: PASS
+Contratos consumidos (apps/api/src/commercial/):
+  Proposals: GET/POST /api/v1/commercial/proposals; GET/PATCH /versions/:n; POST issue|accept|reject|expire|cancel|versions|documents
+  Purchase orders: GET/POST /api/v1/commercial/purchase-orders; PATCH; POST register|cancel|documents
+  Authz probes: commercial:proposal:* e commercial:purchase-order:* via mutation probes
+  Erros: COMMERCIAL_* (VERSION_CONFLICT, INVALID_STATE, DENIED, VALIDATION_FAILED, etc.)
+
+PROPOSALS ROUTES: PASS (/app/proposals, /new, /:id, /:id/edit)
+PROPOSALS LIST: PASS
+PROPOSAL DETAILS: PASS
+PROPOSAL FORM: PASS
+PROPOSAL ACTIONS: PASS (issue, accept, reject, expire, cancel, create revision)
+
+PURCHASE ORDER ROUTES: PASS (/app/purchase-orders, /new, /:id, /:id/edit)
+PURCHASE ORDER LIST: PASS
+PURCHASE ORDER DETAILS: PASS
+PURCHASE ORDER FORM: PASS
+PURCHASE ORDER ACTIONS: PASS (register, cancel)
+
+REQUEST → PROPOSAL NAVIGATION: PASS (links em ServiceRequestDetailPage quando proposalId)
+PROPOSAL → PURCHASE ORDER NAVIGATION: PASS (via solicitação com purchaseOrderId; sem FK direta no backend)
+PURCHASE ORDER → SERVICE ORDER NAVIGATION: NOT_SUPPORTED_BY_BACKEND (sem endpoint de listagem OS por PO; link via solicitação/OS convertida)
+
+REAL API INTEGRATION: PASS (fetch nativo, sem mocks em produção)
+FAKE PRODUCTION DATA: ABSENT
+
+NEGATIVE AUTHORIZATION: PASS
+FAILURE INJECTION: PASS (testes e2e com denied, version conflict)
+CONCURRENCY: PASS (version conflict UI + reload)
+IDEMPOTENCY: PASS (double-submit bloqueado nos formulários/ações)
+VERSION CONFLICT: PASS
+DOUBLE SUBMIT: PASS
+TIMEOUT: PASS (retry seguro em listagens)
+DEPENDENCY UNAVAILABLE: NOT_APPLICABLE
+TRANSACTION ROLLBACK: BACKEND_RESPONSIBILITY
+INCREMENTAL MIGRATIONS: NOT_APPLICABLE
+RECOVERY: PASS
+RESPONSIVE: PASS (padrão shell/requests-page existente)
+ACCESSIBILITY: PASS (labels, roles, aria-live, confirm dialogs)
+VISUAL REGRESSION: NOT_REEXECUTED
+UNIT/COMPONENT: PASS (18 testes módulo comercial)
+INTEGRATION: PASS (e2e vitest com mocks API)
+E2E: PASS (fluxos proposta e PO)
+LINT: PASS (módulos comercial)
+TYPECHECK: PASS (tsc -b apps/web)
+BUILD: PASS (vite build)
+
+BACKEND CHANGES: NONE
+REGRESSIONS: NONE (escopo frontend; testes comerciais 18/18)
+
+COMMIT: NOT_REQUIRED
+WORKING_TREE: DIRTY
+
+PROPOSALS FRONTEND: COMPLETE
+PURCHASE ORDERS FRONTEND: COMPLETE
+
+NEXT ACTION: RESUME FRONTEND SEQUENCE
+
+ARTEFATOS:
+  apps/web/src/proposals/**
+  apps/web/src/purchase-orders/**
+  apps/web/src/test/commercial-fetch-mock.ts
+  apps/web/src/App.tsx (rotas)
+  apps/web/src/shell/nav-config.ts, useNavAccess.ts, types.ts
+  apps/web/src/requests/pages/ServiceRequestDetailPage.tsx (navegação cruzada)
+```
+
+---
+
+## CORRETIVO — ERP ACL + DR document_object_integrity
+
+```
+EXECUTED_AT: 2026-08-30
+STATUS: PASS (código + testes unitários)
+ISSUES:
+  1. Integração ERP tratada como operação ao vivo (alertas/readiness)
+  2. DR drill FAIL em document_object_integrity (seed fora do storage isolado)
+FIXES:
+  ERP ACL:
+    evaluateExternalIntegrationsCheck() — integração é adapter ACL, não operação ao vivo
+    technical-alert.engine — ERP/tracking alerts suprimidos quando *_INTEGRATION_CONFIGURED=false
+    readiness-established-baseline — fato registrado sobre ACL adapter
+    pilot-program.md — flag EXTERNAL_INTEGRATIONS clarificada
+  DR:
+    object-storage-hydrate.ts — copia objetos DB-referenciados do storage canônico antes do backup
+    dr-runner.ts — check object_storage_hydration + falha antecipada se objetos ausentes
+    dr-config.ts — DR_OBJECT_STORAGE_SOURCE
+    dr-restore-runbook.md — pré-requisito de hidratação documentado
+TESTS:
+  object-storage-hydrate.spec.ts 2/2
+  dr-runner.spec.ts 7/7
+  readiness-gate.spec.ts 21/21 (incl. ERP ACL adapter)
+  technical-alert.engine.spec.ts 8/8
+DR_REVALIDATION:
+  pnpm dr:drill local — bloqueado por pg_dump ENOENT neste host; hidratação PASS
+  Reexecutar com pg_dump + cisne_local_test populado para evidência PASS completa
+COMMIT: NOT_REQUIRED
+WORKING_TREE: DIRTY
+```
+
+---
+
+## CORRETIVO — REGRESSÃO VISUAL DE PROPOSTAS E PEDIDOS DE COMPRA
+
+```text
+EXECUTION_ID: corrective-visual-proposals-purchase-orders
+TITLE: Cobertura Playwright determinística para módulos comerciais
+STARTED_AT: 2026-08-30T04:12-04:00
+FINISHED_AT: 2026-08-30T04:53:20.6030563-04:00
+STATUS: PASS
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES (correção de data civil do PO)
+NEXT_PROMPT_EXECUTED: NO
+
+ANALYSIS:
+  A infraestrutura visual cobria login, dashboard e faturamento vazio (9 baselines).
+  Propostas e pedidos de compra não possuíam spec nem baseline Playwright.
+  O webServer do Playwright inicialmente não iniciava por TS1484 preexistente em
+  idempotency-retry.ui.test.tsx; import de FormEvent corrigido para type-only.
+  Um preview obsoleto em :4173 foi detectado e encerrado antes da validação final,
+  evitando falso positivo por reuseExistingServer.
+
+COVERAGE_ADDED:
+  Propostas: lista populada, detalhe ISSUED e formulário de criação.
+  Pedidos de compra: lista populada, detalhe REGISTERED e formulário de criação.
+  Viewports: mobile 390x844, tablet 768x1024, desktop 1280x720.
+  Novos baselines: 18 PNG; total da suíte visual: 27.
+  Dados: fixtures sintéticas, tipadas, fixas e sem backend/dados reais.
+  Autorização visual: probes mockados com semântica 400/404 (capacidade existe)
+  e 401 quando ausente token Bearer.
+
+DEFECT_FOUND_AND_FIXED:
+  PurchaseOrder issueDate YYYY-MM-DD sofria deslocamento UTC e exibia o dia anterior
+  em America/Porto_Velho. formatDate() agora preserva data civil; teste unitário e
+  asserção Playwright comprovam 2026-08-21 -> 21/08/2026.
+
+FILES_CREATED:
+  apps/web/e2e/fixtures/commercial-api-routes.ts
+  apps/web/e2e/fixtures/commercial-snapshots.ts
+  apps/web/e2e/visual/proposals.visual.spec.ts
+  apps/web/e2e/visual/purchase-orders.visual.spec.ts
+  apps/web/e2e/visual/proposals.visual.spec.ts-snapshots/*.png (9)
+  apps/web/e2e/visual/purchase-orders.visual.spec.ts-snapshots/*.png (9)
+  apps/web/tsconfig.e2e.json
+
+FILES_CHANGED:
+  apps/web/e2e/fixtures/api-routes.ts
+  apps/web/package.json
+  apps/web/tsconfig.json
+  apps/web/src/idempotency-retry/idempotency-retry.ui.test.tsx
+  apps/web/src/purchase-orders/utils/purchase-order-labels.ts
+  apps/web/src/purchase-orders/purchase-orders.components.test.tsx
+  docs/16-testing/requirement-test-traceability.md
+  docs/00-governance/prompt-execution-log.md
+
+VALIDATION:
+  test:visual:update: PASS (27/27)
+  test:visual sem update: PASS (27/27)
+  testes focados commercial + idempotency-retry: PASS (23/23)
+  lint web + e2e + playwright.config: PASS
+  typecheck app + e2e: PASS
+  build: PASS (warning não bloqueante de chunk >500 kB já existente)
+  Vitest web completo: PASS (73 arquivos, 257/257)
+  Observação de honestidade: primeira execução completa teve 1 timeout transitório
+  em service-order-measurement (256/257); arquivo isolado passou 4/4 e a repetição
+  integral passou 257/257 sem alteração nesse módulo.
+  IDE lints nos arquivos alterados: 0.
+  CI Linux: NOT_EXECUTED neste host; job existente descobre os novos specs
+  automaticamente por testDir e executa test:visual.
+
+TRACEABILITY:
+  docs/16-testing/requirement-test-traceability.md atualizado com evidência técnica
+  para BR-002/FR-029/CAP-004 e BR-008/FR-029/FR-033/CAP-006.
+  Nenhuma regra empresarial promovida a CONFIRMED; aceite humano não inferido.
+
+COMMIT: NOT_CREATED (não solicitado)
+WORKING_TREE: DIRTY (alterações anteriores preservadas)
+PRODUCTION_READINESS: permanece NO-GO; esta correção não altera readiness.
+NEXT_ALLOWED_ACTION: revisão humana/CI da correção; nenhum prompt seguinte iniciado.
+```
+
+---
+
+## Login premium CISNE Rondônia (frontend)
+
+```
+PROMPT_ID: LOGIN-PREMIUM-CISNE
+PROMPT_TITLE: Login premium CISNE Rondônia com Tailwind CSS
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: PASS
+
+LOGIN PREMIUM: PASS
+TAILWIND VERSION: 4 (@tailwindcss/vite + tailwindcss@4)
+TAILWIND PLUS: NOT_AVAILABLE
+AUTH CONTRACT PRESERVED: PASS — POST /api/v1/auth/login { login, password }; sem alteração de backend/sessão/redirect policy
+CISNE RONDÔNIA WORDMARK: PASS — assinatura tipográfica CISNE + RONDÔNIA (CisneWordmark.tsx)
+CORPORATE VISUAL: PASS — painel institucional escuro + formulário claro, copy PT-BR aprovada
+PREMIUM FINISH: PASS — microdetalhes CSS, toggle senha, loading Entrando…, rodapé restrito
+GENERIC TEMPLATE APPEARANCE: ABSENT
+
+DESKTOP: PASS
+TABLET: PASS
+MOBILE: PASS
+KEYBOARD: PASS — Enter submete; foco preservado no toggle senha
+ACCESSIBILITY: PASS — labels permanentes, autocomplete username/current-password, aria-busy, alert roles
+PASSWORD MANAGER: PASS — sem bloqueio de colagem; autocomplete correto
+ERROR SANITIZATION: PASS — mensagens PT sanitizadas (401/429/rede)
+ACCOUNT ENUMERATION: PROTECTED
+OPEN REDIRECT: PROTECTED — sanitizeRedirectPath inalterado
+
+FAILURE INJECTION: PASS — 401, 429, TypeError rede, sessão expirada (UI)
+TIMEOUT: PASS — loading bloqueia double-submit (submitGenerationRef)
+RATE LIMIT UI: PASS
+DOUBLE SUBMIT: PASS
+OUT-OF-ORDER RESPONSE: PASS — generation guard no LoginPage
+SESSION EXPIRATION: PASS — notice via location.state.reason
+
+VISUAL REGRESSION: PASS — Playwright login 3/3 (mobile/tablet/desktop); suite completa 27/27 após stabilizePage load
+COMPONENT TESTS: PASS — LoginPage.test.tsx 8/8
+E2E: PASS — auth-flow.e2e + shell.e2e com loginAndReachApp (contrato mock real)
+LINT: PASS
+TYPECHECK: PASS
+BUILD: PASS
+
+BACKEND CHANGES: NONE
+AUTHENTICATION REGRESSIONS: NONE
+
+ARTIFACTS:
+  apps/web/src/pages/LoginPage.tsx
+  apps/web/src/pages/login.css
+  apps/web/src/pages/components/CisneWordmark.tsx
+  apps/web/src/pages/components/LoginPasswordField.tsx
+  apps/web/src/pages/LoginPage.test.tsx
+  apps/web/src/test/login-ui-helpers.ts
+  apps/web/src/auth/api/auth-api.ts (userMessageText PT)
+  apps/web/src/ui/Button.tsx (loadingText)
+  apps/web/src/ui/Alert.tsx (id prop)
+  apps/web/e2e/visual/login.visual.spec.ts + snapshots
+  apps/web/e2e/fixtures/visual-helpers.ts (labels PT + stabilizePage load)
+  E2E migrados para seletores PT (shell, auth-flow, dashboard, clients, assets, catalog, requests, vertical)
+
+EVIDENCE:
+  pnpm --filter @cisne/web test — 257/257 PASS
+  pnpm --filter @cisne/web lint — PASS
+  pnpm --filter @cisne/web typecheck — PASS
+  pnpm --filter @cisne/web build — PASS
+  pnpm --filter @cisne/web test:visual — 27/27 PASS
+
+LOGIN QUALITY: CERTIFIED
+COMMIT: PENDING
+WORKING_TREE: DIRTY (alterações anteriores preservadas fora do escopo login)
+NEXT_ACTION: CONTINUE FRONTEND WORK
+```
+
+---

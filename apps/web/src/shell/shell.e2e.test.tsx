@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../App';
 import { tokenStore } from '../auth/storage/token-store';
 import { resetTokenStoreForTests } from '../auth/storage/token-store';
+import { loginAndReachApp, LOGIN_FORM_HEADING } from '../test/login-ui-helpers';
 import { MOCK_IDENTITY_ID, createShellFetchMock } from '../test/shell-fetch-mock';
 
 describe('protected application shell', () => {
@@ -20,18 +21,12 @@ describe('protected application shell', () => {
     render(<App />);
 
     const user = userEvent.setup();
-    await user.type(await screen.findByLabelText(/login/i), 'user@test');
-    await user.type(screen.getByLabelText(/password/i), 'Password1!');
-    await user.click(screen.getByRole('button', { name: /sign in/i }));
-
-    await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /painel operacional/i })).toBeInTheDocument();
-    });
+    await loginAndReachApp(user);
 
     expect(screen.getByRole('banner')).toBeInTheDocument();
-    expect(screen.getByRole('navigation', { name: /application/i })).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: /navegação principal/i })).toBeInTheDocument();
     expect(screen.getByRole('main')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /skip to main content/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /ir para o conteúdo principal/i })).toBeInTheDocument();
     expect(screen.getByTitle(MOCK_IDENTITY_ID)).toBeInTheDocument();
   });
 
@@ -41,7 +36,7 @@ describe('protected application shell', () => {
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /sign in/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: LOGIN_FORM_HEADING })).toBeInTheDocument();
     });
   });
 
@@ -52,7 +47,7 @@ describe('protected application shell', () => {
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /sign in/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: LOGIN_FORM_HEADING })).toBeInTheDocument();
     });
   });
 
@@ -62,15 +57,13 @@ describe('protected application shell', () => {
     render(<App />);
 
     const user = userEvent.setup();
-    await user.type(await screen.findByLabelText(/login/i), 'user@test');
-    await user.type(screen.getByLabelText(/password/i), 'Password1!');
-    await user.click(screen.getByRole('button', { name: /sign in/i }));
+    await loginAndReachApp(user);
 
     await waitFor(() => {
-      expect(screen.getByRole('link', { name: /^home$/i })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /painel operacional/i })).toBeInTheDocument();
     });
 
-    expect(screen.queryByRole('link', { name: /platform diagnostics/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /diagnóstico da plataforma/i })).not.toBeInTheDocument();
   });
 
   it('blocks deep links to capability routes without backend permission', async () => {
@@ -80,7 +73,7 @@ describe('protected application shell', () => {
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /access denied/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /acesso negado/i })).toBeInTheDocument();
     });
     expect(screen.getByRole('alert')).toHaveTextContent(/CAP-001/i);
   });
@@ -91,11 +84,9 @@ describe('protected application shell', () => {
     render(<App />);
 
     const user = userEvent.setup();
-    await user.type(await screen.findByLabelText(/login/i), 'user@test');
-    await user.type(screen.getByLabelText(/password/i), 'Password1!');
-    await user.click(screen.getByRole('button', { name: /sign in/i }));
+    await loginAndReachApp(user);
 
-    await user.click(await screen.findByRole('link', { name: /platform diagnostics/i }));
+    await user.click(await screen.findByRole('link', { name: /diagnóstico da plataforma/i }));
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: /platform diagnostics/i })).toBeInTheDocument();
@@ -109,38 +100,59 @@ describe('protected application shell', () => {
     render(<App />);
 
     const user = userEvent.setup();
-    await user.type(await screen.findByLabelText(/login/i), 'user@test');
-    await user.type(screen.getByLabelText(/password/i), 'Password1!');
-    await user.click(screen.getByRole('button', { name: /sign in/i }));
+    await loginAndReachApp(user);
 
-    const toggle = await screen.findByRole('button', { name: /open menu/i });
+    const toggle = await screen.findByRole('button', { name: /abrir menu/i });
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
 
     await user.click(toggle);
 
-    const nav = screen.getByRole('navigation', { name: /application/i });
+    const nav = screen.getByRole('dialog', { name: /menu de navegação/i });
     expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    expect(within(nav).getByRole('link', { name: /^home$/i })).toBeVisible();
+    expect(within(nav).getByRole('link', { name: /painel operacional/i })).toBeVisible();
   });
 
-  it('logs out from the shell header', async () => {
+  it('closes mobile drawer with Escape', async () => {
     vi.stubGlobal('fetch', createShellFetchMock());
     window.history.pushState({}, '', '/login');
     render(<App />);
 
     const user = userEvent.setup();
-    await user.type(await screen.findByLabelText(/login/i), 'user@test');
-    await user.type(screen.getByLabelText(/password/i), 'Password1!');
-    await user.click(screen.getByRole('button', { name: /sign in/i }));
+    await loginAndReachApp(user);
 
+    await user.click(await screen.findByRole('button', { name: /abrir menu/i }));
+    expect(screen.getByRole('dialog', { name: /menu de navegação/i })).toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /painel operacional/i })).toBeInTheDocument();
+      expect(screen.queryByRole('dialog', { name: /menu de navegação/i })).not.toBeInTheDocument();
     });
+  });
 
-    await user.click(screen.getByRole('button', { name: /log out/i }));
+  it('logs out from the shell user menu', async () => {
+    vi.stubGlobal('fetch', createShellFetchMock());
+    window.history.pushState({}, '', '/login');
+    render(<App />);
+
+    const user = userEvent.setup();
+    await loginAndReachApp(user);
+
+    await user.click(screen.getByRole('button', { name: /menu do usuário/i }));
+    await user.click(screen.getByRole('menuitem', { name: /sair/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /sign in/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: LOGIN_FORM_HEADING })).toBeInTheDocument();
+    });
+  });
+
+  it('shows not found page for unknown routes', async () => {
+    vi.stubGlobal('fetch', createShellFetchMock());
+    tokenStore.setTokens('access-token', 'refresh-token');
+    window.history.pushState({}, '', '/app/rota-inexistente');
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /página não encontrada/i })).toBeInTheDocument();
     });
   });
 
@@ -152,6 +164,33 @@ describe('protected application shell', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: /service unavailable/i })).toBeInTheDocument();
+    });
+  });
+
+  it('continues shell when alert summary endpoint fails', async () => {
+    const fetchMock = createShellFetchMock();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo, init?: RequestInit) => {
+        const url = typeof input === 'string' ? input : input.url;
+        if (url.includes('/api/v1/alerts/summary')) {
+          return {
+            ok: false,
+            status: 500,
+            json: async () => ({ error: { code: 'ALERTS_FAILED' } }),
+          } as Response;
+        }
+        return fetchMock(input, init);
+      }),
+    );
+    window.history.pushState({}, '', '/login');
+    render(<App />);
+
+    const user = userEvent.setup();
+    await loginAndReachApp(user);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /painel operacional/i })).toBeInTheDocument();
     });
   });
 });

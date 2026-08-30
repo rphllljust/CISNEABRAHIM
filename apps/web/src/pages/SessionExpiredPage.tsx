@@ -4,9 +4,9 @@ export function SessionExpiredPage() {
   return (
     <main>
       <h1>Session expired</h1>
-      <p role="alert">Your session has ended. Sign in again to continue.</p>
+      <p role="alert">Sua sessão foi encerrada. Entre novamente para continuar.</p>
       <p>
-        <Link to="/login">Return to sign in</Link>
+        <Link to="/login">Voltar ao acesso</Link>
       </p>
     </main>
   );

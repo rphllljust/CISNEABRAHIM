@@ -3,7 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../App';
 import { resetTokenStoreForTests } from '../auth/storage/token-store';
-import { createShellFetchMock, MOCK_SESSION_ID } from '../test/shell-fetch-mock';
+import { loginAndReachApp, LOGIN_FORM_HEADING } from '../test/login-ui-helpers';
+import { createShellFetchMock, MOCK_IDENTITY_ID } from '../test/shell-fetch-mock';
 
 describe('auth flow e2e (frontend)', () => {
   beforeEach(() => {
@@ -18,7 +19,7 @@ describe('auth flow e2e (frontend)', () => {
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /sign in/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: LOGIN_FORM_HEADING })).toBeInTheDocument();
     });
   });
 
@@ -30,13 +31,7 @@ describe('auth flow e2e (frontend)', () => {
     window.history.pushState({}, '', '/login');
     render(<App />);
 
-    await user.type(await screen.findByLabelText(/login/i), 'user@test');
-    await user.type(screen.getByLabelText(/password/i), 'Password1!');
-    await user.click(screen.getByRole('button', { name: /sign in/i }));
-
-    await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /painel operacional/i })).toBeInTheDocument();
-    });
+    await loginAndReachApp(user);
 
     expect(screen.getByRole('banner')).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith(
@@ -44,10 +39,11 @@ describe('auth flow e2e (frontend)', () => {
       expect.objectContaining({ method: 'GET' }),
     );
 
-    await user.click(screen.getByRole('button', { name: /log out/i }));
+    await user.click(screen.getByRole('button', { name: /menu do usuário/i }));
+    await user.click(screen.getByRole('menuitem', { name: /sair/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /sign in/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: LOGIN_FORM_HEADING })).toBeInTheDocument();
     });
   });
 
@@ -71,7 +67,7 @@ describe('auth flow e2e (frontend)', () => {
       expect.stringContaining('/api/v1/auth/session'),
       expect.objectContaining({ method: 'GET' }),
     );
-    expect(screen.getByTitle(MOCK_SESSION_ID)).toBeInTheDocument();
+    expect(screen.getByTitle(MOCK_IDENTITY_ID)).toBeInTheDocument();
   });
 
   it('shows service unavailable on network errors during bootstrap', async () => {

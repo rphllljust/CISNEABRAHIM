@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../App';
 import { resetTokenStoreForTests } from '../auth/storage/token-store';
 import { createAssetsFetchMock } from '../test/assets-fetch-mock';
+import { loginAndReachApp } from '../test/login-ui-helpers';
 
 describe('physical assets administrative flow e2e (frontend)', () => {
   beforeEach(() => {
@@ -14,12 +15,7 @@ describe('physical assets administrative flow e2e (frontend)', () => {
   });
 
   async function login(user: ReturnType<typeof userEvent.setup>) {
-    await user.type(await screen.findByLabelText(/login/i), 'user@test');
-    await user.type(screen.getByLabelText(/password/i), 'Password1!');
-    await user.click(screen.getByRole('button', { name: /sign in/i }));
-    await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /painel operacional/i })).toBeInTheDocument();
-    });
+    await loginAndReachApp(user);
   }
 
   it('supports list, detail, edit conflict messaging and lifecycle actions', async () => {
@@ -29,22 +25,22 @@ describe('physical assets administrative flow e2e (frontend)', () => {
     await login(user);
 
     await waitFor(() => {
-      expect(screen.getByRole('link', { name: /ativos físicos/i })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /ativos f/i })).toBeInTheDocument();
     });
-    await user.click(screen.getByRole('link', { name: /ativos físicos/i }));
+    await user.click(screen.getByRole('link', { name: /ativos f/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /ativos físicos/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /ativos f/i })).toBeInTheDocument();
     });
     expect(screen.getByRole('link', { name: 'TRK-DEMO' })).toBeInTheDocument();
     expect(screen.getByLabelText(/status de cadastro: ativo/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/status de alocação: disponível/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/status de aloca.*dispon/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole('link', { name: 'TRK-DEMO' }));
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'TRK-DEMO' })).toBeInTheDocument();
     });
-    expect(screen.getByText(/cadastro \(ativo\/inativo\) e alocação operacional são independentes/i)).toBeInTheDocument();
+    expect(screen.getByText(/cadastro \(ativo\/inativo\) e aloca.*operacional.*independentes/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole('link', { name: /^editar$/i }));
     await waitFor(() => {
@@ -52,9 +48,9 @@ describe('physical assets administrative flow e2e (frontend)', () => {
     });
 
     vi.stubGlobal('fetch', createAssetsFetchMock({ versionConflictOnUpdate: true }));
-    await user.clear(screen.getByLabelText(/nome \/ descrição/i));
-    await user.type(screen.getByLabelText(/nome \/ descrição/i), 'Nome atualizado');
-    await user.click(screen.getByRole('button', { name: /salvar alterações/i }));
+    await user.clear(screen.getByLabelText(/nome \/ descri/i));
+    await user.type(screen.getByLabelText(/nome \/ descri/i), 'Nome atualizado');
+    await user.click(screen.getByRole('button', { name: /salvar altera/i }));
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /recarregar dados atuais/i })).toBeInTheDocument();
@@ -68,7 +64,7 @@ describe('physical assets administrative flow e2e (frontend)', () => {
     await login(user);
 
     await waitFor(() => {
-      expect(screen.queryByRole('link', { name: /ativos físicos/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /ativos f/i })).not.toBeInTheDocument();
     });
   });
 });

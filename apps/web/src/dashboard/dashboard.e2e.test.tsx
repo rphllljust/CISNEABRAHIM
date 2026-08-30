@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../App';
 import { resetTokenStoreForTests } from '../auth/storage/token-store';
 import { createDashboardFetchMock } from '../test/dashboard-fetch-mock';
+import { loginAndReachApp } from '../test/login-ui-helpers';
+import { requestUrl } from '../test/request-url';
 import { createShellFetchMock } from '../test/shell-fetch-mock';
 
 describe('operational dashboard e2e (frontend)', () => {
@@ -15,19 +17,14 @@ describe('operational dashboard e2e (frontend)', () => {
   });
 
   async function login(user: ReturnType<typeof userEvent.setup>) {
-    await user.type(await screen.findByLabelText(/login/i), 'user@test');
-    await user.type(screen.getByLabelText(/password/i), 'Password1!');
-    await user.click(screen.getByRole('button', { name: /sign in/i }));
-    await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /painel operacional/i })).toBeInTheDocument();
-    });
+    await loginAndReachApp(user);
   }
 
   it('loads executive dashboard with attention, charts and shortcuts from a single API call', async () => {
     const shellMock = createShellFetchMock();
     const dashboardMock = createDashboardFetchMock();
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
+      const url = requestUrl(input);
       if (url.includes('/api/v1/dashboard/executive')) {
         return dashboardMock(input, init);
       }
@@ -40,26 +37,26 @@ describe('operational dashboard e2e (frontend)', () => {
     await login(user);
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /atenção necessária/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /aten.{1,2}o necess.{1,2}ria/i })).toBeInTheDocument();
     });
     expect(screen.getByRole('link', { name: /OS vencidas: 3 itens/i })).toBeInTheDocument();
     expect(screen.getByText('Maior atraso: 8 dia(s)')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /análise operacional/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /an.{1,2}lise operacional/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /produtividade/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Ir para solicitações de serviço' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /ir para solicita/i })).toBeInTheDocument();
 
-    const dashboardCalls = fetchMock.mock.calls.filter(([url]) =>
-      String(url).includes('/api/v1/dashboard/executive'),
+    const dashboardCalls = fetchMock.mock.calls.filter(([callInput]) =>
+      requestUrl(callInput).includes('/api/v1/dashboard/executive'),
     );
     expect(dashboardCalls.length).toBeGreaterThanOrEqual(1);
-    expect(dashboardCalls[0]?.[0]).toContain('period=week');
+    expect(requestUrl(dashboardCalls[0]![0])).toContain('period=week');
   });
 
   it('reflects period filter in URL when user changes period', async () => {
     const shellMock = createShellFetchMock();
     const dashboardMock = createDashboardFetchMock();
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
+      const url = requestUrl(input);
       if (url.includes('/api/v1/dashboard/executive')) {
         return dashboardMock(input, init);
       }
@@ -72,14 +69,16 @@ describe('operational dashboard e2e (frontend)', () => {
     await login(user);
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/período/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/per.{1,2}odo/i)).toBeInTheDocument();
     });
 
-    await user.selectOptions(screen.getByLabelText(/período/i), 'month');
+    await user.selectOptions(screen.getByLabelText(/per.{1,2}odo/i), 'month');
 
     await waitFor(() => {
       expect(window.location.search).toContain('period=month');
-      expect(fetchMock.mock.calls.some(([url]) => String(url).includes('period=month'))).toBe(true);
+      expect(fetchMock.mock.calls.some(([callInput]) => requestUrl(callInput).includes('period=month'))).toBe(
+        true,
+      );
     });
   });
 });

@@ -1,0 +1,234 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-cisne-metallic: #b8a88a;
+  --color-cisne-metallic-muted: rgb(184 168 138 / 35%);
+  --color-login-brand: #0c1624;
+  --color-login-brand-mid: #132033;
+  --color-login-brand-light: #1a2d47;
+}
+
+@layer components {
+  .login-page {
+    min-height: 100dvh;
+    background: var(--color-surface-app);
+    color: var(--color-text-primary);
+  }
+
+  .login-page__layout {
+    display: grid;
+    min-height: 100dvh;
+    grid-template-columns: 1fr;
+  }
+
+  @media (min-width: 1024px) {
+    .login-page__layout {
+      grid-template-columns: minmax(0, 1.2fr) minmax(22rem, 0.8fr);
+    }
+  }
+
+  .login-page__brand {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1.5rem;
+    padding: clamp(1.5rem, 4vw, 3.5rem);
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 10%, rgb(184 168 138 / 8%), transparent 55%),
+      linear-gradient(155deg, var(--color-login-brand) 0%, var(--color-login-brand-mid) 48%, var(--color-login-brand-light) 100%);
+    color: var(--color-text-inverse);
+    overflow: hidden;
+  }
+
+  .login-page__brand::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgb(255 255 255 / 3%) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(255 255 255 / 3%) 1px, transparent 1px);
+    background-size: 3rem 3rem;
+    mask-image: radial-gradient(ellipse at center, black 20%, transparent 75%);
+    pointer-events: none;
+  }
+
+  .login-page__brand-content {
+    position: relative;
+    z-index: 1;
+    max-width: 34rem;
+  }
+
+  .login-page__brand-tagline {
+    font-size: clamp(1.125rem, 2vw, 1.35rem);
+    font-weight: 500;
+    line-height: 1.45;
+    color: rgb(255 255 255 / 92%);
+    letter-spacing: 0.01em;
+  }
+
+  .login-page__brand-support {
+    font-size: var(--text-subtitle);
+    line-height: 1.55;
+    color: rgb(255 255 255 / 72%);
+    max-width: 32ch;
+  }
+
+  .login-page__access {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: clamp(1.25rem, 4vw, 3rem);
+    background: var(--color-surface-raised);
+  }
+
+  .login-page__form-shell {
+    width: 100%;
+    max-width: 26rem;
+    margin-inline: auto;
+  }
+
+  .login-page__mobile-brand {
+    margin-bottom: 1.75rem;
+  }
+
+  @media (min-width: 1024px) {
+    .login-page__mobile-brand {
+      display: none;
+    }
+  }
+
+  @media (max-width: 1023px) {
+    .login-page__brand {
+      display: none;
+    }
+  }
+
+  .login-page__form-title {
+    font-size: clamp(1.35rem, 2.5vw, 1.6rem);
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--color-text-primary);
+    letter-spacing: -0.01em;
+  }
+
+  .login-page__form-lead {
+    margin-top: 0.5rem;
+    font-size: var(--text-subtitle);
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+  }
+
+  .login-page__form {
+    margin-top: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .login-page__submit {
+    width: 100%;
+    min-height: var(--spacing-touch);
+    min-width: 8.5rem;
+  }
+
+  .login-page__footer {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border-subtle);
+    font-size: var(--text-caption);
+    color: var(--color-text-muted);
+    line-height: 1.45;
+  }
+
+  .cisne-wordmark {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    position: relative;
+    padding-bottom: 0.65rem;
+  }
+
+  .cisne-wordmark__primary {
+    font-size: clamp(2rem, 4.5vw, 2.75rem);
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    line-height: 1;
+    color: var(--color-text-inverse);
+  }
+
+  .cisne-wordmark__region {
+    font-size: clamp(0.72rem, 1.6vw, 0.82rem);
+    font-weight: 500;
+    letter-spacing: 0.38em;
+    line-height: 1.2;
+    color: rgb(255 255 255 / 78%);
+    padding-left: 0.12em;
+  }
+
+  .cisne-wordmark__accent {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 3.25rem;
+    height: 2px;
+    background: linear-gradient(90deg, var(--color-cisne-metallic), transparent);
+    border-radius: var(--radius-full);
+  }
+
+  .cisne-wordmark--compact .cisne-wordmark__primary {
+    font-size: 1.65rem;
+    letter-spacing: 0.12em;
+    color: var(--color-cisne-brand-strong);
+  }
+
+  .cisne-wordmark--compact .cisne-wordmark__region {
+    font-size: 0.68rem;
+    letter-spacing: 0.32em;
+    color: var(--color-text-secondary);
+  }
+
+  .cisne-wordmark--compact .cisne-wordmark__accent {
+    background: linear-gradient(90deg, var(--color-cisne-metallic), transparent);
+  }
+
+  .login-password-field {
+    position: relative;
+  }
+
+  .login-password-field__input {
+    padding-right: 3rem;
+  }
+
+  .login-password-field__toggle {
+    position: absolute;
+    top: 50%;
+    right: 0.35rem;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--spacing-touch);
+    min-height: var(--spacing-touch);
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: color var(--duration-fast) var(--ease-standard);
+  }
+
+  .login-password-field__toggle:hover:not(:disabled) {
+    color: var(--color-text-secondary);
+  }
+
+  .login-password-field__toggle:focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 2px;
+  }
+
+  .login-password-field__toggle:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}

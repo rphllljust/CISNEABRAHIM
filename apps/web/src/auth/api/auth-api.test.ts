@@ -11,7 +11,9 @@ describe('auth-api', () => {
     expect(mapAuthErrorToUserMessage(AUTH_ERROR_CODES.INVALID_CREDENTIALS)).toBe(
       'invalid_credentials',
     );
-    expect(userMessageText('invalid_credentials')).toBe('Invalid login or password.');
+    expect(userMessageText('invalid_credentials')).toBe(
+      'Não foi possível entrar. Verifique suas credenciais e tente novamente.',
+    );
   });
 
   it('loginRequest surfaces backend auth errors', async () => {

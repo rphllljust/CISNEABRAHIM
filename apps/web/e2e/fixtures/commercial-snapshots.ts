@@ -1,0 +1,308 @@
+import {
+  PROPOSAL_PRICING_STRUCTURES,
+  PROPOSAL_VERSION_STATUSES,
+  type Proposal,
+  type ProposalDetail,
+  type ProposalListResponse,
+  type ProposalVersion,
+} from '../../src/proposals/types/proposal.types';
+import {
+  PURCHASE_ORDER_PRICING_STRUCTURES,
+  PURCHASE_ORDER_RULE_TYPES,
+  PURCHASE_ORDER_STATUSES,
+  type PurchaseOrder,
+  type PurchaseOrderDetail,
+  type PurchaseOrderListResponse,
+} from '../../src/purchase-orders/types/purchase-order.types';
+import {
+  CLIENT_STATUSES,
+  type Client,
+  type ClientListResponse,
+} from '../../src/clients/types/client.types';
+import { MOCK_IDENTITY_ID } from './constants';
+
+export const VISUAL_CLIENT_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+export const VISUAL_PROPOSAL_ID = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+export const VISUAL_PURCHASE_ORDER_ID = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+
+const VISUAL_CLIENT: Client = {
+  id: VISUAL_CLIENT_ID,
+  legalName: 'Cliente Visual Rondônia Ltda.',
+  tradeName: 'Cliente Visual',
+  taxId: '11222333000181',
+  externalErpId: null,
+  status: CLIENT_STATUSES.Active,
+  version: 3,
+  createdAt: '2026-08-01T12:00:00.000Z',
+  updatedAt: '2026-08-25T16:00:00.000Z',
+  deactivatedAt: null,
+  deactivationReason: null,
+  contacts: [],
+  addresses: [],
+};
+
+export const COMMERCIAL_CLIENTS_SNAPSHOT: ClientListResponse = {
+  items: [VISUAL_CLIENT],
+  limit: 100,
+  offset: 0,
+};
+
+const VISUAL_PROPOSAL: Proposal = {
+  id: VISUAL_PROPOSAL_ID,
+  proposalCode: 'PROP-2026-0042',
+  clientId: VISUAL_CLIENT_ID,
+  unitId: 'PORTO-VELHO',
+  title: 'Locação de equipamentos para terraplenagem',
+  currentVersionNumber: 2,
+  rowVersion: 4,
+  createdAt: '2026-08-20T13:00:00.000Z',
+  updatedAt: '2026-08-26T15:30:00.000Z',
+};
+
+const VISUAL_PROPOSAL_VERSION_1: ProposalVersion = {
+  id: 'cccccccc-cccc-4ccc-8ccc-ccccccccccc1',
+  proposalId: VISUAL_PROPOSAL_ID,
+  versionNumber: 1,
+  status: PROPOSAL_VERSION_STATUSES.Issued,
+  pricingStructure: PROPOSAL_PRICING_STRUCTURES.Itemized,
+  currencyCode: 'BRL',
+  globalSalePrice: null,
+  globalInternalCost: null,
+  commercialTerms: { paymentTerms: '30 dias' },
+  clientSnapshot: {
+    legalName: VISUAL_CLIENT.legalName,
+    tradeName: VISUAL_CLIENT.tradeName,
+    taxId: VISUAL_CLIENT.taxId,
+  },
+  validUntil: '2026-09-20T23:59:59.000Z',
+  notes: 'Versão inicial substituída após ajuste comercial.',
+  issuedAt: '2026-08-22T14:00:00.000Z',
+  issuedByIdentityId: MOCK_IDENTITY_ID,
+  supersededAt: '2026-08-25T12:00:00.000Z',
+  acceptedAt: null,
+  acceptedByIdentityId: null,
+  acceptanceOriginCode: null,
+  acceptanceEvidenceDocumentId: null,
+  rejectedAt: null,
+  rejectionReason: null,
+  expiredAt: null,
+  cancelledAt: null,
+  cancellationReason: null,
+  rowVersion: 2,
+  items: [],
+  documents: [],
+};
+
+export const VISUAL_PROPOSAL_CURRENT_VERSION: ProposalVersion = {
+  id: 'cccccccc-cccc-4ccc-8ccc-ccccccccccc2',
+  proposalId: VISUAL_PROPOSAL_ID,
+  versionNumber: 2,
+  status: PROPOSAL_VERSION_STATUSES.Issued,
+  pricingStructure: PROPOSAL_PRICING_STRUCTURES.Itemized,
+  currencyCode: 'BRL',
+  globalSalePrice: null,
+  globalInternalCost: null,
+  commercialTerms: { paymentTerms: '30 dias', paymentMethod: 'Transferência' },
+  clientSnapshot: {
+    legalName: VISUAL_CLIENT.legalName,
+    tradeName: VISUAL_CLIENT.tradeName,
+    taxId: VISUAL_CLIENT.taxId,
+  },
+  validUntil: '2026-09-30T23:59:59.000Z',
+  notes: 'Mobilização prevista após aceite formal do cliente.',
+  issuedAt: '2026-08-26T15:30:00.000Z',
+  issuedByIdentityId: MOCK_IDENTITY_ID,
+  supersededAt: null,
+  acceptedAt: null,
+  acceptedByIdentityId: null,
+  acceptanceOriginCode: null,
+  acceptanceEvidenceDocumentId: null,
+  rejectedAt: null,
+  rejectionReason: null,
+  expiredAt: null,
+  cancelledAt: null,
+  cancellationReason: null,
+  rowVersion: 4,
+  items: [
+    {
+      id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee1',
+      lineNumber: 1,
+      itemKind: 'EQUIPMENT',
+      description: 'Escavadeira hidráulica — locação mensal',
+      serviceDefinitionId: null,
+      serviceDefinitionVersionId: null,
+      serviceSnapshot: { name: 'Locação de máquina' },
+      quantity: '1.000000',
+      unitCode: 'MES',
+      unitSalePrice: '38000.0000',
+      unitInternalCost: null,
+      lineSaleAmount: '38000.0000',
+      lineInternalCost: null,
+    },
+    {
+      id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee2',
+      lineNumber: 2,
+      itemKind: 'TRANSPORT',
+      description: 'Mobilização e desmobilização do equipamento',
+      serviceDefinitionId: null,
+      serviceDefinitionVersionId: null,
+      serviceSnapshot: { name: 'Transporte de equipamento' },
+      quantity: '2.000000',
+      unitCode: 'EVT',
+      unitSalePrice: '5125.0000',
+      unitInternalCost: null,
+      lineSaleAmount: '10250.0000',
+      lineInternalCost: null,
+    },
+  ],
+  documents: [],
+};
+
+export const COMMERCIAL_PROPOSAL_DETAIL_SNAPSHOT: ProposalDetail = {
+  proposal: VISUAL_PROPOSAL,
+  currentVersion: VISUAL_PROPOSAL_CURRENT_VERSION,
+};
+
+export const COMMERCIAL_PROPOSAL_VERSIONS_SNAPSHOT: ProposalVersion[] = [
+  VISUAL_PROPOSAL_CURRENT_VERSION,
+  VISUAL_PROPOSAL_VERSION_1,
+];
+
+export const COMMERCIAL_PROPOSALS_LIST_SNAPSHOT: ProposalListResponse = {
+  items: [
+    VISUAL_PROPOSAL,
+    {
+      id: 'cccccccc-cccc-4ccc-8ccc-cccccccccc02',
+      proposalCode: 'PROP-2026-0041',
+      clientId: VISUAL_CLIENT_ID,
+      unitId: 'PORTO-VELHO',
+      title: 'Transporte de carga municipal',
+      currentVersionNumber: 1,
+      rowVersion: 1,
+      createdAt: '2026-08-18T12:00:00.000Z',
+      updatedAt: '2026-08-24T14:15:00.000Z',
+    },
+  ],
+  limit: 20,
+  offset: 0,
+};
+
+const VISUAL_PURCHASE_ORDER: PurchaseOrder = {
+  id: VISUAL_PURCHASE_ORDER_ID,
+  internalCode: 'PO-2026-0038',
+  clientId: VISUAL_CLIENT_ID,
+  unitId: 'PORTO-VELHO',
+  poNumber: 'PO-CLIENTE-41926266',
+  rcNumber: 'RC-991487',
+  issueDate: '2026-08-21',
+  buyerContact: {
+    name: 'Comprador Visual',
+    email: 'compras@example.test',
+    phone: '(69) 3000-0000',
+  },
+  serviceManager: 'Gestor Operacional',
+  deliveryLocation: { city: 'Porto Velho', state: 'RO' },
+  billingLocation: { city: 'Porto Velho', state: 'RO' },
+  currencyCode: 'BRL',
+  pricingStructure: PURCHASE_ORDER_PRICING_STRUCTURES.LineItems,
+  totalAmount: '48250.0000',
+  paymentTerms: '30 dias após medição aprovada',
+  paymentMethod: 'Transferência bancária',
+  clientSnapshot: {
+    legalName: VISUAL_CLIENT.legalName,
+    tradeName: VISUAL_CLIENT.tradeName,
+    taxId: VISUAL_CLIENT.taxId,
+  },
+  originalDocumentId: null,
+  status: PURCHASE_ORDER_STATUSES.Registered,
+  registeredAt: '2026-08-22T13:45:00.000Z',
+  cancelledAt: null,
+  cancellationReason: null,
+  rowVersion: 3,
+  createdAt: '2026-08-21T12:00:00.000Z',
+  updatedAt: '2026-08-22T13:45:00.000Z',
+};
+
+export const COMMERCIAL_PURCHASE_ORDER_DETAIL_SNAPSHOT: PurchaseOrderDetail = {
+  purchaseOrder: VISUAL_PURCHASE_ORDER,
+  items: [
+    {
+      id: 'ffffffff-ffff-4fff-8fff-fffffffffff1',
+      lineNumber: 1,
+      description: 'Escavadeira hidráulica — locação mensal',
+      serviceDefinitionId: null,
+      serviceDefinitionVersionId: null,
+      serviceSnapshot: { name: 'Locação de máquina' },
+      quantity: '1.000000',
+      unitCode: 'MES',
+      unitPrice: '38000.0000',
+      lineTotal: '38000.0000',
+      rcLineReference: '10',
+    },
+    {
+      id: 'ffffffff-ffff-4fff-8fff-fffffffffff2',
+      lineNumber: 2,
+      description: 'Mobilização e desmobilização do equipamento',
+      serviceDefinitionId: null,
+      serviceDefinitionVersionId: null,
+      serviceSnapshot: { name: 'Transporte de equipamento' },
+      quantity: '2.000000',
+      unitCode: 'EVT',
+      unitPrice: '5125.0000',
+      lineTotal: '10250.0000',
+      rcLineReference: '20',
+    },
+  ],
+  billingRules: [
+    {
+      id: '99999999-9999-4999-8999-999999999991',
+      ruleType: PURCHASE_ORDER_RULE_TYPES.PoNumberRequiredOnInvoice,
+      ruleConfig: {},
+      precedenceTier: 'PURCHASE_ORDER',
+      createdAt: '2026-08-21T12:00:00.000Z',
+    },
+    {
+      id: '99999999-9999-4999-8999-999999999992',
+      ruleType: PURCHASE_ORDER_RULE_TYPES.PdfRequired,
+      ruleConfig: {},
+      precedenceTier: 'PURCHASE_ORDER',
+      createdAt: '2026-08-21T12:00:00.000Z',
+    },
+  ],
+  documentLinks: [],
+};
+
+export const COMMERCIAL_PURCHASE_ORDERS_LIST_SNAPSHOT: PurchaseOrderListResponse = {
+  items: [
+    VISUAL_PURCHASE_ORDER,
+    {
+      id: 'dddddddd-dddd-4ddd-8ddd-dddddddddd02',
+      internalCode: 'PO-2026-0037',
+      clientId: VISUAL_CLIENT_ID,
+      unitId: 'JI-PARANA',
+      poNumber: 'PO-CLIENTE-41926210',
+      rcNumber: null,
+      issueDate: '2026-08-19',
+      buyerContact: {},
+      serviceManager: null,
+      deliveryLocation: {},
+      billingLocation: {},
+      currencyCode: 'BRL',
+      pricingStructure: PURCHASE_ORDER_PRICING_STRUCTURES.HeaderTotal,
+      totalAmount: '18750.0000',
+      paymentTerms: '28 dias',
+      paymentMethod: null,
+      clientSnapshot: { tradeName: VISUAL_CLIENT.tradeName },
+      originalDocumentId: null,
+      status: PURCHASE_ORDER_STATUSES.Draft,
+      registeredAt: null,
+      cancelledAt: null,
+      cancellationReason: null,
+      rowVersion: 1,
+      createdAt: '2026-08-19T12:00:00.000Z',
+      updatedAt: '2026-08-20T11:20:00.000Z',
+    },
+  ],
+  limit: 20,
+  offset: 0,
+};
