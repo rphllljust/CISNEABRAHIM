@@ -4692,7 +4692,7 @@ QUALITY_GATE: PASS
 NEXT_ALLOWED_PROMPT: 87
 NEXT_PROMPT_EXECUTED: NO
 NOTES:
-  Prompt 87 não executado.
+  Prompt 87 executado (PASS).
 ```
 
 ## Quality gate Prompt 86 (evidência)
@@ -4704,6 +4704,50 @@ NOTES:
 | smoke pós-deploy (domínios core) | PASS | hml-smoke.spec.ts |
 | compose + Dockerfiles promovíveis | PASS | docker/hml/* |
 | migrations via drizzle no deploy | PASS | hml-deploy.ts |
+| API typecheck | PASS | tsc --noEmit |
+
+---
+
+## Prompt 87 — CD Profissional
+
+```
+PROMPT_ID: 87
+PROMPT_TITLE: CD Profissional
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: PASS
+COMMIT: 4343c28 ci(cd): establish controlled delivery pipeline
+ARTIFACTS:
+  apps/api/src/ops/cd/**
+  scripts/cd/**
+  .github/workflows/cd.yml
+  .github/workflows/ci.yml (deploy-manifest step)
+  docs/19-operations/cd-pipeline.md
+BUILD_ONCE: CI publica artifact; CD promove mesmo digest sem rebuild PRD
+VERSIONING: commitSha, artifactDigest, version, timestamp, environment
+HML: deploy automático pós-CI + smoke obrigatório
+PRD: environment production + PRD_PROMOTION_APPROVED=I_UNDERSTAND
+MIGRATIONS: backward-compatible vs breaking-high-risk; expand/contract
+SECRETS: scan no artifact; runtime via secret store
+ROLLBACK: histórico por digest; databaseRollbackSupported=false
+QUALITY_GATE: PASS
+NEXT_ALLOWED_PROMPT: 88
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Prompt 88 não executado.
+```
+
+## Quality gate Prompt 87 (evidência)
+
+| Cenário de teste | Resultado | Evidência |
+|------------------|-----------|-----------|
+| deploy successful (HML + smoke) | PASS | cd-pipeline.spec.ts |
+| health failure blocks smoke | PASS | cd-pipeline.spec.ts |
+| smoke failure blocks promotion | PASS | cd-pipeline.spec.ts |
+| migration failure blocks deploy | PASS | cd-pipeline.spec.ts |
+| production gate sem aprovação | PASS | cd-pipeline.spec.ts |
+| same artifact promotion PRD | PASS | cd-pipeline.spec.ts |
+| rollback sem revert DB | PASS | cd-pipeline.spec.ts |
+| secret scan no artifact | PASS | cd-secrets.ts |
 | API typecheck | PASS | tsc --noEmit |
 
 ---
