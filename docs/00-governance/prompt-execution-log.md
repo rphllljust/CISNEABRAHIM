@@ -4400,7 +4400,7 @@ NEXT_ALLOWED_PROMPT: 80
 NEXT_PROMPT_EXECUTED: NO
 NOTES:
   OpenTelemetry não adicionado — correlação leve via contexto interno.
-  Prompt 80 não executado.
+  Prompt 80 executado (PASS).
 ```
 
 ## Quality gate Prompt 79 (evidência)
@@ -4415,6 +4415,46 @@ NOTES:
 | business vs technical metrics | PASS | observability-metrics.service.spec.ts |
 | structured JSON format | PASS | structured-log.spec.ts |
 | latency percentiles | PASS | latency-histogram.spec.ts |
+| API typecheck | PASS | tsc --noEmit |
+
+---
+
+## Prompt 80 — Alertas técnicos
+
+```
+PROMPT_ID: 80
+PROMPT_TITLE: Alertas técnicos
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: PASS
+COMMIT: 6ec5386 ops(observability): add actionable production alerts
+ARTIFACTS:
+  apps/api/src/observability/alerts/**
+  apps/api/src/observability/services/technical-alert.service.ts
+  apps/api/src/observability/services/platform-metrics-collector.service.ts
+ENDPOINT: GET /api/v1/observability/alerts
+ALERTS: high error rate, p95/p99 latency, DB pool saturation, worker stalled, outbox backlog, storage/ERP/tracking/notification failures, backup failure, disk exhaustion
+SEVERITY: INFO (não pagina), WARNING (atenção), CRITICAL (impacto significativo) — escalação por condição
+DURATION: threshold + durationMs por alerta; spikes isolados não disparam
+RUNBOOKS: instruções curtas (meaning, causes, checks, safe action, escalation) para alertas CRITICAL
+QUALITY_GATE: PASS
+NEXT_ALLOWED_PROMPT: 81
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Avaliação via endpoint /observability/alerts; estado em memória por processo.
+  Prompt 81 não executado.
+```
+
+## Quality gate Prompt 80 (evidência)
+
+| Cenário de teste | Resultado | Evidência |
+|------------------|-----------|-----------|
+| threshold + duration firing | PASS | technical-alert.engine.spec.ts |
+| resolution após normalização | PASS | technical-alert.engine.spec.ts |
+| spike isolado ignorado | PASS | technical-alert.engine.spec.ts |
+| severidade não tudo CRITICAL | PASS | technical-alert.engine.spec.ts |
+| runbook em CRITICAL | PASS | technical-alert.engine.spec.ts |
+| backup failure imediato | PASS | technical-alert.engine.spec.ts |
+| amostra insuficiente error rate | PASS | technical-alert.engine.spec.ts |
 | API typecheck | PASS | tsc --noEmit |
 
 ---
