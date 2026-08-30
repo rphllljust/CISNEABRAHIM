@@ -35,6 +35,11 @@ export function resolveDrObjectStorageRoot(env: NodeJS.ProcessEnv = process.env)
   return env['DR_OBJECT_STORAGE_ROOT']?.trim() ?? env['OBJECT_STORAGE_ROOT']?.trim() ?? null;
 }
 
+/** Canonical object storage used as hydration source when DR root is isolated. */
+export function resolveObjectStorageSourceRoot(env: NodeJS.ProcessEnv = process.env): string | null {
+  return env['DR_OBJECT_STORAGE_SOURCE']?.trim() ?? env['OBJECT_STORAGE_ROOT']?.trim() ?? null;
+}
+
 export function resolveDrScenario(env: NodeJS.ProcessEnv = process.env): import('./dr-types').DrScenarioId {
   const raw = env['DR_SCENARIO']?.trim().toLowerCase() ?? 'bad_deployment';
   const allowed = [

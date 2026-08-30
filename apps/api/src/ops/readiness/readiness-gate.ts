@@ -1,17 +1,37 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { findRepoRoot } from '../cd/cd-paths';
 import { RPO_RTO_PRODUCTION_BLOCKER } from '../backup/backup-types';
 import { runPilotStatusCheck } from '../pilot/pilot-runner';
 import type { PilotStatusReport } from '../pilot/pilot-types';
 import type { PilotMetricsInput } from '../pilot/pilot-observation';
+import { hasMetMinObservationDays } from '../pilot/pilot-exit';
+import { assertEvidenceNotPrematurelyCompleted } from './readiness-evidence-writer';
+import { evaluateOperationalEngineeringState } from './operational-readiness';
+import { createPendingReadinessEvidence } from './readiness-evidence';
+import type { LoadedReadinessEvidence, ReadinessEvidenceRecord } from './readiness-evidence-types';
+import { validateReleaseBinding, type ResolvedReleaseCandidate } from './readiness-release';
+import {
+  buildReadinessEstablishedBaseline,
+  summarizePendingHumanActions,
+} from './readiness-established-baseline';
 import type {
+  EngineeringReadinessDecision,
   ProductionReadinessDecision,
   ReadinessCheck,
   ReadinessCheckId,
   ReadinessGateResult,
   SupportModel,
 } from './readiness-types';
+import { ENGINEERING_READINESS_CHECK_IDS } from './readiness-types';
+import { loadIntegrationCapabilitySnapshot } from '../../integrations/acl/config/integration-capability.config';
 
 export type ReadinessGateInput = {
   env?: NodeJS.ProcessEnv;
+  evidence?: LoadedReadinessEvidence;
+  evidencePath?: string;
+  releaseCandidate?: ResolvedReleaseCandidate;
+  evaluationTime?: Date;
   pilotReport?: PilotStatusReport;
   pilotMetrics?: PilotMetricsInput;
   pilotStartedAt?: string;
@@ -43,26 +63,8 @@ export function loadSupportModel(env: NodeJS.ProcessEnv = process.env): SupportM
   };
 }
 
-export function evaluateProductionReadinessGate(input: ReadinessGateInput = {}): ReadinessGateResult {
-  const env = input.env ?? process.env;
-  const notes: string[] = [];
+export function buildEngineeringChecks(env: NodeJS.ProcessEnv = process.env): ReadinessCheck[] {
   const checks: ReadinessCheck[] = [];
-
-  const businessSignOff =
-    env['READINESS_BUSINESS_SIGN_OFF'] === 'APPROVED' ||
-    env['UAT_BUSINESS_SIGN_OFF'] === 'APPROVED';
-  const rpoRtoApproved =
-    env['READINESS_RPO_RTO_APPROVED'] === 'true' || env['DDP_016_RESOLVED'] === 'true';
-
-  let pilotReport = input.pilotReport;
-  if (!pilotReport && env['PILOT_PROGRAM_ENABLED'] === 'true') {
-    pilotReport = runPilotStatusCheck({
-      env,
-      metrics: input.pilotMetrics ?? zeroPilotMetrics(),
-      pilotStartedAt: input.pilotStartedAt ?? env['PILOT_STARTED_AT'],
-    });
-  }
-
   const engineeringPass = (id: ReadinessCheckId, label: string, prompt: string, detail: string) =>
     checks.push(check(id, label, 'PASS', `Prompt ${prompt}`, detail, false));
 
@@ -116,40 +118,7 @@ export function evaluateProductionReadinessGate(input: ReadinessGateInput = {}):
     '84/85',
     'object-storage backup + DR hash verification',
   );
-  engineeringPass(
-    'external_integrations',
-    'External integrations',
-    '69/70-A',
-    'adapters não confirmados permanecem OFF; ERP NOT_IMPLEMENTED não bloqueia core',
-  );
-
-  checks.push(
-    check(
-      'uat',
-      'UAT APPROVED',
-      businessSignOff ? 'PASS' : 'FAIL',
-      'Prompt 89 / uat-business-scenarios.md',
-      businessSignOff
-        ? 'Business sign-off recorded'
-        : 'UAT engenharia APPROVED; aceite empresarial (patrocinador) PENDING — não falsificado',
-      !businessSignOff,
-    ),
-  );
-
-  const pilotApproved = pilotReport?.phase === 'EXIT_READY';
-  checks.push(
-    check(
-      'pilot',
-      'Pilot APPROVED',
-      pilotReport ? (pilotApproved ? 'PASS' : 'FAIL') : 'CONDITIONAL',
-      'Prompt 90 / pilot-program.md',
-      pilotReport
-        ? `phase=${pilotReport.phase}; failed=${pilotReport.exitCriteriaFailed.join(',') || 'none'}`
-        : 'PILOT_PROGRAM_ENABLED not set — pilot exit not evaluated live',
-      pilotReport ? !pilotApproved : false,
-    ),
-  );
-
+  checks.push(evaluateExternalIntegrationsCheck(env));
   checks.push(
     check(
       'mobile',
@@ -161,74 +130,370 @@ export function evaluateProductionReadinessGate(input: ReadinessGateInput = {}):
     ),
   );
 
-  const manualUxPending = env['UAT_MANUAL_UX_COMPLETED'] !== 'true';
-  checks.push(
-    check(
-      'accessibility',
-      'Accessibility acceptable',
-      manualUxPending ? 'CONDITIONAL' : 'PASS',
-      'uat-ux-checklist.md + component a11y tests',
-      manualUxPending
-        ? 'Automatizado PASS (landmarks, mobile nav); checklist manual operador PENDING'
-        : 'Manual UX checklist completed',
-      manualUxPending,
-    ),
-  );
-
-  if (!rpoRtoApproved) {
-    notes.push(`${RPO_RTO_PRODUCTION_BLOCKER.decisionId}: RPO/RTO ${RPO_RTO_PRODUCTION_BLOCKER.status}`);
-  }
-
-  const blockers = collectBlockers(checks, {
-    businessSignOff,
-    rpoRtoApproved,
-    pilotReport,
-    manualUxPending,
-  });
-
-  const decision: ProductionReadinessDecision = blockers.length === 0 ? 'GO' : 'NO-GO';
-
-  return {
-    decision,
-    evaluatedAt: new Date().toISOString(),
-    checks,
-    blockers,
-    support: loadSupportModel(env),
-    notes,
-  };
+  return checks;
 }
 
-function collectBlockers(
-  checks: ReadinessCheck[],
-  context: {
-    businessSignOff: boolean;
-    rpoRtoApproved: boolean;
-    pilotReport?: PilotStatusReport;
-    manualUxPending: boolean;
-  },
-): string[] {
+export function evaluateExternalIntegrationsCheck(env: NodeJS.ProcessEnv = process.env): ReadinessCheck {
+  const snapshot = loadIntegrationCapabilitySnapshot();
+  const erpState = snapshot.erp.configured
+    ? snapshot.erp.enabled
+      ? 'CONFIGURED_ENABLED'
+      : 'CONFIGURED_DISABLED'
+    : 'ACL_UNCONFIGURED';
+  const trackingState = snapshot.tracking.configured
+    ? snapshot.tracking.enabled
+      ? 'CONFIGURED_ENABLED'
+      : 'CONFIGURED_DISABLED'
+    : 'ACL_UNCONFIGURED';
+
+  const liveAdapterEnabled = snapshot.erp.enabled || snapshot.tracking.enabled;
+  const detail = liveAdapterEnabled
+    ? `Live ACL adapters enabled: erp=${erpState}; tracking=${trackingState}`
+    : `Integração ERP/rastreio é adapter ACL (BC-018), não operação ao vivo — erp=${erpState}; tracking=${trackingState}; core não bloqueado`;
+
+  return check(
+    'external_integrations',
+    'External integrations (ACL adapters)',
+    'PASS',
+    'apps/api/src/integrations/acl/ + integration-capability.config.ts',
+    detail,
+    false,
+  );
+}
+
+export function evaluateEngineeringReadiness(checks: ReadinessCheck[]): {
+  decision: EngineeringReadinessDecision;
+  blockers: string[];
+} {
+  const engineeringChecks = checks.filter((entry) => ENGINEERING_READINESS_CHECK_IDS.includes(entry.id));
   const blockers: string[] = [];
 
-  for (const entry of checks) {
+  for (const entry of engineeringChecks) {
     if (entry.blocker && entry.status !== 'PASS') {
+      blockers.push(`${entry.id}: ${entry.detail}`);
+    }
+    if (entry.status === 'FAIL') {
       blockers.push(`${entry.id}: ${entry.detail}`);
     }
   }
 
-  if (!context.businessSignOff) {
-    blockers.push('BUSINESS_STAKEHOLDER_SIGN_OFF_PENDING');
-  }
-  if (!context.rpoRtoApproved) {
-    blockers.push('RPO_RTO_TARGET_NOT_DEFINED (DDP-016)');
-  }
-  if (context.pilotReport && context.pilotReport.phase !== 'EXIT_READY') {
-    blockers.push(`PILOT_NOT_EXIT_READY (phase=${context.pilotReport.phase})`);
-  }
-  if (context.manualUxPending) {
-    blockers.push('UAT_MANUAL_UX_CHECKLIST_PENDING');
+  return {
+    decision: blockers.length === 0 ? 'READY' : 'NOT_READY',
+    blockers: [...new Set(blockers)],
+  };
+}
+
+export function evaluateReadinessGate(input: ReadinessGateInput = {}): ReadinessGateResult {
+  const env = input.env ?? process.env;
+  const evaluationTime = input.evaluationTime ?? new Date();
+  const notes: string[] = [];
+  const engineeringChecks = buildEngineeringChecks(env);
+  const productionChecks: ReadinessCheck[] = [];
+  const productionBlockers: string[] = [];
+
+  const loadedEvidence =
+    input.evidence ??
+    ({
+      source: input.evidencePath ?? 'inline',
+      record: createPendingReadinessEvidence(),
+      loadError: 'READINESS_EVIDENCE_UNAVAILABLE: no evidence record supplied',
+    } satisfies LoadedReadinessEvidence);
+
+  const record = loadedEvidence.record;
+  const releaseCandidate = input.releaseCandidate ?? {
+    commitSha: null,
+    artifactDigest: null,
+    version: null,
+    source: 'unresolved',
+  };
+
+  if (loadedEvidence.loadError) {
+    productionBlockers.push(loadedEvidence.loadError);
   }
 
-  return [...new Set(blockers)];
+  const envMismatches = [
+    ...detectEnvEvidenceMismatches(env, record),
+    ...assertEvidenceNotPrematurelyCompleted(env, record),
+  ];
+  productionBlockers.push(...envMismatches);
+
+  productionBlockers.push(
+    ...validateReleaseBinding(record.releaseCandidate, record.businessSignOff.releaseCandidate, releaseCandidate),
+  );
+  productionBlockers.push(
+    ...validateReleaseBinding(record.releaseCandidate, record.manualUatUx.releaseCandidate, releaseCandidate),
+  );
+
+  const businessSignOffApproved = record.businessSignOff.decision === 'APPROVED';
+  const rpoRtoApproved = record.rpoRto.decision === 'APPROVED';
+  const manualUxCompleted = ['PASSED', 'PASSED_WITH_OBSERVATIONS'].includes(record.manualUatUx.status);
+
+  productionBlockers.push(...collectBusinessSignOffBlockers(record));
+  productionBlockers.push(...collectRpoRtoBlockers(record));
+  productionBlockers.push(...collectManualUatBlockers(record));
+
+  const pilotEvaluation = evaluatePilotEvidence({
+    env,
+    record,
+    evaluationTime,
+    pilotReport: input.pilotReport,
+    pilotMetrics: input.pilotMetrics,
+    pilotStartedAt: input.pilotStartedAt,
+  });
+  productionBlockers.push(...pilotEvaluation.blockers);
+  if (pilotEvaluation.note) {
+    notes.push(pilotEvaluation.note);
+  }
+
+  productionChecks.push(
+    check(
+      'uat',
+      'UAT APPROVED',
+      businessSignOffApproved ? 'PASS' : 'FAIL',
+      loadedEvidence.source,
+      businessSignOffApproved
+        ? `Business sign-off APPROVED (${record.businessSignOff.evidenceReference ?? 'authorized record'})`
+        : `Business sign-off ${record.businessSignOff.decision} — aceite empresarial não autorizado`,
+      !businessSignOffApproved,
+    ),
+  );
+
+  const pilotApproved = pilotEvaluation.approved;
+  productionChecks.push(
+    check(
+      'pilot',
+      'Pilot APPROVED',
+      pilotApproved ? 'PASS' : 'FAIL',
+      record.pilot.evidenceReference,
+      pilotApproved
+        ? `phase=${record.pilot.phase}; observation window satisfied`
+        : pilotEvaluation.detail,
+      !pilotApproved,
+    ),
+  );
+
+  productionChecks.push(
+    check(
+      'accessibility',
+      'Accessibility acceptable',
+      manualUxCompleted ? 'PASS' : 'CONDITIONAL',
+      record.manualUatUx.evidenceReference,
+      manualUxCompleted
+        ? `Manual UX/UAT ${record.manualUatUx.status}`
+        : `Manual UX/UAT ${record.manualUatUx.status} — checklist operador pendente`,
+      !manualUxCompleted,
+    ),
+  );
+
+  if (!rpoRtoApproved) {
+    notes.push(`${RPO_RTO_PRODUCTION_BLOCKER.decisionId}: RPO/RTO ${record.rpoRto.decision}`);
+  }
+
+  for (const entry of productionChecks) {
+    if (entry.blocker && entry.status !== 'PASS') {
+      productionBlockers.push(`${entry.id}: ${entry.detail}`);
+    }
+  }
+
+  const engineering = evaluateEngineeringReadiness(engineeringChecks);
+  const operationalEngineering = evaluateOperationalEngineeringState({
+    engineeringReadiness: engineering.decision,
+    record,
+    env,
+  });
+
+  if (operationalEngineering.pilotReady) {
+    notes.push('Operational engineering: PILOT_READY_TO_START');
+  }
+  if (operationalEngineering.uatReady) {
+    notes.push('Operational engineering: UAT_READY_TO_EXECUTE');
+  }
+
+  const uniqueProductionBlockers = [...new Set(productionBlockers)];
+  const productionReadiness: ProductionReadinessDecision =
+    uniqueProductionBlockers.length === 0 ? 'GO' : 'NO-GO';
+  const checks = [...engineeringChecks, ...productionChecks];
+  const establishedBaseline = buildReadinessEstablishedBaseline(evaluationTime);
+
+  return {
+    decision: productionReadiness,
+    engineeringReadiness: engineering.decision,
+    productionReadiness,
+    evaluatedAt: evaluationTime.toISOString(),
+    checks,
+    engineeringChecks,
+    productionChecks,
+    blockers: uniqueProductionBlockers,
+    engineeringBlockers: engineering.blockers,
+    productionBlockers: uniqueProductionBlockers,
+    support: loadSupportModel(env),
+    notes,
+    evidence: {
+      source: loadedEvidence.source,
+      schemaVersion: record.schemaVersion,
+      evidenceLoadError: loadedEvidence.loadError,
+      releaseCandidateSource: releaseCandidate.source,
+    },
+    establishedBaseline,
+    pendingHumanActions: summarizePendingHumanActions(establishedBaseline),
+    operationalEngineering,
+    envMismatches,
+  };
+}
+
+/** @deprecated Use evaluateReadinessGate — kept for backward compatibility */
+export const evaluateProductionReadinessGate = evaluateReadinessGate;
+
+function collectBusinessSignOffBlockers(record: ReadinessEvidenceRecord): string[] {
+  switch (record.businessSignOff.decision) {
+    case 'APPROVED':
+      return [];
+    case 'REJECTED':
+      return ['BUSINESS_SIGN_OFF_REJECTED'];
+    case 'REVOKED':
+      return ['BUSINESS_SIGN_OFF_REVOKED'];
+    default:
+      return ['BUSINESS_SIGN_OFF_MISSING'];
+  }
+}
+
+function collectRpoRtoBlockers(record: ReadinessEvidenceRecord): string[] {
+  if (record.rpoRto.decision === 'APPROVED') {
+    if (!record.rpoRto.rpo || !record.rpoRto.rto) {
+      return ['RPO_RTO_DEFINED_BUT_NOT_APPROVED'];
+    }
+    return [];
+  }
+  if (record.rpoRto.rpo || record.rpoRto.rto) {
+    return ['RPO_RTO_DEFINED_BUT_NOT_APPROVED'];
+  }
+  return ['RPO_RTO_NOT_DEFINED (DDP-016)'];
+}
+
+function collectManualUatBlockers(record: ReadinessEvidenceRecord): string[] {
+  if (['PASSED', 'PASSED_WITH_OBSERVATIONS'].includes(record.manualUatUx.status)) {
+    return [];
+  }
+  if (record.manualUatUx.status === 'FAILED') {
+    return ['MANUAL_UAT_FAILED'];
+  }
+  return ['MANUAL_UAT_NOT_COMPLETED'];
+}
+
+function evaluatePilotEvidence(input: {
+  env: NodeJS.ProcessEnv;
+  record: ReadinessEvidenceRecord;
+  evaluationTime: Date;
+  pilotReport?: PilotStatusReport;
+  pilotMetrics?: PilotMetricsInput;
+  pilotStartedAt?: string;
+}): { approved: boolean; blockers: string[]; detail: string; note?: string } {
+  const { record, evaluationTime } = input;
+  const blockers: string[] = [];
+  const phase = record.pilot.phase;
+
+  if (phase === 'NOT_STARTED') {
+    return {
+      approved: false,
+      blockers: ['PILOT_NOT_STARTED'],
+      detail: 'Pilot phase NOT_STARTED',
+    };
+  }
+
+  if (phase === 'FAILED' || phase === 'ABORTED') {
+    return {
+      approved: false,
+      blockers: [`PILOT_NOT_EXIT_READY (phase=${phase})`],
+      detail: `Pilot phase ${phase}`,
+    };
+  }
+
+  if (!record.pilot.startedAt) {
+    return {
+      approved: false,
+      blockers: ['READINESS_EVIDENCE_UNAVAILABLE: pilot.startedAt missing for active pilot'],
+      detail: 'Pilot active without startedAt in authorized record',
+    };
+  }
+
+  if (!hasMetMinObservationDays(record.pilot.startedAt, record.pilot.minObservationDays, evaluationTime)) {
+    return {
+      approved: false,
+      blockers: ['PILOT_OBSERVATION_WINDOW_NOT_COMPLETED'],
+      detail: `Observation window < ${record.pilot.minObservationDays} days since ${record.pilot.startedAt}`,
+    };
+  }
+
+  let pilotReport = input.pilotReport;
+  if (!pilotReport && input.env['PILOT_PROGRAM_ENABLED'] === 'true') {
+    pilotReport = runPilotStatusCheck({
+      env: input.env,
+      metrics: input.pilotMetrics ?? zeroPilotMetrics(),
+      pilotStartedAt: input.pilotStartedAt ?? record.pilot.startedAt,
+    });
+  }
+
+  if (pilotReport && pilotReport.phase !== 'EXIT_READY') {
+    blockers.push(`PILOT_NOT_EXIT_READY (phase=${pilotReport.phase})`);
+  }
+
+  if (phase !== 'EXIT_READY') {
+    blockers.push(`PILOT_NOT_EXIT_READY (phase=${phase})`);
+  }
+
+  if (blockers.length > 0) {
+    return {
+      approved: false,
+      blockers,
+      detail: blockers.join('; '),
+      note: pilotReport
+        ? `Live pilot check: phase=${pilotReport.phase}; failed=${pilotReport.exitCriteriaFailed.join(',') || 'none'}`
+        : undefined,
+    };
+  }
+
+  return {
+    approved: true,
+    blockers: [],
+    detail: `phase=${phase}; observation window completed`,
+    note: pilotReport ? `Live pilot check: phase=${pilotReport.phase}` : undefined,
+  };
+}
+
+function detectEnvEvidenceMismatches(env: NodeJS.ProcessEnv, record: ReadinessEvidenceRecord): string[] {
+  const mismatches: string[] = [];
+
+  if (
+    (env['READINESS_BUSINESS_SIGN_OFF'] === 'APPROVED' || env['UAT_BUSINESS_SIGN_OFF'] === 'APPROVED') &&
+    record.businessSignOff.decision !== 'APPROVED'
+  ) {
+    mismatches.push(
+      'READINESS_EVIDENCE_MISMATCH: env claims business sign-off APPROVED without authorized evidence',
+    );
+  }
+
+  if (
+    (env['READINESS_RPO_RTO_APPROVED'] === 'true' || env['DDP_016_RESOLVED'] === 'true') &&
+    record.rpoRto.decision !== 'APPROVED'
+  ) {
+    mismatches.push('READINESS_EVIDENCE_MISMATCH: env claims RPO/RTO approved without DDP-016 evidence');
+  }
+
+  if (
+    env['UAT_MANUAL_UX_COMPLETED'] === 'true' &&
+    !['PASSED', 'PASSED_WITH_OBSERVATIONS'].includes(record.manualUatUx.status)
+  ) {
+    mismatches.push('READINESS_EVIDENCE_MISMATCH: env claims manual UAT completed without session record');
+  }
+
+  if (
+    env['PILOT_STARTED_AT'] &&
+    (record.pilot.phase === 'NOT_STARTED' || record.pilot.startedAt !== env['PILOT_STARTED_AT'])
+  ) {
+    mismatches.push('READINESS_EVIDENCE_MISMATCH: env PILOT_STARTED_AT without matching authorized pilot record');
+  }
+
+  return mismatches;
 }
 
 function zeroPilotMetrics(): PilotMetricsInput {
@@ -245,4 +510,12 @@ function zeroPilotMetrics(): PilotMetricsInput {
     billingAgingRecords: 0,
     openSupportTickets: 0,
   };
+}
+
+export function assertRootReadinessGateScriptDoesNotImportDotenv(): void {
+  const scriptPath = resolve(findRepoRoot(), 'scripts/readiness/gate.mjs');
+  const content = readFileSync(scriptPath, 'utf8');
+  if (content.includes("from 'dotenv'") || content.includes('from "dotenv"')) {
+    throw new Error('scripts/readiness/gate.mjs must not import dotenv');
+  }
 }

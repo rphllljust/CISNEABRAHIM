@@ -1,11 +1,43 @@
-import { config } from 'dotenv';
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import pg from 'pg';
+import { getTestDatabaseUrl, loadVitestEnv } from './load-vitest-env';
 
-config({ path: resolve(__dirname, '../../../../.env') });
-if (!process.env['TEST_DATABASE_URL']) {
-  config({ path: resolve(__dirname, '../../../../.env.example') });
+loadVitestEnv();
+
+const repoRoot = resolve(__dirname, '../../../../');
+const journalPath = resolve(repoRoot, 'packages/database/migrations/meta/_journal.json');
+const migrationsDir = resolve(repoRoot, 'packages/database/migrations');
+
+function migrationFileHash(fileName: string): string {
+  const content = readFileSync(join(migrationsDir, fileName), 'utf8');
+  return createHash('sha256').update(content).digest('hex');
+}
+
+async function syncDrizzleJournal(pool: pg.Pool): Promise<void> {
+  const journal = JSON.parse(readFileSync(journalPath, 'utf8')) as {
+    entries: Array<{ tag: string; when: number }>;
+  };
+  const applied = await pool.query<{ hash: string }>('SELECT hash FROM drizzle.__drizzle_migrations');
+  const appliedHashes = new Set(applied.rows.map((row) => row.hash));
+
+  const hasScopedRecords = await tableExists(pool, '"authorization".scoped_records');
+  if (!hasScopedRecords) {
+    return;
+  }
+
+  for (const entry of journal.entries) {
+    const hash = migrationFileHash(`${entry.tag}.sql`);
+    if (appliedHashes.has(hash)) {
+      continue;
+    }
+    await pool.query('INSERT INTO drizzle.__drizzle_migrations (hash, created_at) VALUES ($1, $2)', [
+      hash,
+      entry.when,
+    ]);
+    appliedHashes.add(hash);
+  }
 }
 
 async function tableExists(pool: pg.Pool, table: string): Promise<boolean> {
@@ -61,13 +93,15 @@ async function applySqlFile(pool: pg.Pool, relativePath: string): Promise<void> 
 }
 
 export default async function ensureMigrations(): Promise<void> {
-  const testDatabaseUrl = process.env['TEST_DATABASE_URL'];
+  const testDatabaseUrl = getTestDatabaseUrl();
   if (!testDatabaseUrl) {
     return;
   }
 
   const pool = new pg.Pool({ connectionString: testDatabaseUrl });
   try {
+    await syncDrizzleJournal(pool);
+
     const hasScopedRecords = await tableExists(pool, '"authorization".scoped_records');
     if (!hasScopedRecords) {
       await applySqlFile(pool, '0003_contextual_scope_enums.sql');
@@ -222,6 +256,26 @@ export default async function ensureMigrations(): Promise<void> {
     const hasNotifications = await tableExists(pool, 'ntf.notifications');
     if (!hasNotifications) {
       await applySqlFile(pool, '0030_notification_delivery.sql');
+    }
+
+    const hasBusinessAlerts = await tableExists(pool, 'alt.business_alerts');
+    if (!hasBusinessAlerts) {
+      await applySqlFile(pool, '0031_operational_business_alerts.sql');
+    }
+
+    const hasOperationalAlertScanJob = await pool.query<{ exists: boolean }>(
+      `SELECT EXISTS (
+         SELECT 1
+         FROM pg_type t
+         INNER JOIN pg_enum e ON e.enumtypid = t.oid
+         INNER JOIN pg_namespace n ON n.oid = t.typnamespace
+         WHERE n.nspname = 'plt'
+           AND t.typname = 'background_job_kind'
+           AND e.enumlabel = 'OPERATIONAL_ALERT_SCAN'
+       ) AS exists`,
+    );
+    if (!hasOperationalAlertScanJob.rows[0]?.exists) {
+      await applySqlFile(pool, '0032_background_job_operational_alert_scan.sql');
     }
   } finally {
     await pool.end();

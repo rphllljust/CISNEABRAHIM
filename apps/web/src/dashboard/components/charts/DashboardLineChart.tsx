@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useState } from 'react';
 import { formatDateLabel } from '../../utils/dashboard-formatters';
 import type { ExecutiveTrendPoint } from '../../types/dashboard.types';
 

@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { BACKGROUND_JOB_KINDS } from '../../platform/background-jobs/domain/background-job-kind';
-import { BackgroundJobEnqueueService } from '../../platform/background-jobs/services/background-job-enqueue.service';
+import { BACKGROUND_JOB_KINDS } from '../domain/background-job-kind';
+import { BackgroundJobEnqueueService } from './background-job-enqueue.service';
 
 const SCAN_INTERVAL_MS = Number.parseInt(process.env['ALERT_SCAN_INTERVAL_MS'] ?? '60000', 10);
 

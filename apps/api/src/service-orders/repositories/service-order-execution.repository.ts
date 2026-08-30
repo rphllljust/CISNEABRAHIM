@@ -1,6 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import type { Pool, PoolClient } from 'pg';
 import { DatabaseService } from '../../infrastructure/database/database.service';
+import { FAULT_HOOKS } from '../../platform/fault-injection/fault-hook.ids';
+import { FAULT_INJECTION_PORT, type FaultInjectionPort } from '../../platform/fault-injection/fault-injection.port';
+import { maybeInjectFault } from '../../platform/fault-injection/fault-injection.util';
 import { OutboxDomainEventWriter } from '../../platform/outbox/services/outbox-domain-event.writer';
 import { EXECUTION_ENTRY_HISTORY_EVENTS } from '../domain/service-order-execution';
 import type {
@@ -37,6 +40,7 @@ export class ServiceOrderExecutionRepository {
   constructor(
     private readonly databaseService: DatabaseService,
     private readonly outboxWriter: OutboxDomainEventWriter,
+    @Optional() @Inject(FAULT_INJECTION_PORT) private readonly faultInjection?: FaultInjectionPort,
   ) {}
 
   private pool(): Pool {
@@ -169,6 +173,9 @@ export class ServiceOrderExecutionRepository {
         return { outcome: 'invalid_state' };
       }
 
+      if (input.transition === 'complete') {
+        await maybeInjectFault(this.faultInjection, FAULT_HOOKS.ExecutionCompleteAfterMutationBeforeHistory);
+      }
       await client.query(
         `INSERT INTO so.service_order_history_events
            (service_order_id, event_type, payload, actor_identity_id)
@@ -180,6 +187,10 @@ export class ServiceOrderExecutionRepository {
           input.actorIdentityId,
         ],
       );
+
+      if (input.transition === 'complete') {
+        await maybeInjectFault(this.faultInjection, FAULT_HOOKS.ExecutionCompleteAfterHistoryBeforeOutbox);
+      }
 
       if (input.idempotencyKey) {
         await client.query(

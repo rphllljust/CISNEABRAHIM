@@ -82,7 +82,6 @@ export function resolveProductivityPeriod(input: {
     const weekday = weekdayInTimeZone(now, input.businessTimezone);
     const daysFromMonday = (weekday + 6) % 7;
     const weekStart = addDays(startOfToday, -daysFromMonday);
-    const weekEnd = addDays(weekStart, 6);
     return {
       preset: input.preset,
       fromInclusive: weekStart,

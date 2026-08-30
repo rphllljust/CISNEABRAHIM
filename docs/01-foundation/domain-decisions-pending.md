@@ -104,9 +104,37 @@ Quais funções, segregações e incompatibilidades (maker-checker) existem? Sem
 
 ## DDP-016 — RPO e RTO
 
-Quais objetivos de ponto e tempo de recuperação? Valores atuais: `UNKNOWN`. Não atribuir números.
+| Campo | Valor |
+| ----- | ----- |
+| Status | **READY_FOR_APPROVAL** |
+| Proposta técnica | `docs/19-operations/ddp-016-rpo-rto-proposal.json` |
+| Evidência implementação | Prompt 84 (backup), 85 (DR), `ddp-016-proposal.ts` |
 
-**Status:** `OPEN`
+**Classificação:** proposta técnica fundamentada na arquitetura as-built (pg_dump lógico, sem WAL/PITR). Valores comerciais **não aprovados** — aguarda decisão humana.
+
+### Capacidade técnica atual (as-built)
+
+| Item | Valor |
+| ---- | ----- |
+| Método backup PG | `pg_dump -Fc` lógico |
+| WAL/PITR | **Não implementado** |
+| Réplica/failover PG | **Não implementado** |
+| RPO alcançável (diário) | **24h** (intervalo entre backups) |
+| RTO alcançável (manual) | **~4h** (runbook); drill isolado mediu **~4,3s** (automático, não representa produção) |
+
+**Última validação DR (isolada, `cisne_local_test`):** correção aplicada — `hydrateObjectStorageForDr` copia objetos referenciados no DB do storage canônico (`OBJECT_STORAGE_ROOT` / `DR_OBJECT_STORAGE_SOURCE`) para o root isolado antes do backup; elimina falha `document_object_integrity` por seed fora do storage do drill. Evidência anterior (FAIL): `apps/api/.backup/dr-drill-validate/status/latest.json`. Reexecutar `pnpm dr:drill` com `pg_dump` disponível para novo PASS.
+
+### Alternativas para decisão
+
+| Tier | RPO | RTO | Alcançabilidade |
+| ---- | --- | --- | --------------- |
+| Conservadora | 24h | 4h | **ACHIEVABLE_NOW** |
+| Recomendada | 6h | 2h | REQUIRES_OPERATIONAL_CHANGE (agendamento 6h) |
+| Alta disponibilidade | 15min | 1h | NOT_ACHIEVABLE_WITH_CURRENT_ARCHITECTURE |
+
+**Decisão humana necessária:** escolher tier, registrar `rpo`/`rto` aprovados + `approvedBy`/`approvedAt` em `readiness-evidence.json`.
+
+**Status anterior:** `OPEN` → atualizado 2026-08-30 após análise técnica.
 
 ## DDP-017 — Volume
 

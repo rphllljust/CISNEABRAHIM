@@ -17,7 +17,6 @@ export type UatScenarioDefinition = {
   measurementBasis: 'TIME' | 'TRIP' | 'GLOBAL_COMPLETION';
   defaultUnitCode: string;
   resourceTypeCodes: string[];
-  client: UatFictionalClient;
   serviceName: string;
   proposalTitle: string;
   requestDescription: string;
@@ -35,13 +34,6 @@ export const UAT_SCENARIOS: UatScenarioDefinition[] = [
     measurementBasis: 'TIME',
     defaultUnitCode: 'DAY',
     resourceTypeCodes: ['EXCAVATOR'],
-    client: {
-      legalName: 'Mineração Vale do Madeira LTDA',
-      tradeName: 'Vale do Madeira',
-      taxId: '11222333000181',
-      contactName: 'Carlos Aguiar',
-      city: 'Ariquemes',
-    },
     serviceName: 'Locação diária de escavadeira hidráulica',
     proposalTitle: 'Proposta locação escavadeira — obra de acesso',
     requestDescription: 'Locação de escavadeira por 3 dias para abertura de via interna.',
@@ -57,13 +49,6 @@ export const UAT_SCENARIOS: UatScenarioDefinition[] = [
     measurementBasis: 'TRIP',
     defaultUnitCode: 'TRIP',
     resourceTypeCodes: ['TRUCK'],
-    client: {
-      legalName: 'Agroindustrial Rondônia LTDA',
-      tradeName: 'Agro Rondônia',
-      taxId: '11444777000161',
-      contactName: 'Fernanda Ribeiro',
-      city: 'Ji-Paraná',
-    },
     serviceName: 'Transporte de insumos — trecho urbano',
     proposalTitle: 'Proposta transporte de fertilizantes',
     requestDescription: 'Duas viagens com caminhão truck para entrega em silo cliente.',
@@ -79,13 +64,6 @@ export const UAT_SCENARIOS: UatScenarioDefinition[] = [
     measurementBasis: 'GLOBAL_COMPLETION',
     defaultUnitCode: 'SERVICE',
     resourceTypeCodes: ['EXCAVATOR', 'WATER_TRUCK'],
-    client: {
-      legalName: 'Construtora Porto Velho Infraestrutura LTDA',
-      tradeName: 'PVH Infra',
-      taxId: '00000000000191',
-      contactName: 'Marcos Teixeira',
-      city: 'Porto Velho',
-    },
     serviceName: 'Terraplenagem com compactação e umidificação',
     proposalTitle: 'Proposta obra composta — pátio logístico',
     requestDescription: 'Serviço composto com escavadeira e caminhão pipa para umidificação.',

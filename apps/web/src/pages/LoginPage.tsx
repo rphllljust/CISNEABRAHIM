@@ -6,12 +6,13 @@ import { sanitizeRedirectPath } from '../auth/utils/safe-redirect';
 import { Alert } from '../ui/Alert';
 import { Button } from '../ui/Button';
 import { Field } from '../ui/Field';
-import { Input } from '../ui/Input';
 import { CisneWordmark } from './components/CisneWordmark';
+import { LoginBrandEmblem } from './components/LoginBrandEmblem';
 import { LoginPasswordField } from './components/LoginPasswordField';
 import './login.css';
 
 const PAGE_TITLE = 'Acesso — CISNE RONDÔNIA';
+const LOGIN_SUPPORT_EMAIL = 'suporte@cisne.ro.gov.br';
 
 type LocationState = {
   from?: string;
@@ -95,90 +96,120 @@ export function LoginPage() {
     <main className="login-page">
       <div className="login-page__layout">
         <aside className="login-page__brand" aria-label="Identidade institucional">
-          <div className="login-page__brand-content">
+          <header className="login-page__brand-header">
             <CisneWordmark />
-            <p className="login-page__brand-tagline">Gestão de serviços, operações e resultados.</p>
+            <span className="login-page__status-badge">
+              <span className="login-page__status-dot" aria-hidden="true" />
+              Sistema operante
+            </span>
+          </header>
+
+          <div className="login-page__brand-emblem-wrap">
+            <LoginBrandEmblem />
+          </div>
+
+          <div className="login-page__brand-content">
+            <p className="login-page__brand-kicker">Ambiente institucional</p>
+            <h2 className="login-page__brand-headline">
+              Precisão que atravessa
+              <br />
+              <em className="login-page__brand-headline-accent">cada</em> operação.
+            </h2>
             <p className="login-page__brand-support">
-              Controle integrado para uma operação mais segura, organizada e eficiente.
+              Controle, rastreabilidade e segurança para processos de alta exigência, reunidos em
+              um único ambiente corporativo.
             </p>
           </div>
         </aside>
 
         <section className="login-page__access" aria-labelledby="login-form-title">
-          <div className="login-page__form-shell">
-            <div className="login-page__mobile-brand">
-              <CisneWordmark compact />
+          <div className="login-page__access-column">
+            <div className="login-page__access-main">
+              <div className="login-page__form-shell">
+                <div className="login-page__mobile-brand">
+                  <CisneWordmark compact />
+                </div>
+
+                <p className="login-page__form-kicker">Acesso institucional</p>
+                <h1 id="login-form-title" className="login-page__form-title">
+                  Acessar conta
+                </h1>
+                <p className="login-page__form-lead">Entre com suas credenciais para continuar.</p>
+
+                {sessionExpiredNotice ? (
+                  <Alert tone="info" className="login-page__notice" role="status">
+                    {sessionExpiredNotice}
+                  </Alert>
+                ) : null}
+
+                <form
+                  className="login-page__form"
+                  onSubmit={(event) => void handleSubmit(event)}
+                  noValidate
+                  aria-describedby={errorMessage ? formErrorId : undefined}
+                >
+                  <Field label="Usuário" htmlFor={loginId} required className="login-page__field login-page__field--user">
+                    <input
+                      id={loginId}
+                      name="login"
+                      type="text"
+                      autoComplete="username"
+                      inputMode="text"
+                      placeholder="usuario.institucional"
+                      required
+                      value={loginValue}
+                      onChange={(event) => setLoginValue(event.target.value)}
+                      disabled={loading}
+                      aria-invalid={showFieldInvalid || undefined}
+                      className="login-field__input"
+                      aria-describedby={errorMessage ? formErrorId : undefined}
+                    />
+                  </Field>
+
+                  <Field label="Senha" htmlFor={passwordId} required className="login-page__field login-page__field--password">
+                    <LoginPasswordField
+                      id={passwordId}
+                      name="password"
+                      autoComplete="current-password"
+                      placeholder="••••••••"
+                      required
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      invalid={showFieldInvalid}
+                      disabled={loading}
+                      aria-describedby={errorMessage ? formErrorId : undefined}
+                    />
+                  </Field>
+
+                  {errorMessage ? (
+                    <Alert tone="error" role="alert" id={formErrorId}>
+                      {errorMessage}
+                    </Alert>
+                  ) : null}
+
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    className="login-page__submit !rounded-none"
+                    loading={loading}
+                    loadingText="Entrando…"
+                    disabled={loading}
+                    aria-busy={loading}
+                  >
+                    Entrar →
+                  </Button>
+                </form>
+
+                <p className="login-page__footer">Acesso restrito a usuários autorizados.</p>
+              </div>
             </div>
 
-            <h1 id="login-form-title" className="login-page__form-title">
-              Acesso ao sistema
-            </h1>
-            <p className="login-page__form-lead">Entre com suas credenciais para continuar.</p>
-
-            {sessionExpiredNotice ? (
-              <Alert tone="info" className="mt-4" role="status">
-                {sessionExpiredNotice}
-              </Alert>
-            ) : null}
-
-            <form
-              className="login-page__form"
-              onSubmit={(event) => void handleSubmit(event)}
-              noValidate
-              aria-describedby={errorMessage ? formErrorId : undefined}
-            >
-              <Field label="Usuário" htmlFor={loginId} required>
-                <Input
-                  id={loginId}
-                  name="login"
-                  type="text"
-                  autoComplete="username"
-                  inputMode="text"
-                  placeholder="Informe seu usuário"
-                  required
-                  value={loginValue}
-                  onChange={(event) => setLoginValue(event.target.value)}
-                  invalid={showFieldInvalid}
-                  disabled={loading}
-                  aria-describedby={errorMessage ? formErrorId : undefined}
-                />
-              </Field>
-
-              <Field label="Senha" htmlFor={passwordId} required>
-                <LoginPasswordField
-                  id={passwordId}
-                  name="password"
-                  autoComplete="current-password"
-                  placeholder="Informe sua senha"
-                  required
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  invalid={showFieldInvalid}
-                  disabled={loading}
-                  aria-describedby={errorMessage ? formErrorId : undefined}
-                />
-              </Field>
-
-              {errorMessage ? (
-                <Alert tone="error" role="alert" id={formErrorId}>
-                  {errorMessage}
-                </Alert>
-              ) : null}
-
-              <Button
-                type="submit"
-                variant="primary"
-                className="login-page__submit"
-                loading={loading}
-                loadingText="Entrando…"
-                disabled={loading}
-                aria-busy={loading}
-              >
-                Entrar
-              </Button>
-            </form>
-
-            <p className="login-page__footer">Acesso restrito a usuários autorizados.</p>
+            <footer className="login-page__access-meta">
+              <span className="login-page__access-version">v2.4.1</span>
+              <a className="login-page__access-support" href={`mailto:${LOGIN_SUPPORT_EMAIL}`}>
+                {LOGIN_SUPPORT_EMAIL}
+              </a>
+            </footer>
           </div>
         </section>
       </div>

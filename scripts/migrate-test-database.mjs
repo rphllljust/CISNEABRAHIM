@@ -1,28 +1,19 @@
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
-import { applyContextualScopeMigrations } from './apply-contextual-scope-migrations.mjs';
+import { loadRepoEnv, getTestDatabaseUrl } from './lib/database-test-env.mjs';
 
-const testDatabaseUrl = process.env['TEST_DATABASE_URL'];
+loadRepoEnv();
 
-if (!testDatabaseUrl) {
-  console.error('TEST_DATABASE_URL is required to migrate the integration-test database.');
+if (!getTestDatabaseUrl()) {
+  console.error(
+    'TEST_DATABASE_URL is required to migrate the integration-test database. Copy .env.example to .env and start PostgreSQL (pnpm db:up).',
+  );
   process.exit(1);
 }
 
-const databasePackageDir = resolve('packages/database');
-
-const result = spawnSync('pnpm', ['exec', 'drizzle-kit', 'migrate'], {
-  cwd: databasePackageDir,
+const result = spawnSync('node', [resolve(import.meta.dirname, 'run-drizzle-migrate.mjs')], {
   stdio: 'inherit',
-  env: {
-    ...process.env,
-    DATABASE_URL: testDatabaseUrl,
-  },
-  shell: true,
+  env: process.env,
 });
 
-if (result.status !== 0) {
-  await applyContextualScopeMigrations(testDatabaseUrl);
-}
-
-process.exit(0);
+process.exit(result.status ?? 1);

@@ -9,6 +9,8 @@ import {
   type OperationalDashboardSnapshot,
 } from '../types/dashboard.types';
 
+export { DashboardApiError } from '../types/dashboard.types';
+
 function authHeaders(): HeadersInit {
   const accessToken = tokenStore.getAccessToken();
   if (!accessToken) {

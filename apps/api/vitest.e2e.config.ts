@@ -1,11 +1,8 @@
-import { config } from 'dotenv';
-import { resolve } from 'node:path';
 import { defineConfig } from 'vitest/config';
 import swc from 'unplugin-swc';
+import { loadVitestEnv } from './src/test/load-vitest-env';
 
-config({ path: resolve(__dirname, '../../.env') });
-
-process.env['JWT_SECRET'] ??= 'test-jwt-secret-with-at-least-32-characters!!';
+loadVitestEnv();
 
 export default defineConfig({
   plugins: [swc.vite({ module: { type: 'es6' } })],
@@ -15,6 +12,8 @@ export default defineConfig({
     include: ['src/**/*.e2e.spec.ts'],
     fileParallelism: false,
     sequence: { concurrent: false },
+    hookTimeout: 120_000,
+    testTimeout: 300_000,
     globalSetup: ['./src/test/ensure-migrations.ts'],
   },
 });

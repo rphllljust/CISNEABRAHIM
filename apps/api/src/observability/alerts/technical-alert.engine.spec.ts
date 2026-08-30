@@ -30,6 +30,8 @@ function baseInput(overrides: Partial<TechnicalAlertConditionInput> = {}): Techn
     storageFailures: 0,
     erpFailures: 0,
     trackingFailures: 0,
+    erpIntegrationConfigured: false,
+    trackingIntegrationConfigured: false,
     notificationFailures: 0,
     backupStatus: 'ok',
     diskUsagePercent: 50,
@@ -81,6 +83,25 @@ describe('evaluateTechnicalAlertConditions', () => {
     );
     expect(firing[0]?.severity).toBe(TECHNICAL_ALERT_SEVERITIES.Critical);
     expect(firing[0]?.runbook).toBeDefined();
+  });
+
+  it('does not breach ERP failures when ACL adapter is unconfigured', () => {
+    const results = evaluateTechnicalAlertConditions(
+      baseInput({ erpFailures: 99, erpIntegrationConfigured: false }),
+      policy,
+    );
+    const alert = results.find((entry) => entry.alertType === TECHNICAL_ALERT_TYPES.ErpFailures);
+    expect(alert?.breached).toBe(false);
+    expect(alert?.observedValue).toBe('adapter_unconfigured');
+  });
+
+  it('breaches ERP failures only when ACL adapter is configured', () => {
+    const results = evaluateTechnicalAlertConditions(
+      baseInput({ erpFailures: 5, erpIntegrationConfigured: true }),
+      policy,
+    );
+    const alert = results.find((entry) => entry.alertType === TECHNICAL_ALERT_TYPES.ErpFailures);
+    expect(alert?.breached).toBe(true);
   });
 });
 

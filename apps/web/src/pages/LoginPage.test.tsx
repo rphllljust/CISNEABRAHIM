@@ -33,12 +33,12 @@ describe('LoginPage', () => {
   it('renders CISNE RONDÔNIA wordmark and access form', () => {
     renderLogin();
     expect(screen.getAllByLabelText('CISNE Rondônia').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('CISNE').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Cisne/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText('RONDÔNIA').length).toBeGreaterThan(0);
-    expect(screen.getByRole('heading', { name: /acesso ao sistema/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /acessar conta/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/^usuário/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^senha/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^entrar$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^entrar/i })).toBeInTheDocument();
     expect(document.title).toBe('Acesso — CISNE RONDÔNIA');
   });
 
@@ -79,7 +79,7 @@ describe('LoginPage', () => {
     renderLogin();
     await user.type(screen.getByLabelText(/^usuário/i), 'user@test');
     await user.type(screen.getByLabelText(/^senha/i), 'Password1!');
-    const submit = screen.getByRole('button', { name: /^entrar$/i });
+    const submit = screen.getByRole('button', { name: /^entrar/i });
     await user.click(submit);
     await user.click(submit);
 
@@ -106,7 +106,7 @@ describe('LoginPage', () => {
     renderLogin();
     await user.type(screen.getByLabelText(/^usuário/i), 'missing@test');
     await user.type(screen.getByLabelText(/^senha/i), 'wrong');
-    await user.click(screen.getByRole('button', { name: /^entrar$/i }));
+    await user.click(screen.getByRole('button', { name: /^entrar/i }));
 
     await waitFor(() => {
       expect(screen.getByRole('alert')).toHaveTextContent(
@@ -133,7 +133,7 @@ describe('LoginPage', () => {
     renderLogin();
     await user.type(screen.getByLabelText(/^usuário/i), 'user@test');
     await user.type(screen.getByLabelText(/^senha/i), 'Password1!');
-    await user.click(screen.getByRole('button', { name: /^entrar$/i }));
+    await user.click(screen.getByRole('button', { name: /^entrar/i }));
 
     await waitFor(() => {
       expect(screen.getByRole('alert')).toHaveTextContent('Muitas tentativas. Aguarde e tente novamente.');
@@ -147,7 +147,7 @@ describe('LoginPage', () => {
     renderLogin();
     await user.type(screen.getByLabelText(/^usuário/i), 'user@test');
     await user.type(screen.getByLabelText(/^senha/i), 'Password1!');
-    await user.click(screen.getByRole('button', { name: /^entrar$/i }));
+    await user.click(screen.getByRole('button', { name: /^entrar/i }));
 
     await waitFor(() => {
       expect(screen.getByRole('alert')).toHaveTextContent(

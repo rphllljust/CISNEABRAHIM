@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import { requestUrl } from './request-url';
+import { parseRequestPath } from './request-url';
 import { createAssetsFetchMock } from './assets-fetch-mock';
 import {
   ASSET_ALLOCATION_STATUSES,
@@ -52,6 +52,7 @@ export type ServiceOrdersFetchMockOptions = {
   billingDocumentAllowed?: boolean;
   billingDocumentReadAllowed?: boolean;
   billingDocumentAlreadyExists?: boolean;
+  billingDocumentDelayedIssueMs?: number;
   billingDocumentTermsMismatch?: boolean;
   seedBilling?: BillingSeedKind;
   purchaseOrderPaymentTerms?: string;
@@ -457,13 +458,13 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
     };
   }
 
-  function handleBillingDocumentsRoute(
+  async function handleBillingDocumentsRoute(
     orderId: string,
     billing: MockBilling,
     docSuffix: string,
     method: string,
     init?: RequestInit,
-  ): Response | null {
+  ): Promise<Response | null> {
     if (!billingDocumentReadAllowed) {
       return orderError('BILLING_DENIED', 403);
     }
@@ -480,13 +481,27 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
       if (options.billingDocumentTermsMismatch) {
         return orderError('BILLING_COMMERCIAL_TERMS_MISMATCH', 409);
       }
+      const issueIdempotencyKey =
+        typeof body.idempotencyKey === 'string' ? body.idempotencyKey : undefined;
+      if (issueIdempotencyKey) {
+        const cached = idempotency.get(`${orderId}:documents:${issueIdempotencyKey}`);
+        if (cached) {
+          return jsonResponse(cached, 201);
+        }
+      }
       const existing = (billingDocuments.get(orderId) ?? []).some((doc) => doc.status === 'FINALIZED');
       if (existing || options.billingDocumentAlreadyExists) {
         return orderError('BILLING_DOCUMENT_ALREADY_EXISTS', 409);
       }
+      if (options.billingDocumentDelayedIssueMs) {
+        await new Promise((resolve) => setTimeout(resolve, options.billingDocumentDelayedIssueMs));
+      }
       const dueDate = readString(body.dueDate) || null;
       const created = buildBillingDocument(orderId, billing, dueDate);
       billingDocuments.set(orderId, [created]);
+      if (issueIdempotencyKey) {
+        idempotency.set(`${orderId}:documents:${issueIdempotencyKey}`, created);
+      }
       return jsonResponse(created, 201);
     }
 
@@ -1161,7 +1176,7 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
 
     const documentsMatch = actionSuffix.match(/^\/documents(\/.*)?$/);
     if (documentsMatch) {
-      return handleBillingDocumentsRoute(
+      return await handleBillingDocumentsRoute(
         orderId,
         billing,
         documentsMatch[1] ?? '',
@@ -1173,11 +1188,9 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
     return null;
   }
 
-  return vi.fn(async (input: RequestInfo, init?: RequestInit) => {
-    const url = requestUrl(input);
+  return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const { pathname, searchParams } = parseRequestPath(input);
     const method = init?.method ?? 'GET';
-    const parsedUrl = new URL(url);
-    const pathname = parsedUrl.pathname;
 
     if (pathname === '/api/v1/resources/physical-assets' && method === 'GET') {
       const auth = init?.headers ? new Headers(init.headers).get('authorization') : null;
@@ -1187,9 +1200,9 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
       if (options.assetListAllowed === false) {
         return orderError('ASSET_DENIED', 403);
       }
-      const limit = Number(parsedUrl.searchParams.get('limit') ?? '20');
-      const offset = Number(parsedUrl.searchParams.get('offset') ?? '0');
-      const resourceTypeId = parsedUrl.searchParams.get('resourceTypeId');
+      const limit = Number(searchParams.get('limit') ?? '20');
+      const offset = Number(searchParams.get('offset') ?? '0');
+      const resourceTypeId = searchParams.get('resourceTypeId');
       let items = [...planningAssets];
       if (resourceTypeId) {
         items = items.filter((asset) => asset.resourceTypeId === resourceTypeId);

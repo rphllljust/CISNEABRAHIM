@@ -12,7 +12,7 @@ export async function prepareAuthenticatedSession(
   await page.goto('/login');
   await page.getByLabel(/^usuário/i).fill(TEST_LOGIN);
   await page.getByLabel(/^senha/i).fill(TEST_PASSWORD);
-  await page.getByRole('button', { name: /^entrar$/i }).click();
+  await page.getByRole('button', { name: /^entrar/i }).click();
   await expect(page.getByRole('heading', { name: /painel operacional/i })).toBeVisible();
 }
 

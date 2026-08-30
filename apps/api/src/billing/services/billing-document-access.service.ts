@@ -1,5 +1,5 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import {
   SECURITY_AUDIT_ACTIONS,
   SECURITY_AUDIT_CLASSIFICATIONS,
@@ -315,6 +315,10 @@ export class BillingDocumentAccessService {
       documentNumber: input.allocation.documentNumber,
     });
     const { buffer, sha256 } = await renderBillingDocumentPdf(snapshot);
+    const verifiedSha256 = createHash('sha256').update(buffer).digest('hex');
+    if (verifiedSha256 !== sha256) {
+      throw new Error('BILLING_DOCUMENT_ARTIFACT_HASH_MISMATCH');
+    }
     const storageKey = this.downloadTokens.generateStorageKey();
     const storedDocumentId = randomUUID();
     const storedObjectId = randomUUID();

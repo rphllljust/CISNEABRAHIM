@@ -5,22 +5,22 @@ Repositório de governança e engenharia do **SISTEMA CISNE RONDÔNIA**, sistema
 ## Estágio atual
 
 ```text
-PROJECT PHASE: FOUNDATION → TECHNICAL BOOTSTRAP
-FUNCTIONAL CODE: NOT STARTED (domínio empresarial)
-TECHNICAL SCAFFOLD: STARTED (Prompt 16)
-DATABASE: STARTED (Prompt 17 — local Docker PG 18 + Drizzle técnico)
-BACKEND SHELL: @cisne/api — health check only
-FRONTEND SHELL: @cisne/web — bootstrap UI only
-AUTHENTICATION: NOT STARTED
-DOMAIN MODEL: NOT FINALIZED
-BUSINESS SOURCES: PENDING
+PROJECT PHASE: IMPLEMENTATION (pré-produção / engenharia)
+FUNCTIONAL CODE: STARTED — domínio operacional implementado (API + web)
+PRODUCTION READINESS: NO-GO — gate Prompt 92; evidência em docs/19-operations/readiness-evidence.json
+LAST COMMIT AT HEAD: Prompt 94 (BLOCKED — hypercare; go-live Prompt 93 não realizado)
+ENGINEERING READINESS: READY (suítes automatizadas, UAT vertical, backup/DR, readiness gate)
 ```
 
-O monorepo técnico (`apps/`, `packages/`) existe desde o Prompt 16. **Não** há módulos empresariais, CRUD, autenticação nem banco de domínio.
+O monorepo contém backend NestJS (`@cisne/api`) e frontend React (`@cisne/web`) com módulos empresariais reais: clientes, solicitações, propostas, pedidos de compra, ordens de serviço, execução, medições, faturamento, documentos, autorização, auditoria, notificações e integrações ACL (ERP/rastreio desligados até confirmação).
+
+**Não** equivale a go-live em produção. Hypercare (Prompt 94) e operação real permanecem bloqueados até aceites humanos (sign-off, RPO/RTO, piloto, UAT manual) registrados em `readiness-evidence.json`.
 
 Documentação de execução local: [`docs/17-bootstrap/local-development.md`](docs/17-bootstrap/local-development.md).
 
 PostgreSQL local e migrations: [`docs/18-database-foundation/README.md`](docs/18-database-foundation/README.md).
+
+Readiness e gates: [`docs/19-operations/production-readiness-gate.md`](docs/19-operations/production-readiness-gate.md).
 
 ## Objetivo geral
 
@@ -30,7 +30,7 @@ O contexto empresarial preliminar inclui atividades como representação comerci
 
 ## Aviso
 
-Este repositório, nesta fase, contém apenas governança, registros e templates. Qualquer afirmação de que o sistema “já funciona” é falsa.
+Este repositório contém código funcional de domínio em desenvolvimento e validação de engenharia. **Produção/go-live permanece NO-GO** até blockers de governança resolvidos (ver `readiness-evidence.json`). Afirmar que o sistema está “em produção” ou “pronto para operação real” sem evidência autorizada é incorreto.
 
 O processo de prompts incrementais **não promete ausência total de erros**. Ele reduz risco por validação, rastreabilidade, classificação explícita de incerteza, testes futuros proporcionais ao risco e quality gates. Erros, omissões e conflitos devem permanecer visíveis.
 
@@ -56,11 +56,11 @@ Detalhes: [`docs/00-governance/engineering-principles.md`](docs/00-governance/en
 | [`docs/01-foundation/`](docs/01-foundation/) | Fontes, escopo, regras, decisões, riscos, rastreabilidade       |
 | [`docs/inputs/`](docs/inputs/)               | Área segura para fontes empresariais futuras                    |
 | [`docs/templates/`](docs/templates/)         | Modelos de registro                                             |
-| [`apps/`](apps/)                             | Aplicações (`api`, `web`) — Prompt 16                           |
+| [`apps/`](apps/)                             | API NestJS + web React — domínio operacional (Prompts 16+)      |
 | [`packages/`](packages/)                     | Tooling compartilhado (`tsconfig`, `eslint-config`, `database`) |
 | [`docker/`](docker/)                         | Compose PostgreSQL local (Prompt 17)                            |
 
-Existem pastas `apps/`, `packages/` e `docker/` desde os Prompts 16–17. Não há módulos de domínio empresarial.
+`apps/` e `packages/` contêm implementação funcional de domínio, testes de integração e pipelines de readiness. Governança de produção: [`docs/19-operations/`](docs/19-operations/).
 
 ## Como adicionar fontes empresariais
 

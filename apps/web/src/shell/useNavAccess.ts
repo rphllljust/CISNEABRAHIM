@@ -4,6 +4,8 @@ import { probeClientListAccess } from '../clients/api/clients-api';
 import { probeCatalogListAccess } from '../catalog/api/service-catalog-api';
 import { probeAssetListAccess } from '../assets/api/physical-assets-api';
 import { probeServiceRequestListAccess } from '../requests/api/service-requests-api';
+import { probeProposalListAccess } from '../proposals/api/proposals-api';
+import { probePurchaseOrderListAccess } from '../purchase-orders/api/purchase-orders-api';
 import { probeBillingCapabilities } from '../billing/api/billing-api';
 import { useAuth } from '../auth/context/AuthProvider';
 import { SHELL_NAV_ITEMS } from './nav-config';
@@ -98,6 +100,30 @@ export function useNavAccess(): NavAccessState {
         if (item.accessCheck === 'request-list') {
           try {
             const allowed = await probeServiceRequestListAccess(controller.signal);
+            nextAccess[item.id] = allowed;
+          } catch {
+            if (!cancelled) {
+              nextAccess[item.id] = false;
+            }
+          }
+          continue;
+        }
+
+        if (item.accessCheck === 'proposal-list') {
+          try {
+            const allowed = await probeProposalListAccess(controller.signal);
+            nextAccess[item.id] = allowed;
+          } catch {
+            if (!cancelled) {
+              nextAccess[item.id] = false;
+            }
+          }
+          continue;
+        }
+
+        if (item.accessCheck === 'purchase-order-list') {
+          try {
+            const allowed = await probePurchaseOrderListAccess(controller.signal);
             nextAccess[item.id] = allowed;
           } catch {
             if (!cancelled) {

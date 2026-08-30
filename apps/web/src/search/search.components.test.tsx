@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { GlobalSearchBar } from './components/GlobalSearchBar';
 import { SearchResultsPage } from './pages/SearchResultsPage';
+import type { SearchResponse } from './types/search.types';
 
 const mockNavigate = vi.fn();
 
@@ -15,10 +16,12 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
-const searchEntities = vi.fn();
+const { searchEntities } = vi.hoisted(() => ({
+  searchEntities: vi.fn<typeof import('./api/search-api').searchEntities>(),
+}));
 
 vi.mock('./api/search-api', () => ({
-  searchEntities: (...args: unknown[]) => searchEntities(...args),
+  searchEntities,
   SearchApiError: class SearchApiError extends Error {},
 }));
 
@@ -111,8 +114,8 @@ describe('SearchResultsPage', () => {
   });
 
   it('ignores stale responses when rapid typing changes query', async () => {
-    let resolveFirst: ((value: unknown) => void) | undefined;
-    const first = new Promise((resolve) => {
+    let resolveFirst: ((value: SearchResponse) => void) | undefined;
+    const first = new Promise<SearchResponse>((resolve) => {
       resolveFirst = resolve;
     });
 

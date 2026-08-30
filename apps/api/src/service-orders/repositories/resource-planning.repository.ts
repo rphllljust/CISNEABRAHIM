@@ -1,6 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import type { Pool, PoolClient } from 'pg';
 import { DatabaseService } from '../../infrastructure/database/database.service';
+import { FAULT_HOOKS } from '../../platform/fault-injection/fault-hook.ids';
+import { FAULT_INJECTION_PORT, type FaultInjectionPort } from '../../platform/fault-injection/fault-injection.port';
+import { maybeInjectFault } from '../../platform/fault-injection/fault-injection.util';
 import { OutboxDomainEventWriter } from '../../platform/outbox/services/outbox-domain-event.writer';
 import { ASSET_LIFECYCLE_STATUSES } from '../../resources/domain/physical-asset';
 import {
@@ -48,6 +51,7 @@ export class ResourcePlanningRepository {
   constructor(
     private readonly databaseService: DatabaseService,
     private readonly outboxWriter: OutboxDomainEventWriter,
+    @Optional() @Inject(FAULT_INJECTION_PORT) private readonly faultInjection?: FaultInjectionPort,
   ) {}
 
   private pool(): Pool {
@@ -325,6 +329,7 @@ export class ResourcePlanningRepository {
         return { outcome: 'allocation_conflict' };
       }
 
+      await maybeInjectFault(this.faultInjection, FAULT_HOOKS.AllocationAfterInsertBeforeOutbox);
       const order = await client.query<{ unit_id: string }>(
         `SELECT unit_id FROM so.service_orders WHERE id = $1`,
         [input.serviceOrderId],

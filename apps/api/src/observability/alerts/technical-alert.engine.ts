@@ -72,17 +72,17 @@ export function buildTechnicalAlertDefinitions(
     },
     {
       alertType: TECHNICAL_ALERT_TYPES.ErpFailures,
-      title: 'Falhas de integração ERP',
+      title: 'Falhas de integração ERP (ACL adapter)',
       defaultSeverity: TECHNICAL_ALERT_SEVERITIES.Warning,
-      thresholdDescription: `erp_failures >= ${policy.erpFailureThreshold}`,
+      thresholdDescription: `erp_failures >= ${policy.erpFailureThreshold} (somente quando ERP_INTEGRATION_CONFIGURED)`,
       durationMs: policy.erpFailureDurationMs,
       runbook: TECHNICAL_ALERT_RUNBOOKS[TECHNICAL_ALERT_TYPES.ErpFailures],
     },
     {
       alertType: TECHNICAL_ALERT_TYPES.TrackingFailures,
-      title: 'Falhas de integração de rastreio',
+      title: 'Falhas de integração de rastreio (ACL adapter)',
       defaultSeverity: TECHNICAL_ALERT_SEVERITIES.Info,
-      thresholdDescription: `tracking_failures >= ${policy.trackingFailureThreshold}`,
+      thresholdDescription: `tracking_failures >= ${policy.trackingFailureThreshold} (somente quando TRACKING_INTEGRATION_CONFIGURED)`,
       durationMs: policy.trackingFailureDurationMs,
     },
     {
@@ -212,23 +212,34 @@ export function evaluateTechnicalAlertConditions(
   results.push(
     condition({
       alertType: TECHNICAL_ALERT_TYPES.ErpFailures,
-      breached: input.erpFailures >= policy.erpFailureThreshold,
+      breached:
+        input.erpIntegrationConfigured && input.erpFailures >= policy.erpFailureThreshold,
       severity:
         input.erpFailures >= policy.erpFailureThreshold * 3
           ? TECHNICAL_ALERT_SEVERITIES.Critical
           : TECHNICAL_ALERT_SEVERITIES.Warning,
-      message: 'Mensagens ERP em falha na inbox.',
-      observedValue: String(input.erpFailures),
+      message: input.erpIntegrationConfigured
+        ? 'Mensagens ERP em falha na inbox.'
+        : 'ERP ACL adapter não configurado — alerta suprimido.',
+      observedValue: input.erpIntegrationConfigured
+        ? String(input.erpFailures)
+        : 'adapter_unconfigured',
     }),
   );
 
   results.push(
     condition({
       alertType: TECHNICAL_ALERT_TYPES.TrackingFailures,
-      breached: input.trackingFailures >= policy.trackingFailureThreshold,
+      breached:
+        input.trackingIntegrationConfigured &&
+        input.trackingFailures >= policy.trackingFailureThreshold,
       severity: TECHNICAL_ALERT_SEVERITIES.Info,
-      message: 'Mensagens de rastreio em falha na inbox.',
-      observedValue: String(input.trackingFailures),
+      message: input.trackingIntegrationConfigured
+        ? 'Mensagens de rastreio em falha na inbox.'
+        : 'Tracking ACL adapter não configurado — alerta suprimido.',
+      observedValue: input.trackingIntegrationConfigured
+        ? String(input.trackingFailures)
+        : 'adapter_unconfigured',
     }),
   );
 

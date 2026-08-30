@@ -5,7 +5,9 @@ type DbClient = Pool | PoolClient;
 export async function truncateServiceOrderTables(client: DbClient): Promise<void> {
   await client.query(
     `UPDATE sr.service_requests
-     SET converted_service_order_id = NULL
+     SET status = 'CANCELLED',
+         cancellation_reason = 'integration test cleanup',
+         converted_service_order_id = NULL
      WHERE converted_service_order_id IS NOT NULL`,
   );
   await client.query('DELETE FROM so.execution_entry_history_events');

@@ -5,8 +5,8 @@ import { expect } from 'vitest';
 /** Shared selectors for the premium login screen — single source for e2e and component tests. */
 export const LOGIN_USUARIO_LABEL = /^usuário/i;
 export const LOGIN_SENHA_LABEL = /^senha/i;
-export const LOGIN_SUBMIT_BUTTON = /^entrar$/i;
-export const LOGIN_FORM_HEADING = /acesso ao sistema/i;
+export const LOGIN_SUBMIT_BUTTON = /^entrar/i;
+export const LOGIN_FORM_HEADING = /acessar conta/i;
 
 type LoginCredentials = {
   login: string;

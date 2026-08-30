@@ -10,7 +10,7 @@ const testConfig: AuthConfig = {
   accessTokenTtlSeconds: 60,
   refreshTokenTtlSeconds: 3600,
   jwtClockSkewSeconds: 30,
-  corsOrigin: 'http://localhost:5173',
+  corsOrigins: ['http://localhost:5173'],
   loginRateLimitPerMinute: 5,
 };
 

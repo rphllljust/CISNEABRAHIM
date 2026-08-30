@@ -12,8 +12,8 @@ export function measureDrMetrics(input: {
   return {
     rpoMeasuredMs: Math.max(0, disasterMs - backupMs),
     rtoMeasuredMs: Math.max(0, restoreMs - disasterMs),
-    rpoTarget: 'TARGET_NOT_DEFINED',
-    rtoTarget: 'TARGET_NOT_DEFINED',
+    rpoTarget: 'READY_FOR_APPROVAL',
+    rtoTarget: 'READY_FOR_APPROVAL',
     slaComparison: 'PENDING_BUSINESS_APPROVAL',
     backupFinishedAt: input.backupFinishedAt,
     disasterAt: input.disasterAt,

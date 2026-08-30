@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import { requestUrl } from './request-url';
+import { parseRequestPath } from './request-url';
 import { createDocumentsFetchHandler, type DocumentsFetchMockOptions } from './documents-fetch-mock';
 import { createClientsFetchMock } from './clients-fetch-mock';
 import { MOCK_IDENTITY_ID } from './shell-fetch-mock';
@@ -127,11 +127,9 @@ export function createRequestsFetchMock(options: RequestsFetchMockOptions = {}) 
     return documentLinksByRequest.get(requestId) ?? [];
   }
 
-  return vi.fn(async (input: RequestInfo, init?: RequestInit) => {
-    const url = requestUrl(input);
+  return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const { pathname, searchParams } = parseRequestPath(input);
     const method = init?.method ?? 'GET';
-    const parsedUrl = new URL(url);
-    const pathname = parsedUrl.pathname;
 
     const documentsResponse = documentsMock.handle(pathname, method, init);
     if (documentsResponse) {
@@ -151,10 +149,10 @@ export function createRequestsFetchMock(options: RequestsFetchMockOptions = {}) 
       if (!listAllowed) {
         return requestError('REQUESTS_DENIED', 403);
       }
-      const limit = Number(parsedUrl.searchParams.get('limit') ?? '20');
-      const offset = Number(parsedUrl.searchParams.get('offset') ?? '0');
-      const status = parsedUrl.searchParams.get('status');
-      const unitId = parsedUrl.searchParams.get('unitId');
+      const limit = Number(searchParams.get('limit') ?? '20');
+      const offset = Number(searchParams.get('offset') ?? '0');
+      const status = searchParams.get('status');
+      const unitId = searchParams.get('unitId');
       let items = [...store];
       if (status) {
         items = items.filter((item) => item.status === status);

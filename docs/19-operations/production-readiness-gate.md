@@ -11,24 +11,38 @@
 
 Último gate antes do go-live. **Não implementa feature** — consolida evidência de prompts anteriores e bloqueia liberação se qualquer blocker real estiver aberto.
 
+**Fonte autorizada:** `docs/19-operations/readiness-evidence.json` (registro versionado único).
+
+**Cadeia:** fonte autorizada → evidência registrada → validação técnica → readiness gate → env derivada (nunca o inverso).
+
 **Classificação:** decisão de engenharia honesta; não alterada para cumprir cronograma.
 
 ---
 
 ## Decisão
 
-```
-PRODUCTION READINESS: NO-GO
+```text
+ENGINEERING READINESS: READY | NOT_READY
+PRODUCTION READINESS: GO | NO-GO
 ```
 
-### Blockers reais
+**Regra:** `PRODUCTION NO-GO` bloqueia somente operações de produção/go-live. Desenvolvimento, testes e HML continuam quando `ENGINEERING READINESS = READY`.
+
+```bash
+pnpm readiness:engineering   # exit 0 quando engenharia READY
+pnpm readiness:gate          # exit 1 quando produção NO-GO (checklist go-live)
+```
+
+### Blockers reais (produção)
 
 | ID | Tipo | Evidência |
 | -- | ---- | --------- |
-| `BUSINESS_STAKEHOLDER_SIGN_OFF_PENDING` | Aceite empresarial | `uat-business-scenarios.md`; `uat-verdict.ts` |
-| `RPO_RTO_TARGET_NOT_DEFINED (DDP-016)` | Continuidade | `backup-strategy.md`; `RPO_RTO_PRODUCTION_BLOCKER` |
-| `PILOT_NOT_EXIT_READY` | Piloto | `pilot-program.md` — fase `ACTIVE`; janela mínima 14d não cumprida |
-| `UAT_MANUAL_UX_CHECKLIST_PENDING` | UX/A11y manual | `uat-ux-checklist.md` — sessão com operador pendente |
+| `BUSINESS_SIGN_OFF_MISSING` | Aceite empresarial | `readiness-evidence.json` → `businessSignOff.decision=PENDING` |
+| `RPO_RTO_NOT_DEFINED (DDP-016)` | Continuidade | `readiness-evidence.json` → `rpoRto.decision=PENDING_APPROVAL` |
+| `PILOT_NOT_STARTED` / `PILOT_OBSERVATION_WINDOW_NOT_COMPLETED` | Piloto | `readiness-evidence.json` → `pilot` |
+| `MANUAL_UAT_NOT_COMPLETED` | UX/A11y manual | `readiness-evidence.json` → `manualUatUx.status=NOT_STARTED` |
+| `READINESS_EVIDENCE_MISMATCH` | Integridade | env var aprova sem registro autorizado |
+| `READINESS_RELEASE_EVIDENCE_MISMATCH` | Release binding | UAT/sign-off de RC diferente do candidato atual |
 
 ---
 
@@ -75,8 +89,8 @@ PRODUCTION READINESS: NO-GO
 
 | Regra | Status |
 | ----- | ------ |
-| Somente adapters confirmados ativos | **PASS** — ERP/tracking bloqueados até confirmação |
-| Integração bloqueada não impede core | **PASS** — Prompt 69/70-A |
+| Somente adapters ACL confirmados ativos (não operação ao vivo) | **PASS** — ERP/tracking `ACL_UNCONFIGURED`; alertas suprimidos até `*_INTEGRATION_CONFIGURED` |
+| Integração bloqueada não impede core | **PASS** — Prompt 69/70-A + `UnconfiguredErpProvider` |
 
 ---
 

@@ -89,7 +89,7 @@ export function buildReadBenchmarkScenarios(app: NestFastifyApplication): Benchm
       run: async (context) =>
         injectTimed(app, {
           method: 'GET',
-          url: `/api/v1/service-orders/${context.sampleServiceOrderId}/measurements`,
+          url: `/api/v1/service-orders/${context.sampleMeasurementServiceOrderId}/measurements`,
           headers: authHeaders(context.accessToken),
         }),
     },
@@ -100,7 +100,7 @@ export function buildReadBenchmarkScenarios(app: NestFastifyApplication): Benchm
       run: async (context) =>
         injectTimed(app, {
           method: 'GET',
-          url: `/api/v1/service-orders/${context.sampleServiceOrderId}/billing-records`,
+          url: `/api/v1/service-orders/${context.sampleBillingServiceOrderId}/billing-records`,
           headers: authHeaders(context.accessToken),
         }),
     },

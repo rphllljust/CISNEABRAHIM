@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { getTestDatabaseUrl } from '../test/load-vitest-env';
 import { derivePerformanceBudgets } from './config/performance-budgets';
 import { loadPerformanceDatasetConfig } from './config/performance-dataset.config';
 import {
@@ -14,22 +15,27 @@ import { seedPerformanceDataset } from './synthetic/performance-dataset.seeder';
 const runFull = process.env['PERF_FULL'] === '1';
 
 describe.runIf(runFull)('performance full benchmarks', () => {
-  const testDatabaseUrl = process.env['TEST_DATABASE_URL'];
-  let pool: Pool;
+  const testDatabaseUrl = getTestDatabaseUrl();
+  let pool: Pool | undefined;
 
   beforeAll(() => {
     if (!testDatabaseUrl) {
-      throw new Error('TEST_DATABASE_URL is required for full performance benchmarks.');
+      throw new Error(
+        'TEST_DATABASE_URL is required for full performance benchmarks. Start PostgreSQL and run pnpm db:migrate:test.',
+      );
     }
     applyPerformanceTestEnv(testDatabaseUrl);
     pool = new Pool({ connectionString: testDatabaseUrl });
   });
 
   afterAll(async () => {
-    await pool.end();
+    await pool?.end();
   });
 
   it('records baseline metrics for read scenarios', async () => {
+    if (!pool) {
+      throw new Error('Performance pool was not initialized.');
+    }
     const datasetConfig = loadPerformanceDatasetConfig({ PERF_DATASET_PROFILE: 'full' });
     const dataset = await seedPerformanceDataset(pool, datasetConfig);
     const harness = await createPerformanceHarness(pool, dataset);

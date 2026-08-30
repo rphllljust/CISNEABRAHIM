@@ -36,6 +36,8 @@ import { SERVICE_ORDER_STATUSES } from '../service-orders/domain/service-order';
 import type { ServiceOrderExecutionAccessService } from '../service-orders/services/service-order-execution-access.service';
 import type { ServiceOrderPlanningAccessService } from '../service-orders/services/service-order-planning-access.service';
 import type { ServiceOrdersAccessService } from '../service-orders/services/service-orders-access.service';
+import { buildSyntheticUatClient } from '../master-business/synthetic-test-data';
+import type { MasterBusinessArtifacts } from '../master-business/master-business-types';
 import type { UatScenarioDefinition } from './uat-scenarios';
 import type { UatScenarioResult } from './uat-types';
 import { grantsForProfile } from './uat-profiles';
@@ -97,21 +99,23 @@ export async function runUatVerticalScenario(
   unitId: string,
   options?: {
     reviewer?: UatActor;
-    stopAfter?: 'released' | 'measurement_approved' | 'complete';
+    stopAfter?: 'prepared' | 'released' | 'completed_execution' | 'measurement_approved' | 'complete';
+    captureArtifacts?: boolean;
   },
-): Promise<UatScenarioResult & { measurementId?: string }> {
+): Promise<UatScenarioResult & { measurementId?: string; artifacts?: MasterBusinessArtifacts }> {
   const started = Date.now();
   try {
     const suffix = crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase();
     const poNumber = `PO-UAT-${scenario.id.toUpperCase()}-${suffix}`;
+    const syntheticClient = buildSyntheticUatClient(scenario.id, suffix);
 
     const client = await services.clientAccess.create(actor, {
-      legalName: scenario.client.legalName,
-      tradeName: scenario.client.tradeName,
-      taxId: scenario.client.taxId,
+      legalName: syntheticClient.legalName,
+      tradeName: syntheticClient.tradeName,
+      taxId: syntheticClient.taxId,
       contacts: [
         {
-          name: scenario.client.contactName,
+          name: syntheticClient.contactName,
           purpose: CONTACT_PURPOSES.Operational,
           phone: '69999990000',
         },
@@ -121,7 +125,7 @@ export async function runUatVerticalScenario(
           purpose: ADDRESS_PURPOSES.Billing,
           street: 'Av. Operacional',
           number: '500',
-          city: scenario.client.city,
+          city: syntheticClient.city,
           state: 'RO',
           postalCode: '76800000',
           country: 'BR',
@@ -247,6 +251,16 @@ export async function runUatVerticalScenario(
 
     const order = await services.serviceOrdersAccess.getById(actor, converted.serviceRequest.convertedServiceOrderId!);
     const prepared = await services.serviceOrdersAccess.prepare(actor, order.id, { rowVersion: order.rowVersion });
+
+    if (options?.stopAfter === 'prepared') {
+      return {
+        scenarioId: scenario.id,
+        status: 'PASS',
+        durationMs: Date.now() - started,
+        serviceOrderId: prepared.id,
+      };
+    }
+
     const released = await services.serviceOrdersAccess.release(actor, prepared.id, { rowVersion: prepared.rowVersion });
 
     if (options?.stopAfter === 'released') {
@@ -309,6 +323,15 @@ export async function runUatVerticalScenario(
       rowVersion: afterQuantity.rowVersion,
     });
 
+    if (options?.stopAfter === 'completed_execution') {
+      return {
+        scenarioId: scenario.id,
+        status: 'PASS',
+        durationMs: Date.now() - started,
+        serviceOrderId: completed.id,
+      };
+    }
+
     const measurement = await services.measurementsAccess.create(actor, completed.id);
     const submittedMeasurement = await services.measurementsAccess.submit(actor, completed.id, measurement.id, {
       rowVersion: measurement.rowVersion,
@@ -360,12 +383,39 @@ export async function runUatVerticalScenario(
       throw new Error('Billing PDF artifact invalid');
     }
 
+    const artifacts: MasterBusinessArtifacts | undefined = options?.captureArtifacts
+      ? {
+          scenarioId: scenario.id,
+          runSuffix: suffix,
+          actorIdentityId: actor.identityId,
+          clientId: client.id,
+          clientLegalNameAtCreate: client.legalName,
+          clientTaxIdAtCreate: client.taxId,
+          serviceDefinitionId: published.serviceDefinitionId,
+          serviceDefinitionVersionId: published.id,
+          publishedVersionNumber: published.version,
+          publishedServiceCode: published.code,
+          proposalId: proposal.proposal.id,
+          proposalVersionNumber: 1,
+          proposalClientSnapshot: issuedProposal.clientSnapshot ?? {},
+          purchaseOrderId: registeredPo.purchaseOrder.id,
+          poNumber,
+          poClientSnapshot: registeredPo.purchaseOrder.clientSnapshot ?? {},
+          serviceRequestId: request.serviceRequest.id,
+          serviceOrderId: completed.id,
+          measurementId: approvedMeasurement.id,
+          billingRecordId: billing.id,
+          billingDocumentId: notaFatura.id,
+        }
+      : undefined;
+
     return {
       scenarioId: scenario.id,
       status: 'PASS',
       durationMs: Date.now() - started,
       serviceOrderId: completed.id,
       billingDocumentId: notaFatura.id,
+      artifacts,
     };
   } catch (error) {
     return {

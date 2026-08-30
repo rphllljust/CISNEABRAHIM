@@ -31,7 +31,7 @@ Sem framework de flags. Somente env gates quando `PILOT_INFRA_EXTENDED=true`:
 | Flag | Env |
 | ---- | --- |
 | Serviços estendidos | `PILOT_FLAG_EXTENDED_SERVICES` |
-| Integrações externas | `PILOT_FLAG_EXTERNAL_INTEGRATIONS` |
+| Integrações externas (ACL adapters confirmados) | `PILOT_FLAG_EXTERNAL_INTEGRATIONS` |
 
 Implementação: `pilot-flags.ts`
 

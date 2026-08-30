@@ -9,6 +9,25 @@ import { insertIdentity } from './identity-builders';
 
 type DbClient = Pool | PoolClient;
 
+async function columnExists(
+  client: DbClient,
+  schema: string,
+  table: string,
+  column: string,
+): Promise<boolean> {
+  const result = await client.query<{ exists: boolean }>(
+    `SELECT EXISTS (
+       SELECT 1
+       FROM information_schema.columns
+       WHERE table_schema = $1
+         AND table_name = $2
+         AND column_name = $3
+     ) AS exists`,
+    [schema, table, column],
+  );
+  return result.rows[0]?.exists === true;
+}
+
 export async function applyServiceCatalogMigration(client: DbClient): Promise<void> {
   for (const file of [
     '0007_service_catalog_baseline.sql',
@@ -19,6 +38,13 @@ export async function applyServiceCatalogMigration(client: DbClient): Promise<vo
     '0012_commercial_pricing_measurement.sql',
     '0013_execution_requirements.sql',
   ]) {
+    if (
+      file === '0012_commercial_pricing_measurement.sql' &&
+      (await columnExists(client, 'cat', 'service_definition_versions', 'measurement_basis'))
+    ) {
+      continue;
+    }
+
     const migrationPath = resolve(__dirname, '../../migrations', file);
     const sql = readFileSync(migrationPath, 'utf8');
     const statements = sql

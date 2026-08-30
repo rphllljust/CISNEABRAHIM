@@ -15,6 +15,7 @@
 $env:DR_ISOLATED_ROOT = ".backup/dr-drill"
 $env:DR_DATABASE_URL = $env:TEST_DATABASE_URL   # ou DB sandbox dedicado
 $env:DR_OBJECT_STORAGE_ROOT = ".object-storage-dr"
+$env:DR_OBJECT_STORAGE_SOURCE = $env:OBJECT_STORAGE_ROOT   # hidrata objetos referenciados no DB
 $env:DR_SCENARIO = "bad_deployment"
 New-Item -ItemType Directory -Force -Path $env:DR_OBJECT_STORAGE_ROOT
 ```
@@ -46,7 +47,7 @@ cat .backup/dr-drill/status/latest.json
 **PASS** exige:
 
 - `status: "PASS"`
-- checks: migration consistency, referential integrity, document objects, domain smoke, login capability
+- checks: migration consistency, referential integrity, object storage hydration, document objects, domain smoke, login capability
 - sample hashes de object storage conferem com manifest
 
 ## 4. Subir aplicação (pós-restore)

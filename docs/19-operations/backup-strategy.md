@@ -10,8 +10,8 @@
 
 | Item   | Status               | Fonte    |
 | ------ | -------------------- | -------- |
-| RPO    | `TARGET_NOT_DEFINED` | DDP-016  |
-| RTO    | `TARGET_NOT_DEFINED` | DDP-016  |
+| RPO    | `READY_FOR_APPROVAL` — proposta 24h (conservadora) / 6h (recomendada) | DDP-016 / `ddp-016-rpo-rto-proposal.json` |
+| RTO    | `READY_FOR_APPROVAL` — proposta 4h (conservadora) / 2h (recomendada) | DDP-016 / `ddp-016-rpo-rto-proposal.json` |
 | Go-live formal | **BLOQUEADO** até aprovação empresarial | NFR-027, NFR-028 |
 
 **Classificação:** decisão pendente — não inventar valores comerciais.

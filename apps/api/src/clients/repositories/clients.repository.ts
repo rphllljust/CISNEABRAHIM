@@ -1,6 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import type { Pool, PoolClient } from 'pg';
 import { DatabaseService } from '../../infrastructure/database/database.service';
+import { FAULT_HOOKS } from '../../platform/fault-injection/fault-hook.ids';
+import { FAULT_INJECTION_PORT, type FaultInjectionPort } from '../../platform/fault-injection/fault-injection.port';
+import { maybeInjectFault } from '../../platform/fault-injection/fault-injection.util';
 import type { AddressPurpose, ContactPurpose } from '../domain/client-status';
 import type {
   ClientAddressRow,
@@ -45,7 +48,10 @@ export type UpdateClientPersistenceInput = {
 
 @Injectable()
 export class ClientsRepository {
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    @Optional() @Inject(FAULT_INJECTION_PORT) private readonly faultInjection?: FaultInjectionPort,
+  ) {}
 
   private pool(): Pool {
     const connection = this.databaseService.getConnection();
@@ -146,6 +152,7 @@ export class ClientsRepository {
         throw new Error('CLIENT_INSERT_FAILED');
       }
 
+      await maybeInjectFault(this.faultInjection, FAULT_HOOKS.ClientAfterInsertBeforeContacts);
       await scopeRefInserter(client, row.id);
       await this.replaceContacts(client, row.id, input.contacts);
       if (input.addresses) {

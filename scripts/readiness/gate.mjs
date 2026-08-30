@@ -1,14 +1,12 @@
-import { config } from 'dotenv';
-import { resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { resolve } from 'node:path';
 
-config({ path: resolve(process.cwd(), '.env.readiness') });
-config({ path: resolve(process.cwd(), '.env.pilot') });
-config({ path: resolve(process.cwd(), '.env') });
+const root = resolve(import.meta.dirname, '..', '..');
 
-const result = spawnSync('npx', ['tsx', 'apps/api/src/ops/readiness/cli/run-readiness-gate.ts'], {
+const result = spawnSync('corepack', ['pnpm', '--filter', '@cisne/api', 'readiness:gate'], {
   stdio: 'inherit',
   shell: process.platform === 'win32',
+  cwd: root,
   env: process.env,
 });
 

@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "generatedFrom": "apps/api/src/uat/uat-scenarios.ts",
+  "checklistReference": "docs/16-testing/uat-ux-checklist.md",
+  "scenarios": [
+    {
+      "id": "locacao",
+      "title": "Locação de equipamento (escavadeira)",
+      "archetype": "RENTAL",
+      "businessFlowReference": "docs/16-testing/uat-business-scenarios.md#locacao",
+      "automatedApiCoverage": "apps/api/src/uat/uat-business.integration.spec.ts",
+      "uxCriteria": [
+        "Login e chegada ao painel em < 60s",
+        "Criar solicitação sem campos ambíguos",
+        "Fluxo OS→execução compreensível",
+        "Mensagens de erro acionáveis",
+        "Formulários críticos usáveis em mobile"
+      ]
+    },
+    {
+      "id": "transporte",
+      "title": "Transporte de carga municipal",
+      "archetype": "TRANSPORT",
+      "businessFlowReference": "docs/16-testing/uat-business-scenarios.md#transporte",
+      "automatedApiCoverage": "apps/api/src/uat/uat-business.integration.spec.ts",
+      "uxCriteria": [
+        "Login e chegada ao painel em < 60s",
+        "Criar solicitação sem campos ambíguos",
+        "Fluxo OS→execução compreensível",
+        "Mensagens de erro acionáveis",
+        "Formulários críticos usáveis em mobile"
+      ]
+    },
+    {
+      "id": "obra_composto",
+      "title": "Obra/serviço composto (terraplenagem + apoio)",
+      "archetype": "CIVIL_WORK",
+      "businessFlowReference": "docs/16-testing/uat-business-scenarios.md#obra_composto",
+      "automatedApiCoverage": "apps/api/src/uat/uat-business.integration.spec.ts",
+      "uxCriteria": [
+        "Login e chegada ao painel em < 60s",
+        "Criar solicitação sem campos ambíguos",
+        "Fluxo OS→execução compreensível",
+        "Mensagens de erro acionáveis",
+        "Formulários críticos usáveis em mobile"
+      ]
+    }
+  ]
+}

@@ -4,20 +4,29 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ReportsPage } from './pages/ReportsPage';
 
-const getReportCatalog = vi.fn();
-const previewReport = vi.fn();
-const createReportExport = vi.fn();
-const getReportExport = vi.fn();
-const downloadReportExport = vi.fn();
-const cancelReportExport = vi.fn();
+const {
+  getReportCatalog,
+  previewReport,
+  createReportExport,
+  getReportExport,
+  downloadReportExport,
+  cancelReportExport,
+} = vi.hoisted(() => ({
+  getReportCatalog: vi.fn<typeof import('./api/reports-api').getReportCatalog>(),
+  previewReport: vi.fn<typeof import('./api/reports-api').previewReport>(),
+  createReportExport: vi.fn<typeof import('./api/reports-api').createReportExport>(),
+  getReportExport: vi.fn<typeof import('./api/reports-api').getReportExport>(),
+  downloadReportExport: vi.fn<typeof import('./api/reports-api').downloadReportExport>(),
+  cancelReportExport: vi.fn<typeof import('./api/reports-api').cancelReportExport>(),
+}));
 
 vi.mock('./api/reports-api', () => ({
-  getReportCatalog: (...args: unknown[]) => getReportCatalog(...args),
-  previewReport: (...args: unknown[]) => previewReport(...args),
-  createReportExport: (...args: unknown[]) => createReportExport(...args),
-  getReportExport: (...args: unknown[]) => getReportExport(...args),
-  downloadReportExport: (...args: unknown[]) => downloadReportExport(...args),
-  cancelReportExport: (...args: unknown[]) => cancelReportExport(...args),
+  getReportCatalog,
+  previewReport,
+  createReportExport,
+  getReportExport,
+  downloadReportExport,
+  cancelReportExport,
   ReportsApiError: class ReportsApiError extends Error {
     kind = 'unknown';
   },

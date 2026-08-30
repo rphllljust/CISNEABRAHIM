@@ -346,6 +346,26 @@ export function ServiceRequestDetailPage() {
         </section>
       ) : null}
 
+      {serviceRequest.proposalId ? (
+        <section className="requests-section" aria-labelledby="request-proposal-heading">
+          <h2 id="request-proposal-heading">Proposta comercial</h2>
+          <p>
+            <Link to={`/app/proposals/${serviceRequest.proposalId}`}>Ver proposta vinculada</Link>
+          </p>
+        </section>
+      ) : null}
+
+      {serviceRequest.purchaseOrderId ? (
+        <section className="requests-section" aria-labelledby="request-po-heading">
+          <h2 id="request-po-heading">Pedido de compra</h2>
+          <p>
+            <Link to={`/app/purchase-orders/${serviceRequest.purchaseOrderId}`}>
+              Ver pedido de compra vinculado
+            </Link>
+          </p>
+        </section>
+      ) : null}
+
       <DocumentManagementPanel
         scope={{
           kind: 'SERVICE_REQUEST',

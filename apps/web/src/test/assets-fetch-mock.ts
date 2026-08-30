@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import { requestUrl } from './request-url';
+import { parseRequestPath } from './request-url';
 import { createCatalogFetchMock } from './catalog-fetch-mock';
 import {
   ASSET_ALLOCATION_STATUSES,
@@ -93,11 +93,9 @@ export function createAssetsFetchMock(options: AssetsFetchMockOptions = {}) {
     offset: 0,
   };
 
-  return vi.fn(async (input: RequestInfo, init?: RequestInit) => {
-    const url = requestUrl(input);
+  return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const { pathname, searchParams } = parseRequestPath(input);
     const method = init?.method ?? 'GET';
-    const parsedUrl = new URL(url);
-    const pathname = parsedUrl.pathname;
 
     if (pathname === '/api/v1/resources/physical-resource-types') {
       const auth = init?.headers ? new Headers(init.headers).get('authorization') : null;
@@ -120,8 +118,8 @@ export function createAssetsFetchMock(options: AssetsFetchMockOptions = {}) {
       if (!listAllowed) {
         return assetError('ASSET_DENIED', 403);
       }
-      const limit = Number(parsedUrl.searchParams.get('limit') ?? '20');
-      const offset = Number(parsedUrl.searchParams.get('offset') ?? '0');
+      const limit = Number(searchParams.get('limit') ?? '20');
+      const offset = Number(searchParams.get('offset') ?? '0');
       return jsonResponse({
         items: store.slice(offset, offset + limit),
         limit,

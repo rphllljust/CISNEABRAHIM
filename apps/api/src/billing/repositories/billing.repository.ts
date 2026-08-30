@@ -1,6 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import type { Pool, PoolClient } from 'pg';
 import { DatabaseService } from '../../infrastructure/database/database.service';
+import { FAULT_HOOKS } from '../../platform/fault-injection/fault-hook.ids';
+import { FAULT_INJECTION_PORT, type FaultInjectionPort } from '../../platform/fault-injection/fault-injection.port';
+import { maybeInjectFault } from '../../platform/fault-injection/fault-injection.util';
 import { OutboxDomainEventWriter } from '../../platform/outbox/services/outbox-domain-event.writer';
 import { BILLING_COMMANDS, BILLING_HISTORY_EVENTS } from '../domain/billing';
 import type {
@@ -41,6 +44,7 @@ export class BillingRepository {
   constructor(
     private readonly databaseService: DatabaseService,
     private readonly outboxWriter: OutboxDomainEventWriter,
+    @Optional() @Inject(FAULT_INJECTION_PORT) private readonly faultInjection?: FaultInjectionPort,
   ) {}
 
   private pool(): Pool {
@@ -248,6 +252,7 @@ export class BillingRepository {
       );
       const billingRecord = inserted.rows[0]!;
 
+      await maybeInjectFault(this.faultInjection, FAULT_HOOKS.BillingPrepareAfterHeaderBeforeItems);
       for (const item of input.items) {
         await client.query(
           `INSERT INTO bil.billing_items (
@@ -269,6 +274,7 @@ export class BillingRepository {
         );
       }
 
+      await maybeInjectFault(this.faultInjection, FAULT_HOOKS.BillingPrepareAfterItemsBeforeHistory);
       await client.query(
         `INSERT INTO bil.billing_history_events (billing_record_id, event_type, payload, actor_identity_id)
          VALUES ($1, $2, $3::jsonb, $4)`,
@@ -322,7 +328,14 @@ export class BillingRepository {
     try {
       await client.query('BEGIN');
 
-      const current = await this.findByIdWithClient(client, input.billingRecordId);
+      const locked = await client.query<BillingRecordRow>(
+        `SELECT ${BILLING_RECORD_RETURNING}
+         FROM bil.billing_records
+         WHERE id = $1
+         FOR UPDATE`,
+        [input.billingRecordId],
+      );
+      const current = locked.rows[0];
       if (!current) {
         await client.query('ROLLBACK');
         return { outcome: 'version_conflict' };
@@ -345,10 +358,14 @@ export class BillingRepository {
              row_version = row_version + 1,
              updated_at = NOW(),
              updated_by_identity_id = $2
-         WHERE id = $1
+         WHERE id = $1 AND row_version = $4
          RETURNING ${BILLING_RECORD_RETURNING}`,
-        [input.billingRecordId, input.actorIdentityId, input.voidReason],
+        [input.billingRecordId, input.actorIdentityId, input.voidReason, input.rowVersion],
       );
+      if (!updated.rows[0]) {
+        await client.query('ROLLBACK');
+        return { outcome: 'version_conflict' };
+      }
 
       await client.query(
         `INSERT INTO bil.billing_history_events (billing_record_id, event_type, payload, actor_identity_id)

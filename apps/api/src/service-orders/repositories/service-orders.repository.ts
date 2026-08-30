@@ -1,6 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import type { Pool, PoolClient } from 'pg';
 import { DatabaseService } from '../../infrastructure/database/database.service';
+import { FAULT_HOOKS } from '../../platform/fault-injection/fault-hook.ids';
+import { FAULT_INJECTION_PORT, type FaultInjectionPort } from '../../platform/fault-injection/fault-injection.port';
+import { maybeInjectFault } from '../../platform/fault-injection/fault-injection.util';
 import { OutboxDomainEventWriter } from '../../platform/outbox/services/outbox-domain-event.writer';
 import { SERVICE_REQUEST_STATUSES } from '../../requests/domain/service-request';
 import { SERVICE_ORDER_STATUSES } from '../domain/service-order';
@@ -55,6 +58,7 @@ export class ServiceOrdersRepository {
   constructor(
     private readonly databaseService: DatabaseService,
     private readonly outboxWriter: OutboxDomainEventWriter,
+    @Optional() @Inject(FAULT_INJECTION_PORT) private readonly faultInjection?: FaultInjectionPort,
   ) {}
 
   private pool(): Pool {
@@ -384,6 +388,7 @@ export class ServiceOrdersRepository {
         historyPayload: { serviceRequestId: request.id, requestCode: request.request_code },
       });
 
+      await maybeInjectFault(this.faultInjection, FAULT_HOOKS.ServiceRequestConvertAfterOsInsert);
       const updated = await client.query(
         `UPDATE sr.service_requests
          SET
@@ -655,6 +660,9 @@ export class ServiceOrdersRepository {
         return 'INVALID_STATE';
       }
 
+      if (input.transition === 'release') {
+        await maybeInjectFault(this.faultInjection, FAULT_HOOKS.ServiceOrderReleaseAfterMutationBeforeHistory);
+      }
       await this.insertHistoryEvent(client, {
         serviceOrderId: updated.id,
         eventType: this.historyEventForTransition(input.transition),
@@ -665,7 +673,11 @@ export class ServiceOrdersRepository {
         },
         actorIdentityId: input.actorIdentityId,
       });
+      if (input.transition === 'release') {
+        await maybeInjectFault(this.faultInjection, FAULT_HOOKS.ServiceOrderReleaseAfterHistoryBeforeAudit);
+      }
       if (input.transition === 'release' && updated.released_at) {
+        await maybeInjectFault(this.faultInjection, FAULT_HOOKS.ServiceOrderReleaseBeforeOutbox);
         await this.outboxWriter.appendServiceOrderReleased(client, {
           serviceOrderId: updated.id,
           unitId: updated.unit_id,

@@ -4,6 +4,7 @@ import {
   insertScopeRef,
   truncateIdentityAndAuthorizationTables,
   truncateServiceOrderTables,
+  truncateServiceRequestTables,
 } from '@cisne/database';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Pool } from 'pg';
@@ -48,6 +49,7 @@ describe('Business alerts PostgreSQL integration', () => {
   beforeEach(async () => {
     resetControlledNow();
     await pool.query('TRUNCATE TABLE alt.business_alerts RESTART IDENTITY CASCADE');
+    await truncateServiceRequestTables(pool);
     await truncateServiceOrderTables(pool);
     await truncateIdentityAndAuthorizationTables(pool);
     await insertScopeRef(pool, { scopeType: 'UNIT', refId: UNIT_A });
@@ -144,7 +146,7 @@ describe('Business alerts PostgreSQL integration', () => {
     const resolved = await scanService.runScan(overdueAt);
     expect(resolved.resolved).toBeGreaterThanOrEqual(1);
 
-    const active = await pool.query(
+    const active = await pool.query<{ count: number }>(
       `SELECT COUNT(*)::int AS count FROM alt.business_alerts WHERE status = 'ACTIVE'`,
     );
     expect(active.rows[0]?.count).toBe(0);

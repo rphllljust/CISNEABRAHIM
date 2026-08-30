@@ -1,9 +1,16 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AUTH_ERROR_CODES } from '../types/auth.types';
-import { loginRequest, mapAuthErrorToUserMessage, userMessageText } from './auth-api';
+import {
+  buildApiBaseUrlCandidates,
+  loginRequest,
+  mapAuthErrorToUserMessage,
+  resetApiBaseUrlCacheForTests,
+  userMessageText,
+} from './auth-api';
 
 describe('auth-api', () => {
   afterEach(() => {
+    resetApiBaseUrlCacheForTests();
     vi.unstubAllGlobals();
   });
 
@@ -31,5 +38,32 @@ describe('auth-api', () => {
     await expect(loginRequest('user', 'wrong')).rejects.toMatchObject({
       userMessage: 'invalid_credentials',
     });
+  });
+
+  it('rewrites loopback API host for LAN browser access', () => {
+    const candidates = buildApiBaseUrlCandidates('http://localhost:3000', {
+      isDev: true,
+      browserHostname: '192.168.1.89',
+    });
+    expect(candidates[0]).toBe('http://192.168.1.89:3000');
+  });
+
+  it('retries another API candidate on network failure', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        json: async () => ({
+          error: { code: AUTH_ERROR_CODES.INVALID_CREDENTIALS, message: 'Invalid credentials.' },
+        }),
+      });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(loginRequest('user', 'wrong')).rejects.toMatchObject({
+      userMessage: 'invalid_credentials',
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });

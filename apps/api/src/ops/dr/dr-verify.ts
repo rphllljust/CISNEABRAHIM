@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import type { Pool } from 'pg';
 import { access } from 'node:fs/promises';
 import type { DrCheck } from './dr-types';
+import { DOCUMENT_INTEGRITY_SAMPLE_SIZE, listDocumentStorageKeys } from './object-storage-hydrate';
 
 const EXPECTED_SCHEMAS = [
   'identity',
@@ -48,8 +49,8 @@ export async function verifyReferentialIntegrity(pool: Pool): Promise<DrCheck> {
   try {
     const orphanDocuments = await pool.query<{ count: string }>(
       `SELECT COUNT(*)::text AS count
-       FROM doc.documents d
-       LEFT JOIN doc.stored_objects s ON s.id = d.stored_object_id
+       FROM doc.document_versions dv
+       LEFT JOIN doc.stored_objects s ON s.id = dv.stored_object_id
        WHERE s.id IS NULL`,
     );
     const orphanBillingDocs = await pool.query<{ count: string }>(
@@ -82,24 +83,17 @@ export async function verifyReferentialIntegrity(pool: Pool): Promise<DrCheck> {
 export async function verifyDocumentObjectIntegrity(
   pool: Pool,
   objectStorageRoot: string,
-  sampleSize = 5,
+  sampleSize = DOCUMENT_INTEGRITY_SAMPLE_SIZE,
 ): Promise<DrCheck> {
   try {
-    const result = await pool.query<{ storage_key: string }>(
-      `SELECT s.storage_key
-       FROM doc.stored_objects s
-       INNER JOIN doc.documents d ON d.stored_object_id = s.id
-       ORDER BY d.created_at DESC
-       LIMIT $1`,
-      [sampleSize],
-    );
+    const storageKeys = await listDocumentStorageKeys(pool, sampleSize);
     const missing: string[] = [];
-    for (const row of result.rows) {
-      const objectPath = join(objectStorageRoot, row.storage_key);
+    for (const storageKey of storageKeys) {
+      const objectPath = join(objectStorageRoot, storageKey);
       try {
         await access(objectPath);
       } catch {
-        missing.push(row.storage_key);
+        missing.push(storageKey);
       }
     }
     return {
@@ -108,7 +102,7 @@ export async function verifyDocumentObjectIntegrity(
       passed: missing.length === 0,
       detail:
         missing.length === 0
-          ? `Verified ${result.rowCount} sample storage keys`
+          ? `Verified ${storageKeys.length} sample storage keys`
           : `Missing objects: ${missing.join(', ')}`,
     };
   } catch (error) {
@@ -172,7 +166,7 @@ export async function verifyDomainSmoke(pool: Pool): Promise<DrCheck[]> {
 export async function verifyLoginCapability(pool: Pool): Promise<DrCheck> {
   try {
     const result = await pool.query<{ count: string }>(
-      `SELECT COUNT(*)::text AS count FROM identity.identities WHERE status = 'ACTIVE'`,
+      `SELECT COUNT(*)::text AS count FROM identity.identities WHERE status = 'active'`,
     );
     const count = Number.parseInt(result.rows[0]?.count ?? '0', 10);
     return {

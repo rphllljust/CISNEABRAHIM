@@ -10,7 +10,13 @@ function formatCell(value: unknown): string {
       new Date(value),
     );
   }
-  return String(value);
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+    return String(value);
+  }
+  if (typeof value === 'string') {
+    return value;
+  }
+  return '—';
 }
 
 export function ReportsPage() {

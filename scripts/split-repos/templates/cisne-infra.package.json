@@ -1,0 +1,13 @@
+{
+  "name": "cisne-infra",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Infraestrutura e operações CISNE (PostgreSQL, Docker HML, scripts ops)",
+  "scripts": {
+    "hml:up": "docker compose -f docker/hml/compose.yaml --env-file .env.hml up -d --build --wait",
+    "hml:down": "docker compose -f docker/hml/compose.yaml --env-file .env.hml down",
+    "hml:deploy": "node scripts/hml/deploy.mjs",
+    "hml:smoke": "node scripts/hml/smoke.mjs",
+    "db:up": "docker compose -f docker/compose.yaml --env-file .env up -d --wait"
+  }
+}

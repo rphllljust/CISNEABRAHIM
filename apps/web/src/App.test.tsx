@@ -16,7 +16,7 @@ describe('App', () => {
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /acesso ao sistema/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /acessar conta/i })).toBeInTheDocument();
     });
   });
 });

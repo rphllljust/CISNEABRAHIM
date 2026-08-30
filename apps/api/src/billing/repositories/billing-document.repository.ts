@@ -1,7 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import type { Pool, PoolClient } from 'pg';
 import { DatabaseService } from '../../infrastructure/database/database.service';
+import { FAULT_HOOKS } from '../../platform/fault-injection/fault-hook.ids';
+import { FAULT_INJECTION_PORT, type FaultInjectionPort } from '../../platform/fault-injection/fault-injection.port';
+import { maybeInjectFault } from '../../platform/fault-injection/fault-injection.util';
 import { DOCUMENT_CLASSIFICATIONS } from '../../documents/domain/document-categories';
 import {
   BILLING_DOCUMENT_COMMANDS,
@@ -45,7 +48,10 @@ const BILLING_DOCUMENT_ITEM_RETURNING = `
 
 @Injectable()
 export class BillingDocumentRepository {
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    @Optional() @Inject(FAULT_INJECTION_PORT) private readonly faultInjection?: FaultInjectionPort,
+  ) {}
 
   private pool(): Pool {
     const connection = this.databaseService.getConnection();
@@ -214,6 +220,7 @@ export class BillingDocumentRepository {
       const sequenceYear = issuedAtDate.getUTCFullYear();
       const allocation = await this.allocateDocumentNumber(client, sequenceYear);
       artifact = await persistArtifact(allocation);
+      await maybeInjectFault(this.faultInjection, FAULT_HOOKS.BillingDocumentAfterPdfBeforeDb);
       await this.persistDocumentRecords(client, {
         documentId: artifact.storedDocumentId,
         storedObjectId: artifact.storedObjectId,
@@ -442,6 +449,7 @@ export class BillingDocumentRepository {
       const sequenceYear = issuedAtDate.getUTCFullYear();
       const allocation = await this.allocateDocumentNumber(client, sequenceYear);
       artifact = await persistArtifact(allocation);
+      await maybeInjectFault(this.faultInjection, FAULT_HOOKS.BillingDocumentAfterPdfBeforeDb);
       await this.persistDocumentRecords(client, {
         documentId: artifact.storedDocumentId,
         storedObjectId: artifact.storedObjectId,

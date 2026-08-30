@@ -4,6 +4,8 @@ export type ShellNavAccessCheck =
   | 'catalog-list'
   | 'asset-list'
   | 'request-list'
+  | 'proposal-list'
+  | 'purchase-order-list'
   | 'billing-list';
 
 export type ShellNavItem = {
@@ -14,4 +16,15 @@ export type ShellNavItem = {
   accessCheck?: ShellNavAccessCheck;
 };
 
+export type ShellNavGroup = {
+  id: string;
+  label: string;
+  items: ShellNavItem[];
+};
+
 export type NavAccessMap = Record<string, boolean>;
+
+export type ShellBreadcrumbItem = {
+  label: string;
+  href?: string;
+};

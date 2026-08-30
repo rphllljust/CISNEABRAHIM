@@ -19,7 +19,7 @@ describe('ShellErrorBoundary', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole('alert')).toHaveTextContent(/unexpected error/i);
-    expect(screen.getByRole('link', { name: /return to home/i })).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent(/erro inesperado/i);
+    expect(screen.getByRole('button', { name: /voltar ao painel/i })).toBeInTheDocument();
   });
 });

@@ -1,6 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import type { Pool, PoolClient } from 'pg';
 import { DatabaseService } from '../../infrastructure/database/database.service';
+import { FAULT_HOOKS } from '../../platform/fault-injection/fault-hook.ids';
+import { FAULT_INJECTION_PORT, type FaultInjectionPort } from '../../platform/fault-injection/fault-injection.port';
+import { maybeInjectFault } from '../../platform/fault-injection/fault-injection.util';
 import { OutboxDomainEventWriter } from '../../platform/outbox/services/outbox-domain-event.writer';
 import { MEASUREMENT_HISTORY_EVENTS } from '../domain/measurement';
 import type {
@@ -45,6 +48,7 @@ export class MeasurementsRepository {
   constructor(
     private readonly databaseService: DatabaseService,
     private readonly outboxWriter: OutboxDomainEventWriter,
+    @Optional() @Inject(FAULT_INJECTION_PORT) private readonly faultInjection?: FaultInjectionPort,
   ) {}
 
   private pool(): Pool {
@@ -575,6 +579,9 @@ export class MeasurementsRepository {
         return { outcome: 'invalid_state' };
       }
 
+      if (input.transition === 'approve') {
+        await maybeInjectFault(this.faultInjection, FAULT_HOOKS.MeasurementApproveAfterMutationBeforeHistory);
+      }
       await client.query(
         `INSERT INTO msr.measurement_history_events
            (measurement_id, event_type, payload, actor_identity_id)
@@ -627,6 +634,7 @@ export class MeasurementsRepository {
         });
       }
       if (row?.decided_at && input.transition === 'approve') {
+        await maybeInjectFault(this.faultInjection, FAULT_HOOKS.MeasurementApproveBeforeOutbox);
         await this.outboxWriter.appendMeasurementApproved(client, {
           measurementId: row.id,
           serviceOrderId: row.service_order_id,

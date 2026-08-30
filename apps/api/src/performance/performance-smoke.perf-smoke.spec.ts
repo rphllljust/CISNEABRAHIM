@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { getTestDatabaseUrl } from '../test/load-vitest-env';
 import { assertWithinBudget, derivePerformanceBudgets } from './config/performance-budgets';
 import { loadPerformanceDatasetConfig } from './config/performance-dataset.config';
 import {
@@ -11,22 +12,27 @@ import { buildSmokeBenchmarkScenarios } from './benchmark/performance-scenarios'
 import { seedPerformanceDataset } from './synthetic/performance-dataset.seeder';
 
 describe('performance smoke benchmarks', () => {
-  const testDatabaseUrl = process.env['TEST_DATABASE_URL'];
-  let pool: Pool;
+  const testDatabaseUrl = getTestDatabaseUrl();
+  let pool: Pool | undefined;
 
   beforeAll(() => {
     if (!testDatabaseUrl) {
-      throw new Error('TEST_DATABASE_URL is required for performance smoke benchmarks.');
+      throw new Error(
+        'TEST_DATABASE_URL is required for performance smoke benchmarks. Start PostgreSQL (pnpm db:up), copy .env.example to .env, then run pnpm db:migrate:test.',
+      );
     }
     applyPerformanceTestEnv(testDatabaseUrl);
     pool = new Pool({ connectionString: testDatabaseUrl });
   });
 
   afterAll(async () => {
-    await pool.end();
+    await pool?.end();
   });
 
   it('meets smoke budgets for core read scenarios', async () => {
+    if (!pool) {
+      throw new Error('Performance pool was not initialized.');
+    }
     const datasetConfig = loadPerformanceDatasetConfig({ PERF_DATASET_PROFILE: 'smoke' });
     const dataset = await seedPerformanceDataset(pool, datasetConfig);
     const harness = await createPerformanceHarness(pool, dataset);

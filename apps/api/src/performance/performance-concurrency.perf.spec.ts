@@ -7,6 +7,7 @@ import {
 } from '@cisne/database';
 import { Pool } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { getTestDatabaseUrl } from '../test/load-vitest-env';
 import { AUTH_TEST_PASSWORD, applyAuthTestEnv } from '../auth/test/auth-test-env';
 import { normalizeLoginIdentifier } from '../auth/crypto/token-crypto';
 import { ClientsModule } from '../clients/clients.module';
@@ -23,14 +24,16 @@ import { SecurityModule } from '../security/security.module';
 import { syntheticTaxId } from './synthetic/synthetic-identifiers';
 
 describe('performance concurrency integrity', () => {
-  const testDatabaseUrl = process.env['TEST_DATABASE_URL'];
-  let pool: Pool;
+  const testDatabaseUrl = getTestDatabaseUrl();
+  let pool: Pool | undefined;
   let clientAccess: ClientAccessService;
   let actorIdentityId: string;
 
   beforeAll(async () => {
     if (!testDatabaseUrl) {
-      throw new Error('TEST_DATABASE_URL is required for performance concurrency tests.');
+      throw new Error(
+        'TEST_DATABASE_URL is required for performance concurrency tests. Start PostgreSQL (pnpm db:up), copy .env.example to .env, then run pnpm db:migrate:test.',
+      );
     }
     applyAuthTestEnv(testDatabaseUrl);
     process.env['DATABASE_URL'] = testDatabaseUrl;
@@ -58,6 +61,9 @@ describe('performance concurrency integrity', () => {
   });
 
   beforeEach(async () => {
+    if (!pool) {
+      throw new Error('Performance pool was not initialized.');
+    }
     await truncateClientTables(pool);
   });
 

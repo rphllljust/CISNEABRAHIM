@@ -5,7 +5,6 @@ import type {
   AlertListFilters,
   BusinessAlertListItem,
   BusinessAlertSeverity,
-  BusinessAlertStatus,
   BusinessAlertType,
 } from '../types/alerts.types';
 

@@ -36,6 +36,16 @@ import { ServiceRequestCreatePage } from './requests/pages/ServiceRequestCreateP
 import { ServiceRequestDetailPage } from './requests/pages/ServiceRequestDetailPage';
 import { ServiceRequestEditPage } from './requests/pages/ServiceRequestEditPage';
 import { ServiceRequestsListPage } from './requests/pages/ServiceRequestsListPage';
+import { ProposalsRoute } from './proposals/ProposalsRoute';
+import { ProposalsListPage } from './proposals/pages/ProposalsListPage';
+import { ProposalCreatePage } from './proposals/pages/ProposalCreatePage';
+import { ProposalDetailPage } from './proposals/pages/ProposalDetailPage';
+import { ProposalEditPage } from './proposals/pages/ProposalEditPage';
+import { PurchaseOrdersRoute } from './purchase-orders/PurchaseOrdersRoute';
+import { PurchaseOrdersListPage } from './purchase-orders/pages/PurchaseOrdersListPage';
+import { PurchaseOrderCreatePage } from './purchase-orders/pages/PurchaseOrderCreatePage';
+import { PurchaseOrderDetailPage } from './purchase-orders/pages/PurchaseOrderDetailPage';
+import { PurchaseOrderEditPage } from './purchase-orders/pages/PurchaseOrderEditPage';
 import { OperationalDashboardPage } from './dashboard/pages/OperationalDashboardPage';
 import { AlertCenterPage } from './alerts/pages/AlertCenterPage';
 import { SearchResultsPage } from './search/pages/SearchResultsPage';
@@ -44,6 +54,7 @@ import { LoginPage } from './pages/LoginPage';
 import { PlatformDiagnosticsPage } from './pages/PlatformDiagnosticsPage';
 import { ServiceUnavailablePage } from './pages/ServiceUnavailablePage';
 import { ShellAccessDeniedPage } from './pages/ShellAccessDeniedPage';
+import { ShellNotFoundPage } from './pages/ShellNotFoundPage';
 import { SessionExpiredPage } from './pages/SessionExpiredPage';
 
 export function App() {
@@ -232,6 +243,70 @@ export function App() {
                 }
               />
               <Route
+                path="/app/proposals"
+                element={
+                  <ProposalsRoute>
+                    <ProposalsListPage />
+                  </ProposalsRoute>
+                }
+              />
+              <Route
+                path="/app/proposals/new"
+                element={
+                  <ProposalsRoute>
+                    <ProposalCreatePage />
+                  </ProposalsRoute>
+                }
+              />
+              <Route
+                path="/app/proposals/:proposalId/edit"
+                element={
+                  <ProposalsRoute>
+                    <ProposalEditPage />
+                  </ProposalsRoute>
+                }
+              />
+              <Route
+                path="/app/proposals/:proposalId"
+                element={
+                  <ProposalsRoute>
+                    <ProposalDetailPage />
+                  </ProposalsRoute>
+                }
+              />
+              <Route
+                path="/app/purchase-orders"
+                element={
+                  <PurchaseOrdersRoute>
+                    <PurchaseOrdersListPage />
+                  </PurchaseOrdersRoute>
+                }
+              />
+              <Route
+                path="/app/purchase-orders/new"
+                element={
+                  <PurchaseOrdersRoute>
+                    <PurchaseOrderCreatePage />
+                  </PurchaseOrdersRoute>
+                }
+              />
+              <Route
+                path="/app/purchase-orders/:purchaseOrderId/edit"
+                element={
+                  <PurchaseOrdersRoute>
+                    <PurchaseOrderEditPage />
+                  </PurchaseOrdersRoute>
+                }
+              />
+              <Route
+                path="/app/purchase-orders/:purchaseOrderId"
+                element={
+                  <PurchaseOrdersRoute>
+                    <PurchaseOrderDetailPage />
+                  </PurchaseOrdersRoute>
+                }
+              />
+              <Route
                 path="/app/service-orders/:serviceOrderId/planning"
                 element={
                   <ServiceOrdersRoute>
@@ -272,10 +347,11 @@ export function App() {
                 }
               />
               <Route path="/app/no-access" element={<ShellAccessDeniedPage />} />
+              <Route path="*" element={<ShellNotFoundPage />} />
             </Route>
           </Route>
           <Route path="/" element={<Navigate to="/app" replace />} />
-          <Route path="*" element={<Navigate to="/app" replace />} />
+          <Route path="*" element={<ShellNotFoundPage />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

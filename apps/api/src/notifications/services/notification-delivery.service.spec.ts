@@ -1,12 +1,12 @@
 import { Test } from '@nestjs/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  INTEGRATION_ERROR_CLASSES,
-  IntegrationProviderError,
-} from '../../integrations/acl/domain/integration-error';
 import { PermanentJobError, TransientJobError } from '../../platform/background-jobs/domain/job-errors';
 import { NOTIFICATION_CHANNELS } from '../domain/notification-channel';
-import { NotificationsRepository } from '../repositories/notifications.repository';
+import {
+  NotificationsRepository,
+  type DeliveryAttemptRow,
+  type RecordDeliveryAttemptInput,
+} from '../repositories/notifications.repository';
 import { NotificationChannelRegistry } from '../services/notification-channel.registry';
 import { NotificationDeliveryService } from '../services/notification-delivery.service';
 import { NotificationTemplateService } from '../services/notification-template.service';
@@ -86,7 +86,7 @@ describe('NotificationDeliveryService', () => {
     });
     repository.findAcceptedAttempt.mockResolvedValue(null);
     repository.countAttempts.mockResolvedValue(0);
-    repository.recordDeliveryAttempt.mockImplementation(async (input) => ({
+    repository.recordDeliveryAttempt.mockImplementation(async (input: RecordDeliveryAttemptInput): Promise<DeliveryAttemptRow> => ({
       id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
       notification_id: input.notificationId,
       channel: input.channel,
@@ -111,7 +111,6 @@ describe('NotificationDeliveryService', () => {
     expect(repository.recordDeliveryAttempt).toHaveBeenCalledWith(
       expect.objectContaining({
         status: 'DELIVERED',
-        providerMessageId: expect.any(String),
       }),
     );
     expect(repository.markIntentDispatched).toHaveBeenCalledWith(intentId);

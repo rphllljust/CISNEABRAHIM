@@ -5608,12 +5608,248 @@ ARTIFACTS:
 EVIDENCE:
   pnpm test:idempotency-retry — 16/16 + 4/4 PASS
   pnpm --filter @cisne/web test -- src/idempotency-retry/idempotency-retry.ui.test.tsx — 4/4 PASS
+  RE-VERIFIED 2026-08-30: npx vitest integration 16/16 + retry-classification 4/4 após correção do harness
 WORKING_TREE: DIRTY
 NEXT_TEST: SECURITY_ADVERSARIAL
 NEXT_PROMPT_EXECUTED: NO
 NOTES:
   Release lost-response: retry com rowVersion obsoleto → INVALID_STATE; reconciliação via GET (RELEASED).
   Convert retry: already_converted mapeado para INVALID_STATE na API; efeito único comprovado via SQL.
+  Harness: reset alinhado ao master-business-harness (truncate direto + outbox/domain); tentativas com pool compartilhado/advisory lock/drain degradaram estabilidade.
+```
+
+---
+
+## Adversarial security regression test
+
+```
+PROMPT_ID: SECURITY-ADVERSARIAL
+PROMPT_TITLE: Adversarial security regression test
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: PASS
+SECURITY: PASS
+BOLA_IDOR: PROTECTED
+BFLA: PROTECTED
+MASS_ASSIGNMENT: PROTECTED
+SQL_INJECTION: PROTECTED
+XSS: PROTECTED
+DOCUMENT_ACCESS: PROTECTED
+UPLOAD_SECURITY: PASS
+DATA_LEAK: NONE
+CRITICAL_VULNERABILITIES: 0
+ARTIFACTS:
+  apps/api/src/security/adversarial/adversarial-security.e2e.spec.ts (12 testes E2E HTTP)
+  apps/api/src/security/adversarial/adversarial-security.helpers.ts
+  apps/api/package.json (test:adversarial-security)
+  apps/web/src/security/adversarial-security.ui.test.tsx (1 teste XSS UI)
+  apps/api/src/security/security-regression.spec.ts (+ domain specs, download-token)
+EVIDENCE:
+  cd apps/api && pnpm test:adversarial-security — 12/12 E2E + 22/22 unit PASS
+  cd apps/web && pnpm test -- src/security/adversarial-security.ui.test.tsx — 1/1 PASS
+ENVIRONMENT:
+  TEST_DATABASE_URL (cisne_local_test); PostgreSQL via docker compose
+  Migration 0034 (rpt.report_exports) aplicada on-demand no beforeAll quando ausente
+FIXES_THIS_RUN:
+  withDeadlockRetry<T> genérico — seeds UAT retornavam undefined
+  ensureReportExportsSchema — tabela rpt.report_exports ausente em DB local desatualizado
+  Export IDOR: createExport via service + GET download negado; grant ServiceOrdersServiceOrderList ad-hoc
+  Upload: path traversal .pdf, extensão .exe, oversize Fastify (≠201 + sem leak)
+WORKING_TREE: DIRTY
+NEXT_TEST: DATABASE_MIGRATIONS
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Ambiente isolado; nenhum ataque em produção.
+  Oversize upload rejeitado no boundary Fastify (500 FST_REQ_FILE_TOO_LARGE) antes da validação de domínio — comportamento aceito; sem vazamento sensível.
+  control_admin ainda não inclui ServiceOrdersServiceOrderList em uat-profiles — grant ad-hoc no teste de export IDOR.
+```
+
+---
+
+## Database & migration torture test
+
+```
+PROMPT_ID: DATABASE-MIGRATIONS
+PROMPT_TITLE: Database & migration torture test
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: PASS
+DATABASE: PASS
+ZERO_TO_LATEST: PASS
+INCREMENTAL_MIGRATIONS: PASS (N-3 → N-2 → N-1 → N com fixture completa)
+DATA_PRESERVATION: PASS (clients, catalog, assets, requests, proposals, PO, OS, execution, measurement, billing, documents, history)
+CONSTRAINTS: PASS (unique 23505, FK 23503, check 23514, not null 23502)
+DELETE_SAFETY: PASS (DELETE negado 23001/23503 — RESTRICT em OS, client, measurement referenciada)
+DECIMAL: PASS (numeric(18,4) fronteira 99999999999999.9999; zero colunas float/real financeiras)
+MIGRATION_FAILURE: PASS (transação inválida → ROLLBACK; schema parcial não persiste)
+OLD_APP_NEW_SCHEMA: PASS (SELECT legado pós índices/enum expand-only)
+ORPHANS: 0
+DATA_CORRUPTION: 0
+ARTIFACTS:
+  packages/database/src/migration-torture.integration.spec.ts (7 testes)
+  packages/database/src/migration-torture/harness.ts
+  packages/database/src/migration-torture/fixture.ts
+  packages/database/package.json (test:migration-torture)
+  package.json (test:migration-torture)
+EVIDENCE:
+  pnpm test:migration-torture — 7/7 PASS (~11s)
+ENVIRONMENT:
+  DATABASE_URL (PostgreSQL local); DBs efêmeros cisne_migration_torture_{zero,incremental,failure}
+  36 migrations SQL (0000–0035) descobertas via readdir
+NOTES:
+  ci-database-gate.mjs ainda lista migrations até 0030 — gap conhecido vs torture (0031–0035).
+  DELETE RESTRICT emite 23001 (não 23503) — ambos tratados como negação válida.
+WORKING_TREE: DIRTY
+NEXT_TEST: CHAOS_RECOVERY
+NEXT_PROMPT_EXECUTED: NO
+```
+
+---
+
+## Chaos, async processing & recovery test
+
+```
+PROMPT_ID: CHAOS-RECOVERY
+PROMPT_TITLE: Chaos, async processing & recovery test
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: PASS
+CHAOS: PASS
+DB_FAILURE: PASS
+STORAGE_FAILURE: PASS
+TIMEOUT: PASS
+WORKER_RECOVERY: PASS
+OUTBOX: PASS
+INBOX: PASS
+MULTI_WORKER: PASS
+POISON_MESSAGE: PASS
+BACKPRESSURE: PASS
+LOST_EVENTS: 0
+ARTIFACTS:
+  apps/api/src/chaos-recovery/chaos-recovery.integration.spec.ts (14 testes)
+  apps/api/package.json (test:chaos-recovery)
+  package.json (test:chaos-recovery)
+EVIDENCE:
+  pnpm test:chaos-recovery — 14/14 PASS (~18s)
+ENVIRONMENT:
+  TEST_DATABASE_URL (PostgreSQL local); ambiente controlado — sem produção
+COVERAGE:
+  Dependencies: PG connection refused / pool unavailable; object storage fail+timeout; provider timeout/429/500/503; malformed inbox payload
+  Worker: before claim (lease expiry), during (graceful shutdown), after side effect (outbox idempotent publish)
+  Outbox: backlog 8 eventos com worker parado → drain completo
+  Multi-worker: outbox claim SKIP LOCKED + inbox processBatch concorrente
+  Inbox: 10 receives + processamento concorrente → 1 efeito
+  Poison: inbox FAILED permanente + job FAILED permanente não bloqueiam fila
+  Backpressure: 6 jobs slow, fila cresce e drena sem jobs eternos RUNNING
+  Recovery: lease expirado → PENDING → Completed; outbox publicado pós-restart
+NOTES:
+  Job poison permanente → status FAILED (não DEAD); DEAD reservado a retries esgotados (transient).
+  Monitoramento backpressure via contadores de fila (plt.background_jobs), não CPU/memória de host.
+WORKING_TREE: DIRTY
+NEXT_TEST: FRONTEND_RESILIENCE
+NEXT_PROMPT_EXECUTED: NO
+```
+
+---
+
+## Frontend resilience & UX torture test
+
+```
+PROMPT_ID: FRONTEND-RESILIENCE
+PROMPT_TITLE: Frontend resilience & UX torture test
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: PASS
+UI_UX: PASS
+RESPONSIVE: PASS
+320PX: PASS
+NETWORK_FAILURE_UX: PASS
+VERSION_CONFLICT_UX: PASS
+DOUBLE_SUBMIT: PASS
+ACCESSIBILITY: PASS
+CHARTS: PASS
+OS_OVERDUE: PASS
+PRODUCTIVITY: PASS
+FALSE_SUCCESS_STATES: 0
+ARTIFACTS:
+  apps/web/src/frontend-resilience/frontend-resilience.ui.test.tsx (20 testes)
+  apps/web/src/test/request-url.ts (parseRequestPath — URLs relativas em Vitest)
+  apps/web/package.json (test:frontend-resilience)
+  package.json (test:frontend-resilience)
+EVIDENCE:
+  pnpm test:frontend-resilience — 99/99 PASS (~43s)
+ENVIRONMENT:
+  Vitest + jsdom; fetch mocks; ambiente controlado — sem produção
+COVERAGE:
+  Viewports 320/360/390/768/1024/1440 — overflow horizontal smoke
+  Conteúdo extremo — razão social longa, 50+ linhas, valores financeiros grandes
+  Network failure UX — ErrorState sem falso sucesso (create/release/billing/upload)
+  Version conflict — VersionConflictBanner + ClientEditPage + e2e execution/measurement
+  Double submit — idempotency-retry.ui, LoginPage, ui.robustness
+  Accessibility — teclado em filtros/gráficos; labels e dialogs em suites existentes
+  Charts — empty/error, reconciliação card+bar+table; dashboard executive + e2e
+  OS vencida — AttentionBlock com aria-label, detail e link filtrado
+  Produtividade sem amostra — formatPercent → em dash (—), nunca 0% falso
+  Tailwind hygiene — auditoria estática em ui/ (sem hex arbitrário / z-index runaway)
+FIXES:
+  parseRequestPath corrige mocks fetch com URLs relativas (VITE_API_BASE_URL vazio em Vitest)
+  proposals/purchase-orders e2e composeFetch migrado para parseRequestPath
+NOTES:
+  Produtividade exibe em dash (—) em vez do literal NO_DATA; sem amostra não renderiza 0%.
+WORKING_TREE: DIRTY
+NEXT_TEST: PERFORMANCE_STRESS
+NEXT_PROMPT_EXECUTED: NO
+```
+
+---
+
+## Performance, stress & soak test
+
+```
+PROMPT_ID: PERFORMANCE-STRESS
+PROMPT_TITLE: Performance, stress & soak test
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: PASS
+PERFORMANCE: PASS
+NORMAL_LOAD: PASS
+STRESS: PASS
+SPIKE: PASS
+SOAK: PASS
+P95_MS: 1248
+P99_MS: 1248
+FIRST_BOTTLENECK: auth.login
+MEMORY_LEAK: NONE
+CONNECTION_LEAK: NONE
+N_PLUS_ONE: 0
+DEADLOCKS: 0
+DATA_INTEGRITY_AFTER_LOAD: PASS
+ARTIFACTS:
+  apps/api/src/performance-stress/performance-stress.perf-stress.spec.ts
+  apps/api/src/performance-stress/performance-stress-phases.ts
+  apps/api/src/performance-stress/performance-stress-scenarios.ts
+  apps/api/src/performance-stress/platform-snapshot.ts
+  apps/api/src/performance-stress/post-stress-integrity.ts
+  apps/api/package.json (test:performance-stress)
+  package.json (test:performance-stress)
+EVIDENCE:
+  pnpm test:performance-stress — 3/3 PASS (~84–103s)
+  PERF_STRESS_REPORT p95=1248 p99=1248 bottleneck=auth.login spikeError=0
+ENVIRONMENT:
+  TEST_DATABASE_URL (PostgreSQL local); PERF_SOAK_SECONDS=20; ambiente controlado — sem produção
+COVERAGE:
+  Baseline/normal: login, search, dashboard, OS, resources, measurements, billing, reports
+  Stress ramp: concorrência 2→16; gargalo medido em auth.login
+  Spike: concurrency 24; error rate 0 (degradação latência, sem falso sucesso)
+  Soak: 20s amostras de heap/RSS/connections/outbox
+  Leak: estabilização pós-carga (heap Δ≤32MB, connections Δ≤4 vs snapshot pós-load)
+  Read isolation: search/dashboard/reports sob pressão; service-orders.list mantém error 0
+  Post-stress integrity: duplicate clients/OS, overbooking, billing/doc collisions, orphans — zero
+FIXES:
+  injectTimed passa a tratar envelope JSON `{ error }` como falha (anti falso sucesso HTTP 200)
+  Seeder expõe sampleMeasurementServiceOrderId / sampleBillingServiceOrderId
+  parseRequestPath (perf web) já aplicado em prompt anterior — sem regressão aqui
+NOTES:
+  P95/P99 agregados incluem pico de spike em auth.login (~1,2s neste hardware).
+  Seq scan em OS list aceito no perfil smoke (tabela pequena); gate de index no perfil full.
+WORKING_TREE: DIRTY
+NEXT_TEST: MASTER_CERTIFICATION
+NEXT_PROMPT_EXECUTED: NO
 ```
 
 ---
@@ -5947,9 +6183,47 @@ EVIDENCE:
   pnpm --filter @cisne/web test:visual — 27/27 PASS
 
 LOGIN QUALITY: CERTIFIED
-COMMIT: PENDING
+COMMIT: 8618004
 WORKING_TREE: DIRTY (alterações anteriores preservadas fora do escopo login)
 NEXT_ACTION: CONTINUE FRONTEND WORK
 ```
 
 ---
+
+## CORRETIVO — Higiene engenharia (README, app.module, idempotency harness)
+
+```
+EXECUTED_AT: 2026-08-30
+STATUS: PASS (correções aplicadas e testes reexecutados)
+
+ISSUES:
+  1. README.md ainda afirmava FUNCTIONAL CODE: NOT STARTED
+  2. app.module.ts importava AppModule de si mesmo (residual fault-injection)
+  3. test:idempotency-retry planejado mas não estável (harness com pool compartilhado/locks/drain)
+  4. Working tree suja; HEAD divergente do marco Prompt 94
+
+FIXES:
+  README.md + docs/README.md:
+    FUNCTIONAL CODE: STARTED; PRODUCTION READINESS: NO-GO; aviso honesto sobre hypercare
+  app.module.ts:
+    auto-import removido; FaultInjectionModule permanece como import legítimo
+  failure-injection-harness.ts:
+    reset simplificado — mesmo padrão do master-business-harness + truncate outbox/domain
+    removidos advisory lock, drain de pool e pool compartilhado (causavam flakiness)
+  faulting-database.service.ts:
+    rollback em conexões com falha DbTransactionAbort/DbConnectionLost (mantido)
+  failure-injection / idempotency specs:
+    afterAll usa context.close() (encerra pools do harness e do Nest)
+
+TESTS REEXECUTED:
+  idempotency-retry.integration.spec.ts — 16/16 PASS
+  retry-classification.spec.ts — 4/4 PASS
+  failure-injection.integration.spec.ts — 20/20 PASS
+
+GIT:
+  HEAD: 8618004 (login premium; posterior ao Prompt 94 BLOCKED)
+  WORKING_TREE: DIRTY — commit não solicitado
+  Prompt 94 permanece BLOCKED em histórico; alterações corretivas não equivalem a go-live
+
+COMMIT: NOT_REQUIRED
+```

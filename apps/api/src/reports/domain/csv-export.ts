@@ -4,7 +4,7 @@ export function sanitizeCsvCell(value: unknown): string {
   if (value === null || value === undefined) {
     return '';
   }
-  const text = String(value);
+  const text = toCsvText(value);
   const escaped = text.replace(/"/g, '""');
   const needsQuote = /[",\n\r]/.test(escaped) || FORMULA_PREFIX.test(escaped.trimStart());
   const safe = FORMULA_PREFIX.test(escaped.trimStart()) ? `'${escaped}` : escaped;
@@ -21,4 +21,26 @@ export function buildCsvContent(headers: string[], rows: Record<string, unknown>
     lines.push(buildCsvLine(columns.map((column) => row[column] ?? '')));
   }
   return lines.join('');
+}
+
+function toCsvText(value: unknown): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+    return String(value);
+  }
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  if (typeof value === 'symbol') {
+    return value.description ?? 'symbol';
+  }
+
+  try {
+    const serialized = JSON.stringify(value);
+    return serialized ?? '';
+  } catch {
+    return '[unserializable]';
+  }
 }

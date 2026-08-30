@@ -54,6 +54,8 @@ export async function createPerformanceHarness(
     sampleServiceOrderId: dataset.serviceOrderIds[0] ?? '',
     sampleReleasedServiceOrderId:
       dataset.releasedServiceOrderIds[0] ?? dataset.serviceOrderIds[0] ?? '',
+    sampleMeasurementServiceOrderId: dataset.sampleMeasurementServiceOrderId,
+    sampleBillingServiceOrderId: dataset.sampleBillingServiceOrderId,
   };
 
   return { app, pool, context };

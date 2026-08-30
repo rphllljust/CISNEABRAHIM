@@ -10,10 +10,10 @@ import { readBackupStatusSnapshot } from './backup-status-reader';
 import { RPO_RTO_PRODUCTION_BLOCKER } from './backup-types';
 
 describe('backup integration (Prompt 84)', () => {
-  it('registers RPO/RTO as production blocker without invented commercial values', () => {
-    expect(RPO_RTO_PRODUCTION_BLOCKER.status).toBe('PRODUCTION_BLOCKER');
-    expect(RPO_RTO_PRODUCTION_BLOCKER.rpo).toBe('TARGET_NOT_DEFINED');
-    expect(RPO_RTO_PRODUCTION_BLOCKER.rto).toBe('TARGET_NOT_DEFINED');
+  it('registers DDP-016 as READY_FOR_APPROVAL with technical proposal (not invented approval)', () => {
+    expect(RPO_RTO_PRODUCTION_BLOCKER.status).toBe('READY_FOR_APPROVAL');
+    expect(RPO_RTO_PRODUCTION_BLOCKER.rpo).toBe('READY_FOR_APPROVAL');
+    expect(RPO_RTO_PRODUCTION_BLOCKER.proposalReference).toContain('ddp-016');
   });
 
   it('runs monitored backup with postgres + object storage artifacts', async () => {

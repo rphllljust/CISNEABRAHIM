@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import { requestUrl } from './request-url';
+import { parseRequestPath } from './request-url';
 
 export const MOCK_DOCUMENT_ID = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 export const MOCK_DOCUMENT_VERSION_ID = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
@@ -255,14 +255,13 @@ export function createDocumentsFetchHandler(options: DocumentsFetchMockOptions =
 }
 
 export function wrapFetchWithDocumentsMock(
-  upstream: (...args: [RequestInfo, RequestInit?]) => Promise<Response>,
+  upstream: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
   options: DocumentsFetchMockOptions = {},
 ) {
   const documents = createDocumentsFetchHandler(options);
-  return vi.fn(async (input: RequestInfo, init?: RequestInit) => {
-    const url = requestUrl(input);
-    const parsed = new URL(url);
-    const response = documents.handle(parsed.pathname, init?.method ?? 'GET', init);
+  return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const { pathname } = parseRequestPath(input);
+    const response = documents.handle(pathname, init?.method ?? 'GET', init);
     if (response) {
       return response;
     }

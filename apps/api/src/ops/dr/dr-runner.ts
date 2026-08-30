@@ -10,7 +10,9 @@ import {
   resolveDrDatabaseUrl,
   resolveDrObjectStorageRoot,
   resolveDrScenario,
+  resolveObjectStorageSourceRoot,
 } from './dr-config';
+import { hydrateObjectStorageForDr } from './object-storage-hydrate';
 import { measureDrMetrics } from './dr-metrics';
 import { DR_SCENARIOS, type DrCheck, type DrDrillResult, type DrScenarioId } from './dr-types';
 import {
@@ -97,6 +99,33 @@ export async function runDrDrill(
   try {
     await mkdir(isolatedRoot, { recursive: true });
 
+    if (databaseUrl) {
+      pool = createPool(databaseUrl);
+    }
+
+    if (pool && objectStorageRoot) {
+      const sourceRoot = resolveObjectStorageSourceRoot(env);
+      const hydration = await hydrateObjectStorageForDr({
+        pool,
+        targetRoot: objectStorageRoot,
+        sourceRoot,
+      });
+      checks.push({
+        id: 'object_storage_hydration',
+        label: 'Document objects hydrated into DR storage root',
+        passed: hydration.missing.length === 0,
+        detail:
+          hydration.missing.length === 0
+            ? `copied=${hydration.copied.length}; already_present=${hydration.skipped.length}`
+            : `missing=${hydration.missing.join(', ')}; source=${sourceRoot ?? 'none'}`,
+      });
+      if (hydration.missing.length > 0) {
+        throw new Error(
+          `DR object storage hydration failed: ${hydration.missing.length} DB-referenced object(s) absent from DR root and source`,
+        );
+      }
+    }
+
     const backup = await runMonitoredBackup(
       {
         ...env,
@@ -112,10 +141,6 @@ export async function runDrDrill(
 
     const disasterAtDate = deps.now?.() ?? new Date();
     const disasterAt = disasterAtDate.toISOString();
-
-    if (databaseUrl) {
-      pool = createPool(databaseUrl);
-    }
 
     await simulateDisaster({
       scenario,

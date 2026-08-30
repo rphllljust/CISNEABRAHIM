@@ -12,12 +12,12 @@ export function CisneWordmark({ compact = false, className }: CisneWordmarkProps
       aria-label="CISNE Rondônia"
     >
       <span className="cisne-wordmark__primary" aria-hidden="true">
-        CISNE
+        Cisne
       </span>
+      <span className="cisne-wordmark__rule" aria-hidden="true" />
       <span className="cisne-wordmark__region" aria-hidden="true">
         RONDÔNIA
       </span>
-      <span className="cisne-wordmark__accent" aria-hidden="true" />
     </div>
   );
 }

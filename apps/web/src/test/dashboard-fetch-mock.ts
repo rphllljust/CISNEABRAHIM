@@ -1,4 +1,5 @@
-import type { ExecutiveDashboardSnapshot } from '../types/dashboard.types';
+import type { ExecutiveDashboardSnapshot } from '../dashboard/types/dashboard.types';
+import { requestUrl } from './request-url';
 
 export const EXECUTIVE_DASHBOARD_SNAPSHOT: ExecutiveDashboardSnapshot = {
   generatedAt: '2026-08-29T12:00:00.000Z',
@@ -107,7 +108,7 @@ export const EXECUTIVE_DASHBOARD_SNAPSHOT: ExecutiveDashboardSnapshot = {
 
 export function createDashboardFetchMock() {
   return async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    const url = typeof input === 'string' ? input : input.toString();
+    const url = requestUrl(input);
     const method = init?.method ?? 'GET';
 
     if (url.includes('/api/v1/auth/login') && method === 'POST') {

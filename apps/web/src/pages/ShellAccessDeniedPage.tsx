@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+import { ErrorState } from '../ui/ErrorState';
 
 type ShellAccessState = {
   from?: string;
@@ -8,23 +9,21 @@ type ShellAccessState = {
 export function ShellAccessDeniedPage() {
   const location = useLocation();
   const state = (location.state as ShellAccessState | null) ?? {};
-  const capabilityLabel = state.capabilityId ?? 'required capability';
+  const capabilityLabel = state.capabilityId ?? 'permissão necessária';
 
   return (
     <main id="main-content" className="shell-page">
-      <h1>Access denied</h1>
-      <p role="alert">
-        You do not have the {capabilityLabel} permission required for this area. Authorization is
-        enforced by the backend.
-      </p>
+      <ErrorState
+        kind="denied"
+        title="Acesso negado"
+        message={`Você não possui a permissão ${capabilityLabel} exigida para esta área. A autorização é aplicada pelo backend.`}
+        action={<Link to="/app">Voltar ao painel</Link>}
+      />
       {state.from ? (
-        <p>
-          Requested path: <code>{state.from}</code>
+        <p className="cisne-type-caption">
+          Caminho solicitado: <code>{state.from}</code>
         </p>
       ) : null}
-      <p>
-        <Link to="/app">Return to home</Link>
-      </p>
     </main>
   );
 }

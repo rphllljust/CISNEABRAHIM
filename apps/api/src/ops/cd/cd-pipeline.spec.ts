@@ -114,12 +114,25 @@ describe('CD pipeline (Prompt 87)', () => {
     });
     expect(blocked.status).toBe('FAIL');
 
-    const approved = await runCdPromotion({
+    const blockedByReadiness = await runCdPromotion({
       manifestInput: manifestInput(),
       targetEnvironment: 'production',
       sourceManifest: ci,
       env: { PRD_PROMOTION_APPROVED: 'I_UNDERSTAND' },
       deps: { assessMigrations: safeMigrations },
+    });
+    expect(blockedByReadiness.status).toBe('FAIL');
+    expect(blockedByReadiness.error).toMatch(/Production operations blocked/);
+
+    const approved = await runCdPromotion({
+      manifestInput: manifestInput(),
+      targetEnvironment: 'production',
+      sourceManifest: ci,
+      env: { PRD_PROMOTION_APPROVED: 'I_UNDERSTAND' },
+      deps: {
+        assessMigrations: safeMigrations,
+        assertProductionReadiness: () => undefined,
+      },
     });
     expect(approved.status).toBe('PASS');
     expect(approved.manifest.artifactDigest).toBe(ci.artifactDigest);

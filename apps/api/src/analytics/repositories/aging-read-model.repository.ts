@@ -130,8 +130,8 @@ export class AgingReadModelRepository {
     }
     const mapped = remapScope(prefixScopeAlias(scopes.serviceOrderScope, 'so'), 0);
     const sql = `EXPLAIN ${this.overdueServiceOrdersSql(mapped.clause)}`;
-    const result = await this.pool().query(sql, mapped.params);
-    return result.rows.map((row) => row['QUERY PLAN'] as string).join('\n');
+    const result = await this.pool().query<{ 'QUERY PLAN': string }>(sql, mapped.params);
+    return result.rows.map((row) => row['QUERY PLAN']).join('\n');
   }
 
   private overdueServiceOrdersSql(scopeClause: string): string {

@@ -15,8 +15,8 @@ export type DrCheck = {
 export type DrMetrics = {
   rpoMeasuredMs: number;
   rtoMeasuredMs: number;
-  rpoTarget: 'TARGET_NOT_DEFINED';
-  rtoTarget: 'TARGET_NOT_DEFINED';
+  rpoTarget: 'READY_FOR_APPROVAL' | 'TARGET_NOT_DEFINED';
+  rtoTarget: 'READY_FOR_APPROVAL' | 'TARGET_NOT_DEFINED';
   slaComparison: 'PENDING_BUSINESS_APPROVAL';
   backupFinishedAt: string;
   disasterAt: string;

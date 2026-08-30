@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { ErrorState } from '../ui/ErrorState';
+import { Button } from '../ui/Button';
 
 type ShellErrorBoundaryProps = {
   children: ReactNode;
@@ -26,17 +27,19 @@ export class ShellErrorBoundary extends Component<
   render() {
     if (this.state.hasError) {
       return (
-        <main id="main-content" className="shell-page" role="alert">
-          <h1>Unexpected error</h1>
-          <p>Something went wrong while loading this page.</p>
-          <p>
-            <button type="button" onClick={() => this.setState({ hasError: false })}>
-              Try again
-            </button>
-          </p>
-          <p>
-            <Link to="/app">Return to home</Link>
-          </p>
+        <main id="main-content" className="shell-page">
+          <ErrorState
+            kind="generic"
+            title="Erro inesperado"
+            message="Algo deu errado ao carregar esta página."
+            onRetry={() => this.setState({ hasError: false })}
+            retryLabel="Tentar novamente"
+            action={
+              <Button type="button" variant="secondary" onClick={() => window.location.assign('/app')}>
+                Voltar ao painel
+              </Button>
+            }
+          />
         </main>
       );
     }

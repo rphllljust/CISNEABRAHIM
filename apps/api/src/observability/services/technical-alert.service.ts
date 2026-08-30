@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { loadIntegrationCapabilitySnapshot } from '../../integrations/acl/config/integration-capability.config';
 import {
   buildTechnicalAlertDefinitions,
   evaluateTechnicalAlertConditions,
@@ -58,6 +59,7 @@ export class TechnicalAlertService {
   ): TechnicalAlertConditionInput {
     const http = metrics.technical.http;
     const httpErrorRate = http.total > 0 ? http.errors / http.total : null;
+    const integrationCapabilities = loadIntegrationCapabilitySnapshot();
 
     return {
       httpErrorRate,
@@ -76,6 +78,8 @@ export class TechnicalAlertService {
       storageFailures: metrics.technical.failures.storageFailures,
       erpFailures: metrics.technical.backlog.erpFailures,
       trackingFailures: metrics.technical.backlog.trackingFailures,
+      erpIntegrationConfigured: integrationCapabilities.erp.configured,
+      trackingIntegrationConfigured: integrationCapabilities.tracking.configured,
       notificationFailures: Math.max(
         metrics.technical.backlog.notificationFailures,
         metrics.technical.failures.notificationFailures,

@@ -7,12 +7,157 @@ import {
   type AuthUserMessage,
 } from '../types/auth.types';
 
-export function getApiBaseUrl(): string {
-  const base = import.meta.env.VITE_API_BASE_URL;
-  if (!base) {
-    return 'http://localhost:3000';
+const LOOPBACK_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1']);
+const DEV_DIRECT_API_PORTS = ['3000', '3001'] as const;
+let preferredApiBaseUrl: string | null = null;
+
+type ApiBaseUrlResolutionOptions = {
+  isDev: boolean;
+  browserHostname: string | null;
+};
+
+function isLoopbackHostname(hostname: string): boolean {
+  return LOOPBACK_HOSTNAMES.has(hostname.toLowerCase());
+}
+
+function getBrowserHostname(): string | null {
+  if (typeof window === 'undefined') {
+    return null;
   }
-  return base.replace(/\/$/, '');
+  return window.location.hostname || null;
+}
+
+function sanitizeAbsoluteBaseUrl(baseUrl: string): string | null {
+  try {
+    return new URL(baseUrl).origin;
+  } catch {
+    return null;
+  }
+}
+
+function adaptConfiguredBaseUrl(
+  baseUrl: string,
+  { isDev, browserHostname }: ApiBaseUrlResolutionOptions,
+): string {
+  if (!isDev || !browserHostname || isLoopbackHostname(browserHostname)) {
+    return baseUrl;
+  }
+
+  const parsed = new URL(baseUrl);
+  if (!isLoopbackHostname(parsed.hostname)) {
+    return baseUrl;
+  }
+
+  parsed.hostname = browserHostname;
+  return parsed.origin;
+}
+
+function dedupe(values: string[]): string[] {
+  return [...new Set(values)];
+}
+
+export function buildApiBaseUrlCandidates(
+  configuredBaseUrl: string | undefined,
+  options: ApiBaseUrlResolutionOptions,
+): string[] {
+  const candidates: string[] = [];
+  const configured = configuredBaseUrl?.trim();
+  if (configured) {
+    const sanitized = sanitizeAbsoluteBaseUrl(configured);
+    if (sanitized) {
+      candidates.push(adaptConfiguredBaseUrl(sanitized, options));
+    }
+  }
+
+  if (options.isDev) {
+    candidates.push('');
+    if (options.browserHostname) {
+      for (const port of DEV_DIRECT_API_PORTS) {
+        candidates.push(`http://${options.browserHostname}:${port}`);
+      }
+    }
+    for (const host of ['localhost', '127.0.0.1']) {
+      for (const port of DEV_DIRECT_API_PORTS) {
+        candidates.push(`http://${host}:${port}`);
+      }
+    }
+  }
+
+  if (candidates.length === 0) {
+    candidates.push('http://localhost:3000');
+  }
+
+  return dedupe(candidates);
+}
+
+function getApiBaseUrlCandidatesFromRuntime(): string[] {
+  return buildApiBaseUrlCandidates(import.meta.env.VITE_API_BASE_URL, {
+    isDev: import.meta.env.DEV,
+    browserHostname: getBrowserHostname(),
+  });
+}
+
+export function getApiBaseUrl(): string {
+  if (preferredApiBaseUrl) {
+    return preferredApiBaseUrl;
+  }
+  return getApiBaseUrlCandidatesFromRuntime()[0];
+}
+
+export function resetApiBaseUrlCacheForTests(): void {
+  preferredApiBaseUrl = null;
+}
+
+function shouldRetryWithNextCandidate(
+  response: Response,
+  baseUrl: string,
+  hasNext: boolean,
+  isDev: boolean,
+): boolean {
+  if (!hasNext || !isDev) {
+    return false;
+  }
+  if (baseUrl === '' && response.status >= 500) {
+    return true;
+  }
+  return response.status === 502 || response.status === 503 || response.status === 504;
+}
+
+async function fetchApi(path: string, init: RequestInit): Promise<Response> {
+  const candidates = getApiBaseUrlCandidatesFromRuntime();
+  const orderedCandidates = preferredApiBaseUrl
+    ? [preferredApiBaseUrl, ...candidates.filter((candidate) => candidate !== preferredApiBaseUrl)]
+    : candidates;
+
+  const isDev = import.meta.env.DEV;
+  let lastNetworkError: unknown = null;
+  let lastResponse: Response | null = null;
+
+  for (const [index, baseUrl] of orderedCandidates.entries()) {
+    try {
+      const response = await fetch(`${baseUrl}${path}`, init);
+      const hasNext = index < orderedCandidates.length - 1;
+      if (shouldRetryWithNextCandidate(response, baseUrl, hasNext, isDev)) {
+        lastResponse = response;
+        continue;
+      }
+      preferredApiBaseUrl = baseUrl;
+      return response;
+    } catch (error) {
+      if (!isNetworkError(error)) {
+        throw error;
+      }
+      lastNetworkError = error;
+    }
+  }
+
+  if (lastResponse) {
+    return lastResponse;
+  }
+  if (lastNetworkError) {
+    throw lastNetworkError;
+  }
+  throw new TypeError('Não foi possível conectar ao endpoint da API.');
 }
 
 export function mapAuthErrorToUserMessage(code: string | undefined): AuthUserMessage {
@@ -92,7 +237,7 @@ export async function loginRequest(
   password: string,
   signal?: AbortSignal,
 ): Promise<AuthTokenResponse> {
-  const response = await fetch(`${getApiBaseUrl()}/api/v1/auth/login`, {
+  const response = await fetchApi('/api/v1/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify({ login, password }),
@@ -115,7 +260,7 @@ export async function refreshRequest(
   refreshToken: string,
   signal?: AbortSignal,
 ): Promise<AuthTokenResponse> {
-  const response = await fetch(`${getApiBaseUrl()}/api/v1/auth/refresh`, {
+  const response = await fetchApi('/api/v1/auth/refresh', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify({ refreshToken }),
@@ -138,7 +283,7 @@ export async function sessionRequest(
   accessToken: string,
   signal?: AbortSignal,
 ): Promise<AuthSessionResponse> {
-  const response = await fetch(`${getApiBaseUrl()}/api/v1/auth/session`, {
+  const response = await fetchApi('/api/v1/auth/session', {
     method: 'GET',
     headers: {
       Accept: 'application/json',
@@ -163,7 +308,7 @@ export async function logoutRequest(
   accessToken: string,
   signal?: AbortSignal,
 ): Promise<AuthSuccessResponse> {
-  const response = await fetch(`${getApiBaseUrl()}/api/v1/auth/logout`, {
+  const response = await fetchApi('/api/v1/auth/logout', {
     method: 'POST',
     headers: {
       Accept: 'application/json',
@@ -188,7 +333,7 @@ export async function logoutAllRequest(
   accessToken: string,
   signal?: AbortSignal,
 ): Promise<AuthSuccessResponse> {
-  const response = await fetch(`${getApiBaseUrl()}/api/v1/auth/logout-all`, {
+  const response = await fetchApi('/api/v1/auth/logout-all', {
     method: 'POST',
     headers: {
       Accept: 'application/json',

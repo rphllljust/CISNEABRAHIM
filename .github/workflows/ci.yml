@@ -171,6 +171,14 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Install Playwright Chromium (web visual regression)
+        run: pnpm --filter @cisne/web exec playwright install chromium --with-deps
+
+      - name: Web visual regression
+        run: pnpm --filter @cisne/web test:visual
+        env:
+          CI: 'true'
+
       - name: Emit build metadata
         run: node scripts/ci-emit-build-metadata.mjs
 

@@ -67,6 +67,8 @@ export type TechnicalAlertConditionInput = {
   storageFailures: number;
   erpFailures: number;
   trackingFailures: number;
+  erpIntegrationConfigured: boolean;
+  trackingIntegrationConfigured: boolean;
   notificationFailures: number;
   backupStatus: 'unknown' | 'ok' | 'failed';
   diskUsagePercent: number | null;

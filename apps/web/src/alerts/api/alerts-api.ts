@@ -9,6 +9,8 @@ import {
   type BusinessAlertSummary,
 } from '../types/alerts.types';
 
+export { AlertApiError } from '../types/alerts.types';
+
 function authHeaders(): HeadersInit {
   const accessToken = tokenStore.getAccessToken();
   if (!accessToken) {

@@ -43,4 +43,6 @@ export type PerformanceScenarioContext = {
   sampleClientId: string;
   sampleServiceOrderId: string;
   sampleReleasedServiceOrderId: string;
+  sampleMeasurementServiceOrderId: string;
+  sampleBillingServiceOrderId: string;
 };

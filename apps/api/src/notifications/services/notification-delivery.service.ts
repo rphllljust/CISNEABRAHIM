@@ -10,7 +10,6 @@ import { PermanentJobError, TransientJobError } from '../../platform/background-
 import { loadNotificationChannelCapabilities, loadNotificationDispatchTimeoutMs } from '../config/notification-channel.config';
 import {
   DELIVERY_ATTEMPT_STATUS,
-  NOTIFICATION_CHANNELS,
   NOTIFICATION_STATUS,
   type NotificationChannel,
 } from '../domain/notification-channel';

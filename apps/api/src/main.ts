@@ -17,6 +17,7 @@ import { BillingExceptionFilter } from './billing/errors/billing-exception.filte
 import { SearchExceptionFilter } from './search/errors/search-exception.filter';
 import { ReportExceptionFilter } from './reports/errors/report-exception.filter';
 import { SecurityHeadersInterceptor } from './infrastructure/http/security-headers.interceptor';
+import { isCorsOriginAllowed } from './infrastructure/http/cors-origin-policy';
 
 config({ path: resolve(__dirname, '../../../.env') });
 
@@ -32,7 +33,9 @@ async function bootstrap(): Promise<void> {
 
   app.setGlobalPrefix('api/v1');
   app.enableCors({
-    origin: authConfig.corsOrigin,
+    origin: (origin, callback) => {
+      callback(null, isCorsOriginAllowed(origin, authConfig));
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Authorization', 'Content-Type', 'X-Correlation-Id', 'X-Request-Id'],

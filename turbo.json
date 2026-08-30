@@ -23,6 +23,10 @@
       "dependsOn": ["^build"],
       "env": ["DATABASE_URL", "TEST_DATABASE_URL", "JWT_SECRET"]
     },
+    "test:visual": {
+      "dependsOn": ["build"],
+      "env": ["CI"]
+    },
     "dev": {
       "cache": false,
       "persistent": true

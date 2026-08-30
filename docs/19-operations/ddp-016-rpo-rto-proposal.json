@@ -1,0 +1,129 @@
+{
+  "decisionId": "DDP-016",
+  "status": "READY_FOR_APPROVAL",
+  "evaluatedAt": "2026-08-30T06:58:30.333Z",
+  "capabilities": {
+    "backupMethod": "pg_dump_fc_logical",
+    "walPitrEnabled": false,
+    "replicationEnabled": false,
+    "postgresBackupMode": "docker",
+    "retentionDaily": 7,
+    "offsiteConfigured": false,
+    "backupSchedulerConfigured": false,
+    "objectStorageBackupEnabled": true,
+    "drScenarios": [
+      "db_loss",
+      "application_host_loss",
+      "object_storage_partial_loss",
+      "bad_deployment",
+      "credential_rotation"
+    ],
+    "applicationRollbackWithoutDbPitr": true,
+    "rpoAchievable": {
+      "hours": 24,
+      "label": "24h",
+      "rationale": "Sem agendamento explícito no repositório: capacidade técnica existe (pg_dump), mas RPO efetivo depende da frequência operacional do backup. Referência conservadora: 24h com backup diário monitorado."
+    },
+    "rtoAchievable": {
+      "hours": 4,
+      "label": "4h",
+      "rationale": "Estimativa as-built: pg_restore + object storage tar + verificação + redeploy manual conforme dr-restore-runbook.md. Não medido em produção."
+    },
+    "measuredDr": {
+      "rpoMs": 2,
+      "rtoMs": 4269,
+      "source": "dr-drill metrics"
+    },
+    "limitations": [
+      "Sem WAL archiving / PITR no código atual — RPO sub-horário não é suportado.",
+      "Sem réplica PostgreSQL hot-standby — failover automático não disponível.",
+      "Rollback de aplicação (Prompt 91) não restaura banco a um ponto no tempo.",
+      "Retenção BACKUP_RETENTION_DAILY é de engenharia; retenção legal permanece DDP-019 OPEN."
+    ]
+  },
+  "tiers": [
+    {
+      "id": "conservative",
+      "title": "Conservadora (as-built + backup diário monitorado)",
+      "rpo": {
+        "hours": 24,
+        "label": "24h",
+        "rationale": "Backup lógico diário (pg_dump) + snapshot object storage; perda máxima 24h."
+      },
+      "rto": {
+        "hours": 4,
+        "label": "4h",
+        "rationale": "Restore manual PG + object storage + validação + redeploy conforme runbook."
+      },
+      "achievability": "ACHIEVABLE_NOW",
+      "dependencies": [
+        "pnpm backup:run agendado (cron/CD) com BACKUP_STATUS_FILE monitorado",
+        "BACKUP_ENCRYPTION_KEY em produção",
+        "BACKUP_OFFSITE_DIR ou replicação de bucket",
+        "DR drill trimestral em ambiente isolado"
+      ],
+      "costOrImpact": "Baixo — usa stack Prompt 84/85 sem nova infra.",
+      "restoreProcedure": "docs/19-operations/dr-restore-runbook.md",
+      "restoreTest": "pnpm dr:drill em DB/storage isolados"
+    },
+    {
+      "id": "recommended",
+      "title": "Recomendada (backup a cada 6h + drill documentado)",
+      "rpo": {
+        "hours": 6,
+        "label": "6h",
+        "rationale": "Mesmo mecanismo pg_dump com BACKUP_INTERVAL_HOURS=6 ou cron equivalente."
+      },
+      "rto": {
+        "hours": 2,
+        "label": "2h",
+        "rationale": "Runbook ensaiado; restore automatizado parcial via dr-runner; redeploy CD."
+      },
+      "achievability": "REQUIRES_OPERATIONAL_CHANGE",
+      "dependencies": [
+        "Agendamento backup 6h + alerta se ausente > 6h",
+        "Off-site obrigatório",
+        "DR drill após cada release major"
+      ],
+      "costOrImpact": "Moderado — maior volume de backup e atenção operacional.",
+      "restoreProcedure": "docs/19-operations/dr-restore-runbook.md",
+      "restoreTest": "pnpm dr:drill + smoke pós-restore"
+    },
+    {
+      "id": "high_availability",
+      "title": "Alta disponibilidade (PITR / réplica gerenciada)",
+      "rpo": {
+        "hours": 0.25,
+        "label": "15min",
+        "rationale": "Requer WAL/PITR ou PostgreSQL gerenciado com point-in-time recovery — não implementado."
+      },
+      "rto": {
+        "hours": 1,
+        "label": "1h",
+        "rationale": "Requer failover automatizado ou hot standby — não implementado."
+      },
+      "achievability": "NOT_ACHIEVABLE_WITH_CURRENT_ARCHITECTURE",
+      "dependencies": [
+        "PostgreSQL gerenciado com PITR ou streaming replica",
+        "Failover DNS/load balancer",
+        "Runbooks de promoção de réplica"
+      ],
+      "costOrImpact": "Alto — infraestrutura e operação 24x7; desproporcional ao baseline Prompt 82.",
+      "restoreProcedure": "A definir após escolha de provedor gerenciado",
+      "restoreTest": "A definir — não aplicável ao código atual"
+    }
+  ],
+  "recommendedTierId": "recommended",
+  "humanDecisionRequired": "Patrocinador/operações devem escolher tier (conservadora ou recomendada), registrar RPO/RTO aprovados e approvedBy/approvedAt em readiness-evidence.json.",
+  "proposalReference": "docs/19-operations/ddp-016-rpo-rto-proposal.json",
+  "lastDrValidation": {
+    "status": "FAIL",
+    "scenario": "bad_deployment",
+    "finishedAt": "2026-08-30T06:58:17.708Z",
+    "rtoMeasuredMs": 4269,
+    "checksPassed": 9,
+    "checksTotal": 10,
+    "source": ".backup\\dr-drill-validate\\status\\latest.json",
+    "notes": "RTO medido reflete drill automatizado isolado; RTO operacional de produção permanece estimado no tier."
+  }
+}

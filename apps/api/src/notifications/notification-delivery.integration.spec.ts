@@ -9,7 +9,11 @@ import { DomainEventsRepository } from '../events/repositories/domain-events.rep
 import { TransientJobError } from '../platform/background-jobs/domain/job-errors';
 import { NOTIFICATION_CHANNELS } from './domain/notification-channel';
 import { NotificationsModule } from './notifications.module';
-import { NotificationsRepository } from './repositories/notifications.repository';
+import {
+  NotificationsRepository,
+  type DeliveryAttemptRow,
+  type NotificationRow,
+} from './repositories/notifications.repository';
 import { NotificationChannelRegistry } from './services/notification-channel.registry';
 import { NotificationDeliveryService } from './services/notification-delivery.service';
 import { NotificationWebhookService } from './services/notification-webhook.service';
@@ -98,28 +102,27 @@ describe('Notification delivery PostgreSQL integration', () => {
     const intent = await notificationsRepository.findIntentById(intentId);
     expect(intent?.status).toBe('DISPATCHED');
 
-    const notifications = await pool.query(
+    const notifications = await pool.query<NotificationRow>(
       `SELECT * FROM ntf.notifications WHERE notification_intent_id = $1::uuid`,
       [intentId],
     );
     expect(notifications.rows).toHaveLength(1);
     expect(notifications.rows[0]?.status).toBe('DELIVERED');
 
-    const attempts = await pool.query(
+    const attempts = await pool.query<DeliveryAttemptRow>(
       `SELECT * FROM ntf.delivery_attempts WHERE notification_id = $1::uuid`,
       [notifications.rows[0]?.id],
     );
     expect(attempts.rows).toHaveLength(1);
-    expect(attempts.rows[0]).toMatchObject({
-      channel: NOTIFICATION_CHANNELS.InApp,
-      attempt: 1,
-      status: 'DELIVERED',
-      provider: 'in-app-test',
-      provider_message_id: expect.any(String),
-      sent_at: expect.any(Date),
-      delivered_at: expect.any(Date),
-      failure_code: null,
-    });
+    const firstAttempt = attempts.rows[0];
+    expect(firstAttempt?.channel).toBe(NOTIFICATION_CHANNELS.InApp);
+    expect(firstAttempt?.attempt).toBe(1);
+    expect(firstAttempt?.status).toBe('DELIVERED');
+    expect(firstAttempt?.provider).toBe('in-app-test');
+    expect(typeof firstAttempt?.provider_message_id).toBe('string');
+    expect(firstAttempt?.sent_at).toBeTruthy();
+    expect(firstAttempt?.delivered_at).toBeTruthy();
+    expect(firstAttempt?.failure_code).toBeNull();
   });
 
   it('retries after transient failure and succeeds on second attempt', async () => {
@@ -133,12 +136,16 @@ describe('Notification delivery PostgreSQL integration', () => {
     inAppProvider.behavior = 'success';
     await deliveryService.dispatchNotificationIntent(intentId);
 
-    const notifications = await pool.query(
+    const notifications = await pool.query<{ id: string }>(
       `SELECT id FROM ntf.notifications WHERE notification_intent_id = $1::uuid`,
       [intentId],
     );
+    const notificationId = notifications.rows[0]?.id;
+    if (!notificationId) {
+      throw new Error('NOTIFICATION_NOT_FOUND');
+    }
     const attempts = await notificationsRepository.listAttemptsForNotification(
-      notifications.rows[0]?.id as string,
+      notificationId,
     );
     expect(attempts).toHaveLength(2);
     expect(attempts[0]?.status).toBe('FAILED');
@@ -239,12 +246,16 @@ describe('Notification delivery PostgreSQL integration', () => {
       TransientJobError,
     );
 
-    const notifications = await pool.query(
+    const notifications = await pool.query<{ id: string }>(
       `SELECT id FROM ntf.notifications WHERE notification_intent_id = $1::uuid`,
       [intentId],
     );
+    const notificationId = notifications.rows[0]?.id;
+    if (!notificationId) {
+      throw new Error('NOTIFICATION_NOT_FOUND');
+    }
     const attempts = await notificationsRepository.listAttemptsForNotification(
-      notifications.rows[0]?.id as string,
+      notificationId,
     );
     expect(attempts[0]?.failure_code).toBe('SIMULATED_TIMEOUT');
   });

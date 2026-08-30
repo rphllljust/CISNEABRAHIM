@@ -24,12 +24,12 @@ services:
 
   api:
     build:
-      context: ../..
-      dockerfile: docker/hml/Dockerfile.api
+      context: ${CISNE_BACKEND_DIR:-../..}
+      dockerfile: ${CISNE_API_DOCKERFILE:-docker/hml/Dockerfile.api}
     container_name: cisne_hml_api
     restart: unless-stopped
     env_file:
-      - ../../.env.hml
+      - ${HML_ENV_FILE:-../../.env.hml}
     environment:
       DATABASE_URL: postgresql://${HML_POSTGRES_USER}:${HML_POSTGRES_PASSWORD}@postgres:5432/${HML_POSTGRES_DB}
       OBJECT_STORAGE_ROOT: /data/object-storage
@@ -44,8 +44,8 @@ services:
 
   web:
     build:
-      context: ../..
-      dockerfile: docker/hml/Dockerfile.web
+      context: ${CISNE_FRONTEND_DIR:-../..}
+      dockerfile: ${CISNE_WEB_DOCKERFILE:-docker/hml/Dockerfile.web}
       args:
         VITE_API_BASE_URL: ${HML_PUBLIC_API_URL}
     container_name: cisne_hml_web

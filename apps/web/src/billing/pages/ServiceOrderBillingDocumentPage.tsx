@@ -63,6 +63,8 @@ export function ServiceOrderBillingDocumentPage() {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [idempotencyKey, setIdempotencyKey] = useState<string | null>(null);
   const requestSeq = useRef(0);
+  const pendingIssueRef = useRef(false);
+  const issueIdempotencyRef = useRef<string | null>(null);
 
   const reload = useCallback(async () => {
     const seq = ++requestSeq.current;
@@ -166,12 +168,14 @@ export function ServiceOrderBillingDocumentPage() {
     !termsDivergence;
 
   const handleIssue = async () => {
-    if (!billing || state.phase !== 'ready') {
+    if (!billing || state.phase !== 'ready' || submitting || pendingIssueRef.current) {
       return;
     }
+    pendingIssueRef.current = true;
     setSubmitting(true);
     setFeedback(null);
-    const key = idempotencyKey ?? crypto.randomUUID();
+    const key = issueIdempotencyRef.current ?? idempotencyKey ?? crypto.randomUUID();
+    issueIdempotencyRef.current = key;
     setIdempotencyKey(key);
     try {
       const issued = await issueBillingDocument(serviceOrderId, billing.id, {
@@ -180,6 +184,7 @@ export function ServiceOrderBillingDocumentPage() {
       });
       setIssueOpen(false);
       setIdempotencyKey(null);
+      issueIdempotencyRef.current = null;
       setFeedback({
         tone: 'success',
         message: `Nota Fatura ${issued.documentNumber} emitida com sucesso.`,
@@ -206,6 +211,7 @@ export function ServiceOrderBillingDocumentPage() {
       }
       setFeedback({ tone: 'error', message: 'Não foi possível emitir a Nota Fatura.' });
     } finally {
+      pendingIssueRef.current = false;
       setSubmitting(false);
     }
   };

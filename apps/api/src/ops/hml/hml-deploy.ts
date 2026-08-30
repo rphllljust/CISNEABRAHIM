@@ -57,10 +57,15 @@ export async function runHmlDeploy(env: NodeJS.ProcessEnv = process.env): Promis
   }
 
   if (env['HML_BOOTSTRAP_SYNTHETIC'] === 'true') {
+    const infraDir = env['CISNE_INFRA_DIR'];
     const bootstrapScript = [
+      infraDir ? resolve(infraDir, 'scripts/hml/bootstrap-synthetic.mjs') : null,
+      resolve(process.cwd(), '../cisne-infra/scripts/hml/bootstrap-synthetic.mjs'),
       resolve(process.cwd(), 'scripts/hml/bootstrap-synthetic.mjs'),
       resolve(process.cwd(), '../../scripts/hml/bootstrap-synthetic.mjs'),
-    ].find((path) => existsSync(path));
+    ]
+      .filter((path): path is string => Boolean(path))
+      .find((path) => existsSync(path));
     if (!bootstrapScript) {
       steps.push({
         id: 'synthetic_bootstrap',

@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import { requestUrl } from './request-url';
+import { parseRequestPath } from './request-url';
 
 export const MOCK_IDENTITY_ID = '11111111-1111-4111-8111-111111111111';
 export const MOCK_SESSION_ID = '22222222-2222-4222-8222-222222222222';
@@ -19,10 +19,9 @@ function jsonResponse(body: unknown, status = 200): Response {
 export function createShellFetchMock(options: ShellFetchMockOptions = {}) {
   const probeAllowed = options.probeAllowed ?? true;
 
-  return vi.fn(async (input: RequestInfo, init?: RequestInit) => {
-    const url = requestUrl(input);
+  return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const { url, pathname } = parseRequestPath(input);
     const method = init?.method ?? 'GET';
-    const pathname = new URL(url).pathname;
 
     if (url.endsWith('/api/v1/auth/login') && method === 'POST') {
       const rawBody = init?.body;

@@ -38,7 +38,7 @@ describe('service order planning flow e2e (frontend)', () => {
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /access denied/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /acesso negado/i })).toBeInTheDocument();
     });
   }, 20000);
 });

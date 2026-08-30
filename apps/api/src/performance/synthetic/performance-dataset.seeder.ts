@@ -27,6 +27,8 @@ export type SeededPerformanceDataset = {
   serviceOrderIds: string[];
   releasedServiceOrderIds: string[];
   preparedServiceOrderId: string;
+  sampleMeasurementServiceOrderId: string;
+  sampleBillingServiceOrderId: string;
 };
 
 const PERF_RESOURCE_TYPE_BY_PREFIX: Array<{ prefix: string; resourceType: string }> = [
@@ -271,5 +273,7 @@ export async function seedPerformanceDataset(
     serviceOrderIds,
     releasedServiceOrderIds,
     preparedServiceOrderId,
+    sampleMeasurementServiceOrderId: measurementServiceOrders[0] ?? serviceOrderIds[0] ?? '',
+    sampleBillingServiceOrderId: measurementServiceOrders[0] ?? serviceOrderIds[0] ?? '',
   };
 }

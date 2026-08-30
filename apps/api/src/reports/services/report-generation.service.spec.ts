@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { REPORT_TYPES } from '../domain/report-type';
 import { ReportGenerationService } from './report-generation.service';
+import type { ReportDataRow } from './report-data.service';
 
 describe('ReportGenerationService', () => {
   it('builds deterministic storage keys per export', () => {
@@ -30,8 +31,14 @@ describe('ReportGenerationService', () => {
       markCompleted: vi.fn(),
     };
     const data = {
-      streamAllRows: vi.fn(async (_actor, _type, _filters, onBatch) => {
+      streamAllRows: vi.fn(async (
+        _actor: unknown,
+        _type: unknown,
+        _filters: unknown,
+        onBatch: (rows: ReportDataRow[]) => Promise<void>,
+      ) => {
         await onBatch([{ orderNumber: 'SO-1' }]);
+        return 1;
       }),
     };
     const objectStorage = { putObject: vi.fn() };

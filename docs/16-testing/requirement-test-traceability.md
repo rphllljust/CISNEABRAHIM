@@ -93,3 +93,25 @@
 ## Cobertura INV
 
 22/22 INV possuem ≥1 TEST-CAND (alguns PENDING_SOURCE aguardam validação fonte).
+
+## Evidência complementar — regressão visual comercial (2026-08-30)
+
+**Classificação:** evidência técnica de implementação. Esta seção não converte BR/FR
+candidatos em requisitos confirmados e não substitui aceite empresarial.
+
+- Propostas: `SRC-001 → EV-055/EV-056 → BR-002 → FR-029 → CAP-004 →
+  apps/web/src/proposals/** → apps/web/e2e/visual/proposals.visual.spec.ts`.
+  Cobertura visual: lista populada, detalhe emitido e formulário de criação em
+  mobile, tablet e desktop (9 baselines).
+- Pedidos de compra: `SRC-001 → EV-058/EV-059 → BR-008 → FR-029/FR-033 →
+  CAP-006 → apps/web/src/purchase-orders/** →
+  apps/web/e2e/visual/purchase-orders.visual.spec.ts`. Cobertura visual: lista
+  populada, detalhe registrado e formulário de criação nos mesmos três viewports
+  (9 baselines).
+- Data civil do PO: `apps/web/src/purchase-orders/utils/purchase-order-labels.ts →
+  apps/web/src/purchase-orders/purchase-orders.components.test.tsx` comprova que
+  `YYYY-MM-DD` não sofre deslocamento por fuso horário.
+
+Resultado observado: Playwright `27/27 PASS`, incluindo os 18 baselines comerciais;
+Vitest web `257/257 PASS`. Screenshots comprovam renderização e regressão de layout,
+não regras empresariais pendentes, autorização backend ou aceite de produção.

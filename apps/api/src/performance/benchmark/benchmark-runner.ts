@@ -127,6 +127,18 @@ export async function injectTimed(
   return {
     durationMs,
     statusCode: response.statusCode,
-    ok: response.statusCode >= 200 && response.statusCode < 400,
+    ok: isSuccessfulApiResponse(response.statusCode, response.body),
   };
+}
+
+function isSuccessfulApiResponse(statusCode: number, body: string): boolean {
+  if (statusCode < 200 || statusCode >= 400) {
+    return false;
+  }
+  try {
+    const parsed = JSON.parse(body) as { error?: unknown };
+    return parsed.error === undefined;
+  } catch {
+    return true;
+  }
 }

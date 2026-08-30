@@ -96,7 +96,7 @@ describe('DR drill (Prompt 85)', () => {
       disasterAt: backup.finishedAt,
       restoreFinishedAt: new Date().toISOString(),
     });
-    expect(metrics.rpoTarget).toBe('TARGET_NOT_DEFINED');
+    expect(metrics.rpoTarget).toBe('READY_FOR_APPROVAL');
     expect(formatDrMetricsSummary(metrics)).toContain('RPO measured');
 
     await rm(root, { recursive: true, force: true });
@@ -122,7 +122,7 @@ describe('DR drill (Prompt 85)', () => {
         if (sql.includes('doc.stored_objects s') && sql.includes('ORDER BY')) {
           return { rows: [] };
         }
-        if (sql.includes('doc.documents d') || sql.includes('bil.billing_documents')) {
+        if (sql.includes('doc.document_versions') || sql.includes('bil.billing_documents')) {
           return { rows: [{ count: '0' }] };
         }
         if (sql.includes('identity.identities')) {
@@ -163,6 +163,7 @@ describe('DR drill (Prompt 85)', () => {
     );
 
     expect(result.status).toBe('PASS');
+    expect(result.checks.some((check) => check.id === 'object_storage_hydration' && check.passed)).toBe(true);
     expect(result.checks.some((check) => check.id === 'object_storage_manifest' && check.passed)).toBe(true);
     expect(result.checks.some((check) => check.id === 'login_capability' && check.passed)).toBe(true);
     expect(result.metrics.slaComparison).toBe('PENDING_BUSINESS_APPROVAL');

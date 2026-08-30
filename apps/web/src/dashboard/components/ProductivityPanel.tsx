@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useId } from 'react';
 import { formatPercent, formatHours } from '../utils/dashboard-formatters';
 import type { ProductivitySummary } from '../types/dashboard.types';
 

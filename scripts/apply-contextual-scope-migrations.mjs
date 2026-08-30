@@ -1,6 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import pg from 'pg';
+import { createRequire } from 'node:module';
+
+const require = createRequire(resolve(import.meta.dirname, '../packages/database/package.json'));
+const pg = require('pg');
 
 const MIGRATION_FILES = [
   '0003_contextual_scope_enums.sql',

@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import { requestUrl } from './request-url';
+import { parseRequestPath } from './request-url';
 import {
   CLIENT_STATUSES,
   CONTACT_PURPOSES,
@@ -66,11 +66,9 @@ export function createClientsFetchMock(options: ClientsFetchMockOptions = {}) {
     },
   ];
 
-  return vi.fn(async (input: RequestInfo, init?: RequestInit) => {
-    const url = requestUrl(input);
+  return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const { url, pathname, searchParams } = parseRequestPath(input);
     const method = init?.method ?? 'GET';
-    const parsedUrl = new URL(url);
-    const pathname = parsedUrl.pathname;
 
     if (!pathname.startsWith('/api/v1/clients')) {
       return shellMock(input, init);
@@ -85,9 +83,9 @@ export function createClientsFetchMock(options: ClientsFetchMockOptions = {}) {
       if (!listAllowed) {
         return clientError('CLIENT_DENIED', 403);
       }
-      const limit = Number(parsedUrl.searchParams.get('limit') ?? '20');
-      const offset = Number(parsedUrl.searchParams.get('offset') ?? '0');
-      const status = parsedUrl.searchParams.get('status');
+      const limit = Number(searchParams.get('limit') ?? '20');
+      const offset = Number(searchParams.get('offset') ?? '0');
+      const status = searchParams.get('status');
       let items = [...store];
       if (status === CLIENT_STATUSES.Active || status === CLIENT_STATUSES.Inactive) {
         items = items.filter((client) => client.status === status);

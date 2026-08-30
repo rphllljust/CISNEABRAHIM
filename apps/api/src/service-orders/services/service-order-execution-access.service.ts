@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, Optional } from '@nestjs/common';
 import {
   SECURITY_AUDIT_ACTIONS,
   SECURITY_AUDIT_CLASSIFICATIONS,
@@ -14,6 +14,9 @@ import { AUTHZ_ACTIONS } from '../../authorization/types/authz-actions';
 import { AUTHZ_RESOURCE_TYPES } from '../../authorization/types/authz-resources';
 import { AUTHZ_SCOPES } from '../../authorization/types/authz-scopes';
 import type { IdentityAuthzContext } from '../../authorization/types/authz-decision';
+import { FAULT_HOOKS } from '../../platform/fault-injection/fault-hook.ids';
+import { FAULT_INJECTION_PORT, type FaultInjectionPort } from '../../platform/fault-injection/fault-injection.port';
+import { maybeInjectFault } from '../../platform/fault-injection/fault-injection.util';
 import { assertUuid, CatalogValidationError } from '../../catalog/domain/service-catalog.validation';
 import type { ClientStatus } from '../../clients/domain/client-status';
 import {
@@ -74,6 +77,7 @@ export class ServiceOrderExecutionAccessService {
     private readonly authorizationRepository: AuthorizationRepository,
     private readonly policyDecisionPoint: PolicyDecisionPointService,
     private readonly securityAudit: SecurityAuditService,
+    @Optional() @Inject(FAULT_INJECTION_PORT) private readonly faultInjection?: FaultInjectionPort,
   ) {}
 
   async getExecution(
@@ -148,6 +152,7 @@ export class ServiceOrderExecutionAccessService {
     }
 
     const nextStatus = assertTransition(order.status as typeof SERVICE_ORDER_STATUSES.Released, 'complete');
+    await maybeInjectFault(this.faultInjection, FAULT_HOOKS.ExecutionCompleteAfterValidationBeforeMutation);
     const result = await this.executionRepository.transitionExecution({
       serviceOrderId,
       rowVersion: validated.rowVersion,

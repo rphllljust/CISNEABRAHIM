@@ -58,6 +58,24 @@ Derivados de medição + headroom 2.5× (`performance-budgets.ts`). Não são SL
 
 `performance-concurrency.perf.spec.ts` — stress CNPJ duplicado com verificação de integridade (1 vencedor).
 
+## Stress, spike & soak (controlled)
+
+Suite: `apps/api/src/performance-stress/performance-stress.perf-stress.spec.ts`
+
+| Fase | Descrição |
+| ---- | --------- |
+| baseline | throughput, p50/p95/p99, error rate, heap/RSS, pool DB, workers/outbox |
+| normal-load | carga operacional realista (login, search, dashboard, OS, allocation reads, measurement, billing, documents, reports) |
+| stress | ramp 2→16 concorrência; identifica primeiro gargalo |
+| spike | pico abrupto (concurrency 24) com degradação controlada (≤20% error) |
+| soak | carga prolongada (`PERF_SOAK_SECONDS`, default 20s) — heap, RSS, connections, outbox |
+| leak | pós-carga: heap e conexões estabilizam em 5s |
+| integrity | SQL pós-stress: duplicatas, overbooking, colisões, órfãos = 0 |
+
+Comando: `pnpm test:performance-stress` (inclui smoke + concurrency + stress).
+
+Ambiente controlado — nunca produção. `PERF_SOAK_SECONDS` opcional para soak mais longo local.
+
 ## Gate
 
 - Smoke perf pode entrar em CI (`test:perf:smoke`).

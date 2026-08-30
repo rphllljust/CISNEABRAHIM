@@ -25,10 +25,13 @@ export type BackupStatusSnapshot = {
   artifactCount: number | null;
 };
 
-/** DDP-016 — valores comerciais não aprovados; bloqueia go-live formal. */
+/** DDP-016 — proposta técnica pronta; aceite empresarial ainda pendente. */
 export const RPO_RTO_PRODUCTION_BLOCKER = {
   decisionId: 'DDP-016',
-  rpo: 'TARGET_NOT_DEFINED',
-  rto: 'TARGET_NOT_DEFINED',
-  status: 'PRODUCTION_BLOCKER',
+  rpo: 'READY_FOR_APPROVAL',
+  rto: 'READY_FOR_APPROVAL',
+  status: 'READY_FOR_APPROVAL',
+  proposalReference: 'docs/19-operations/ddp-016-rpo-rto-proposal.json',
 } as const;
+
+export const DDP_016_STATUS = RPO_RTO_PRODUCTION_BLOCKER;

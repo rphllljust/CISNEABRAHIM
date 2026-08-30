@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useAlertsCenter } from '../hooks/useAlerts';
-import { BUSINESS_ALERT_TYPES } from '../types/alerts.types';
+import { BUSINESS_ALERT_TYPES, type BusinessAlertType } from '../types/alerts.types';
 import '../alerts.css';
 
 function formatWhen(value: string): string {
@@ -69,7 +69,7 @@ export function AlertCenterPage() {
           id="alert-type"
           value={filters.type ?? ''}
           onChange={(event) =>
-            setFilters({ type: (event.target.value as keyof typeof BUSINESS_ALERT_TYPES) || undefined })
+            setFilters({ type: (event.target.value as BusinessAlertType) || undefined })
           }
         >
           <option value="">Todos</option>

@@ -25,8 +25,9 @@ import { EventsModule } from './events/events.module';
 import { SearchModule } from './search/search.module';
 import { ReportsModule } from './reports/reports.module';
 import { ServiceOrdersModule } from './service-orders/service-orders.module';
+import { FaultInjectionModule } from './platform/fault-injection/fault-injection.module';
 
 @Module({
-  imports: [SecurityModule, ObservabilityModule, HealthModule, AuditModule, AuthModule, AuthorizationModule, ClientsModule, CatalogModule, CommercialModule, RequestsModule, ServiceOrdersModule, MeasurementsModule, BillingModule, ResourcesModule, DocumentsModule, EventsModule, NotificationsModule, DashboardModule, AnalyticsModule, AlertsModule, SearchModule, ReportsModule, BackgroundJobsModule, OutboxModule, IntegrationsAclModule, IntegrationsInboxModule],
+  imports: [FaultInjectionModule, SecurityModule, ObservabilityModule, HealthModule, AuditModule, AuthModule, AuthorizationModule, ClientsModule, CatalogModule, CommercialModule, RequestsModule, ServiceOrdersModule, MeasurementsModule, BillingModule, ResourcesModule, DocumentsModule, EventsModule, NotificationsModule, DashboardModule, AnalyticsModule, AlertsModule, SearchModule, ReportsModule, BackgroundJobsModule, OutboxModule, IntegrationsAclModule, IntegrationsInboxModule],
 })
 export class AppModule {}

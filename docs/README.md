@@ -1,6 +1,6 @@
 # Documentação — SISTEMA CISNE RONDÔNIA
 
-Índice da baseline documental. Fase atual: **FOUNDATION** (bootstrap técnico Prompt 16). Código de domínio empresarial: **NOT STARTED**.
+Índice da baseline documental. Fase atual: **IMPLEMENTATION (pré-produção)**. Código de domínio empresarial: **STARTED** — API e web com fluxos operacionais; **produção NO-GO** até evidência em `readiness-evidence.json`.
 
 ## Como usar esta pasta
 

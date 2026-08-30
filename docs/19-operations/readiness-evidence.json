@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 2,
+  "releaseCandidate": {
+    "commitSha": null,
+    "artifactDigest": null,
+    "version": null
+  },
+  "businessSignOff": {
+    "decision": "PENDING",
+    "approvedBy": null,
+    "approvedAt": null,
+    "scope": "operational-validation-authorization",
+    "environment": "pilot-or-preproduction",
+    "releaseCandidate": {
+      "commitSha": null,
+      "artifactDigest": null,
+      "version": null
+    },
+    "evidenceReference": "docs/16-testing/uat-business-scenarios.md",
+    "decisionStatement": "Esta versão e este escopo representam corretamente o processo empresarial acordado e estão autorizados a seguir para a etapa de validação operacional/pré-produção.",
+    "derivedScopeReferences": [
+      "docs/16-testing/uat-business-scenarios.md",
+      "docs/01-foundation/business-rules-register.md",
+      "apps/api/src/uat/uat-scenarios.ts",
+      "apps/api/src/uat/uat-profiles.ts",
+      "apps/api/src/uat/uat-business.integration.spec.ts"
+    ],
+    "notes": "Regras e fluxos já comprovados por UAT automatizado. Pendente apenas decisão humana de aceite de versão/escopo."
+  },
+  "rpoRto": {
+    "decision": "PENDING_APPROVAL",
+    "decisionId": "DDP-016",
+    "proposalStatus": "READY_FOR_APPROVAL",
+    "proposalReference": "docs/19-operations/ddp-016-rpo-rto-proposal.json",
+    "recommendedTierId": "recommended",
+    "rpo": null,
+    "rto": null,
+    "backupStrategyReference": "docs/19-operations/backup-strategy.md",
+    "restoreStrategyReference": "docs/19-operations/dr-restore-runbook.md",
+    "technicalBaselineReferences": [
+      "docs/19-operations/backup-strategy.md",
+      "docs/19-operations/dr-restore-runbook.md",
+      "docs/19-operations/ddp-016-rpo-rto-proposal.json",
+      "apps/api/src/ops/backup/backup-runner.spec.ts",
+      "apps/api/src/ops/dr/dr-runner.spec.ts",
+      "apps/api/src/ops/continuity/ddp-016-proposal.spec.ts"
+    ],
+    "lastDrValidationReference": "apps/api/.backup/dr-drill-validate/status/latest.json",
+    "responsible": null,
+    "approvedBy": null,
+    "approvedAt": null,
+    "scope": null,
+    "notes": "Proposta técnica READY_FOR_APPROVAL (ddp-016-rpo-rto-proposal.json). Baseline backup/DR implementada. Pendente aceite formal de RPO/RTO."
+  },
+  "pilot": {
+    "phase": "NOT_STARTED",
+    "engineeringReadiness": "NOT_READY",
+    "startedAt": null,
+    "observationEndsAt": null,
+    "minObservationDays": 14,
+    "exitAuthorizedAt": null,
+    "exitAuthorizedBy": null,
+    "responsible": null,
+    "environment": null,
+    "releaseCandidate": {
+      "commitSha": null,
+      "artifactDigest": null,
+      "version": null
+    },
+    "incidents": [],
+    "criticalErrors": [],
+    "operationalResults": [],
+    "evidenceReference": "docs/19-operations/pilot-program.md",
+    "criteriaReferences": [
+      "docs/19-operations/pilot-program.md",
+      "apps/api/src/ops/pilot/pilot-exit.ts",
+      "apps/api/src/ops/pilot/pilot-runner.ts",
+      "apps/api/src/ops/pilot/pilot-flow-catalog.ts",
+      "apps/api/src/ops/pilot/pilot-technical-criteria.ts",
+      "apps/api/src/ops/pilot/pilot-pre-flight.ts"
+    ],
+    "flowCatalogReference": "apps/api/src/ops/pilot/pilot-flow-catalog.ts",
+    "preFlightReference": "apps/api/src/ops/pilot/pilot-pre-flight.ts",
+    "startEvent": {
+      "requiredFields": ["startedAt", "environment", "releaseCandidate", "authorizedBy"],
+      "authorizedBy": null,
+      "environment": null
+    },
+    "notes": "Critérios definidos. Piloto não iniciado — aguarda evento real de início."
+  },
+  "manualUatUx": {
+    "status": "NOT_STARTED",
+    "engineeringReadiness": "NOT_READY",
+    "sessionId": null,
+    "performedBy": null,
+    "performedAt": null,
+    "environment": null,
+    "releaseCandidate": {
+      "commitSha": null,
+      "artifactDigest": null,
+      "version": null
+    },
+    "scenarios": [],
+    "scenarioCatalogReference": "docs/16-testing/uat-ux-scenarios.json",
+    "sessionChecklistReference": "docs/16-testing/uat-ux-session-checklist.json",
+    "automatedBaselineReferences": [
+      "apps/web/src/vertical/vertical-quality-gate.e2e.test.tsx",
+      "docs/16-testing/uat-ux-checklist.md"
+    ],
+    "result": null,
+    "issuesFound": [],
+    "blockingIssues": [],
+    "approval": null,
+    "evidenceReference": "docs/16-testing/uat-ux-checklist.md",
+    "notes": "Cenários derivados dos fluxos UAT. Pendente sessão manual com operador."
+  },
+  "history": []
+}

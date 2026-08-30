@@ -57,8 +57,8 @@ export class ProductivityReadModelRepository {
 
   async explainServiceOrderAggregateQuery(context: ProductivityQueryContext): Promise<string> {
     const { sql, params } = this.buildServiceOrderAggregateSql(context);
-    const result = await this.pool().query(`EXPLAIN ${sql}`, params);
-    return result.rows.map((row) => row['QUERY PLAN'] as string).join('\n');
+    const result = await this.pool().query<{ 'QUERY PLAN': string }>(`EXPLAIN ${sql}`, params);
+    return result.rows.map((row) => row['QUERY PLAN']).join('\n');
   }
 
   private async loadServiceOrderAggregates(context: ProductivityQueryContext) {

@@ -5,6 +5,10 @@ import { appendDeployHistory, buildRollbackPlan, type DeployHistory } from './cd
 import type { CdPromotionResult, CdStageResult, DeployManifest } from './cd-types';
 
 import type { MigrationAssessment } from './cd-types';
+import {
+  assertProductionOperationsAllowed,
+  loadReadinessGateForOperations,
+} from '../readiness/production-operations-guard';
 
 export type CdPipelineDeps = {
   assessMigrations?: () => MigrationAssessment[];
@@ -12,6 +16,8 @@ export type CdPipelineDeps = {
   checkHealth?: (baseUrl: string) => Promise<{ ok: boolean; detail: string }>;
   runSmoke?: (baseUrl: string) => Promise<{ ok: boolean; detail: string }>;
   history?: DeployHistory;
+  /** Test hook — defaults to production readiness guard */
+  assertProductionReadiness?: (env: NodeJS.ProcessEnv) => void;
 };
 
 function stage(id: CdStageResult['id'], label: string, passed: boolean, detail: string): CdStageResult {
@@ -109,9 +115,14 @@ export async function runCdPromotion(input: {
   }
 
   try {
+    const assertReadiness =
+      deps.assertProductionReadiness ??
+      ((environment: NodeJS.ProcessEnv) =>
+        assertProductionOperationsAllowed(loadReadinessGateForOperations(environment)));
+    assertReadiness(env);
     assertProductionPromotionGate(env);
     assertSecretsFromStoreOnly(env);
-    stages.push(stage('production_gate', 'Production promotion gate', true, 'explicit approval'));
+    stages.push(stage('production_gate', 'Production promotion gate', true, 'readiness GO + explicit approval'));
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     stages.push(stage('production_gate', 'Production promotion gate', false, detail));

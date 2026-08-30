@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import { requestUrl } from './request-url';
+import { parseRequestPath } from './request-url';
 import { createClientsFetchMock } from './clients-fetch-mock';
 import {
   CATALOG_LINEAGE_STATUSES,
@@ -135,11 +135,9 @@ export function createCatalogFetchMock(options: CatalogFetchMockOptions = {}) {
 
   syncDefinitionFromVersions();
 
-  return vi.fn(async (input: RequestInfo, init?: RequestInit) => {
-    const url = requestUrl(input);
+  return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const { pathname, searchParams } = parseRequestPath(input);
     const method = init?.method ?? 'GET';
-    const parsedUrl = new URL(url);
-    const pathname = parsedUrl.pathname;
 
     if (pathname.startsWith('/api/v1/catalog/service-definitions')) {
       const auth = init?.headers ? new Headers(init.headers).get('authorization') : null;
@@ -153,8 +151,8 @@ export function createCatalogFetchMock(options: CatalogFetchMockOptions = {}) {
         }
         return jsonResponse({
           items: [definition],
-          limit: Number(parsedUrl.searchParams.get('limit') ?? '20'),
-          offset: Number(parsedUrl.searchParams.get('offset') ?? '0'),
+          limit: Number(searchParams.get('limit') ?? '20'),
+          offset: Number(searchParams.get('offset') ?? '0'),
         });
       }
 
