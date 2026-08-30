@@ -4556,7 +4556,7 @@ PROMPT_TITLE: Cache controlado
 EXECUTED_AT: 2026-08-30
 EXECUTION_STATUS: PASS
 CACHE_DECISION: NOT_REQUIRED
-COMMIT: (none for perf(cache) — cache not justified by load tests)
+COMMIT: b2a6684 docs(performance): record cache NOT_REQUIRED assessment (prompt 83)
 ARTIFACTS:
   apps/api/src/performance/cache/cache-decision.ts
   apps/api/src/performance/cache/cache-decision.spec.ts
