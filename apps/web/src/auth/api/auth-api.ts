@@ -101,7 +101,7 @@ export function getApiBaseUrl(): string {
   if (preferredApiBaseUrl) {
     return preferredApiBaseUrl;
   }
-  return getApiBaseUrlCandidatesFromRuntime()[0];
+  return getApiBaseUrlCandidatesFromRuntime()[0] ?? 'http://localhost:3000';
 }
 
 export function resetApiBaseUrlCacheForTests(): void {

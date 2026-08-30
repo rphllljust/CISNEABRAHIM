@@ -6227,3 +6227,73 @@ GIT:
 
 COMMIT: NOT_REQUIRED
 ```
+
+---
+
+## CORRETIVO — Resiliência de conexão local/LAN (login)
+
+```text
+EXECUTED_AT: 2026-08-30
+STATUS: PASS (correção aplicada + validação ponta a ponta)
+
+ISSUE:
+  Frontend apresentava "Não foi possível conectar ao servidor" de forma intermitente em execução local/LAN.
+  Causa raiz composta:
+    1) Múltiplos processos Vite/API concorrentes com portas divergentes.
+    2) CORS restrito a origem fixa (quebrava quando Vite subia em porta alternativa).
+    3) Base URL da API frágil em dev/LAN (loopback/local host sem fallback automático).
+
+FIXES:
+  Backend:
+    apps/api/src/auth/config/auth.config.ts
+      - CORS_ORIGIN agora aceita lista separada por vírgula + normalização.
+      - defaults locais mantidos para 5173/5174.
+    apps/api/src/infrastructure/http/cors-origin-policy.ts (novo)
+      - política de CORS permite, em development, origens loopback/LAN privadas
+        no range de portas do Vite (5173-5199), preservando restrição em production.
+    apps/api/src/main.ts
+      - enableCors usa política dinâmica por request.
+  Frontend:
+    apps/web/src/auth/api/auth-api.ts
+      - resolução robusta de candidatos de API para dev/LAN.
+      - adaptação automática de host loopback para host LAN quando necessário.
+      - fallback de endpoint em falha de rede e cache do endpoint saudável.
+  Operação local:
+    - limpeza de processos órfãos API/Vite.
+    - API estabilizada em 3000 (sem watch) e web única em 5173 com proxy para API.
+
+TESTS:
+  API:
+    pnpm --filter @cisne/api test -- src/infrastructure/http/cors-origin-policy.spec.ts src/auth/config/auth.config.spec.ts src/auth/services/token.service.spec.ts src/auth/services/token.service.adversarial.spec.ts
+    RESULT: PASS (17/17)
+  Web:
+    pnpm --filter @cisne/web test -- src/auth/api/auth-api.test.ts
+    RESULT: PASS (4/4)
+    pnpm --filter @cisne/web typecheck
+    RESULT: PASS
+  Observação honesta:
+    pnpm --filter @cisne/api typecheck segue com erros preexistentes fora do escopo
+    (performance-benchmark/performance-concurrency).
+
+RUNTIME VALIDATION:
+  API health: GET /api/v1/health => 200 (database up)
+  Login API direto: POST /api/v1/auth/login => 200
+  Login via web proxy (5173): POST /api/v1/auth/login => 200
+  CORS dinâmico dev: Origin http://192.168.1.89:5177 => allow-origin refletido
+
+FILES_CHANGED:
+  .env.example
+  apps/api/src/auth/config/auth.config.ts
+  apps/api/src/auth/config/auth.config.spec.ts
+  apps/api/src/auth/services/token.service.adversarial.spec.ts
+  apps/api/src/auth/services/token.service.spec.ts
+  apps/api/src/infrastructure/http/cors-origin-policy.ts
+  apps/api/src/infrastructure/http/cors-origin-policy.spec.ts
+  apps/api/src/main.ts
+  apps/web/src/auth/api/auth-api.test.ts
+  apps/web/src/auth/api/auth-api.ts
+
+COMMIT: NOT_REQUIRED
+WORKING_TREE: DIRTY (alterações anteriores preservadas)
+NEXT_ACTION: manter execução local em http://192.168.1.89:5173 com API em :3000
+```

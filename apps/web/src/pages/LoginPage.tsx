@@ -98,10 +98,12 @@ export function LoginPage() {
         <aside className="login-page__brand" aria-label="Identidade institucional">
           <header className="login-page__brand-header">
             <CisneWordmark />
-            <span className="login-page__status-badge">
-              <span className="login-page__status-dot" aria-hidden="true" />
-              Sistema operante
-            </span>
+            <p className="login-page__registry">
+              <span>
+                Registro N.º <strong>84-1128</strong>
+              </span>
+              <span>Emissão institucional</span>
+            </p>
           </header>
 
           <div className="login-page__brand-emblem-wrap">
@@ -111,15 +113,20 @@ export function LoginPage() {
           <div className="login-page__brand-content">
             <p className="login-page__brand-kicker">Ambiente institucional</p>
             <h2 className="login-page__brand-headline">
-              Precisão que atravessa
+              A precisão como
               <br />
-              <em className="login-page__brand-headline-accent">cada</em> operação.
+              <em className="login-page__brand-headline-accent">princípio</em> de operação.
             </h2>
             <p className="login-page__brand-support">
-              Controle, rastreabilidade e segurança para processos de alta exigência, reunidos em
-              um único ambiente corporativo.
+              Controle, rastreabilidade e segurança reunidos em um único ambiente corporativo, para
+              processos que não admitem margem de erro.
             </p>
           </div>
+
+          <footer className="login-page__brand-meta">
+            <span>© 2026 Cisne Rondônia</span>
+            <span>Ambiente criptografado · TLS 1.3</span>
+          </footer>
         </aside>
 
         <section className="login-page__access" aria-labelledby="login-form-title">
