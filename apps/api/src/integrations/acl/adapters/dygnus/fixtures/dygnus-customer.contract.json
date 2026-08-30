@@ -1,0 +1,8 @@
+{
+  "id_cliente": "DYGNUS-12345",
+  "razao_social": "ACME Servicos Ltda",
+  "nome_fantasia": "ACME",
+  "cnpj": "12.345.678/0001-90",
+  "email_principal": "contato@acme.example",
+  "telefone_principal": "+5563999999999"
+}

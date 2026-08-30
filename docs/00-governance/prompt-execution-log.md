@@ -3752,3 +3752,50 @@ NOTES:
 | webhook auth | PASS | assinatura inválida rejeitada |
 
 ---
+
+## Prompt 68 — Integration anti-corruption layer
+
+```
+PROMPT_ID: 68
+PROMPT_TITLE: Integration anti-corruption layer — portas internas e isolamento de domínio
+EXECUTED_AT: 2026-08-29
+EXECUTION_STATUS: PASS
+COMMIT: feat(integrations): establish anti-corruption layer
+ARTIFACTS:
+  apps/api/src/integrations/acl/domain/**
+  apps/api/src/integrations/acl/ports/**
+  apps/api/src/integrations/acl/resilience/**
+  apps/api/src/integrations/acl/adapters/dygnus/**
+  apps/api/src/integrations/acl/adapters/stub/**
+  apps/api/src/integrations/acl/mappers/**
+  apps/api/src/integrations/acl/services/**
+  apps/api/src/integrations/acl/integrations-acl.module.ts
+  apps/api/src/app.module.ts
+PROVIDER_PORTS: ERPProvider, TrackingProvider, NotificationProvider, FiscalProvider
+ERROR_CLASSES: AUTHENTICATION, AUTHORIZATION, RATE_LIMIT, TRANSIENT, TIMEOUT, INVALID_PAYLOAD, PERMANENT
+RESILIENCE: mandatory timeout, safe retry, optional circuit breaker
+QUALITY_GATE: PASS
+NEXT_ALLOWED_PROMPT: 69
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  DygnusCustomerDto permanece no adapter; fluxo Dygnus → IntegrationCustomerSnapshot → CreateClientInput.
+  Erros de fornecedor classificados e sanitizados (toSafeIntegrationUserMessage) — sem vazamento bruto ao usuário.
+  Stub providers registrados por padrão no IntegrationsAclModule; Dygnus adapter disponível via factory.
+  Evidência: typecheck PASS; lint PASS; api unit 162 (+21 ACL).
+  Prompt 69 não executado.
+```
+
+## Quality gate Prompt 68 (evidência)
+
+| Cenário de teste | Resultado | Evidência |
+|------------------|-----------|-----------|
+| provider mapping | PASS | dygnus-customer.mapper.spec.ts + contract fixture |
+| malformed external data | PASS | parseDygnusCustomerPayload INVALID_PAYLOAD |
+| timeout | PASS | provider-executor.spec.ts |
+| retry | PASS | provider-executor.spec.ts (TRANSIENT only) |
+| domain isolation | PASS | domain-isolation.spec.ts |
+| contract tests | PASS | dygnus-erp.adapter.spec.ts + fixture JSON |
+| safe user errors | PASS | integration-safe-error.spec.ts |
+| circuit breaker | PASS | circuit-breaker.spec.ts |
+
+---
