@@ -1,5 +1,6 @@
 import { Link, useParams } from 'react-router-dom';
 import { useCallback, useEffect, useId, useState } from 'react';
+import { DocumentManagementPanel } from '../../documents/components/DocumentManagementPanel';
 import { ConfirmDialog } from '../../clients/components/ConfirmDialog';
 import {
   approveServiceRequest,
@@ -150,7 +151,8 @@ export function ServiceRequestDetailPage() {
     );
   }
 
-  const { serviceRequest } = state.detail;
+  const detail = state.detail;
+  const { serviceRequest } = detail;
   const canEdit =
     capabilities.canUpdate && serviceRequest.status === SERVICE_REQUEST_STATUSES.Draft;
   const canSubmit =
@@ -343,6 +345,35 @@ export function ServiceRequestDetailPage() {
           </p>
         </section>
       ) : null}
+
+      <DocumentManagementPanel
+        scope={{
+          kind: 'SERVICE_REQUEST',
+          unitId: serviceRequest.unitId,
+          entityId: serviceRequest.id,
+          entityLabel: serviceRequest.requestCode,
+        }}
+        links={detail.documentLinks.map((link) => ({
+          id: link.id,
+          documentId: link.documentId,
+          linkPurpose: link.linkPurpose,
+          createdAt: link.createdAt,
+        }))}
+        onLinksChange={(links) =>
+          setState({
+            phase: 'ready',
+            detail: {
+              ...detail,
+              documentLinks: links.map((link) => ({
+                id: link.id ?? link.documentId,
+                documentId: link.documentId,
+                linkPurpose: link.linkPurpose ?? 'EVIDENCE',
+                createdAt: link.createdAt ?? new Date().toISOString(),
+              })),
+            },
+          })
+        }
+      />
 
       <p>
         <Link to="/app/requests">Voltar à lista</Link>

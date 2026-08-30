@@ -3479,3 +3479,44 @@ NOTES:
 - [x] Prompt 62 não executado
 
 ---
+
+## Prompt 62 — Documentos (frontend GED)
+
+```
+PROMPT_ID: 62
+PROMPT_TITLE: Documentos — frontend GED unificado
+EXECUTED_AT: 2026-08-29
+EXECUTION_STATUS: PASS
+COMMIT: feat(web): implement secure document management experience
+ARTIFACTS:
+  apps/web/src/documents/
+  apps/web/src/requests/pages/ServiceRequestDetailPage.tsx
+  apps/web/src/test/documents-fetch-mock.ts
+  apps/web/src/test/requests-fetch-mock.ts
+  apps/web/src/index.css
+  docs/implementation/62-documents-frontend.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  Componentes unificados: DocumentList, DocumentUpload, DocumentVersionHistory, DocumentDownloadAction, DocumentManagementPanel.
+  Upload com drag/drop + botão, progresso, retry, validação cliente/servidor.
+  Versionamento com histórico preservado (sem sobrescrita destrutiva).
+  Download apenas por endpoint autorizado; sem storage key.
+  Integração em ServiceRequestDetailPage; escopos tipados para todos os domínios.
+  Prompt 63 não executado.
+```
+
+## Quality gate Prompt 62 (evidência)
+
+- [x] Componente unificado reutilizável (sem uploader duplicado por módulo)
+- [x] Upload: filename, size, type, progress, status, retry
+- [x] Versionamento: atual + anteriores + autor + mensagem não destrutiva
+- [x] Segurança: sem storage key; download autorizado
+- [x] Responsivo: tabela desktop + cards mobile
+- [x] Testes: DocumentManagementPanel (11), document-validation (3)
+- [x] typecheck + lint + vitest web (167) PASS
+- [x] Prompt 63 não executado
+
+---

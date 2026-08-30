@@ -1,5 +1,6 @@
 import { vi } from 'vitest';
 import { requestUrl } from './request-url';
+import { createDocumentsFetchHandler, type DocumentsFetchMockOptions } from './documents-fetch-mock';
 import { createClientsFetchMock } from './clients-fetch-mock';
 import { MOCK_IDENTITY_ID } from './shell-fetch-mock';
 import {
@@ -19,6 +20,7 @@ export type RequestsFetchMockOptions = {
   requestCancelAllowed?: boolean;
   versionConflictOnUpdate?: boolean;
   clientListAllowed?: boolean;
+  documents?: DocumentsFetchMockOptions;
 };
 
 function requestError(code: string, status: number): Response {
@@ -37,8 +39,16 @@ function jsonResponse(body: unknown, status = 200): Response {
   } as Response;
 }
 
-function toDetail(request: ServiceRequest) {
-  return { serviceRequest: request, documentLinks: [] };
+function toDetail(
+  request: ServiceRequest,
+  documentLinks: Array<{
+    id: string;
+    documentId: string;
+    linkPurpose: string;
+    createdAt: string;
+  }> = [],
+) {
+  return { serviceRequest: request, documentLinks };
 }
 
 export function createRequestsFetchMock(options: RequestsFetchMockOptions = {}) {
@@ -107,11 +117,26 @@ export function createRequestsFetchMock(options: RequestsFetchMockOptions = {}) 
     return next;
   }
 
+  const documentLinksByRequest = new Map<
+    string,
+    Array<{ id: string; documentId: string; linkPurpose: string; createdAt: string }>
+  >();
+  const documentsMock = createDocumentsFetchHandler(options.documents);
+
+  function linksFor(requestId: string) {
+    return documentLinksByRequest.get(requestId) ?? [];
+  }
+
   return vi.fn(async (input: RequestInfo, init?: RequestInit) => {
     const url = requestUrl(input);
     const method = init?.method ?? 'GET';
     const parsedUrl = new URL(url);
     const pathname = parsedUrl.pathname;
+
+    const documentsResponse = documentsMock.handle(pathname, method, init);
+    if (documentsResponse) {
+      return documentsResponse;
+    }
 
     if (!pathname.startsWith('/api/v1/requests/service-requests')) {
       return clientsMock(input, init);
@@ -214,7 +239,29 @@ export function createRequestsFetchMock(options: RequestsFetchMockOptions = {}) 
       if (!current) {
         return requestError('REQUESTS_SERVICE_REQUEST_NOT_FOUND', 404);
       }
-      return jsonResponse(toDetail(current));
+      return jsonResponse(toDetail(current, linksFor(requestId)));
+    }
+
+    if (action === 'documents' && method === 'POST') {
+      if (!current) {
+        return requestError('REQUESTS_SERVICE_REQUEST_NOT_FOUND', 404);
+      }
+      const body = JSON.parse(typeof init?.body === 'string' ? init.body : '{}') as {
+        documentId?: string;
+        linkPurpose?: string;
+      };
+      if (!body.documentId || !body.linkPurpose) {
+        return requestError('REQUESTS_VALIDATION_FAILED', 400);
+      }
+      const links = linksFor(requestId);
+      links.push({
+        id: crypto.randomUUID(),
+        documentId: body.documentId,
+        linkPurpose: body.linkPurpose,
+        createdAt: new Date().toISOString(),
+      });
+      documentLinksByRequest.set(requestId, links);
+      return jsonResponse(toDetail(current, links), 201);
     }
 
     if (action === undefined && method === 'PATCH') {
