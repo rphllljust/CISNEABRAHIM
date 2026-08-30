@@ -4332,7 +4332,7 @@ PROMPT_ID: 78
 PROMPT_TITLE: Relatórios e exportações
 EXECUTED_AT: 2026-08-29
 EXECUTION_STATUS: PASS
-COMMIT: (pending) feat(reporting): implement auditable reports and exports
+COMMIT: c912442 feat(reporting): implement auditable reports and exports
 ARTIFACTS:
   packages/database/migrations/0034_report_exports.sql
   apps/api/src/reports/**
