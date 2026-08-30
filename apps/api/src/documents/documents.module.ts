@@ -6,6 +6,7 @@ import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
 import { AuthorizationModule } from '../authorization/authorization.module';
 import { DatabaseModule } from '../infrastructure/database/database.module';
+import { SecurityModule } from '../security/security.module';
 import { DocumentsController } from './controllers/documents.controller';
 import { DocumentsRepository } from './repositories/documents.repository';
 import { DocumentUploadCoordinator } from './services/document-upload-coordinator';
@@ -15,7 +16,7 @@ import { ObjectStorageService } from './storage/object-storage.service';
 import { DOCUMENT_UPLOAD_LIMITS } from './dto/documents.dto';
 
 @Module({
-  imports: [DatabaseModule, AuthModule, AuthorizationModule, AuditModule],
+  imports: [DatabaseModule, AuthModule, AuthorizationModule, AuditModule, SecurityModule],
   controllers: [DocumentsController],
   providers: [
     DocumentsRepository,

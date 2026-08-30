@@ -7,6 +7,7 @@ import type {
   PurchaseOrderItemInput,
   UpdatePurchaseOrderDraftInput,
 } from '../domain/purchase-order.validation';
+import { assertNoPrivilegedFields } from '../../security/domain/forbidden-payload-fields';
 
 function parseRequiredString(body: Record<string, unknown>, key: string): string {
   const value = body[key];
@@ -101,6 +102,7 @@ export function parseCreatePurchaseOrderInput(body: unknown): CreatePurchaseOrde
     throw new Error('body invalid');
   }
   const record = body as Record<string, unknown>;
+  assertNoPrivilegedFields(record);
   const pricingStructure = parseRequiredString(record, 'pricingStructure');
   if (!isPurchaseOrderPricingStructure(pricingStructure)) {
     throw new Error('pricingStructure invalid');
@@ -131,6 +133,7 @@ export function parseUpdatePurchaseOrderDraftInput(body: unknown): UpdatePurchas
     throw new Error('body invalid');
   }
   const record = body as Record<string, unknown>;
+  assertNoPrivilegedFields(record, { allowVersion: true, allowRowVersion: true });
   const pricingStructure = parseOptionalString(record, 'pricingStructure');
   if (pricingStructure && !isPurchaseOrderPricingStructure(pricingStructure)) {
     throw new Error('pricingStructure invalid');

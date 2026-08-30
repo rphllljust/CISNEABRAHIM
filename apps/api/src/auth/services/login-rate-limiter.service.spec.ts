@@ -1,36 +1,35 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { LoginRateLimiterService } from './login-rate-limiter.service';
-import type { AuthConfig } from '../config/auth.config';
-
-const config: AuthConfig = {
-  jwtSecret: 'rate-limit-test-secret-32-chars-min!',
-  jwtIssuer: 'cisne-api-test',
-  jwtAudience: 'cisne-clients-test',
-  accessTokenTtlSeconds: 60,
-  refreshTokenTtlSeconds: 3600,
-  jwtClockSkewSeconds: 30,
-  corsOrigin: 'http://localhost:5173',
-  loginRateLimitPerMinute: 3,
-};
+import { EndpointRateLimitService } from '../../security/services/endpoint-rate-limit.service';
+import { RateLimitExceededError } from '../../security/errors/rate-limit-exceeded.error';
 
 describe('LoginRateLimiterService', () => {
+  const originalEnv = { ...process.env };
+
+  afterEach(() => {
+    process.env = { ...originalEnv };
+  });
+
   it('allows requests within the limit', () => {
-    const limiter = new LoginRateLimiterService(config);
+    process.env['SECURITY_RATE_LOGIN_MAX'] = '3';
+    const limiter = new LoginRateLimiterService(new EndpointRateLimitService());
     expect(() => limiter.assertAllowed('client-a')).not.toThrow();
     expect(() => limiter.assertAllowed('client-a')).not.toThrow();
     expect(() => limiter.assertAllowed('client-a')).not.toThrow();
   });
 
   it('blocks repeated abuse for the same client key', () => {
-    const limiter = new LoginRateLimiterService(config);
+    process.env['SECURITY_RATE_LOGIN_MAX'] = '3';
+    const limiter = new LoginRateLimiterService(new EndpointRateLimitService());
     limiter.assertAllowed('client-b');
     limiter.assertAllowed('client-b');
     limiter.assertAllowed('client-b');
-    expect(() => limiter.assertAllowed('client-b')).toThrow('rate limited');
+    expect(() => limiter.assertAllowed('client-b')).toThrow(RateLimitExceededError);
   });
 
   it('isolates buckets per client key', () => {
-    const limiter = new LoginRateLimiterService(config);
+    process.env['SECURITY_RATE_LOGIN_MAX'] = '3';
+    const limiter = new LoginRateLimiterService(new EndpointRateLimitService());
     limiter.assertAllowed('client-c');
     limiter.assertAllowed('client-c');
     limiter.assertAllowed('client-c');

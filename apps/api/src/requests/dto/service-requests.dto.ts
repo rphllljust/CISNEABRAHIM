@@ -7,6 +7,7 @@ import type {
   RejectServiceRequestInput,
   UpdateServiceRequestDraftInput,
 } from '../domain/service-request.validation';
+import { assertNoPrivilegedFields } from '../../security/domain/forbidden-payload-fields';
 
 function parseRequiredString(body: Record<string, unknown>, key: string): string {
   const value = body[key];
@@ -74,6 +75,7 @@ export function parseCreateServiceRequestInput(body: unknown): CreateServiceRequ
     throw new Error('body invalid');
   }
   const record = body as Record<string, unknown>;
+  assertNoPrivilegedFields(record);
   const originSource = parseRequiredString(record, 'originSource');
   if (!isServiceRequestOrigin(originSource)) {
     throw new Error('originSource invalid');

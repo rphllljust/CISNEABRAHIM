@@ -3,6 +3,7 @@ import { loadAuthConfig } from './config/auth.config';
 import { AUTH_CONFIG } from './auth.constants';
 import { AuditModule } from '../audit/audit.module';
 import { DatabaseModule } from '../infrastructure/database/database.module';
+import { SecurityModule } from '../security/security.module';
 import { AuthController } from './auth.controller';
 import { IdentityAuthRepository } from './repositories/identity-auth.repository';
 import { AuthService } from './services/auth.service';
@@ -12,7 +13,7 @@ import { TokenService } from './services/token.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Module({
-  imports: [DatabaseModule, AuditModule],
+  imports: [DatabaseModule, AuditModule, SecurityModule],
   controllers: [AuthController],
   providers: [
     {

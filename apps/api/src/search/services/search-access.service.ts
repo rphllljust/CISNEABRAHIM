@@ -17,6 +17,7 @@ import { prefixAlias } from '../domain/search-sql.helper';
 import { SEARCH_ERROR_CODES } from '../errors/search-error-codes';
 import { SearchHttpException } from '../errors/search-http.exception';
 import { SearchRepository, type SearchScopeFilters } from '../repositories/search.repository';
+import { EndpointRateLimitService } from '../../security/services/endpoint-rate-limit.service';
 
 export type SearchQueryInput = {
   q?: string;
@@ -36,9 +37,11 @@ export class SearchAccessService {
     private readonly repository: SearchRepository,
     private readonly authorizationRepository: AuthorizationRepository,
     private readonly scopeEnforcement: ScopeEnforcementService,
+    private readonly endpointRateLimit: EndpointRateLimitService,
   ) {}
 
   async search(actor: IdentityAuthzContext, query: SearchQueryInput): Promise<SearchResponse> {
+    this.endpointRateLimit.assertAllowed('search', actor.identityId);
     const normalized = query.q ? normalizeSearchQuery(query.q) : null;
     if (!normalized) {
       throw new SearchHttpException(400, SEARCH_ERROR_CODES.INVALID_QUERY, 'Invalid search query.');

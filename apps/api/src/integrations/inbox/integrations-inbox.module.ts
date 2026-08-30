@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '../../infrastructure/database/database.module';
+import { SecurityModule } from '../../security/security.module';
 import { TestIntegrationInboxHandler } from './handlers/test-integration-inbox.handler';
 import { IntegrationInboxRepository } from './repositories/integration-inbox.repository';
 import { IntegrationInboxBootstrapService } from './services/integration-inbox-bootstrap.service';
@@ -11,7 +12,7 @@ import { IntegrationPayloadHasherService } from './services/integration-payload-
 import { IntegrationWebhookAuthService } from './services/integration-webhook-auth.service';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, SecurityModule],
   providers: [
     IntegrationInboxRepository,
     IntegrationPayloadHasherService,

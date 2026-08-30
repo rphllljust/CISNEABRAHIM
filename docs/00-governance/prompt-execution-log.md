@@ -4458,3 +4458,50 @@ NOTES:
 | API typecheck | PASS | tsc --noEmit |
 
 ---
+
+## Prompt 81 — Security hardening
+
+```
+PROMPT_ID: 81
+PROMPT_TITLE: Security hardening
+EXECUTED_AT: 2026-08-30
+EXECUTION_STATUS: PASS
+COMMIT: (pending) security: harden application before production
+ARTIFACTS:
+  apps/api/src/security/**
+  apps/api/src/infrastructure/http/security-headers.interceptor.ts
+  DTO hardening: clients, catalog, commercial, requests, service-orders
+  Rate limits: login (unified), refresh, search, upload, webhook inbox
+  Global filters: SecurityClientErrorFilter, SecurityExceptionFilter
+HARDENING:
+  AUTH: JWT bearer unchanged; refresh rate-limited; login delegates to EndpointRateLimitService
+  AUTHZ: existing IDOR/scope e2e retained; no mechanism change
+  MASS_ASSIGNMENT: assertNoPrivilegedFields on critical create/update DTOs
+  WEB: HSTS (prod), CSP, COOP/CORP, nosniff, DENY frame, no-referrer; CSRF not applied (bearer auth)
+  RATE_LIMIT: login, refresh, search, upload, webhook surfaces
+  SQL: parameterized queries retained (search/reports); no concatenated SQL added
+  FILES: sanitizeUploadFilename on multipart uploads
+  SECRETS: secret-scan.spec.ts on tracked source
+  ERRORS: production-safe global catch-all; privileged field + rate limit filters
+QUALITY_GATE: PASS
+NEXT_ALLOWED_PROMPT: 82
+NEXT_PROMPT_EXECUTED: NO
+NOTES:
+  pnpm/npm audit indisponível no ambiente (sem lockfile npm); repositório usa pnpm-lock.yaml — auditar em CI.
+  Prompt 82 não executado.
+```
+
+## Quality gate Prompt 81 (evidência)
+
+| Cenário de teste | Resultado | Evidência |
+|------------------|-----------|-----------|
+| mass assignment rejection | PASS | forbidden-payload-fields.spec.ts, security-regression.spec.ts |
+| privileged fields on critical DTOs | PASS | security-regression.spec.ts |
+| error message sanitization | PASS | safe-error-message.spec.ts |
+| security headers config (HSTS/CSP) | PASS | security-headers.interceptor.spec.ts |
+| rate limiting surfaces | PASS | endpoint-rate-limit.service.spec.ts, login-rate-limiter.service.spec.ts |
+| filename path traversal | PASS | safe-filename.spec.ts |
+| secret scanning | PASS | secret-scan.spec.ts |
+| API typecheck | PASS | tsc --noEmit |
+
+---

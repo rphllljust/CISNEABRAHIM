@@ -19,6 +19,7 @@ import type { RefreshTokenLockedRow } from '../repositories/identity-auth.reposi
 import { IdentityAuthRepository } from '../repositories/identity-auth.repository';
 import { DatabaseService } from '../../infrastructure/database/database.service';
 import { LoginRateLimiterService } from './login-rate-limiter.service';
+import { EndpointRateLimitService } from '../../security/services/endpoint-rate-limit.service';
 import { SessionValidationService } from './session-validation.service';
 import { TokenService } from './token.service';
 import {
@@ -36,6 +37,7 @@ export class AuthService {
     private readonly repository: IdentityAuthRepository,
     private readonly tokenService: TokenService,
     private readonly loginRateLimiter: LoginRateLimiterService,
+    private readonly endpointRateLimit: EndpointRateLimitService,
     private readonly sessionValidation: SessionValidationService,
     private readonly securityAudit: SecurityAuditService,
   ) {}
@@ -134,8 +136,20 @@ export class AuthService {
 
   async refresh(
     input: RefreshInput,
-    context: Pick<AuthRequestContext, 'correlationId' | 'clientIp'> = {},
+    context: Pick<AuthRequestContext, 'correlationId' | 'clientIp'> & { clientKey?: string } = {},
   ): Promise<AuthTokenResponseV1> {
+    if (context.clientKey) {
+      try {
+        this.endpointRateLimit.assertAllowed('refresh', context.clientKey);
+      } catch {
+        throw new AuthHttpException(
+          HttpStatus.TOO_MANY_REQUESTS,
+          AUTH_ERROR_CODES.RATE_LIMITED,
+          'Too many refresh attempts. Try again later.',
+        );
+      }
+    }
+
     const tokenHash = hashOpaqueToken(input.refreshToken);
     const pool = this.getPool();
     const client = await pool.connect();

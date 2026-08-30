@@ -7,6 +7,7 @@ import {
   type CreateServiceOrderInput,
   type UpdateServiceOrderInput,
 } from '../domain/service-order.validation';
+import { assertNoPrivilegedFields } from '../../security/domain/forbidden-payload-fields';
 
 function parseOptionalString(record: Record<string, unknown>, key: string): string | undefined {
   const value = record[key];
@@ -26,6 +27,7 @@ export function parseCreateServiceOrderInput(body: unknown): CreateServiceOrderI
     throw new Error('INVALID_BODY');
   }
   const record = body as Record<string, unknown>;
+  assertNoPrivilegedFields(record);
   const origin = parseOptionalString(record, 'origin');
   if (!origin || !isServiceOrderOrigin(origin)) {
     throw new Error('INVALID_ORIGIN');

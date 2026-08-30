@@ -23,6 +23,7 @@ import {
 } from '../domain/service-catalog.validation';
 import { LINEAGE_STATUSES, type LineageStatus } from '../domain/service-catalog-status';
 import type { MeasurementMode } from '../domain/service-catalog-status';
+import { assertNoPrivilegedFields } from '../../security/domain/forbidden-payload-fields';
 
 function assertObject(value: unknown): Record<string, unknown> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
@@ -362,6 +363,7 @@ export type CreateServiceDefinitionInput = {
 
 export function parseCreateServiceDefinitionInput(body: unknown): CreateServiceDefinitionInput {
   const record = assertObject(body);
+  assertNoPrivilegedFields(record);
   const allowedUnits = parseAllowedUnits(record);
   const resourceRequirements = parseResourceRequirements(record);
   const laborRequirements = parseLaborRequirements(record);

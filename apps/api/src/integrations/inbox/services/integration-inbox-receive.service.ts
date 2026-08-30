@@ -7,6 +7,7 @@ import type {
 import { IntegrationInboxRepository } from '../repositories/integration-inbox.repository';
 import { IntegrationPayloadHasherService } from './integration-payload-hasher.service';
 import { IntegrationWebhookAuthService } from './integration-webhook-auth.service';
+import { EndpointRateLimitService } from '../../../security/services/endpoint-rate-limit.service';
 
 @Injectable()
 export class IntegrationInboxReceiveService {
@@ -14,9 +15,11 @@ export class IntegrationInboxReceiveService {
     private readonly repository: IntegrationInboxRepository,
     private readonly payloadHasher: IntegrationPayloadHasherService,
     private readonly webhookAuth: IntegrationWebhookAuthService,
+    private readonly endpointRateLimit: EndpointRateLimitService,
   ) {}
 
   async receive(input: ReceiveIntegrationMessageInput): Promise<ReceiveIntegrationMessageResult> {
+    this.endpointRateLimit.assertAllowed('webhook', input.provider);
     const rawBody = input.rawBody ?? JSON.stringify(input.payload);
     try {
       this.webhookAuth.validateSignature({

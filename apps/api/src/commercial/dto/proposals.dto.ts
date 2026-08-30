@@ -11,6 +11,7 @@ import type {
   RejectProposalInput,
   UpdateProposalDraftInput,
 } from '../domain/proposal.validation';
+import { assertNoPrivilegedFields } from '../../security/domain/forbidden-payload-fields';
 
 function parseRequiredString(body: Record<string, unknown>, key: string): string {
   const value = body[key];
@@ -75,6 +76,7 @@ export function parseCreateProposalInput(body: unknown): CreateProposalInput {
     throw new Error('body invalid');
   }
   const record = body as Record<string, unknown>;
+  assertNoPrivilegedFields(record);
   const pricingStructure = parseRequiredString(record, 'pricingStructure');
   if (!isProposalPricingStructure(pricingStructure)) {
     throw new Error('pricingStructure invalid');
@@ -105,6 +107,7 @@ export function parseUpdateProposalDraftInput(body: unknown): UpdateProposalDraf
     throw new Error('body invalid');
   }
   const record = body as Record<string, unknown>;
+  assertNoPrivilegedFields(record, { allowVersion: true, allowRowVersion: true });
   const pricingStructure =
     typeof record['pricingStructure'] === 'string' ? record['pricingStructure'] : undefined;
   if (pricingStructure && !isProposalPricingStructure(pricingStructure)) {

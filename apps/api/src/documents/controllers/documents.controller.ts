@@ -22,6 +22,7 @@ import {
 import { DOCUMENT_ERROR_CODES } from '../errors/document-error-codes';
 import { DocumentHttpException } from '../errors/document-http.exception';
 import { DocumentsAccessService } from '../services/documents-access.service';
+import { sanitizeUploadFilename } from '../../security/domain/safe-filename';
 
 @Controller('documents')
 export class DocumentsController {
@@ -168,7 +169,7 @@ export class DocumentsController {
         }
         filePayload = {
           buffer: Buffer.concat(chunks),
-          filename: part.filename,
+          filename: sanitizeUploadFilename(part.filename ?? 'upload.bin'),
           mimetype: part.mimetype,
         };
       } else {

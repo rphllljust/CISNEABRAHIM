@@ -40,6 +40,7 @@ import {
 import { createPersistWithCompensation } from './document-upload-coordinator';
 import { DownloadTokenService } from '../storage/download-token.service';
 import { ObjectStorageService } from '../storage/object-storage.service';
+import { EndpointRateLimitService } from '../../security/services/endpoint-rate-limit.service';
 
 @Injectable()
 export class DocumentsAccessService {
@@ -51,6 +52,7 @@ export class DocumentsAccessService {
     private readonly securityAudit: SecurityAuditService,
     private readonly objectStorage: ObjectStorageService,
     private readonly downloadTokens: DownloadTokenService,
+    private readonly endpointRateLimit: EndpointRateLimitService,
   ) {}
 
   async createWithUpload(
@@ -58,6 +60,7 @@ export class DocumentsAccessService {
     metadata: CreateDocumentUploadInput,
     file: UploadedFileInput,
   ): Promise<{ document: DocumentResponse; version: DocumentVersionResponse }> {
+    this.endpointRateLimit.assertAllowed('upload', actor.identityId);
     await this.assertCreateAction(actor, metadata.unitId);
     await this.assertUnitRegistered(metadata.unitId);
     this.assertSingleFile(file);
@@ -140,6 +143,7 @@ export class DocumentsAccessService {
     documentId: string,
     file: UploadedFileInput,
   ): Promise<DocumentVersionResponse> {
+    this.endpointRateLimit.assertAllowed('upload', actor.identityId);
     this.assertValidDocumentId(documentId);
     const document = await this.documentsRepository.findDocumentById(documentId);
     if (!document) {

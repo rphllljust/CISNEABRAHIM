@@ -9,6 +9,7 @@ import { ClientValidationError, assertCreateClientInput, type CreateClientInput 
 import { ClientHttpException } from '../errors/client-http.exception';
 import { CLIENT_ERROR_CODES } from '../errors/client-error-codes';
 import { mapValidationCodeToStatus } from '../errors/client-exception.filter';
+import { assertNoPrivilegedFields } from '../../security/domain/forbidden-payload-fields';
 
 const CONTACT_PURPOSE_SET = new Set<string>(Object.values(CONTACT_PURPOSES));
 const ADDRESS_PURPOSE_SET = new Set<string>(Object.values(ADDRESS_PURPOSES));
@@ -112,6 +113,7 @@ function parseAddress(value: unknown): {
 
 export function parseCreateClientInput(body: unknown) {
   const record = assertObject(body);
+  assertNoPrivilegedFields(record);
   const legalName = parseOptionalString(record['legalName']);
   const taxId = parseOptionalString(record['taxId']);
   if (!legalName || !taxId) {
@@ -160,6 +162,7 @@ export function parseCreateClientInput(body: unknown) {
 
 export function parseUpdateClientInput(body: unknown) {
   const record = assertObject(body);
+  assertNoPrivilegedFields(record, { allowVersion: true });
   if (typeof record['version'] !== 'number') {
     throw new ClientHttpException(
       HttpStatus.BAD_REQUEST,

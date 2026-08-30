@@ -31,6 +31,7 @@ export class AuthController {
     const body: unknown = request.body;
     const input = parseRefreshInput(body);
     return this.authService.refresh(input, {
+      clientKey: `${ip}:${request.headers['user-agent'] ?? 'unknown'}`,
       correlationId: resolveCorrelationId(request),
       clientIp: ip,
     });
