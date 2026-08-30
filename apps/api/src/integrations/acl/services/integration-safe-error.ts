@@ -3,6 +3,7 @@ import {
   classifyIntegrationError,
   isIntegrationProviderError,
 } from '../domain/integration-error';
+import { INTEGRATION_NOT_CONFIGURED_CODE } from '../domain/integration-not-configured';
 
 const SAFE_USER_MESSAGES: Record<string, string> = {
   [INTEGRATION_ERROR_CLASSES.Authentication]: 'INTEGRATION_ACCESS_DENIED',
@@ -15,6 +16,9 @@ const SAFE_USER_MESSAGES: Record<string, string> = {
 };
 
 export function toSafeIntegrationUserMessage(error: unknown): string {
+  if (isIntegrationProviderError(error) && error.message === INTEGRATION_NOT_CONFIGURED_CODE) {
+    return INTEGRATION_NOT_CONFIGURED_CODE;
+  }
   const errorClass = classifyIntegrationError(error);
   return SAFE_USER_MESSAGES[errorClass] ?? 'INTEGRATION_OPERATION_FAILED';
 }

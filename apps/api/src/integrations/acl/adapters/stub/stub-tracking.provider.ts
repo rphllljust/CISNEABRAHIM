@@ -1,3 +1,4 @@
+/** TEST_ONLY — not registered in production bootstrap. */
 import { Injectable } from '@nestjs/common';
 import {
   INTEGRATION_ERROR_CLASSES,
@@ -9,7 +10,7 @@ import type { FetchTrackingStatusInput, TrackingProvider } from '../../ports/tra
 export class StubTrackingProvider implements TrackingProvider {
   readonly providerId = 'stub-tracking';
 
-  fetchStatus(_input: FetchTrackingStatusInput): Promise<null> {
+  async fetchStatus(_input: FetchTrackingStatusInput): Promise<null> {
     throw new IntegrationProviderError(
       INTEGRATION_ERROR_CLASSES.Permanent,
       'TRACKING_PROVIDER_NOT_CONFIGURED',

@@ -1,3 +1,4 @@
+/** TEST_ONLY scaffold — not registered in production bootstrap. */
 import { Injectable } from '@nestjs/common';
 import type { IntegrationCustomerSnapshot } from '../../domain/integration-models';
 import type { ERPProvider, FetchErpCustomerInput } from '../../ports/erp-provider.port';

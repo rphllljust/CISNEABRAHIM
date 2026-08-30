@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { INTEGRATION_ERROR_CLASSES, IntegrationProviderError } from '../domain/integration-error';
+import { IntegrationNotConfiguredError } from '../domain/integration-not-configured';
 import { toSafeIntegrationUserMessage } from './integration-safe-error';
 
 describe('integration-safe-error', () => {
@@ -23,5 +24,10 @@ describe('integration-safe-error', () => {
       { vendorDetail: 'upstream exploded' },
     );
     expect(toSafeIntegrationUserMessage(error)).toBe('INTEGRATION_TEMPORARILY_UNAVAILABLE');
+  });
+
+  it('preserves INTEGRATION_NOT_CONFIGURED for unconfigured integrations', () => {
+    const error = new IntegrationNotConfiguredError('ERP');
+    expect(toSafeIntegrationUserMessage(error)).toBe('INTEGRATION_NOT_CONFIGURED');
   });
 });

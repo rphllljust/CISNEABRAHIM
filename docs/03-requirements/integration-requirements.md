@@ -13,9 +13,9 @@
 >
 > | ID          | Sistema                   | Capacidade                                                               | FR     | Status                         |
 > | ----------- | ------------------------- | ------------------------------------------------------------------------ | ------ | ------------------------------ |
-> | INT-REQ-001 | ERP candidato             | Sincronizar referências comerciais                                       | FR-029 | PENDING_EXTERNAL_DOCUMENTATION |
+> | INT-REQ-001 | ERP candidato             | Sincronizar referências comerciais                                       | FR-029 | PENDING_EXTERNAL_DOCUMENTATION · **READINESS: WAITING_EXTERNAL_DEPENDENCY** · PROJECT_PROGRESSION_BLOCKED: NO |
 > | INT-REQ-002 | Sistema fiscal externo    | Receber registro de nota emitida externamente — sem emissão pelo sistema | FR-039 | PENDING_EXTERNAL_DOCUMENTATION |
-> | INT-REQ-003 | Rastreamento de frota     | Consultar posição ou evento de veículo                                   | FR-024 | PENDING_EXTERNAL_DOCUMENTATION |
+> | INT-REQ-003 | Rastreamento de frota     | Consultar posição ou evento de veículo                                   | FR-024 | PENDING_EXTERNAL_DOCUMENTATION · **READINESS: WAITING_EXTERNAL_DEPENDENCY** · PROJECT_PROGRESSION_BLOCKED: NO |
 > | INT-REQ-004 | WhatsApp / mensageria     | Canal de notificação candidato — CAPABILITY_ONLY, não REQUIRED           | FR-002 | PENDING_EXTERNAL_DOCUMENTATION |
 > | INT-REQ-005 | E-mail                    | Canal de notificação candidato                                           | FR-006 | PENDING_EXTERNAL_DOCUMENTATION |
 > | INT-REQ-006 | Armazenamento de arquivos | Persistir arquivos de versões documentais                                | FR-041 | PENDING_EXTERNAL_DOCUMENTATION |
