@@ -4674,7 +4674,7 @@ PROMPT_ID: 86
 PROMPT_TITLE: Homologação
 EXECUTED_AT: 2026-08-30
 EXECUTION_STATUS: PASS
-COMMIT: (pending) ops(hml): establish production-like homologation environment
+COMMIT: e6549c9 ops(hml): establish production-like homologation environment
 ARTIFACTS:
   docker/hml/**
   apps/api/src/ops/hml/**
