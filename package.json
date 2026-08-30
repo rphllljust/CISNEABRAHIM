@@ -27,6 +27,7 @@
     "cd:promote": "node scripts/cd/promote.mjs",
     "cd:manifest": "node scripts/cd/emit-deploy-manifest.mjs",
     "prod:validate": "node scripts/prod/validate.mjs",
+    "test:uat": "pnpm --filter @cisne/api test:uat",
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",
     "db:up": "docker compose -f docker/compose.yaml up -d --wait",

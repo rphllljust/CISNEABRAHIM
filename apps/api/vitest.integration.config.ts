@@ -15,6 +15,8 @@ export default defineConfig({
     include: ['src/**/*.integration.spec.ts'],
     fileParallelism: false,
     sequence: { concurrent: false },
+    hookTimeout: 120_000,
+    testTimeout: 300_000,
     globalSetup: ['./src/test/ensure-migrations.ts'],
   },
 });

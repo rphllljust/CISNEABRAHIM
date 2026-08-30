@@ -24,7 +24,9 @@
     "test:cd": "vitest run src/ops/cd",
     "cd:promote": "npx tsx src/ops/cd/cli/run-cd-promote.ts",
     "test:prod": "vitest run src/ops/prod",
-    "prod:validate": "npx tsx src/ops/prod/cli/run-prod-validate.ts"
+    "prod:validate": "npx tsx src/ops/prod/cli/run-prod-validate.ts",
+    "test:uat:unit": "vitest run src/uat --exclude '**/*.integration.spec.ts'",
+    "test:uat": "vitest run --config vitest.integration.config.ts src/uat/uat-business.integration.spec.ts"
   },
   "dependencies": {
     "@cisne/database": "workspace:*",

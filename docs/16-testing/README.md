@@ -36,6 +36,9 @@
 | [flaky-test-policy.md](./flaky-test-policy.md)                         | Flaky                  |
 | [quality-gates-pipeline.md](./quality-gates-pipeline.md)               | CI gates               |
 | [acceptance-test-catalog.md](./acceptance-test-catalog.md)             | UC / aceite            |
+| [uat-business-scenarios.md](./uat-business-scenarios.md)               | UAT empresarial (89)   |
+| [uat-defect-register.md](./uat-defect-register.md)                   | Defeitos UAT           |
+| [uat-ux-checklist.md](./uat-ux-checklist.md)                         | Checklist UX UAT       |
 | [prompt-15-completeness-report.md](./prompt-15-completeness-report.md) | Relatório              |
 
 ## Totais
