@@ -97,7 +97,7 @@ export async function consumePurchaseOrderBalanceForBilling(
     throw error;
   }
 
-  const updated = await client.query(
+  const updated = await client.query<{ consumed_amount: string }>(
     `UPDATE com.purchase_orders
      SET consumed_amount = consumed_amount + $2::numeric,
          updated_at = NOW()

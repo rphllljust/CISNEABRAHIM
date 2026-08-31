@@ -1,7 +1,6 @@
 import {
   PURCHASE_ORDER_DOCUMENT_LINK_PURPOSES,
-  PURCHASE_ORDER_RULE_TYPES,
-  type PurchaseOrderRuleType,
+  PURCHASE_ORDER_RULE_TYPES
 } from '../../commercial/domain/purchase-order';
 
 export class PurchaseOrderBillingComplianceError extends Error {
@@ -11,7 +10,7 @@ export class PurchaseOrderBillingComplianceError extends Error {
 }
 
 export type PurchaseOrderBillingRuleSnapshot = {
-  ruleType: PurchaseOrderRuleType | string;
+  ruleType: string;
   ruleConfig: Record<string, unknown>;
 };
 
