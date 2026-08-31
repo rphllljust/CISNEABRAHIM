@@ -81,18 +81,24 @@ export function createPeopleFetchMock(options: PeopleFetchMockOptions = {}) {
       if (!createAllowed) {
         return personError('PERSON_DENIED', 403);
       }
-      const body = init?.body ? (JSON.parse(String(init.body)) as Record<string, unknown>) : {};
-      if (!body['legalName'] || String(body['legalName']).trim().length === 0) {
+      const rawBody = init?.body;
+      const body = JSON.parse(typeof rawBody === 'string' ? rawBody : '{}') as {
+        legalName?: string;
+        preferredName?: string;
+        defaultLaborTypeCode?: string;
+        externalErpId?: string;
+      };
+      if (!body.legalName || body.legalName.trim().length === 0) {
         return personError('PERSON_VALIDATION_FAILED', 400);
       }
       const created: Person = {
         id: crypto.randomUUID(),
         memberCode: 'PSN-000002',
-        legalName: String(body['legalName']),
-        preferredName: (body['preferredName'] as string | undefined) ?? null,
-        defaultLaborTypeCode: (body['defaultLaborTypeCode'] as string | undefined) ?? null,
+        legalName: body.legalName,
+        preferredName: body.preferredName ?? null,
+        defaultLaborTypeCode: body.defaultLaborTypeCode ?? null,
         defaultLaborTypeName: null,
-        externalErpId: (body['externalErpId'] as string | undefined) ?? null,
+        externalErpId: body.externalErpId ?? null,
         status: PERSON_STATUSES.Active,
         version: 1,
         createdAt: new Date().toISOString(),

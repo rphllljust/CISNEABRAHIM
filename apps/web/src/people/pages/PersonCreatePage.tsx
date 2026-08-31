@@ -82,7 +82,7 @@ export function PersonCreatePage() {
   return (
     <main id="main-content" className="shell-page">
       <h1>Nova Pessoa</h1>
-      <form className="shell-form" onSubmit={handleSubmit} noValidate>
+      <form className="shell-form" onSubmit={(event) => void handleSubmit(event)} noValidate>
         <div className="shell-form-field">
           <label htmlFor={legalNameId}>Nome legal *</label>
           <input

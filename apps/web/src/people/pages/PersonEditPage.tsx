@@ -108,7 +108,7 @@ export function PersonEditPage() {
   return (
     <main id="main-content" className="shell-page">
       <h1>Editar Pessoa</h1>
-      <form className="shell-form" onSubmit={handleSubmit}>
+      <form className="shell-form" onSubmit={(event) => void handleSubmit(event)}>
         <div className="shell-form-field">
           <label htmlFor={legalNameId}>Nome legal *</label>
           <input

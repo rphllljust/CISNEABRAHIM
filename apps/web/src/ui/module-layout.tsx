@@ -184,6 +184,8 @@ export function ModulePagination({
       onNext={onNext}
       previousDisabled={previousDisabled}
       nextDisabled={nextDisabled}
+      previousLabel={previousLabel}
+      nextLabel={nextLabel}
       className="gap-4"
     />
   );
