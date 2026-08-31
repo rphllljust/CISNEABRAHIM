@@ -51,17 +51,76 @@ export function readDrizzleJournal() {
   return JSON.parse(readFileSync(journalPath, 'utf8'));
 }
 
-/** Regclass checks for migrations that need journal/schema reconciliation on test DB. */
-const MIGRATION_REGCLASS_CHECKS = {
-  '0036_workforce_members_baseline': 'wrk.workforce_members',
+/**
+ * Presence checks for domain migrations. `null` means "legacy journal entry":
+ * hash may be recorded without a dedicated artefact probe (0000–0018).
+ * Domain tags MUST have a probe so an incomplete DB is not marked applied.
+ */
+const MIGRATION_EFFECT_CHECKS = {
+  '0019_service_orders_baseline': { table: 'so.service_orders' },
+  '0020_service_orders_state_transitions': { column: ['so', 'service_orders', 'prepared_at'] },
+  '0021_planning_allocation_baseline': { table: 'so.planned_resources' },
+  '0022_service_order_execution_baseline': { table: 'so.execution_entries' },
+  '0023_measurement_baseline': { table: 'msr.measurements' },
+  '0024_billing_baseline': { table: 'bil.billing_records' },
+  '0025_billing_documents': { table: 'bil.billing_documents' },
+  '0026_domain_events_notifications': { table: 'evt.domain_events' },
+  '0027_background_jobs': { table: 'plt.background_jobs' },
+  '0028_transactional_outbox': { table: 'evt.outbox_events' },
+  '0029_integration_inbox': { table: 'int.integration_inbox' },
+  '0030_notification_delivery': { table: 'ntf.notifications' },
+  '0031_operational_business_alerts': { table: 'alt.business_alerts' },
+  '0032_background_job_operational_alert_scan': {
+    enumLabel: ['plt', 'background_job_kind', 'OPERATIONAL_ALERT_SCAN'],
+  },
+  '0033_search_trigram_indexes': { index: 'clients_legal_name_trgm_idx' },
+  '0034_report_exports': { table: 'rpt.report_exports' },
+  '0035_service_orders_list_perf_index': { index: 'service_orders_unit_status_created_idx' },
+  '0036_workforce_members_baseline': { table: 'wrk.workforce_members' },
+  '0037_purchase_order_balance': { table: 'com.purchase_order_consumption_entries' },
 };
 
 async function migrationEffectsPresent(pool, tag) {
-  const regclass = MIGRATION_REGCLASS_CHECKS[tag];
-  if (!regclass) {
+  const check = MIGRATION_EFFECT_CHECKS[tag];
+  if (!check) {
     return null;
   }
-  return tableExists(pool, regclass);
+  if (check.table) {
+    return tableExists(pool, check.table);
+  }
+  if (check.column) {
+    const [schema, table, column] = check.column;
+    const result = await pool.query(
+      `SELECT EXISTS (
+         SELECT 1
+         FROM information_schema.columns
+         WHERE table_schema = $1 AND table_name = $2 AND column_name = $3
+       ) AS exists`,
+      [schema, table, column],
+    );
+    return result.rows[0]?.exists === true;
+  }
+  if (check.enumLabel) {
+    const [schema, typeName, label] = check.enumLabel;
+    const result = await pool.query(
+      `SELECT EXISTS (
+         SELECT 1
+         FROM pg_type t
+         INNER JOIN pg_enum e ON e.enumtypid = t.oid
+         INNER JOIN pg_namespace n ON n.oid = t.typnamespace
+         WHERE n.nspname = $1 AND t.typname = $2 AND e.enumlabel = $3
+       ) AS exists`,
+      [schema, typeName, label],
+    );
+    return result.rows[0]?.exists === true;
+  }
+  if (check.index) {
+    const result = await pool.query('SELECT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = $1) AS exists', [
+      check.index,
+    ]);
+    return result.rows[0]?.exists === true;
+  }
+  return null;
 }
 
 export async function syncDrizzleJournal(pool) {

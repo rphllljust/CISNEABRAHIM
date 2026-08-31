@@ -278,6 +278,30 @@ export default async function ensureMigrations(): Promise<void> {
       await applySqlFile(pool, '0032_background_job_operational_alert_scan.sql');
     }
 
+    const hasClientNameTrgm = await pool.query<{ exists: boolean }>(
+      `SELECT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'clients_legal_name_trgm_idx') AS exists`,
+    );
+    if (!hasClientNameTrgm.rows[0]?.exists) {
+      await applySqlFile(pool, '0033_search_trigram_indexes.sql');
+    }
+
+    const hasReportExports = await tableExists(pool, 'rpt.report_exports');
+    if (!hasReportExports) {
+      await applySqlFile(pool, '0034_report_exports.sql');
+    }
+
+    const hasServiceOrdersListIdx = await pool.query<{ exists: boolean }>(
+      `SELECT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'service_orders_unit_status_created_idx') AS exists`,
+    );
+    if (!hasServiceOrdersListIdx.rows[0]?.exists) {
+      await applySqlFile(pool, '0035_service_orders_list_perf_index.sql');
+    }
+
+    const hasWorkforceMembers = await tableExists(pool, 'wrk.workforce_members');
+    if (!hasWorkforceMembers) {
+      await applySqlFile(pool, '0036_workforce_members_baseline.sql');
+    }
+
     const hasPoConsumedAmount = await columnExists(pool, 'com', 'purchase_orders', 'consumed_amount');
     if (!hasPoConsumedAmount) {
       await applySqlFile(pool, '0037_purchase_order_balance.sql');

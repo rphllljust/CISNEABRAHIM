@@ -1,6 +1,10 @@
 # Database foundation — Prompt 17
 
-Fundação local do PostgreSQL e persistência técnica (Drizzle). **Sem tabelas empresariais.**
+Fundação local do PostgreSQL e persistência técnica (Drizzle).
+
+**Estado atual:** o schema de domínio já existe (migrations `0002`–`0037`, incluindo OS, medição, faturamento, outbox, alertas, workforce). Os documentos abaixo descrevem a fundação do Prompt 17 e **não foram reescritos**.
+
+Fundação do Prompt 17: **sem tabelas empresariais** naquele momento.
 
 | Documento                                                            | Conteúdo                         |
 | -------------------------------------------------------------------- | -------------------------------- |

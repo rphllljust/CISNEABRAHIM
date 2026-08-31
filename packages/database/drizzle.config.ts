@@ -22,5 +22,10 @@ export default defineConfig({
   dbCredentials: {
     url: databaseUrl,
   },
+  // Domain DDL is hand-authored numbered SQL. Snapshots exist only for 0000/0001
+  // (infrastructure + identity). Widening this filter would make `db:generate`
+  // emit a duplicate CREATE for cat/so/bil/... already applied by 0002–0037.
+  // Register every new SQL file in migrations/meta/_journal.json (enforced by
+  // migration-journal-completeness.spec.ts).
   schemaFilter: ['infrastructure', 'identity'],
 });

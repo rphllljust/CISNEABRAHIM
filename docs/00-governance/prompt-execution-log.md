@@ -6772,3 +6772,29 @@ NOTES:
   Duas sessões UAT humanas concluídas (Administrador 1 + Administrador 2).
   Go-live produção permanece BLOCKED (piloto OBSERVATION < 14d).
 ```
+
+---
+
+## CORRETIVO — Integridade do journal Drizzle e gate de database
+
+```text
+EXECUTED_AT: 2026-08-31T10:05:00-04:00
+PROMPT: CORRETIVO — journal 0019–0035 + fonte única SQL=journal
+STATUS: PASS (unit); gate:database NOT_RUN (Docker/Postgres local indisponível nesta sessão)
+
+ROOT CAUSE: _journal.json saltava idx 19–35. drizzle migrate aplicaria 0000–0018 e depois 0036/0037, omitindo OS, medição, faturamento, outbox, alertas e índices. O CI gate usava lista hardcoded até 0030.
+
+FIX:
+  packages/database/migrations/meta/_journal.json — entradas 0019–0035 com idx sequencial
+  packages/database/src/migration-journal-completeness.spec.ts — SQL no disco = journal
+  packages/database/scripts/migration-files.mjs + ci-database-gate.mjs — lista do disco; schemas alt/wrk/rpt; delta 0037
+  scripts/lib/database-test-env.mjs — probes de efeito 0019–0037 (não marcar aplicada sem artefato)
+  apps/api/src/test/ensure-migrations.ts — aplica 0033–0036
+  drizzle.config.ts — schemaFilter documentado (não alargado)
+  README + docs/18-database-foundation + production-readiness-gate.md — estado atual sem apagar histórico Prompt 17/92
+
+TESTS: @cisne/database unit 21/21 PASS (inclui journal completeness)
+GATE DATABASE: NOT_RUN
+FUNCTIONAL_CODE_CREATED: NO (metadado de migrate + testes/docs)
+NEXT_PROMPT_EXECUTED: NO
+```

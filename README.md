@@ -7,14 +7,14 @@ Repositório de governança e engenharia do **SISTEMA CISNE RONDÔNIA**, sistema
 ```text
 PROJECT PHASE: IMPLEMENTATION (pré-produção / engenharia)
 FUNCTIONAL CODE: STARTED — domínio operacional implementado (API + web)
-PRODUCTION READINESS: NO-GO — gate Prompt 92; evidência em docs/19-operations/readiness-evidence.json
-LAST COMMIT AT HEAD: Prompt 94 (BLOCKED — hypercare; go-live Prompt 93 não realizado)
 ENGINEERING READINESS: READY (suítes automatizadas, UAT vertical, backup/DR, readiness gate)
+PRODUCTION READINESS: NO-GO — único blocker oficial: PILOT_OBSERVATION_WINDOW_NOT_COMPLETED
+GO-LIVE / HYPERCARE: BLOCKED (Prompts 93 e 94) até EXIT_READY do piloto (janela 14d; saída 13 set 2026)
 ```
 
 O monorepo contém backend NestJS (`@cisne/api`) e frontend React (`@cisne/web`) com módulos empresariais reais: clientes, solicitações, propostas, pedidos de compra, ordens de serviço, execução, medições, faturamento, documentos, autorização, auditoria, notificações e integrações ACL (ERP/rastreio desligados até confirmação).
 
-**Não** equivale a go-live em produção. Hypercare (Prompt 94) e operação real permanecem bloqueados até aceites humanos (sign-off, RPO/RTO, piloto, UAT manual) registrados em `readiness-evidence.json`.
+**Não** equivale a go-live em produção. Sign-off empresarial, RPO/RTO (DDP-016) e UAT humano (dois administradores) estão registrados em `readiness-evidence.json`. O gate de produção permanece **NO-GO** enquanto o piloto não completar a janela de observação e não houver autorização de exit.
 
 Documentação de execução local: [`docs/17-bootstrap/local-development.md`](docs/17-bootstrap/local-development.md).
 

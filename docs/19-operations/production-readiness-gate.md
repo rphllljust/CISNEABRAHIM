@@ -7,6 +7,8 @@
 | Status      | **EVALUATED**            |
 | Decisão     | **NO-GO**                |
 
+**Estado atual (31 ago 2026):** a decisão permanece **NO-GO**. O gate ao vivo (`pnpm readiness:gate`) reporta engenharia READY e um único `productionBlocker`: `PILOT_OBSERVATION_WINDOW_NOT_COMPLETED`. UAT humano e sign-off empresarial estão PASSED/APPROVED em `readiness-evidence.json`. A matriz Prompt 92 abaixo é o registro histórico da avaliação inicial e **não foi reescrita**.
+
 ## Objetivo
 
 Último gate antes do go-live. **Não implementa feature** — consolida evidência de prompts anteriores e bloqueia liberação se qualquer blocker real estiver aberto.

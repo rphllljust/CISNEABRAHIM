@@ -43,3 +43,9 @@ Pré-requisito: PostgreSQL healthy + `DATABASE_URL` / `TEST_DATABASE_URL` defini
 ## Journal
 
 Metadados em `migrations/meta/_journal.json` e snapshots.
+
+**Estado atual (pós-implementação):** cada arquivo `NNNN_*.sql` em `packages/database/migrations/` deve ter entrada correspondente no journal, com `idx` sequencial. Isso é validado por `packages/database/src/migration-journal-completeness.spec.ts`. O gate `pnpm gate:database` aplica a lista de SQL no disco (não uma lista hardcoded).
+
+`schemaFilter` em `drizzle.config.ts` permanece `infrastructure` + `identity` de propósito: snapshots 0000/0001 não cobrem o domínio; alargar o filtro faria `db:generate` reemitir CREATE das tabelas já versionadas em 0002–0037.
+
+Em banco já existente, `pnpm db:migrate:test` reconcilia hashes (`syncDrizzleJournal`) antes de aplicar SQL pendente — não marca como aplicada uma migration de domínio cujo artefato ainda não existe.

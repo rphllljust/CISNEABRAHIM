@@ -136,6 +136,125 @@
       "breakpoints": true
     },
     {
+      "idx": 19,
+      "version": "7",
+      "when": 1787987100500,
+      "tag": "0019_service_orders_baseline",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1787987101000,
+      "tag": "0020_service_orders_state_transitions",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1787987101500,
+      "tag": "0021_planning_allocation_baseline",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1787987102000,
+      "tag": "0022_service_order_execution_baseline",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1787987102500,
+      "tag": "0023_measurement_baseline",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1787987103000,
+      "tag": "0024_billing_baseline",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1787987103500,
+      "tag": "0025_billing_documents",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1787987104000,
+      "tag": "0026_domain_events_notifications",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1787987104500,
+      "tag": "0027_background_jobs",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1787987105000,
+      "tag": "0028_transactional_outbox",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1787987105500,
+      "tag": "0029_integration_inbox",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1787987106000,
+      "tag": "0030_notification_delivery",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1787987106500,
+      "tag": "0031_operational_business_alerts",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1787987107000,
+      "tag": "0032_background_job_operational_alert_scan",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1787987107500,
+      "tag": "0033_search_trigram_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1787987108000,
+      "tag": "0034_report_exports",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1787987108500,
+      "tag": "0035_service_orders_list_perf_index",
+      "breakpoints": true
+    },
+    {
       "idx": 36,
       "version": "7",
       "when": 1787987200000,

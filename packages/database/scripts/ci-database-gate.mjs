@@ -4,6 +4,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from 'dotenv';
 import pg from 'pg';
+import { listMigrationSqlFiles, MIGRATIONS_DIR } from './migration-files.mjs';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -15,41 +16,8 @@ if (existsSync(envPath)) {
 } else {
   config({ path: envExamplePath });
 }
-const MIGRATIONS_DIR = resolve(packageRoot, 'migrations');
 
-const MIGRATION_FILES = [
-  '0000_early_thaddeus_ross.sql',
-  '0001_striped_the_liberteens.sql',
-  '0002_authorization_baseline.sql',
-  '0003_contextual_scope_enums.sql',
-  '0004_contextual_scope_tables.sql',
-  '0005_security_audit_events.sql',
-  '0006_clients_baseline.sql',
-  '0007_service_catalog_baseline.sql',
-  '0008_service_definitions_lineage_version.sql',
-  '0009_units_of_measure.sql',
-  '0010_physical_resource_types.sql',
-  '0011_operational_labor_types.sql',
-  '0012_commercial_pricing_measurement.sql',
-  '0013_execution_requirements.sql',
-  '0014_physical_assets_baseline.sql',
-  '0015_documents_baseline.sql',
-  '0016_commercial_proposals_baseline.sql',
-  '0017_commercial_purchase_orders_baseline.sql',
-  '0018_service_requests_baseline.sql',
-  '0019_service_orders_baseline.sql',
-  '0020_service_orders_state_transitions.sql',
-  '0021_planning_allocation_baseline.sql',
-  '0022_service_order_execution_baseline.sql',
-  '0023_measurement_baseline.sql',
-  '0024_billing_baseline.sql',
-  '0025_billing_documents.sql',
-  '0026_domain_events_notifications.sql',
-  '0027_background_jobs.sql',
-  '0028_transactional_outbox.sql',
-  '0029_integration_inbox.sql',
-  '0030_notification_delivery.sql',
-];
+const MIGRATION_FILES = listMigrationSqlFiles();
 
 const INCREMENTAL_BASELINE_FILES = MIGRATION_FILES.slice(0, -1);
 const INCREMENTAL_DELTA_FILE = MIGRATION_FILES.at(-1);
@@ -73,6 +41,9 @@ const EXPECTED_SCHEMAS = [
   'plt',
   'int',
   'ntf',
+  'alt',
+  'wrk',
+  'rpt',
 ];
 
 const EXPECTED_TABLES = [
@@ -103,6 +74,10 @@ const EXPECTED_TABLES = [
   'int.integration_inbox_effects',
   'ntf.notifications',
   'ntf.delivery_attempts',
+  'alt.business_alerts',
+  'wrk.workforce_members',
+  'rpt.report_exports',
+  'com.purchase_order_consumption_entries',
 ];
 
 function adminConnectionString() {
@@ -480,6 +455,30 @@ async function assertPreDeltaState(connectionString, deltaFile) {
       ]);
       if (billingDocuments.rows[0]?.regclass) {
         throw new Error('Incremental baseline incorrectly contains bil.billing_documents before 0025');
+      }
+      return;
+    }
+
+    if (deltaFile === '0037_purchase_order_balance.sql') {
+      const purchaseOrders = await client.query('SELECT to_regclass($1) AS regclass', [
+        'com.purchase_orders',
+      ]);
+      if (!purchaseOrders.rows[0]?.regclass) {
+        throw new Error('Expected com.purchase_orders before 0037 delta');
+      }
+      const billingRecords = await client.query('SELECT to_regclass($1) AS regclass', [
+        'bil.billing_records',
+      ]);
+      if (!billingRecords.rows[0]?.regclass) {
+        throw new Error('Expected bil.billing_records before 0037 delta');
+      }
+      const consumption = await client.query('SELECT to_regclass($1) AS regclass', [
+        'com.purchase_order_consumption_entries',
+      ]);
+      if (consumption.rows[0]?.regclass) {
+        throw new Error(
+          'Incremental baseline incorrectly contains com.purchase_order_consumption_entries before 0037',
+        );
       }
       return;
     }
