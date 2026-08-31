@@ -1,6 +1,11 @@
 import { Inject, Injectable, Optional } from '@nestjs/common';
 import type { Pool, PoolClient } from 'pg';
 import { DatabaseService } from '../../infrastructure/database/database.service';
+import {
+  findStoredCommandIdempotency,
+  storeCommandIdempotency,
+} from '../../infrastructure/database/command-idempotency';
+import { classifyRowVersion, isOptimisticVersionConflict } from '../../infrastructure/database/optimistic-lock';
 import { FAULT_HOOKS } from '../../platform/fault-injection/fault-hook.ids';
 import { FAULT_INJECTION_PORT, type FaultInjectionPort } from '../../platform/fault-injection/fault-injection.port';
 import { maybeInjectFault } from '../../platform/fault-injection/fault-injection.util';
@@ -130,13 +135,12 @@ export class MeasurementsRepository {
     commandName: string,
     idempotencyKey: string,
   ): Promise<MeasurementCommandIdempotencyRow | null> {
-    const result = await this.pool().query<MeasurementCommandIdempotencyRow>(
-      `SELECT id, measurement_id, command_name, idempotency_key, response_payload, created_at
-       FROM msr.measurement_command_idempotency
-       WHERE measurement_id = $1 AND command_name = $2 AND idempotency_key = $3`,
-      [measurementId, commandName, idempotencyKey],
-    );
-    return result.rows[0] ?? null;
+    const client = await this.pool().connect();
+    try {
+      return await this.findIdempotencyInClient(client, measurementId, commandName, idempotencyKey);
+    } finally {
+      client.release();
+    }
   }
 
   async loadPricingModels(serviceDefinitionVersionId: string): Promise<PricingModelRow[]> {
@@ -267,7 +271,7 @@ export class MeasurementsRepository {
         [input.measurementId],
       );
       const current = locked.rows[0];
-      if (!current || current.row_version !== input.rowVersion) {
+      if (!current || isOptimisticVersionConflict(classifyRowVersion(current, input.rowVersion))) {
         await client.query('ROLLBACK');
         return { outcome: 'version_conflict' };
       }
@@ -350,7 +354,7 @@ export class MeasurementsRepository {
         [input.measurementId],
       );
       const current = locked.rows[0];
-      if (!current || current.row_version !== input.rowVersion) {
+      if (!current || isOptimisticVersionConflict(classifyRowVersion(current, input.rowVersion))) {
         await client.query('ROLLBACK');
         return { outcome: 'version_conflict' };
       }
@@ -423,7 +427,7 @@ export class MeasurementsRepository {
         [input.measurementId],
       );
       const current = locked.rows[0];
-      if (!current || current.row_version !== input.rowVersion) {
+      if (!current || isOptimisticVersionConflict(classifyRowVersion(current, input.rowVersion))) {
         await client.query('ROLLBACK');
         return { outcome: 'version_conflict' };
       }
@@ -529,7 +533,7 @@ export class MeasurementsRepository {
         [input.measurementId],
       );
       const current = locked.rows[0];
-      if (!current || current.row_version !== input.rowVersion) {
+      if (!current || isOptimisticVersionConflict(classifyRowVersion(current, input.rowVersion))) {
         await client.query('ROLLBACK');
         return { outcome: 'version_conflict' };
       }
@@ -587,18 +591,18 @@ export class MeasurementsRepository {
         ],
       );
 
-      if (input.idempotencyKey) {
-        await client.query(
-          `INSERT INTO msr.measurement_command_idempotency
-             (measurement_id, command_name, idempotency_key, response_payload)
-           VALUES ($1, $2, $3, $4::jsonb)`,
-          [
-            input.measurementId,
-            input.commandName,
-            input.idempotencyKey,
-            JSON.stringify({ rowVersion: updated.rows[0].row_version }),
-          ],
-        );
+      const nextRowVersion = updated.rows[0]?.row_version;
+      if (input.idempotencyKey && nextRowVersion !== undefined) {
+        await storeCommandIdempotency(client, {
+          tableFqn: 'msr.measurement_command_idempotency',
+          columns: {
+            measurement_id: input.measurementId,
+            command_name: input.commandName,
+            idempotency_key: input.idempotencyKey,
+            response_payload: { rowVersion: nextRowVersion },
+          },
+          jsonPayloadColumns: ['response_payload'],
+        });
       }
 
       const measurement = await client.query<{
@@ -648,13 +652,14 @@ export class MeasurementsRepository {
     commandName: string,
     idempotencyKey: string,
   ): Promise<MeasurementCommandIdempotencyRow | null> {
-    const result = await client.query<MeasurementCommandIdempotencyRow>(
-      `SELECT id, measurement_id, command_name, idempotency_key, response_payload, created_at
-       FROM msr.measurement_command_idempotency
-       WHERE measurement_id = $1 AND command_name = $2 AND idempotency_key = $3`,
-      [measurementId, commandName, idempotencyKey],
-    );
-    return result.rows[0] ?? null;
+    return findStoredCommandIdempotency<MeasurementCommandIdempotencyRow>(client, {
+      tableFqn: 'msr.measurement_command_idempotency',
+      scopeColumn: 'measurement_id',
+      scopeValue: measurementId,
+      commandName,
+      idempotencyKey,
+      returning: 'id, measurement_id, command_name, idempotency_key, response_payload, created_at',
+    });
   }
 
 }

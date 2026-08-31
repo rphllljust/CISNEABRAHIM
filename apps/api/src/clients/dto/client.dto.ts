@@ -8,7 +8,7 @@ import {
 import { ClientValidationError, assertCreateClientInput, type CreateClientInput } from '../domain/client.validation';
 import { ClientHttpException } from '../errors/client-http.exception';
 import { CLIENT_ERROR_CODES } from '../errors/client-error-codes';
-import { mapValidationCodeToStatus } from '../errors/client-exception.filter';
+import { mapValidationCodeToStatus } from '../errors/client-validation-status';
 import { assertNoPrivilegedFields } from '../../security/domain/forbidden-payload-fields';
 
 const CONTACT_PURPOSE_SET = new Set<string>(Object.values(CONTACT_PURPOSES));

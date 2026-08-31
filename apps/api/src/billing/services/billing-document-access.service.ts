@@ -10,6 +10,8 @@ import type { AuthzAction } from '../../authorization/types/authz-actions';
 import { AUTHZ_ACTIONS } from '../../authorization/types/authz-actions';
 import type { IdentityAuthzContext } from '../../authorization/types/authz-decision';
 import { ObjectStorageService } from '../../documents/storage/object-storage.service';
+import { groupRowsByKey } from '../../infrastructure/database/sql';
+import { type PurchaseOrderRuleType } from '../../commercial/domain/purchase-order';
 import { PurchaseOrdersRepository } from '../../commercial/repositories/purchase-orders.repository';
 import { ServiceOrdersRepository } from '../../service-orders/repositories/service-orders.repository';
 import type { ServiceOrderRow } from '../../service-orders/repositories/service-orders.repository.types';
@@ -66,12 +68,22 @@ export class BillingDocumentAccessService {
     const order = await this.requireServiceOrder(actor, serviceOrderId, AUTHZ_ACTIONS.BillingBillingDocumentRead);
     await this.requireBillingRecordForOrder(billingRecordId, order.id);
     const documents = await this.billingDocumentRepository.listByBillingRecordId(billingRecordId);
-    return Promise.all(
-      documents.map(async (document) => {
-        const items = await this.billingDocumentRepository.listItems(document.id);
-        const history = await this.billingDocumentRepository.listHistoryEvents(document.id);
-        return toBillingDocumentDetailResponse(document, items, history);
-      }),
+    if (documents.length === 0) {
+      return [];
+    }
+    const documentIds = documents.map((document) => document.id);
+    const [allItems, allHistory] = await Promise.all([
+      this.billingDocumentRepository.listItemsForBillingDocuments(documentIds),
+      this.billingDocumentRepository.listHistoryEventsForBillingDocuments(documentIds),
+    ]);
+    const itemsByDocument = groupRowsByKey(allItems, 'billing_document_id');
+    const historyByDocument = groupRowsByKey(allHistory, 'billing_document_id');
+    return documents.map((document) =>
+      toBillingDocumentDetailResponse(
+        document,
+        itemsByDocument.get(document.id) ?? [],
+        historyByDocument.get(document.id) ?? [],
+      ),
     );
   }
 
@@ -350,7 +362,7 @@ export class BillingDocumentAccessService {
     const documentLinks = await this.purchaseOrdersRepository.listDocumentLinks(purchaseOrderId);
     assertPurchaseOrderBillingCompliance({
       billingRules: billingRules.map((rule) => ({
-        ruleType: rule.rule_type,
+        ruleType: rule.rule_type as PurchaseOrderRuleType,
         ruleConfig: rule.rule_config,
       })),
       documentLinks: documentLinks.map((link) => ({

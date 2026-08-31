@@ -22,48 +22,36 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Pool } from 'pg';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../app.module';
+import { configureApiTestApp } from '../infrastructure/http/configure-api-test-app';
 import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
 import { normalizeLoginIdentifier } from '../auth/crypto/token-crypto';
 import { applyAuthTestEnv, AUTH_TEST_PASSWORD } from '../auth/test/auth-test-env';
 import { parseAuthTokenResponse } from '../auth/test/auth-response-test-types';
 import { AuthorizationModule } from '../authorization/authorization.module';
-import { AuthzExceptionFilter } from '../authorization/errors/authz-exception.filter';
 import { AUTHZ_ACTIONS } from '../authorization/types/authz-actions';
 import { AUTHZ_RESOURCE_TYPES } from '../authorization/types/authz-resources';
 import { AUTHZ_SCOPES } from '../authorization/types/authz-scopes';
 import { BillingModule } from '../billing/billing.module';
-import { BillingExceptionFilter } from '../billing/errors/billing-exception.filter';
 import { BillingAccessService } from '../billing/services/billing-access.service';
 import { BillingDocumentAccessService } from '../billing/services/billing-document-access.service';
 import { CatalogModule } from '../catalog/catalog.module';
-import { CatalogExceptionFilter } from '../catalog/errors/catalog-exception.filter';
 import { ServiceCatalogAccessService } from '../catalog/services/service-catalog-access.service';
 import { ClientsModule } from '../clients/clients.module';
-import { ClientExceptionFilter } from '../clients/errors/client-exception.filter';
 import { ClientAccessService } from '../clients/services/client-access.service';
 import { CommercialModule } from '../commercial/commercial.module';
-import { CommercialExceptionFilter } from '../commercial/errors/commercial-exception.filter';
 import { ProposalsAccessService } from '../commercial/services/proposals-access.service';
 import { PurchaseOrdersAccessService } from '../commercial/services/purchase-orders-access.service';
 import { DocumentsModule } from '../documents/documents.module';
-import { DocumentExceptionFilter } from '../documents/errors/document-exception.filter';
 import { DocumentsAccessService } from '../documents/services/documents-access.service';
-import { AuthExceptionFilter } from '../infrastructure/http/auth-exception.filter';
-import { CorrelationIdInterceptor } from '../infrastructure/http/correlation-id.interceptor';
-import { SecurityHeadersInterceptor } from '../infrastructure/http/security-headers.interceptor';
 import { MeasurementsModule } from '../measurements/measurements.module';
-import { MeasurementsExceptionFilter } from '../measurements/errors/measurements-exception.filter';
 import { MeasurementsAccessService } from '../measurements/services/measurements-access.service';
 import { RequestsModule } from '../requests/requests.module';
-import { RequestsExceptionFilter } from '../requests/errors/requests-exception.filter';
 import { ServiceRequestsAccessService } from '../requests/services/service-requests-access.service';
 import { ResourcesModule } from '../resources/resources.module';
-import { AssetExceptionFilter } from '../resources/errors/asset-exception.filter';
 import { PhysicalAssetsAccessService } from '../resources/services/physical-assets-access.service';
 import { PhysicalResourceTypesAccessService } from '../resources/services/physical-resource-types-access.service';
 import { ServiceOrdersModule } from '../service-orders/service-orders.module';
-import { ServiceOrdersExceptionFilter } from '../service-orders/errors/service-orders-exception.filter';
 import { ServiceOrderExecutionAccessService } from '../service-orders/services/service-order-execution-access.service';
 import { ServiceOrderPlanningAccessService } from '../service-orders/services/service-order-planning-access.service';
 import { ServiceOrdersAccessService } from '../service-orders/services/service-orders-access.service';
@@ -98,21 +86,7 @@ describe('Master business direct API bypass (Prompt 98)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication<NestFastifyApplication>(new FastifyAdapter());
-    app.setGlobalPrefix('api/v1');
-    app.useGlobalFilters(
-      new AuthExceptionFilter(),
-      new AuthzExceptionFilter(),
-      new ClientExceptionFilter(),
-      new CatalogExceptionFilter(),
-      new AssetExceptionFilter(),
-      new DocumentExceptionFilter(),
-      new CommercialExceptionFilter(),
-      new RequestsExceptionFilter(),
-      new ServiceOrdersExceptionFilter(),
-      new MeasurementsExceptionFilter(),
-      new BillingExceptionFilter(),
-    );
-    app.useGlobalInterceptors(new CorrelationIdInterceptor(), new SecurityHeadersInterceptor());
+    configureApiTestApp(app);
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
 

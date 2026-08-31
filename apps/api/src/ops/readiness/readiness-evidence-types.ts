@@ -24,11 +24,26 @@ export type PilotCriticalErrorRecord = {
   source: string;
 };
 
+export type PilotObservationWaiver = {
+  authorizedBy: string;
+  authorizedAt: string;
+  originalMinObservationDays: number;
+  elapsedDaysAtAuthorization: number;
+  reason: string;
+};
+
 export type PilotOperationalResultSnapshot = {
   recordedAt: string;
   httpErrorRate: number | null;
+  httpLatencyP95Ms: number | null;
+  httpRequests: number | null;
+  outboxFailed: number;
+  allocationConflictSignals: number;
+  billingAgingRecords: number;
   openBlockers: number;
+  workerPending: number | null;
   notes: string | null;
+  source: string;
 };
 
 export type PilotEvidencePhase =
@@ -98,6 +113,7 @@ export type PilotEvidence = {
   minObservationDays: number;
   exitAuthorizedAt: string | null;
   exitAuthorizedBy: string | null;
+  observationWaiver: PilotObservationWaiver | null;
   responsible: string | null;
   environment: string | null;
   releaseCandidate: ReleaseCandidateRef;

@@ -1,6 +1,11 @@
 import { Inject, Injectable, Optional } from '@nestjs/common';
 import type { Pool, PoolClient } from 'pg';
 import { DatabaseService } from '../../infrastructure/database/database.service';
+import {
+  findStoredCommandIdempotency,
+  storeCommandIdempotency,
+} from '../../infrastructure/database/command-idempotency';
+import { classifyRowVersion, isOptimisticVersionConflict } from '../../infrastructure/database/optimistic-lock';
 import { FAULT_HOOKS } from '../../platform/fault-injection/fault-hook.ids';
 import { FAULT_INJECTION_PORT, type FaultInjectionPort } from '../../platform/fault-injection/fault-injection.port';
 import { maybeInjectFault } from '../../platform/fault-injection/fault-injection.util';
@@ -25,6 +30,10 @@ import type {
   VoidBillingPersistenceInput,
   VoidBillingPersistenceResult,
 } from './billing.repository.types';
+
+const BILLING_COMMAND_IDEMPOTENCY_RETURNING = `
+  id, billing_record_id, service_order_id, command_name, idempotency_key, response_payload, created_at
+`;
 
 const BILLING_RECORD_RETURNING = `
   id, service_order_id, measurement_id, client_id, unit_id, status::text AS status,
@@ -171,17 +180,20 @@ export class BillingRepository {
     return result.rows[0] ?? null;
   }
 
-  async findPrepareIdempotency(
+  private async findBillingCommandIdempotency(
+    client: PoolClient,
     serviceOrderId: string,
+    commandName: string,
     idempotencyKey: string,
   ): Promise<BillingCommandIdempotencyRow | null> {
-    const result = await this.pool().query<BillingCommandIdempotencyRow>(
-      `SELECT id, billing_record_id, service_order_id, command_name, idempotency_key, response_payload, created_at
-       FROM bil.billing_command_idempotency
-       WHERE service_order_id = $1 AND command_name = $2 AND idempotency_key = $3`,
-      [serviceOrderId, BILLING_COMMANDS.Prepare, idempotencyKey],
-    );
-    return result.rows[0] ?? null;
+    return findStoredCommandIdempotency<BillingCommandIdempotencyRow>(client, {
+      tableFqn: 'bil.billing_command_idempotency',
+      scopeColumn: 'service_order_id',
+      scopeValue: serviceOrderId,
+      commandName,
+      idempotencyKey,
+      returning: BILLING_COMMAND_IDEMPOTENCY_RETURNING,
+    });
   }
 
   async prepareBillingRecord(input: PrepareBillingPersistenceInput): Promise<PrepareBillingPersistenceResult> {
@@ -192,9 +204,10 @@ export class BillingRepository {
       await client.query(`SELECT id FROM msr.measurements WHERE id = $1 FOR UPDATE`, [input.measurementId]);
 
       if (input.idempotencyKey) {
-        const cached = await this.findPrepareIdempotencyWithClient(
+        const cached = await this.findBillingCommandIdempotency(
           client,
           input.serviceOrderId,
+          BILLING_COMMANDS.Prepare,
           input.idempotencyKey,
         );
         if (cached?.billing_record_id) {
@@ -291,18 +304,17 @@ export class BillingRepository {
       );
 
       if (input.idempotencyKey) {
-        await client.query(
-          `INSERT INTO bil.billing_command_idempotency (
-             billing_record_id, service_order_id, command_name, idempotency_key, response_payload
-           ) VALUES ($1, $2, $3, $4, $5::jsonb)`,
-          [
-            billingRecord.id,
-            input.serviceOrderId,
-            BILLING_COMMANDS.Prepare,
-            input.idempotencyKey,
-            JSON.stringify({ billingRecordId: billingRecord.id }),
-          ],
-        );
+        await storeCommandIdempotency(client, {
+          tableFqn: 'bil.billing_command_idempotency',
+          columns: {
+            billing_record_id: billingRecord.id,
+            service_order_id: input.serviceOrderId,
+            command_name: BILLING_COMMANDS.Prepare,
+            idempotency_key: input.idempotencyKey,
+            response_payload: { billingRecordId: billingRecord.id },
+          },
+          jsonPayloadColumns: ['response_payload'],
+        });
       }
 
       await this.outboxWriter.appendBillingReady(client, {
@@ -353,11 +365,28 @@ export class BillingRepository {
         await client.query('ROLLBACK');
         return { outcome: 'version_conflict' };
       }
+
+      if (input.idempotencyKey) {
+        const cached = await this.findBillingCommandIdempotency(
+          client,
+          current.service_order_id,
+          BILLING_COMMANDS.Void,
+          input.idempotencyKey,
+        );
+        if (cached?.billing_record_id === input.billingRecordId) {
+          const replay = await this.findByIdWithClient(client, cached.billing_record_id);
+          if (replay?.status === 'VOIDED') {
+            await client.query('COMMIT');
+            return { outcome: 'idempotent', billingRecord: replay };
+          }
+        }
+      }
+
       if (current.status !== 'PREPARED') {
         await client.query('ROLLBACK');
         return { outcome: 'invalid_state' };
       }
-      if (current.row_version !== input.rowVersion) {
+      if (isOptimisticVersionConflict(classifyRowVersion(current, input.rowVersion))) {
         await client.query('ROLLBACK');
         return { outcome: 'version_conflict' };
       }
@@ -400,6 +429,20 @@ export class BillingRepository {
         });
       }
 
+      if (input.idempotencyKey) {
+        await storeCommandIdempotency(client, {
+          tableFqn: 'bil.billing_command_idempotency',
+          columns: {
+            billing_record_id: input.billingRecordId,
+            service_order_id: current.service_order_id,
+            command_name: BILLING_COMMANDS.Void,
+            idempotency_key: input.idempotencyKey,
+            response_payload: { billingRecordId: input.billingRecordId },
+          },
+          jsonPayloadColumns: ['response_payload'],
+        });
+      }
+
       await client.query('COMMIT');
       return { outcome: 'voided', billingRecord: updated.rows[0] };
     } catch (error) {
@@ -417,20 +460,6 @@ export class BillingRepository {
     const result = await client.query<BillingRecordRow>(
       `SELECT ${BILLING_RECORD_RETURNING} FROM bil.billing_records WHERE id = $1`,
       [billingRecordId],
-    );
-    return result.rows[0] ?? null;
-  }
-
-  private async findPrepareIdempotencyWithClient(
-    client: PoolClient,
-    serviceOrderId: string,
-    idempotencyKey: string,
-  ): Promise<BillingCommandIdempotencyRow | null> {
-    const result = await client.query<BillingCommandIdempotencyRow>(
-      `SELECT id, billing_record_id, service_order_id, command_name, idempotency_key, response_payload, created_at
-       FROM bil.billing_command_idempotency
-       WHERE service_order_id = $1 AND command_name = $2 AND idempotency_key = $3`,
-      [serviceOrderId, BILLING_COMMANDS.Prepare, idempotencyKey],
     );
     return result.rows[0] ?? null;
   }

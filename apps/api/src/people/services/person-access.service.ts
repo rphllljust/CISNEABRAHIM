@@ -25,7 +25,7 @@ import {
 } from '../domain/person.validation';
 import { PERSON_ERROR_CODES } from '../errors/person-error-codes';
 import { PersonHttpException } from '../errors/person-http.exception';
-import { mapPersonValidationCodeToStatus } from '../errors/person-exception.filter';
+import { mapPersonValidationCodeToStatus } from '../errors/person-validation-status';
 import { PeopleRepository } from '../repositories/people.repository';
 import {
   toPersonHistoryEventResponse,

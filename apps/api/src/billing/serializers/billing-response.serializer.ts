@@ -1,4 +1,8 @@
 import { formatMoneyAmountForApi } from '../../commercial/domain/money';
+import {
+  toHistoryEventResponse as toSharedHistoryEventResponse,
+  type HistoryEventResponse,
+} from '../../infrastructure/http/contracts';
 import type { BillingHistoryEventRow, BillingItemRow, BillingRecordRow } from '../repositories/billing.repository.types';
 
 export type BillingItemResponse = {
@@ -14,13 +18,7 @@ export type BillingItemResponse = {
   lineLabel: string;
 };
 
-export type BillingHistoryEventResponse = {
-  id: string;
-  eventType: string;
-  payload: Record<string, unknown>;
-  actorIdentityId: string | null;
-  occurredAt: string;
-};
+export type BillingHistoryEventResponse = HistoryEventResponse;
 
 export type BillingRecordDetailResponse = {
   id: string;
@@ -69,13 +67,7 @@ function toBillingItemResponse(row: BillingItemRow): BillingItemResponse {
 }
 
 function toHistoryEventResponse(row: BillingHistoryEventRow): BillingHistoryEventResponse {
-  return {
-    id: row.id,
-    eventType: row.event_type,
-    payload: row.payload,
-    actorIdentityId: row.actor_identity_id,
-    occurredAt: row.occurred_at,
-  };
+  return toSharedHistoryEventResponse(row);
 }
 
 export function toBillingRecordResponse(row: BillingRecordRow): Omit<BillingRecordDetailResponse, 'items' | 'historyEvents'> {

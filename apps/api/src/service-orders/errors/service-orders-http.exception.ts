@@ -1,4 +1,5 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
+import { buildDomainHttpExceptionBody } from '../../infrastructure/http/api-error.mapper';
 import type { SERVICE_ORDERS_ERROR_CODES } from './service-orders-error-codes';
 
 type ServiceOrdersErrorCode =
@@ -10,6 +11,6 @@ export class ServiceOrdersHttpException extends HttpException {
     readonly code: ServiceOrdersErrorCode,
     message: string,
   ) {
-    super({ code, message }, status);
+    super(buildDomainHttpExceptionBody(code, message), status);
   }
 }

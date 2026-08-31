@@ -564,6 +564,83 @@ describe('Billing PostgreSQL integration', () => {
     expect(voided.voidReason).toBe('Erro operacional detectado.');
   });
 
+  it('replays void with the same idempotency key without double voiding', async () => {
+    const { actor } = await seedActor();
+    const { completed, approved } = await seedApprovedMeasurement(actor);
+    const billing = await billingAccess.prepare(actor, completed.id, {
+      measurementId: approved.id,
+      paymentTerms: '30 DDL',
+    });
+    const idempotencyKey = `void-replay-${crypto.randomUUID()}`;
+
+    const voided = await billingAccess.voidRecord(actor, completed.id, billing.id, {
+      rowVersion: billing.rowVersion,
+      voidReason: 'Cancelamento operacional.',
+      idempotencyKey,
+    });
+    const replayed = await billingAccess.voidRecord(actor, completed.id, billing.id, {
+      rowVersion: billing.rowVersion,
+      voidReason: 'Cancelamento operacional.',
+      idempotencyKey,
+    });
+
+    expect(replayed.id).toBe(voided.id);
+    expect(replayed.status).toBe(BILLING_RECORD_STATUSES.Voided);
+
+    const records = await pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM bil.billing_records WHERE measurement_id = $1 AND status = 'VOIDED'`,
+      [approved.id],
+    );
+    expect(records.rows[0]?.count).toBe('1');
+  });
+
+  it('rejects stale rowVersion on void without silent overwrite', async () => {
+    const { actor } = await seedActor();
+    const { completed, approved } = await seedApprovedMeasurement(actor);
+    const billing = await billingAccess.prepare(actor, completed.id, {
+      measurementId: approved.id,
+      paymentTerms: '30 DDL',
+    });
+
+    await expect(
+      billingAccess.voidRecord(actor, completed.id, billing.id, {
+        rowVersion: billing.rowVersion + 1,
+        voidReason: 'Tentativa inválida.',
+      }),
+    ).rejects.toMatchObject({ code: BILLING_ERROR_CODES.VERSION_CONFLICT });
+  });
+
+  it('allows concurrent void retries with the same idempotency key', async () => {
+    const { actor } = await seedActor();
+    const { completed, approved } = await seedApprovedMeasurement(actor);
+    const billing = await billingAccess.prepare(actor, completed.id, {
+      measurementId: approved.id,
+      paymentTerms: '30 DDL',
+    });
+    const idempotencyKey = `void-concurrent-${crypto.randomUUID()}`;
+    const payload = {
+      rowVersion: billing.rowVersion,
+      voidReason: 'Cancelamento concorrente.',
+      idempotencyKey,
+    };
+
+    const results = await Promise.allSettled([
+      billingAccess.voidRecord(actor, completed.id, billing.id, payload),
+      billingAccess.voidRecord(actor, completed.id, billing.id, payload),
+    ]);
+
+    const fulfilled = results.filter((result) => result.status === 'fulfilled');
+    expect(fulfilled).toHaveLength(2);
+    const ids = fulfilled.map((result) => (result as PromiseFulfilledResult<{ id: string }>).value.id);
+    expect(new Set(ids).size).toBe(1);
+
+    const records = await pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM bil.billing_records WHERE measurement_id = $1`,
+      [approved.id],
+    );
+    expect(records.rows[0]?.count).toBe('1');
+  });
+
   it('consumes and releases purchase order balance across prepare and void', async () => {
     const { actor } = await seedActor();
     const client = await clientAccess.create(actor, {

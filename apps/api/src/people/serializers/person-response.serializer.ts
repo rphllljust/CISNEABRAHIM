@@ -1,4 +1,8 @@
 import type { PersonStatus } from '../domain/person-status';
+import {
+  toHistoryEventResponse as toSharedHistoryEventResponse,
+  type HistoryEventResponse,
+} from '../../infrastructure/http/contracts';
 
 export type PersonRow = {
   id: string;
@@ -41,13 +45,7 @@ export type PersonResponse = {
   serviceOrderAllocationSupported: false;
 };
 
-export type PersonHistoryEventResponse = {
-  id: string;
-  eventType: string;
-  payload: Record<string, unknown>;
-  actorIdentityId: string | null;
-  occurredAt: string;
-};
+export type PersonHistoryEventResponse = HistoryEventResponse;
 
 export function toPersonResponse(row: PersonRow): PersonResponse {
   return {
@@ -69,13 +67,7 @@ export function toPersonResponse(row: PersonRow): PersonResponse {
 }
 
 export function toPersonHistoryEventResponse(row: PersonHistoryRow): PersonHistoryEventResponse {
-  return {
-    id: row.id,
-    eventType: row.event_type,
-    payload: row.payload,
-    actorIdentityId: row.actor_identity_id,
-    occurredAt: row.occurred_at,
-  };
+  return toSharedHistoryEventResponse(row);
 }
 
 const PERSON_SELECT = `

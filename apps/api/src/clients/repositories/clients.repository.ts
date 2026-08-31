@@ -11,6 +11,7 @@ import type {
   ClientDetail,
   ClientRow,
 } from '../serializers/client-response.serializer';
+import { groupRowsByKey } from '../../infrastructure/database/sql';
 
 export type CreateClientPersistenceInput = {
   legalName: string;
@@ -111,6 +112,45 @@ export class ClientsRepository {
       [...params, limit, offset],
     );
     return result.rows;
+  }
+
+  async listWithDetails(
+    whereClause: string,
+    params: unknown[],
+    limit: number,
+    offset: number,
+  ): Promise<ClientDetail[]> {
+    const rows = await this.list(whereClause, params, limit, offset);
+    if (rows.length === 0) {
+      return [];
+    }
+
+    const clientIds = rows.map((row) => row.id);
+    const [contactsResult, addressesResult] = await Promise.all([
+      this.pool().query<ClientContactRow & { client_id: string }>(
+        `SELECT client_id, id, name, purpose, email, phone
+         FROM pty.client_contacts
+         WHERE client_id = ANY($1::uuid[])
+         ORDER BY client_id, created_at ASC, id ASC`,
+        [clientIds],
+      ),
+      this.pool().query<ClientAddressRow & { client_id: string }>(
+        `SELECT client_id, id, purpose, street, number, complement, district, city, state, postal_code, country
+         FROM pty.client_addresses
+         WHERE client_id = ANY($1::uuid[])
+         ORDER BY client_id, created_at ASC, id ASC`,
+        [clientIds],
+      ),
+    ]);
+
+    const contactsByClient = groupRowsByKey(contactsResult.rows, 'client_id');
+    const addressesByClient = groupRowsByKey(addressesResult.rows, 'client_id');
+
+    return rows.map((row) => ({
+      ...row,
+      contacts: (contactsByClient.get(row.id) ?? []).map(({ client_id: _clientId, ...contact }) => contact),
+      addresses: (addressesByClient.get(row.id) ?? []).map(({ client_id: _clientId, ...address }) => address),
+    }));
   }
 
   async create(

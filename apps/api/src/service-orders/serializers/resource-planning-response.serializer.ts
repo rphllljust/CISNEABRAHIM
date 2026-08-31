@@ -1,3 +1,7 @@
+import {
+  toHistoryEventResponse as toSharedHistoryEventResponse,
+  type HistoryEventResponse,
+} from '../../infrastructure/http/contracts';
 import type {
   PlannedResourceRow,
   ResourceAllocationHistoryEventRow,
@@ -35,13 +39,7 @@ export type ResourceAllocationResponse = {
   reallocatedToAllocationId: string | null;
 };
 
-export type ResourceAllocationHistoryEventResponse = {
-  id: string;
-  eventType: string;
-  payload: Record<string, unknown>;
-  actorIdentityId: string | null;
-  occurredAt: string;
-};
+export type ResourceAllocationHistoryEventResponse = HistoryEventResponse;
 
 export type ResourceAllocationDetailResponse = ResourceAllocationResponse & {
   historyEvents: ResourceAllocationHistoryEventResponse[];
@@ -85,13 +83,7 @@ export function toResourceAllocationResponse(row: ResourceAllocationRow): Resour
 export function toResourceAllocationHistoryEventResponse(
   row: ResourceAllocationHistoryEventRow,
 ): ResourceAllocationHistoryEventResponse {
-  return {
-    id: row.id,
-    eventType: row.event_type,
-    payload: row.payload,
-    actorIdentityId: row.actor_identity_id,
-    occurredAt: row.occurred_at,
-  };
+  return toSharedHistoryEventResponse(row);
 }
 
 export function toResourceAllocationDetailResponse(

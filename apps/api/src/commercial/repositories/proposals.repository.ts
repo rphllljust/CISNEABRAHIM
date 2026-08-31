@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import type { Pool } from 'pg';
 import { DatabaseService } from '../../infrastructure/database/database.service';
+import { queryIsUnitRegistered } from '../../infrastructure/database/reference-lookups';
+import { orderByCreatedAtDesc } from '../../infrastructure/database/sql';
 import { PROPOSAL_VERSION_STATUSES } from '../domain/proposal';
 import type {
   ClientSnapshotSource,
@@ -78,14 +80,7 @@ export class ProposalsRepository {
   }
 
   async isUnitRegistered(unitId: string): Promise<boolean> {
-    const result = await this.pool().query<{ exists: boolean }>(
-      `SELECT EXISTS (
-         SELECT 1 FROM "authorization".scope_refs
-         WHERE scope_type = 'UNIT' AND ref_id = $1
-       ) AS exists`,
-      [unitId],
-    );
-    return result.rows[0]?.exists === true;
+    return queryIsUnitRegistered(this.pool(), unitId);
   }
 
   async findClientById(clientId: string): Promise<ClientSnapshotSource | null> {
@@ -156,7 +151,7 @@ export class ProposalsRepository {
     const result = await this.pool().query<ProposalRow>(
       `${PROPOSAL_SELECT}
        WHERE ${whereClause}
-       ORDER BY created_at DESC
+       ORDER BY ${orderByCreatedAtDesc()}
        LIMIT $${params.length + 1}
        OFFSET $${params.length + 2}`,
       [...params, limit, offset],
@@ -175,6 +170,17 @@ export class ProposalsRepository {
   }
 
   async listItems(proposalVersionId: string): Promise<ProposalItemRow[]> {
+    return this.listItemsForVersions([proposalVersionId]);
+  }
+
+  async listDocumentLinks(proposalVersionId: string): Promise<ProposalDocumentLinkRow[]> {
+    return this.listDocumentLinksForVersions([proposalVersionId]);
+  }
+
+  async listItemsForVersions(proposalVersionIds: string[]): Promise<ProposalItemRow[]> {
+    if (proposalVersionIds.length === 0) {
+      return [];
+    }
     const result = await this.pool().query<ProposalItemRow>(
       `SELECT
          id,
@@ -192,20 +198,25 @@ export class ProposalsRepository {
          line_sale_amount::text AS line_sale_amount,
          line_internal_cost_amount::text AS line_internal_cost_amount
        FROM com.proposal_items
-       WHERE proposal_version_id = $1
-       ORDER BY line_number ASC`,
-      [proposalVersionId],
+       WHERE proposal_version_id = ANY($1::uuid[])
+       ORDER BY proposal_version_id, line_number ASC`,
+      [proposalVersionIds],
     );
     return result.rows;
   }
 
-  async listDocumentLinks(proposalVersionId: string): Promise<ProposalDocumentLinkRow[]> {
+  async listDocumentLinksForVersions(
+    proposalVersionIds: string[],
+  ): Promise<ProposalDocumentLinkRow[]> {
+    if (proposalVersionIds.length === 0) {
+      return [];
+    }
     const result = await this.pool().query<ProposalDocumentLinkRow>(
       `SELECT id, proposal_version_id, document_id, link_purpose, created_at
        FROM com.proposal_document_links
-       WHERE proposal_version_id = $1
-       ORDER BY created_at ASC`,
-      [proposalVersionId],
+       WHERE proposal_version_id = ANY($1::uuid[])
+       ORDER BY proposal_version_id, created_at ASC, id ASC`,
+      [proposalVersionIds],
     );
     return result.rows;
   }

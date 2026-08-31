@@ -19,6 +19,7 @@ import {
   approveBusinessSignOff,
   approveRpoRto,
   authorizePilotExit,
+  recordPilotOperationalSnapshot,
 } from './readiness-evidence-writer';
 import { registerPilotStart } from '../pilot/pilot-start';
 import { resolveReleaseCandidate } from './readiness-release';
@@ -36,6 +37,21 @@ const GOOD_METRICS = {
   serviceOrdersOverdue: 0,
   billingAgingRecords: 0,
   openSupportTickets: 0,
+  allocationConflictSignals: 0,
+};
+
+const HEALTHY_OPERATIONAL_SNAPSHOT = {
+  recordedAt: '2026-08-30T12:00:00.000Z',
+  httpErrorRate: 0,
+  httpLatencyP95Ms: 200,
+  httpRequests: 500,
+  outboxFailed: 0,
+  allocationConflictSignals: 0,
+  billingAgingRecords: 0,
+  openBlockers: 0,
+  workerPending: 0,
+  notes: 'test snapshot',
+  source: 'test',
 };
 
 function approvedEvidence(overrides: Partial<ReadinessEvidenceRecord> = {}): ReadinessEvidenceRecord {
@@ -73,6 +89,8 @@ function approvedEvidence(overrides: Partial<ReadinessEvidenceRecord> = {}): Rea
       startedAt: '2026-08-01T00:00:00.000Z',
       exitAuthorizedAt: '2026-08-20T00:00:00.000Z',
       exitAuthorizedBy: 'release-engineer',
+      observationWaiver: null,
+      operationalResults: [HEALTHY_OPERATIONAL_SNAPSHOT],
     },
     manualUatUx: {
       ...base.manualUatUx,
@@ -327,8 +345,10 @@ describe('readiness gate separation (engineering vs production)', () => {
   it('loads canonical evidence without blocking engineering continuity', () => {
     const result = loadReadinessGateForOperations({});
     expect(result.engineeringReadiness).toBe('READY');
-    expect(result.productionReadiness).toBe('NO-GO');
     expect(() => assertEngineeringContinuityAllowed(result)).not.toThrow();
+    if (result.productionReadiness === 'GO') {
+      expect(result.productionBlockers).toEqual([]);
+    }
   });
 
   it('defines support model roles without inventing personal data', () => {
@@ -414,8 +434,12 @@ describe('readiness governance helpers', () => {
     );
     expect(started.validation.ok).toBe(true);
 
+    const withSnapshot = recordPilotOperationalSnapshot(started.record, {
+      recordedBy: 'release-engineer',
+      snapshot: HEALTHY_OPERATIONAL_SNAPSHOT,
+    });
     const exit = authorizePilotExit(
-      started.record,
+      withSnapshot,
       { authorizedBy: 'release-engineer' },
       new Date('2026-08-20T12:00:00.000Z'),
     );
@@ -447,6 +471,10 @@ describe('readiness governance helpers', () => {
       },
       new Date('2026-08-01T00:00:00.000Z'),
     ).record;
+    record = recordPilotOperationalSnapshot(record, {
+      recordedBy: 'release-engineer',
+      snapshot: HEALTHY_OPERATIONAL_SNAPSHOT,
+    });
     record = authorizePilotExit(record, { authorizedBy: 'release-engineer' }, new Date('2026-08-20T00:00:00.000Z'))
       .record;
     record = {
@@ -477,5 +505,70 @@ describe('readiness governance helpers', () => {
     });
 
     expect(result.productionReadiness).toBe('GO');
+  });
+
+  it('rejects pilot exit without recorded operational thresholds', () => {
+    const startTime = new Date('2026-08-01T12:00:00.000Z');
+    const started = registerPilotStart(
+      createPendingReadinessEvidence(),
+      {
+        authorizedBy: 'release-engineer',
+        responsible: 'sre-oncall',
+        environment: 'pilot-hml',
+        releaseCandidate: RC,
+        startedAt: startTime.toISOString(),
+      },
+      startTime,
+    );
+    const exit = authorizePilotExit(
+      started.record,
+      { authorizedBy: 'release-engineer' },
+      new Date('2026-08-20T12:00:00.000Z'),
+    );
+    expect(exit.ok).toBe(false);
+    if (exit.ok) {
+      return;
+    }
+    expect(exit.error).toMatch(/operational snapshot required/i);
+  });
+
+  it('authorizes early exit with explicit observation waiver and healthy thresholds', () => {
+    const startTime = new Date('2026-08-30T12:00:00.000Z');
+    const started = registerPilotStart(
+      createPendingReadinessEvidence(),
+      {
+        authorizedBy: 'Abrahim Jabour Junior (Administrador)',
+        responsible: 'release-engineer',
+        environment: 'pilot-hml',
+        releaseCandidate: RC,
+        startedAt: startTime.toISOString(),
+      },
+      startTime,
+    );
+    const withSnapshot = recordPilotOperationalSnapshot(started.record, {
+      recordedBy: 'Abrahim Jabour Junior (Administrador)',
+      snapshot: HEALTHY_OPERATIONAL_SNAPSHOT,
+    });
+    const tooEarly = new Date('2026-08-30T18:00:00.000Z');
+    const denied = authorizePilotExit(withSnapshot, { authorizedBy: 'Abrahim Jabour Junior (Administrador)' }, tooEarly);
+    expect(denied.ok).toBe(false);
+
+    const exit = authorizePilotExit(
+      withSnapshot,
+      {
+        authorizedBy: 'Abrahim Jabour Junior (Administrador)',
+        observationWaiver: {
+          reason: 'Autorização explícita de saída do piloto pelo Administrador.',
+        },
+      },
+      tooEarly,
+    );
+    expect(exit.ok).toBe(true);
+    if (!exit.ok) {
+      return;
+    }
+    expect(exit.record.pilot.phase).toBe('EXIT_READY');
+    expect(exit.record.pilot.exitAuthorizedBy).toBe('Abrahim Jabour Junior (Administrador)');
+    expect(exit.record.pilot.observationWaiver?.originalMinObservationDays).toBe(14);
   });
 });

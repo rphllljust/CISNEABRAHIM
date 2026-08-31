@@ -13,6 +13,8 @@ import { join, resolve } from 'node:path';
 import type { Pool } from 'pg';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../../app.module';
+import { configureApiTestApp } from '../../infrastructure/http/configure-api-test-app';
+import { parseApiErrorCode } from '../../infrastructure/http/api-error-response';
 import { normalizeLoginIdentifier } from '../../auth/crypto/token-crypto';
 import { applyAuthTestEnv, AUTH_TEST_PASSWORD } from '../../auth/test/auth-test-env';
 import { parseAuthTokenResponse } from '../../auth/test/auth-response-test-types';
@@ -25,21 +27,8 @@ import { DOCUMENT_CATEGORIES } from '../../documents/domain/document-categories'
 import { minimalPdfBuffer } from '../../documents/domain/file-validation';
 import { DOCUMENT_UPLOAD_LIMITS } from '../../documents/dto/documents.dto';
 import { DOCUMENT_ERROR_CODES } from '../../documents/errors/document-error-codes';
-import { DocumentExceptionFilter } from '../../documents/errors/document-exception.filter';
-import { AuthExceptionFilter } from '../../infrastructure/http/auth-exception.filter';
-import { AuthzExceptionFilter } from '../../authorization/errors/authz-exception.filter';
-import { ClientExceptionFilter } from '../../clients/errors/client-exception.filter';
-import { CatalogExceptionFilter } from '../../catalog/errors/catalog-exception.filter';
-import { AssetExceptionFilter } from '../../resources/errors/asset-exception.filter';
-import { CommercialExceptionFilter } from '../../commercial/errors/commercial-exception.filter';
-import { RequestsExceptionFilter } from '../../requests/errors/requests-exception.filter';
-import { ServiceOrdersExceptionFilter } from '../../service-orders/errors/service-orders-exception.filter';
-import { MeasurementsExceptionFilter } from '../../measurements/errors/measurements-exception.filter';
-import { BillingExceptionFilter } from '../../billing/errors/billing-exception.filter';
 import { ReportExportAccessService } from '../../reports/services/report-export-access.service';
 import { REPORT_TYPES } from '../../reports/domain/report-type';
-import { CorrelationIdInterceptor } from '../../infrastructure/http/correlation-id.interceptor';
-import { SecurityHeadersInterceptor } from '../../infrastructure/http/security-headers.interceptor';
 import {
   createMasterBusinessTestContext,
   MASTER_BUSINESS_UNIT,
@@ -101,15 +90,6 @@ async function withDeadlockRetry<T>(run: () => Promise<T>, attempts = 4): Promis
   throw new Error('withDeadlockRetry exhausted attempts without returning.');
 }
 
-function parseErrorCode(body: string): string | undefined {
-  try {
-    const parsed = JSON.parse(body) as { error?: { code?: string }; code?: string };
-    return parsed.error?.code ?? parsed.code;
-  } catch {
-    return undefined;
-  }
-}
-
 describe('Adversarial security regression (E2E HTTP)', () => {
   let app: NestFastifyApplication;
   let ctx: MasterBusinessTestContext;
@@ -142,21 +122,7 @@ describe('Adversarial security regression (E2E HTTP)', () => {
     app = moduleFixture.createNestApplication<NestFastifyApplication>(
       new FastifyAdapter({ bodyLimit: DOCUMENT_UPLOAD_LIMITS.maxFileSizeBytes + 1024 }),
     );
-    app.setGlobalPrefix('api/v1');
-    app.useGlobalFilters(
-      new AuthExceptionFilter(),
-      new AuthzExceptionFilter(),
-      new ClientExceptionFilter(),
-      new CatalogExceptionFilter(),
-      new AssetExceptionFilter(),
-      new DocumentExceptionFilter(),
-      new CommercialExceptionFilter(),
-      new RequestsExceptionFilter(),
-      new ServiceOrdersExceptionFilter(),
-      new MeasurementsExceptionFilter(),
-      new BillingExceptionFilter(),
-    );
-    app.useGlobalInterceptors(new CorrelationIdInterceptor(), new SecurityHeadersInterceptor());
+    configureApiTestApp(app);
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
   }, 180_000);
@@ -352,7 +318,7 @@ describe('Adversarial security regression (E2E HTTP)', () => {
         headers: { authorization: `Bearer ${intruderToken}` },
       });
       expectDeniedStatus(contentDenied.statusCode);
-      expect(parseErrorCode(contentDenied.body)).toBe(DOCUMENT_ERROR_CODES.DENIED);
+      expect(parseApiErrorCode(contentDenied.body)).toBe(DOCUMENT_ERROR_CODES.DENIED);
     });
   });
 
@@ -604,7 +570,7 @@ describe('Adversarial security regression (E2E HTTP)', () => {
         payload: fakeMime.body,
       });
       expect(fakeResponse.statusCode).toBe(400);
-      expect(parseErrorCode(fakeResponse.body)).toBe(DOCUMENT_ERROR_CODES.MAGIC_BYTES_MISMATCH);
+      expect(parseApiErrorCode(fakeResponse.body)).toBe(DOCUMENT_ERROR_CODES.MAGIC_BYTES_MISMATCH);
 
       const dangerousExt = buildMultipartBody(baseFields, {
         name: 'payload.exe',
@@ -618,7 +584,7 @@ describe('Adversarial security regression (E2E HTTP)', () => {
         payload: dangerousExt.body,
       });
       expect(dangerousResponse.statusCode).toBe(400);
-      expect(parseErrorCode(dangerousResponse.body)).toBe(DOCUMENT_ERROR_CODES.INVALID_EXTENSION);
+      expect(parseApiErrorCode(dangerousResponse.body)).toBe(DOCUMENT_ERROR_CODES.INVALID_EXTENSION);
 
       const traversal = buildMultipartBody(baseFields, {
         name: '../../etc/passwd.pdf',

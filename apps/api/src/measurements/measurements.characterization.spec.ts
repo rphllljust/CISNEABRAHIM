@@ -16,26 +16,26 @@ describe('Measurements characterization (unit)', () => {
     const error = measurementsAccessDenied();
     expect(error).toBeInstanceOf(MeasurementsHttpException);
     expect(error.getStatus()).toBe(HttpStatus.FORBIDDEN);
-    expect(error.getResponse()).toMatchObject({ code: MEASUREMENTS_ERROR_CODES.DENIED });
+    expect(error.getResponse()).toMatchObject({ error: { code: MEASUREMENTS_ERROR_CODES.DENIED } });
   });
 
   it('maps missing measurement to NOT_FOUND', () => {
     const error = measurementsAccessNotFound();
     expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
-    expect(error.getResponse()).toMatchObject({ code: MEASUREMENTS_ERROR_CODES.NOT_FOUND });
+    expect(error.getResponse()).toMatchObject({ error: { code: MEASUREMENTS_ERROR_CODES.NOT_FOUND } });
   });
 
   it('maps optimistic concurrency to VERSION_CONFLICT', () => {
     const error = measurementsVersionConflict();
     expect(error.getStatus()).toBe(HttpStatus.CONFLICT);
-    expect(error.getResponse()).toMatchObject({ code: MEASUREMENTS_ERROR_CODES.VERSION_CONFLICT });
+    expect(error.getResponse()).toMatchObject({ error: { code: MEASUREMENTS_ERROR_CODES.VERSION_CONFLICT } });
   });
 
   it('maps domain divergence errors to CONFLICT', () => {
     const error = mapMeasurementDomainError(new MeasurementError('MEASUREMENT_DIVERGENCE_NOT_AUTHORIZED'));
     expect(error.getStatus()).toBe(HttpStatus.CONFLICT);
     expect(error.getResponse()).toMatchObject({
-      code: MEASUREMENTS_ERROR_CODES.MEASUREMENT_DIVERGENCE_NOT_AUTHORIZED,
+      error: { code: MEASUREMENTS_ERROR_CODES.MEASUREMENT_DIVERGENCE_NOT_AUTHORIZED },
     });
   });
 
@@ -46,7 +46,7 @@ describe('Measurements characterization (unit)', () => {
     } catch (error) {
       const httpError = error as MeasurementsHttpException;
       expect(httpError.getStatus()).toBe(HttpStatus.NOT_FOUND);
-      expect(httpError.getResponse()).toMatchObject({ code: MEASUREMENTS_ERROR_CODES.NOT_FOUND });
+      expect(httpError.getResponse()).toMatchObject({ error: { code: MEASUREMENTS_ERROR_CODES.NOT_FOUND } });
     }
   });
 });

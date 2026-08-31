@@ -21,25 +21,25 @@ describe('Service orders characterization (unit)', () => {
     const error = serviceOrdersAccessDenied();
     expect(error).toBeInstanceOf(ServiceOrdersHttpException);
     expect(error.getStatus()).toBe(HttpStatus.FORBIDDEN);
-    expect(error.getResponse()).toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.DENIED });
+    expect(error.getResponse()).toMatchObject({ error: { code: SERVICE_ORDERS_ERROR_CODES.DENIED } });
   });
 
   it('maps missing service order to NOT_FOUND', () => {
     const error = serviceOrdersAccessNotFound();
     expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
-    expect(error.getResponse()).toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.NOT_FOUND });
+    expect(error.getResponse()).toMatchObject({ error: { code: SERVICE_ORDERS_ERROR_CODES.NOT_FOUND } });
   });
 
   it('maps optimistic concurrency to VERSION_CONFLICT', () => {
     const error = serviceOrdersVersionConflict();
     expect(error.getStatus()).toBe(HttpStatus.CONFLICT);
-    expect(error.getResponse()).toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.VERSION_CONFLICT });
+    expect(error.getResponse()).toMatchObject({ error: { code: SERVICE_ORDERS_ERROR_CODES.VERSION_CONFLICT } });
   });
 
   it('maps validation failures to BAD_REQUEST VALIDATION_FAILED', () => {
     const error = serviceOrdersValidationFailed();
     expect(error.getStatus()).toBe(HttpStatus.BAD_REQUEST);
-    expect(error.getResponse()).toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.VALIDATION_FAILED });
+    expect(error.getResponse()).toMatchObject({ error: { code: SERVICE_ORDERS_ERROR_CODES.VALIDATION_FAILED } });
   });
 
   it('detects service request unique PostgreSQL violations', () => {
@@ -62,13 +62,13 @@ describe('Service orders characterization (unit)', () => {
     } catch (error) {
       const httpError = error as ServiceOrdersHttpException;
       expect(httpError.getStatus()).toBe(HttpStatus.NOT_FOUND);
-      expect(httpError.getResponse()).toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.NOT_FOUND });
+      expect(httpError.getResponse()).toMatchObject({ error: { code: SERVICE_ORDERS_ERROR_CODES.NOT_FOUND } });
     }
   });
 
   it('maps release precondition CLIENT_REQUIRED to CLIENT_REQUIRED conflict', () => {
     const error = mapServiceOrderReleaseError(new ServiceOrderReleaseError('CLIENT_REQUIRED'));
     expect(error.getStatus()).toBe(HttpStatus.CONFLICT);
-    expect(error.getResponse()).toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.CLIENT_REQUIRED });
+    expect(error.getResponse()).toMatchObject({ error: { code: SERVICE_ORDERS_ERROR_CODES.CLIENT_REQUIRED } });
   });
 });

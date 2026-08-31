@@ -1,4 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
+import { parseQueryPositiveInt } from '../../infrastructure/http/contracts';
 import { CATALOG_ERROR_CODES } from '../errors/catalog-error-codes';
 import { CatalogHttpException } from '../errors/catalog-http.exception';
 import {
@@ -572,16 +573,6 @@ export function parseListServiceDefinitionsQuery(query: Record<string, unknown>)
   }
 
   return { limit, offset, status };
-}
-
-function parseQueryPositiveInt(value: unknown): number | null {
-  if (typeof value === 'number' && Number.isInteger(value)) {
-    return value;
-  }
-  if (typeof value === 'string' && /^\d+$/.test(value)) {
-    return Number.parseInt(value, 10);
-  }
-  return null;
 }
 
 export function parseVersionNumberParam(value: string): number {

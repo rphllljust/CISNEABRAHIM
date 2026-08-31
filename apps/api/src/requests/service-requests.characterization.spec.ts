@@ -14,19 +14,19 @@ describe('Service requests characterization (unit)', () => {
     const error = serviceRequestsAccessDenied();
     expect(error).toBeInstanceOf(RequestsHttpException);
     expect(error.getStatus()).toBe(HttpStatus.FORBIDDEN);
-    expect(error.getResponse()).toMatchObject({ code: REQUESTS_ERROR_CODES.DENIED });
+    expect(error.getResponse()).toMatchObject({ error: { code: REQUESTS_ERROR_CODES.DENIED } });
   });
 
   it('maps missing service request to NOT_FOUND', () => {
     const error = serviceRequestsAccessNotFound();
     expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
-    expect(error.getResponse()).toMatchObject({ code: REQUESTS_ERROR_CODES.NOT_FOUND });
+    expect(error.getResponse()).toMatchObject({ error: { code: REQUESTS_ERROR_CODES.NOT_FOUND } });
   });
 
   it('maps optimistic concurrency to VERSION_CONFLICT', () => {
     const error = serviceRequestsVersionConflict();
     expect(error.getStatus()).toBe(HttpStatus.CONFLICT);
-    expect(error.getResponse()).toMatchObject({ code: REQUESTS_ERROR_CODES.VERSION_CONFLICT });
+    expect(error.getResponse()).toMatchObject({ error: { code: REQUESTS_ERROR_CODES.VERSION_CONFLICT } });
   });
 
   it('treats invalid service request UUID as not found without leaking validation detail', () => {
@@ -36,7 +36,7 @@ describe('Service requests characterization (unit)', () => {
     } catch (error) {
       const httpError = error as RequestsHttpException;
       expect(httpError.getStatus()).toBe(HttpStatus.NOT_FOUND);
-      expect(httpError.getResponse()).toMatchObject({ code: REQUESTS_ERROR_CODES.NOT_FOUND });
+      expect(httpError.getResponse()).toMatchObject({ error: { code: REQUESTS_ERROR_CODES.NOT_FOUND } });
     }
   });
 });

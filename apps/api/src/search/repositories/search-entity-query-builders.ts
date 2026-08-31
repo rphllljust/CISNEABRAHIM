@@ -230,7 +230,7 @@ function clientSearchQuery(
     fromClause: 'pty.clients c',
     predicate: `(${match.clause}) AND (${filterClause})`,
     params: [...match.params, ...filterParams],
-    orderBy: 'c.created_at DESC',
+    orderBy: 'c.created_at DESC, c.id DESC',
   };
 }
 
@@ -261,7 +261,7 @@ function serviceRequestSearchQuery(
     fromClause: 'sr.service_requests sr',
     predicate: `(${match.clause}) AND (${filterClause})`,
     params: [...match.params, ...filterParams],
-    orderBy: 'sr.created_at DESC',
+    orderBy: 'sr.created_at DESC, sr.id DESC',
   };
 }
 
@@ -302,7 +302,7 @@ function proposalSearchQuery(
                  ) pv ON TRUE`,
     predicate: `(${match.clause}) AND (${filterClause})`,
     params: [...match.params, ...filterParams],
-    orderBy: 'p.created_at DESC',
+    orderBy: 'p.created_at DESC, p.id DESC',
   };
 }
 
@@ -336,7 +336,7 @@ function purchaseOrderSearchQuery(
     fromClause: 'com.purchase_orders po',
     predicate: `(${match.clause}) AND (${filterClause})`,
     params: [...match.params, ...filterParams],
-    orderBy: 'po.created_at DESC',
+    orderBy: 'po.created_at DESC, po.id DESC',
   };
 }
 
@@ -367,7 +367,7 @@ function serviceOrderSearchQuery(
     fromClause: 'so.service_orders so',
     predicate: `(${match.clause}) AND (${filterClause})`,
     params: [...match.params, ...filterParams],
-    orderBy: 'so.created_at DESC',
+    orderBy: 'so.created_at DESC, so.id DESC',
   };
 }
 
@@ -399,7 +399,7 @@ function assetSearchQuery(
                  LEFT JOIN ast.vehicle_profiles vp ON vp.physical_asset_id = a.id`,
     predicate: `(${match.clause}) AND (${filterClause})`,
     params: [...match.params, ...filterParams],
-    orderBy: 'a.created_at DESC',
+    orderBy: 'a.created_at DESC, a.id DESC',
   };
 }
 
@@ -438,7 +438,7 @@ function documentSearchQuery(
                  ) so ON TRUE`,
     predicate: `(${match.clause}) AND (${filterClause})`,
     params: [...match.params, ...filterParams],
-    orderBy: 'd.created_at DESC',
+    orderBy: 'd.created_at DESC, d.id DESC',
   };
 }
 
@@ -470,7 +470,7 @@ function measurementSearchQuery(
                  INNER JOIN so.service_orders so ON so.id = m.service_order_id`,
     predicate: `(${match.clause}) AND (${filterClause})`,
     params: [...match.params, ...filterParams],
-    orderBy: 'm.created_at DESC',
+    orderBy: 'm.created_at DESC, m.id DESC',
   };
 }
 
@@ -502,6 +502,6 @@ function billingRecordSearchQuery(
                  INNER JOIN so.service_orders so ON so.id = br.service_order_id`,
     predicate: `(${match.clause}) AND (${filterClause})`,
     params: [...match.params, ...filterParams],
-    orderBy: 'br.created_at DESC',
+    orderBy: 'br.created_at DESC, br.id DESC',
   };
 }

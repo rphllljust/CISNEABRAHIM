@@ -5,7 +5,7 @@ import { RPO_RTO_PRODUCTION_BLOCKER } from '../backup/backup-types';
 import { runPilotStatusCheck } from '../pilot/pilot-runner';
 import type { PilotStatusReport } from '../pilot/pilot-types';
 import type { PilotMetricsInput } from '../pilot/pilot-observation';
-import { hasMetMinObservationDays } from '../pilot/pilot-exit';
+import { isPilotObservationWindowSatisfied, evaluateRecordedOperationalThresholds, latestOperationalSnapshot, loadPilotExitCriteria, hasAuthorizedObservationWaiver } from '../pilot/pilot-exit';
 import { assertEvidenceNotPrematurelyCompleted } from './readiness-evidence-writer';
 import { evaluateOperationalEngineeringState } from './operational-readiness';
 import { createPendingReadinessEvidence } from './readiness-evidence';
@@ -313,7 +313,7 @@ export function evaluateReadinessGate(input: ReadinessGateInput = {}): Readiness
   const productionReadiness: ProductionReadinessDecision =
     uniqueProductionBlockers.length === 0 ? 'GO' : 'NO-GO';
   const checks = [...engineeringChecks, ...productionChecks];
-  const establishedBaseline = buildReadinessEstablishedBaseline(evaluationTime);
+  const establishedBaseline = buildReadinessEstablishedBaseline(evaluationTime, record);
 
   return {
     decision: productionReadiness,
@@ -416,11 +416,48 @@ function evaluatePilotEvidence(input: {
     };
   }
 
-  if (!hasMetMinObservationDays(record.pilot.startedAt, record.pilot.minObservationDays, evaluationTime)) {
+  if (!isPilotObservationWindowSatisfied(record.pilot, evaluationTime)) {
     return {
       approved: false,
       blockers: ['PILOT_OBSERVATION_WINDOW_NOT_COMPLETED'],
       detail: `Observation window < ${record.pilot.minObservationDays} days since ${record.pilot.startedAt}`,
+    };
+  }
+
+  const snapshot = latestOperationalSnapshot(record.pilot.operationalResults);
+  if (!snapshot) {
+    return {
+      approved: false,
+      blockers: ['PILOT_THRESHOLDS_NOT_RECORDED'],
+      detail: 'No operational snapshot recorded for error/latency/worker/billing/allocation thresholds',
+    };
+  }
+
+  const threshold = evaluateRecordedOperationalThresholds(snapshot, loadPilotExitCriteria(input.env));
+  if (threshold.failed.length > 0) {
+    return {
+      approved: false,
+      blockers: [`PILOT_THRESHOLDS_NOT_MET: ${threshold.failed.join(',')}`],
+      detail: `Pilot thresholds failed: ${threshold.failed.join('; ')}`,
+    };
+  }
+
+  const openIncidents = record.pilot.incidents.filter(
+    (incident) => incident.severity === 'BLOCKER' || incident.severity === 'CRITICAL',
+  );
+  if (openIncidents.length > 0 || record.pilot.criticalErrors.length > 0) {
+    return {
+      approved: false,
+      blockers: ['PILOT_OPEN_BLOCKERS'],
+      detail: `Open BLOCKER/CRITICAL incidents=${openIncidents.length}; criticalErrors=${record.pilot.criticalErrors.length}`,
+    };
+  }
+
+  if (!record.pilot.exitAuthorizedBy?.trim() || !record.pilot.exitAuthorizedAt) {
+    return {
+      approved: false,
+      blockers: ['PILOT_EXIT_NOT_AUTHORIZED'],
+      detail: 'Pilot exitAuthorizedBy / exitAuthorizedAt missing',
     };
   }
 
@@ -434,7 +471,12 @@ function evaluatePilotEvidence(input: {
   }
 
   if (pilotReport && pilotReport.phase !== 'EXIT_READY') {
-    blockers.push(`PILOT_NOT_EXIT_READY (phase=${pilotReport.phase})`);
+    const onlyWindowPending =
+      hasAuthorizedObservationWaiver(record.pilot) &&
+      pilotReport.exitCriteriaFailed.every((entry) => entry === 'min_observation_days');
+    if (!onlyWindowPending) {
+      blockers.push(`PILOT_NOT_EXIT_READY (phase=${pilotReport.phase})`);
+    }
   }
 
   if (phase !== 'EXIT_READY') {

@@ -10,6 +10,7 @@ import {
   PILOT_START_HUMAN_ACTION,
   RPO_RTO_HUMAN_ACTION,
 } from './readiness-evidence-classification';
+import type { ReadinessEvidenceRecord } from './readiness-evidence-types';
 
 export type UatUxScenarioCatalogEntry = {
   id: string;
@@ -51,7 +52,10 @@ export function buildUatUxScenarioCatalog(): UatUxScenarioCatalog {
   };
 }
 
-export function buildReadinessEstablishedBaseline(evaluatedAt = new Date()): ReadinessRequirementMatrix {
+export function buildReadinessEstablishedBaseline(
+  evaluatedAt = new Date(),
+  record?: ReadinessEvidenceRecord,
+): ReadinessRequirementMatrix {
   const uatScenarioIds = UAT_SCENARIOS.map((entry) => entry.id).join(', ');
   const profileIds = Object.keys(UAT_PROFILE_GRANTS).join(', ');
 
@@ -163,37 +167,47 @@ export function buildReadinessEstablishedBaseline(evaluatedAt = new Date()): Rea
     },
     {
       requirement: 'DDP-016 — valores finais de RPO/RTO',
-      classification: 'HUMAN_APPROVAL_REQUIRED',
+      classification: record?.rpoRto.decision === 'APPROVED' ? 'DECISION_ALREADY_RECORDED' : 'HUMAN_APPROVAL_REQUIRED',
       sources: [
         'docs/01-foundation/domain-decisions-pending.md#DDP-016',
         'docs/19-operations/ddp-016-rpo-rto-proposal.json',
         'apps/api/src/ops/continuity/ddp-016-proposal.ts',
       ],
-      humanActionStillRequired: RPO_RTO_HUMAN_ACTION,
+      humanActionStillRequired: record?.rpoRto.decision === 'APPROVED' ? null : RPO_RTO_HUMAN_ACTION,
     },
     {
       requirement: 'Business sign-off — autorização de versão/escopo para validação operacional',
-      classification: 'HUMAN_APPROVAL_REQUIRED',
+      classification:
+        record?.businessSignOff.decision === 'APPROVED' ? 'DECISION_ALREADY_RECORDED' : 'HUMAN_APPROVAL_REQUIRED',
       sources: [
         'docs/19-operations/readiness-evidence.json',
         'docs/16-testing/uat-business-scenarios.md',
       ],
-      humanActionStillRequired: BUSINESS_SIGN_OFF_HUMAN_ACTION,
+      humanActionStillRequired:
+        record?.businessSignOff.decision === 'APPROVED' ? null : BUSINESS_SIGN_OFF_HUMAN_ACTION,
     },
     {
       requirement: 'Início real do piloto (observação operacional)',
-      classification: 'REAL_WORLD_EVENT_REQUIRED',
+      classification:
+        record?.pilot.startedAt && record.pilot.phase !== 'NOT_STARTED'
+          ? 'DECISION_ALREADY_RECORDED'
+          : 'REAL_WORLD_EVENT_REQUIRED',
       sources: ['docs/19-operations/pilot-program.md', 'docs/19-operations/readiness-evidence.json'],
-      humanActionStillRequired: PILOT_START_HUMAN_ACTION,
+      humanActionStillRequired:
+        record?.pilot.startedAt && record.pilot.phase !== 'NOT_STARTED' ? null : PILOT_START_HUMAN_ACTION,
     },
     {
       requirement: 'Sessão manual UAT/UX com operador',
-      classification: 'REAL_WORLD_EVENT_REQUIRED',
+      classification: ['PASSED', 'PASSED_WITH_OBSERVATIONS'].includes(record?.manualUatUx.status ?? '')
+        ? 'DECISION_ALREADY_RECORDED'
+        : 'REAL_WORLD_EVENT_REQUIRED',
       sources: [
         'docs/16-testing/uat-ux-scenarios.json',
         'docs/16-testing/uat-ux-checklist.md',
       ],
-      humanActionStillRequired: MANUAL_UAT_HUMAN_ACTION,
+      humanActionStillRequired: ['PASSED', 'PASSED_WITH_OBSERVATIONS'].includes(record?.manualUatUx.status ?? '')
+        ? null
+        : MANUAL_UAT_HUMAN_ACTION,
     },
   ];
 

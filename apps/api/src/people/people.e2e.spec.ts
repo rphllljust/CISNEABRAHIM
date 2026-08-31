@@ -11,18 +11,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Pool } from 'pg';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../app.module';
+import { configureApiTestApp } from '../infrastructure/http/configure-api-test-app';
 import { normalizeLoginIdentifier } from '../auth/crypto/token-crypto';
 import { applyAuthTestEnv, AUTH_TEST_PASSWORD } from '../auth/test/auth-test-env';
 import { parseAuthTokenResponse } from '../auth/test/auth-response-test-types';
-import { AuthExceptionFilter } from '../infrastructure/http/auth-exception.filter';
-import { AuthzExceptionFilter } from '../authorization/errors/authz-exception.filter';
-import { CorrelationIdInterceptor } from '../infrastructure/http/correlation-id.interceptor';
-import { SecurityHeadersInterceptor } from '../infrastructure/http/security-headers.interceptor';
 import { AUTHZ_ACTIONS } from '../authorization/types/authz-actions';
 import { AUTHZ_RESOURCE_TYPES } from '../authorization/types/authz-resources';
 import { AUTHZ_SCOPES } from '../authorization/types/authz-scopes';
-import { ClientExceptionFilter } from '../clients/errors/client-exception.filter';
-import { PersonExceptionFilter } from './errors/person-exception.filter';
 import { PERSON_ERROR_CODES } from './errors/person-error-codes';
 
 function parsePersonError(body: string): { error: { code: string } } {
@@ -48,14 +43,7 @@ describe('People E2E', () => {
     app = moduleFixture.createNestApplication<NestFastifyApplication>(
       new FastifyAdapter({ bodyLimit: 8_192 }),
     );
-    app.setGlobalPrefix('api/v1');
-    app.useGlobalFilters(
-      new AuthExceptionFilter(),
-      new AuthzExceptionFilter(),
-      new ClientExceptionFilter(),
-      new PersonExceptionFilter(),
-    );
-    app.useGlobalInterceptors(new CorrelationIdInterceptor(), new SecurityHeadersInterceptor());
+    configureApiTestApp(app);
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
     pool = new Pool({ connectionString: testDatabaseUrl });

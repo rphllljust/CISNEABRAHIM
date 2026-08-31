@@ -1,4 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
+import { parseQueryPositiveInt } from '../../infrastructure/http/contracts';
 import { CATALOG_ERROR_CODES } from '../../catalog/errors/catalog-error-codes';
 import { CatalogHttpException } from '../../catalog/errors/catalog-http.exception';
 import {
@@ -46,17 +47,6 @@ function parsePositiveInt(value: unknown, field: string): number {
     `Invalid ${field}.`,
   );
 }
-
-function parseQueryPositiveInt(value: unknown): number | null {
-  if (typeof value === 'number' && Number.isInteger(value)) {
-    return value;
-  }
-  if (typeof value === 'string' && /^\d+$/.test(value)) {
-    return Number.parseInt(value, 10);
-  }
-  return null;
-}
-
 function assertClassification(value: string): PhysicalResourceClassification {
   if (!(PHYSICAL_RESOURCE_CLASSIFICATIONS as readonly string[]).includes(value)) {
     throw new CatalogHttpException(

@@ -20,25 +20,16 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Pool } from 'pg';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../app.module';
+import { configureApiTestApp } from '../infrastructure/http/configure-api-test-app';
 import { normalizeLoginIdentifier } from '../auth/crypto/token-crypto';
 import { applyAuthTestEnv, AUTH_TEST_PASSWORD } from '../auth/test/auth-test-env';
 import { parseAuthTokenResponse } from '../auth/test/auth-response-test-types';
-import { AuthExceptionFilter } from '../infrastructure/http/auth-exception.filter';
-import { AuthzExceptionFilter } from '../authorization/errors/authz-exception.filter';
-import { CorrelationIdInterceptor } from '../infrastructure/http/correlation-id.interceptor';
-import { SecurityHeadersInterceptor } from '../infrastructure/http/security-headers.interceptor';
+import { parseApiErrorCode } from '../infrastructure/http/api-error-response';
 import { AUTHZ_ACTIONS } from '../authorization/types/authz-actions';
 import { AUTHZ_RESOURCE_TYPES } from '../authorization/types/authz-resources';
 import { AUTHZ_SCOPES } from '../authorization/types/authz-scopes';
-import { CatalogExceptionFilter } from '../catalog/errors/catalog-exception.filter';
-import { ClientExceptionFilter } from '../clients/errors/client-exception.filter';
-import { CommercialExceptionFilter } from '../commercial/errors/commercial-exception.filter';
-import { DocumentExceptionFilter } from '../documents/errors/document-exception.filter';
-import { AssetExceptionFilter } from '../resources/errors/asset-exception.filter';
-import { RequestsExceptionFilter } from '../requests/errors/requests-exception.filter';
 import { SERVICE_ORDER_ORIGINS, SERVICE_ORDER_STATUSES } from './domain/service-order';
 import { SERVICE_ORDERS_ERROR_CODES } from './errors/service-orders-error-codes';
-import { ServiceOrdersExceptionFilter } from './errors/service-orders-exception.filter';
 
 const UNIT_A = 'unit-exec-e2e';
 
@@ -62,19 +53,7 @@ describe('Service order execution E2E', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication<NestFastifyApplication>(new FastifyAdapter());
-    app.setGlobalPrefix('api/v1');
-    app.useGlobalFilters(
-      new AuthExceptionFilter(),
-      new AuthzExceptionFilter(),
-      new ClientExceptionFilter(),
-      new CatalogExceptionFilter(),
-      new AssetExceptionFilter(),
-      new DocumentExceptionFilter(),
-      new CommercialExceptionFilter(),
-      new RequestsExceptionFilter(),
-      new ServiceOrdersExceptionFilter(),
-    );
-    app.useGlobalInterceptors(new CorrelationIdInterceptor(), new SecurityHeadersInterceptor());
+    configureApiTestApp(app);
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
 
@@ -198,7 +177,6 @@ describe('Service order execution E2E', () => {
     });
 
     expect(startResponse.statusCode).toBe(409);
-    const body = JSON.parse(startResponse.body) as { code: string };
-    expect(body.code).toBe(SERVICE_ORDERS_ERROR_CODES.INVALID_STATE);
+    expect(parseApiErrorCode(startResponse.body)).toBe(SERVICE_ORDERS_ERROR_CODES.INVALID_STATE);
   });
 });

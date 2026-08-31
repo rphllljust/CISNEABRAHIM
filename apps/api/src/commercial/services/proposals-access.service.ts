@@ -30,6 +30,7 @@ import {
   type ProposalResponse,
   type ProposalVersionResponse,
 } from '../serializers/proposals-response.serializer';
+import { groupRowsByKey } from '../../infrastructure/database/sql';
 import { ProposalsAccessAuthz } from './proposals-access.authz';
 import {
   proposalsAccessNotFound,
@@ -499,13 +500,23 @@ export class ProposalsAccessService {
     assertValidProposalId(proposalId);
     await this.requireProposal(actor, proposalId, AUTHZ_ACTIONS.CommercialProposalRead);
     const versions = await this.proposalsRepository.listVersions(proposalId);
-    const responses: ProposalVersionResponse[] = [];
-    for (const version of versions) {
-      const items = await this.proposalsRepository.listItems(version.id);
-      const documents = await this.proposalsRepository.listDocumentLinks(version.id);
-      responses.push(toProposalVersionResponse(version, items, documents));
+    if (versions.length === 0) {
+      return [];
     }
-    return responses;
+    const versionIds = versions.map((version) => version.id);
+    const [allItems, allDocuments] = await Promise.all([
+      this.proposalsRepository.listItemsForVersions(versionIds),
+      this.proposalsRepository.listDocumentLinksForVersions(versionIds),
+    ]);
+    const itemsByVersion = groupRowsByKey(allItems, 'proposal_version_id');
+    const documentsByVersion = groupRowsByKey(allDocuments, 'proposal_version_id');
+    return versions.map((version) =>
+      toProposalVersionResponse(
+        version,
+        itemsByVersion.get(version.id) ?? [],
+        documentsByVersion.get(version.id) ?? [],
+      ),
+    );
   }
 
   async list(

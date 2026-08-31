@@ -1,13 +1,11 @@
-import { Controller, Get, Query, UseFilters, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { CurrentAuth } from '../../auth/decorators/current-auth.decorator';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import type { AccessTokenClaims } from '../../auth/services/token.service';
-import { SearchExceptionFilter } from '../errors/search-exception.filter';
 import { SearchAccessService } from '../services/search-access.service';
 
 @Controller('search')
 @UseGuards(JwtAuthGuard)
-@UseFilters(SearchExceptionFilter)
 export class SearchController {
   constructor(private readonly accessService: SearchAccessService) {}
 

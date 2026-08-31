@@ -27,7 +27,7 @@ import {
 } from '../domain/client.validation';
 import { CLIENT_ERROR_CODES } from '../errors/client-error-codes';
 import { ClientHttpException } from '../errors/client-http.exception';
-import { mapValidationCodeToStatus } from '../errors/client-exception.filter';
+import { mapValidationCodeToStatus } from '../errors/client-validation-status';
 import { ClientsRepository } from '../repositories/clients.repository';
 import { toClientResponse, type ClientResponse } from '../serializers/client-response.serializer';
 
@@ -138,22 +138,18 @@ export class ClientAccessService {
       params.push(query.status);
     }
 
-    const rows = await this.clientsRepository.list(
+    const items = await this.clientsRepository.listWithDetails(
       clauses.join(' AND '),
       params,
       query.limit,
       query.offset,
     );
 
-    const items: ClientResponse[] = [];
-    for (const row of rows) {
-      const detail = await this.clientsRepository.findById(row.id);
-      if (detail) {
-        items.push(toClientResponse(detail));
-      }
-    }
-
-    return { items, limit: query.limit, offset: query.offset };
+    return {
+      items: items.map(toClientResponse),
+      limit: query.limit,
+      offset: query.offset,
+    };
   }
 
   async update(

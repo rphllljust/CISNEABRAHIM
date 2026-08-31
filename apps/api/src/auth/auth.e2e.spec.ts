@@ -8,6 +8,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Pool } from 'pg';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../app.module';
+import { configureApiTestApp } from '../infrastructure/http/configure-api-test-app';
 import { AUTH_ERROR_CODES } from './errors/auth-error-codes';
 import { normalizeLoginIdentifier } from './crypto/token-crypto';
 import {
@@ -19,10 +20,6 @@ import {
   parseAuthErrorResponse,
   parseAuthTokenResponse,
 } from '../auth/test/auth-response-test-types';
-import { AuthExceptionFilter } from '../infrastructure/http/auth-exception.filter';
-import { CorrelationIdInterceptor } from '../infrastructure/http/correlation-id.interceptor';
-import { SecurityHeadersInterceptor } from '../infrastructure/http/security-headers.interceptor';
-
 describe('Auth E2E', () => {
   let app: NestFastifyApplication;
   let pool: Pool;
@@ -42,9 +39,7 @@ describe('Auth E2E', () => {
     app = moduleFixture.createNestApplication<NestFastifyApplication>(
       new FastifyAdapter({ bodyLimit: 8_192 }),
     );
-    app.setGlobalPrefix('api/v1');
-    app.useGlobalFilters(new AuthExceptionFilter());
-    app.useGlobalInterceptors(new CorrelationIdInterceptor(), new SecurityHeadersInterceptor());
+    configureApiTestApp(app);
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
 

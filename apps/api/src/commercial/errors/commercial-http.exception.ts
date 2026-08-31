@@ -1,4 +1,5 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
+import { buildDomainHttpExceptionBody } from '../../infrastructure/http/api-error.mapper';
 import type { CommercialErrorCode } from './commercial-error-codes';
 
 export class CommercialHttpException extends HttpException {
@@ -7,6 +8,6 @@ export class CommercialHttpException extends HttpException {
     readonly code: CommercialErrorCode,
     message: string,
   ) {
-    super({ code, message }, status);
+    super(buildDomainHttpExceptionBody(code, message), status);
   }
 }

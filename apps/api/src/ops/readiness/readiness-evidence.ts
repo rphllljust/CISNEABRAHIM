@@ -82,6 +82,7 @@ export function createPendingReadinessEvidence(): ReadinessEvidenceRecord {
       minObservationDays: 14,
       exitAuthorizedAt: null,
       exitAuthorizedBy: null,
+      observationWaiver: null,
       responsible: null,
       environment: null,
       releaseCandidate: { ...EMPTY_RELEASE_CANDIDATE },
@@ -128,7 +129,15 @@ export function migrateReadinessEvidenceRecord(raw: unknown): ReadinessEvidenceR
   }
   const record = raw as Record<string, unknown>;
   if (record.schemaVersion === 2) {
-    return record as unknown as ReadinessEvidenceRecord;
+    const typed = record as unknown as ReadinessEvidenceRecord;
+    return {
+      ...typed,
+      pilot: {
+        ...typed.pilot,
+        observationWaiver: typed.pilot?.observationWaiver ?? null,
+        operationalResults: Array.isArray(typed.pilot?.operationalResults) ? typed.pilot.operationalResults : [],
+      },
+    };
   }
   if (record.schemaVersion !== 1) {
     return null;

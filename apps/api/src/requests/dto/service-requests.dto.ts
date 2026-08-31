@@ -7,26 +7,15 @@ import type {
   RejectServiceRequestInput,
   UpdateServiceRequestDraftInput,
 } from '../domain/service-request.validation';
+import {
+  assertRecordBody,
+  parseClampedOffsetLimit,
+  parseLenientRowVersionBody,
+  parseLinkDocumentInput,
+  parseOptionalStringField,
+  parseRequiredStringField,
+} from '../../infrastructure/http/contracts';
 import { assertNoPrivilegedFields } from '../../security/domain/forbidden-payload-fields';
-
-function parseRequiredString(body: Record<string, unknown>, key: string): string {
-  const value = body[key];
-  if (typeof value !== 'string') {
-    throw new Error(`${key} invalid`);
-  }
-  return value;
-}
-
-function parseOptionalString(body: Record<string, unknown>, key: string): string | undefined {
-  const value = body[key];
-  if (value === undefined || value === null) {
-    return undefined;
-  }
-  if (typeof value !== 'string') {
-    throw new Error(`${key} invalid`);
-  }
-  return value;
-}
 
 function parseOptionalContact(body: Record<string, unknown>): CreateServiceRequestInput['externalContact'] {
   const raw = body['externalContact'];
@@ -71,40 +60,34 @@ function parseOptionalLocation(body: Record<string, unknown>): CreateServiceRequ
 }
 
 export function parseCreateServiceRequestInput(body: unknown): CreateServiceRequestInput {
-  if (!body || typeof body !== 'object') {
-    throw new Error('body invalid');
-  }
-  const record = body as Record<string, unknown>;
+  const record = assertRecordBody(body);
   assertNoPrivilegedFields(record);
-  const originSource = parseRequiredString(record, 'originSource');
+  const originSource = parseRequiredStringField(record, 'originSource');
   if (!isServiceRequestOrigin(originSource)) {
     throw new Error('originSource invalid');
   }
   return {
-    unitId: parseRequiredString(record, 'unitId'),
+    unitId: parseRequiredStringField(record, 'unitId'),
     originSource,
     externalContact: parseOptionalContact(record),
-    externalOriginReference: parseOptionalString(record, 'externalOriginReference'),
-    clientId: parseOptionalString(record, 'clientId'),
-    serviceDefinitionId: parseOptionalString(record, 'serviceDefinitionId'),
-    serviceDefinitionVersionId: parseOptionalString(record, 'serviceDefinitionVersionId'),
-    description: parseOptionalString(record, 'description'),
+    externalOriginReference: parseOptionalStringField(record, 'externalOriginReference'),
+    clientId: parseOptionalStringField(record, 'clientId'),
+    serviceDefinitionId: parseOptionalStringField(record, 'serviceDefinitionId'),
+    serviceDefinitionVersionId: parseOptionalStringField(record, 'serviceDefinitionVersionId'),
+    description: parseOptionalStringField(record, 'description'),
     location: parseOptionalLocation(record),
-    desiredStartAt: parseOptionalString(record, 'desiredStartAt'),
-    desiredEndAt: parseOptionalString(record, 'desiredEndAt'),
-    operationalNotes: parseOptionalString(record, 'operationalNotes'),
-    proposalId: parseOptionalString(record, 'proposalId'),
-    purchaseOrderId: parseOptionalString(record, 'purchaseOrderId'),
-    idempotencyKey: parseOptionalString(record, 'idempotencyKey'),
+    desiredStartAt: parseOptionalStringField(record, 'desiredStartAt'),
+    desiredEndAt: parseOptionalStringField(record, 'desiredEndAt'),
+    operationalNotes: parseOptionalStringField(record, 'operationalNotes'),
+    proposalId: parseOptionalStringField(record, 'proposalId'),
+    purchaseOrderId: parseOptionalStringField(record, 'purchaseOrderId'),
+    idempotencyKey: parseOptionalStringField(record, 'idempotencyKey'),
   };
 }
 
 export function parseUpdateServiceRequestDraftInput(body: unknown): UpdateServiceRequestDraftInput {
-  if (!body || typeof body !== 'object') {
-    throw new Error('body invalid');
-  }
-  const record = body as Record<string, unknown>;
-  const originSource = parseOptionalString(record, 'originSource');
+  const record = assertRecordBody(body);
+  const originSource = parseOptionalStringField(record, 'originSource');
   if (originSource && !isServiceRequestOrigin(originSource)) {
     throw new Error('originSource invalid');
   }
@@ -115,45 +98,38 @@ export function parseUpdateServiceRequestDraftInput(body: unknown): UpdateServic
     externalOriginReference:
       record['externalOriginReference'] === null
         ? null
-        : parseOptionalString(record, 'externalOriginReference'),
-    clientId: record['clientId'] === null ? null : parseOptionalString(record, 'clientId'),
+        : parseOptionalStringField(record, 'externalOriginReference'),
+    clientId: record['clientId'] === null ? null : parseOptionalStringField(record, 'clientId'),
     serviceDefinitionId:
       record['serviceDefinitionId'] === null
         ? null
-        : parseOptionalString(record, 'serviceDefinitionId'),
+        : parseOptionalStringField(record, 'serviceDefinitionId'),
     serviceDefinitionVersionId:
       record['serviceDefinitionVersionId'] === null
         ? null
-        : parseOptionalString(record, 'serviceDefinitionVersionId'),
-    description: record['description'] === null ? null : parseOptionalString(record, 'description'),
+        : parseOptionalStringField(record, 'serviceDefinitionVersionId'),
+    description: record['description'] === null ? null : parseOptionalStringField(record, 'description'),
     location: parseOptionalLocation(record),
     desiredStartAt:
-      record['desiredStartAt'] === null ? null : parseOptionalString(record, 'desiredStartAt'),
-    desiredEndAt: record['desiredEndAt'] === null ? null : parseOptionalString(record, 'desiredEndAt'),
+      record['desiredStartAt'] === null ? null : parseOptionalStringField(record, 'desiredStartAt'),
+    desiredEndAt: record['desiredEndAt'] === null ? null : parseOptionalStringField(record, 'desiredEndAt'),
     operationalNotes:
       record['operationalNotes'] === null
         ? null
-        : parseOptionalString(record, 'operationalNotes'),
-    proposalId: record['proposalId'] === null ? null : parseOptionalString(record, 'proposalId'),
+        : parseOptionalStringField(record, 'operationalNotes'),
+    proposalId: record['proposalId'] === null ? null : parseOptionalStringField(record, 'proposalId'),
     purchaseOrderId:
-      record['purchaseOrderId'] === null ? null : parseOptionalString(record, 'purchaseOrderId'),
+      record['purchaseOrderId'] === null ? null : parseOptionalStringField(record, 'purchaseOrderId'),
   };
 }
 
 export function parseRowVersionBody(body: unknown): { rowVersion: number } {
-  if (!body || typeof body !== 'object') {
-    throw new Error('body invalid');
-  }
-  const record = body as Record<string, unknown>;
-  return { rowVersion: Number(record['rowVersion']) };
+  return parseLenientRowVersionBody(body);
 }
 
 export function parseApproveServiceRequestInput(body: unknown): ApproveServiceRequestInput {
-  if (!body || typeof body !== 'object') {
-    throw new Error('body invalid');
-  }
-  const record = body as Record<string, unknown>;
-  const priority = parseOptionalString(record, 'priority');
+  const record = assertRecordBody(body);
+  const priority = parseOptionalStringField(record, 'priority');
   if (priority && !isServiceRequestPriority(priority)) {
     throw new Error('priority invalid');
   }
@@ -164,36 +140,25 @@ export function parseApproveServiceRequestInput(body: unknown): ApproveServiceRe
 }
 
 export function parseRejectServiceRequestInput(body: unknown): RejectServiceRequestInput {
-  if (!body || typeof body !== 'object') {
-    throw new Error('body invalid');
-  }
-  const record = body as Record<string, unknown>;
+  const record = assertRecordBody(body);
   return {
     rowVersion: Number(record['rowVersion']),
-    rejectionReason: parseRequiredString(record, 'rejectionReason'),
+    rejectionReason: parseRequiredStringField(record, 'rejectionReason'),
   };
 }
 
 export function parseCancelServiceRequestInput(body: unknown): CancelServiceRequestInput {
-  if (!body || typeof body !== 'object') {
-    throw new Error('body invalid');
-  }
-  const record = body as Record<string, unknown>;
+  const record = assertRecordBody(body);
   return {
     rowVersion: Number(record['rowVersion']),
-    cancellationReason: parseRequiredString(record, 'cancellationReason'),
+    cancellationReason: parseRequiredStringField(record, 'cancellationReason'),
   };
 }
 
-export function parseLinkServiceRequestDocumentInput(body: unknown): LinkServiceRequestDocumentInput {
-  if (!body || typeof body !== 'object') {
-    throw new Error('body invalid');
-  }
-  const record = body as Record<string, unknown>;
-  return {
-    documentId: parseRequiredString(record, 'documentId'),
-    linkPurpose: parseRequiredString(record, 'linkPurpose'),
-  };
+export function parseLinkServiceRequestDocumentInput(
+  body: unknown,
+): LinkServiceRequestDocumentInput {
+  return parseLinkDocumentInput(body);
 }
 
 export function parseListServiceRequestsQuery(query: Record<string, unknown>): {
@@ -203,13 +168,12 @@ export function parseListServiceRequestsQuery(query: Record<string, unknown>): {
   limit: number;
   offset: number;
 } {
-  const limitRaw = Number(query['limit'] ?? 20);
-  const offsetRaw = Number(query['offset'] ?? 0);
+  const { limit, offset } = parseClampedOffsetLimit(query);
   return {
     clientId: typeof query['clientId'] === 'string' ? query['clientId'] : undefined,
     unitId: typeof query['unitId'] === 'string' ? query['unitId'] : undefined,
     status: typeof query['status'] === 'string' ? query['status'] : undefined,
-    limit: Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 100) : 20,
-    offset: Number.isFinite(offsetRaw) ? Math.max(offsetRaw, 0) : 0,
+    limit,
+    offset,
   };
 }

@@ -1,4 +1,5 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
+import { buildDomainHttpExceptionBody } from '../../infrastructure/http/api-error.mapper';
 import type { RequestsErrorCode } from './requests-error-codes';
 
 export class RequestsHttpException extends HttpException {
@@ -7,6 +8,6 @@ export class RequestsHttpException extends HttpException {
     readonly code: RequestsErrorCode,
     message: string,
   ) {
-    super({ code, message }, status);
+    super(buildDomainHttpExceptionBody(code, message), status);
   }
 }

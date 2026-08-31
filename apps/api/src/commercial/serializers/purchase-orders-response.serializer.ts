@@ -1,7 +1,12 @@
 import { formatMoneyAmountForApi } from '../domain/money';
 import {
+  toDocumentLinkResponse as toSharedDocumentLinkResponse,
+  type DocumentLinkResponse,
+} from '../../infrastructure/http/contracts';
+import {
   computePurchaseOrderAvailableBalance,
   resolvePurchaseOrderAuthorizedAmount,
+  type PurchaseOrderBalanceSource,
 } from '../domain/purchase-order-balance';
 import type {
   PurchaseOrderBillingRuleRow,
@@ -32,12 +37,7 @@ export type PurchaseOrderBillingRuleResponse = {
   createdAt: string;
 };
 
-export type PurchaseOrderDocumentLinkResponse = {
-  id: string;
-  documentId: string;
-  linkPurpose: string;
-  createdAt: string;
-};
+export type PurchaseOrderDocumentLinkResponse = DocumentLinkResponse;
 
 export type PurchaseOrderResponse = {
   id: string;
@@ -108,12 +108,7 @@ function toRuleResponse(row: PurchaseOrderBillingRuleRow): PurchaseOrderBillingR
 }
 
 function toDocumentLinkResponse(row: PurchaseOrderDocumentLinkRow): PurchaseOrderDocumentLinkResponse {
-  return {
-    id: row.id,
-    documentId: row.document_id,
-    linkPurpose: row.link_purpose,
-    createdAt: row.created_at,
-  };
+  return toSharedDocumentLinkResponse(row);
 }
 
 export function toPurchaseOrderResponse(row: PurchaseOrderRow): PurchaseOrderResponse {
@@ -151,7 +146,7 @@ function toBalanceResponse(
   items: PurchaseOrderItemRow[],
 ): PurchaseOrderBalanceResponse {
   const source = {
-    pricingStructure: purchaseOrder.pricing_structure,
+    pricingStructure: purchaseOrder.pricing_structure as PurchaseOrderBalanceSource['pricingStructure'],
     totalAmount: purchaseOrder.total_amount,
     lineTotals: items.map((item) => item.line_total_amount),
     consumedAmount: purchaseOrder.consumed_amount,

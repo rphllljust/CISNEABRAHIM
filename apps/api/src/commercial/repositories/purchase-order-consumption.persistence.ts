@@ -3,6 +3,7 @@ import {
   assertPurchaseOrderConsumptionAllowed,
   PurchaseOrderBalanceError,
   resolvePurchaseOrderAuthorizedAmount,
+  type PurchaseOrderBalanceSource,
 } from '../domain/purchase-order-balance';
 import { PURCHASE_ORDER_STATUSES } from '../domain/purchase-order';
 
@@ -82,7 +83,7 @@ export async function consumePurchaseOrderBalanceForBilling(
   const purchaseOrder = await lockPurchaseOrder(client, input.purchaseOrderId);
   const lineTotals = await loadLineTotals(client, input.purchaseOrderId);
   const balanceSource = {
-    pricingStructure: purchaseOrder.pricing_structure,
+    pricingStructure: purchaseOrder.pricing_structure as PurchaseOrderBalanceSource['pricingStructure'],
     totalAmount: purchaseOrder.total_amount,
     lineTotals,
     consumedAmount: purchaseOrder.consumed_amount,

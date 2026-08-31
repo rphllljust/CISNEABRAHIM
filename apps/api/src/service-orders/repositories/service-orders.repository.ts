@@ -1,6 +1,7 @@
 import { Inject, Injectable, Optional } from '@nestjs/common';
 import type { Pool, PoolClient } from 'pg';
 import { DatabaseService } from '../../infrastructure/database/database.service';
+import { queryIsUnitRegistered } from '../../infrastructure/database/reference-lookups';
 import { FAULT_HOOKS } from '../../platform/fault-injection/fault-hook.ids';
 import { FAULT_INJECTION_PORT, type FaultInjectionPort } from '../../platform/fault-injection/fault-injection.port';
 import { maybeInjectFault } from '../../platform/fault-injection/fault-injection.util';
@@ -51,14 +52,7 @@ export class ServiceOrdersRepository {
   }
 
   async isUnitRegistered(unitId: string): Promise<boolean> {
-    const result = await this.pool().query<{ exists: boolean }>(
-      `SELECT EXISTS (
-         SELECT 1 FROM "authorization".scope_refs
-         WHERE scope_type = 'UNIT' AND ref_id = $1
-       ) AS exists`,
-      [unitId],
-    );
-    return result.rows[0]?.exists === true;
+    return queryIsUnitRegistered(this.pool(), unitId);
   }
 
   async findById(serviceOrderId: string): Promise<ServiceOrderRow | null> {

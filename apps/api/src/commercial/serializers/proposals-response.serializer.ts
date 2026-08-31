@@ -1,4 +1,8 @@
 import { formatMoneyAmountForApi } from '../domain/money';
+import {
+  toDocumentLinkResponse,
+  type DocumentLinkResponse,
+} from '../../infrastructure/http/contracts';
 import type {
   ProposalDocumentLinkRow,
   ProposalItemRow,
@@ -64,12 +68,7 @@ export type ProposalItemResponse = {
   lineInternalCost: string | null;
 };
 
-export type ProposalDocumentLinkResponse = {
-  id: string;
-  documentId: string;
-  linkPurpose: string;
-  createdAt: string;
-};
+export type ProposalDocumentLinkResponse = DocumentLinkResponse;
 
 export type ProposalDetailResponse = {
   proposal: ProposalResponse;
@@ -111,12 +110,7 @@ export function toProposalItemResponse(row: ProposalItemRow): ProposalItemRespon
 export function toProposalDocumentLinkResponse(
   row: ProposalDocumentLinkRow,
 ): ProposalDocumentLinkResponse {
-  return {
-    id: row.id,
-    documentId: row.document_id,
-    linkPurpose: row.link_purpose,
-    createdAt: row.created_at,
-  };
+  return toDocumentLinkResponse(row);
 }
 
 export function toProposalVersionResponse(

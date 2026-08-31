@@ -2,9 +2,17 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { findRepoRoot } from '../cd/cd-paths';
 import type { ContinuityTierId } from '../continuity/ddp-016-proposal';
-import { hasMetMinObservationDays } from '../pilot/pilot-exit';
+import {
+  elapsedObservationDays,
+  evaluateRecordedOperationalThresholds,
+  hasMetMinObservationDays,
+  latestOperationalSnapshot,
+  loadPilotExitCriteria,
+} from '../pilot/pilot-exit';
 import type {
   PilotEvidencePhase,
+  PilotObservationWaiver,
+  PilotOperationalResultSnapshot,
   ReadinessEvidenceHistoryEntry,
   ReadinessEvidenceRecord,
   ReleaseCandidateRef,
@@ -209,9 +217,47 @@ export function approveBusinessSignOff(
   return { ok: true, record: next };
 }
 
+export type RecordPilotOperationalSnapshotInput = {
+  snapshot: Omit<PilotOperationalResultSnapshot, 'recordedAt'> & { recordedAt?: string };
+  recordedBy: string;
+};
+
+export function recordPilotOperationalSnapshot(
+  record: ReadinessEvidenceRecord,
+  input: RecordPilotOperationalSnapshotInput,
+  now = new Date(),
+): ReadinessEvidenceRecord {
+  const recordedAt = input.snapshot.recordedAt ?? now.toISOString();
+  const snapshot: PilotOperationalResultSnapshot = {
+    ...input.snapshot,
+    recordedAt,
+  };
+  let next: ReadinessEvidenceRecord = {
+    ...record,
+    pilot: {
+      ...record.pilot,
+      operationalResults: [...record.pilot.operationalResults, snapshot],
+    },
+  };
+  next = appendReadinessHistory(next, {
+    actor: input.recordedBy.trim(),
+    action: 'PILOT_OPERATIONAL_SNAPSHOT_RECORDED',
+    field: 'pilot.operationalResults',
+    previousValue: String(record.pilot.operationalResults.length),
+    newValue: String(next.pilot.operationalResults.length),
+    releaseCandidate: record.pilot.releaseCandidate,
+    notes: snapshot.notes,
+    recordedAt,
+  });
+  return next;
+}
+
 export type AuthorizePilotExitInput = {
   authorizedBy: string;
   notes?: string | null;
+  observationWaiver?: {
+    reason: string;
+  };
 };
 
 export type AuthorizePilotExitResult =
@@ -232,30 +278,68 @@ export function authorizePilotExit(
   if (!record.pilot.startedAt) {
     return { ok: false, error: 'Pilot startedAt is missing', record };
   }
-  if (!hasMetMinObservationDays(record.pilot.startedAt, record.pilot.minObservationDays, now)) {
-    return {
-      ok: false,
-      error: `Observation window not completed (${record.pilot.minObservationDays} days since ${record.pilot.startedAt})`,
-      record,
-    };
-  }
   if (!input.authorizedBy?.trim()) {
     return { ok: false, error: 'authorizedBy is required', record };
   }
 
-  const openBlockers = record.pilot.incidents.filter(
+  const windowMet = hasMetMinObservationDays(
+    record.pilot.startedAt,
+    record.pilot.minObservationDays,
+    now,
+  );
+  let observationWaiver: PilotObservationWaiver | null = record.pilot.observationWaiver ?? null;
+  if (!windowMet) {
+    if (!input.observationWaiver?.reason?.trim()) {
+      return {
+        ok: false,
+        error: `Observation window not completed (${record.pilot.minObservationDays} days since ${record.pilot.startedAt}); observationWaiver.reason required`,
+        record,
+      };
+    }
+    observationWaiver = {
+      authorizedBy: input.authorizedBy.trim(),
+      authorizedAt: now.toISOString(),
+      originalMinObservationDays: record.pilot.minObservationDays,
+      elapsedDaysAtAuthorization: Number(elapsedObservationDays(record.pilot.startedAt, now).toFixed(4)),
+      reason: input.observationWaiver.reason.trim(),
+    };
+  }
+
+  const openIncidents = record.pilot.incidents.filter(
     (incident) => incident.severity === 'BLOCKER' || incident.severity === 'CRITICAL',
   );
-  if (openBlockers.length > 0) {
+  const openCriticalErrors = record.pilot.criticalErrors;
+  if (openIncidents.length > 0 || openCriticalErrors.length > 0) {
     return {
       ok: false,
-      error: `Pilot has ${openBlockers.length} open BLOCKER/CRITICAL incident(s)`,
+      error: `Pilot has ${openIncidents.length} open BLOCKER/CRITICAL incident(s) and ${openCriticalErrors.length} critical error(s)`,
+      record,
+    };
+  }
+
+  const snapshot = latestOperationalSnapshot(record.pilot.operationalResults);
+  if (!snapshot) {
+    return {
+      ok: false,
+      error: 'Pilot operational snapshot required before exit (error/latency/worker/billing/allocation)',
+      record,
+    };
+  }
+
+  const thresholds = evaluateRecordedOperationalThresholds(snapshot, loadPilotExitCriteria());
+  if (thresholds.failed.length > 0) {
+    return {
+      ok: false,
+      error: `Pilot thresholds not met: ${thresholds.failed.join(', ')}`,
       record,
     };
   }
 
   const exitAuthorizedAt = now.toISOString();
   const nextPhase: PilotEvidencePhase = 'EXIT_READY';
+  const waiverNote = observationWaiver
+    ? `observation waiver by ${observationWaiver.authorizedBy}; originalMinDays=${observationWaiver.originalMinObservationDays}; elapsedDays=${observationWaiver.elapsedDaysAtAuthorization}`
+    : `observation completed since ${record.pilot.startedAt}`;
   let next: ReadinessEvidenceRecord = {
     ...record,
     pilot: {
@@ -263,6 +347,7 @@ export function authorizePilotExit(
       phase: nextPhase,
       exitAuthorizedAt,
       exitAuthorizedBy: input.authorizedBy.trim(),
+      observationWaiver,
       notes: input.notes ?? record.pilot.notes,
     },
   };
@@ -273,7 +358,7 @@ export function authorizePilotExit(
     previousValue: record.pilot.phase,
     newValue: nextPhase,
     releaseCandidate: record.pilot.releaseCandidate,
-    notes: input.notes ?? `observation completed since ${record.pilot.startedAt}`,
+    notes: input.notes ?? waiverNote,
     recordedAt: exitAuthorizedAt,
   });
   return { ok: true, record: next };

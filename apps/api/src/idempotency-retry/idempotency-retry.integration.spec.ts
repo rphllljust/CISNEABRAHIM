@@ -390,6 +390,34 @@ describe('Idempotency, timeout, retry & double-submit (PostgreSQL integration)',
     });
   });
 
+  describe('idempotency key contract — billing void', () => {
+    it('keeps a single voided billing record when void commits and client retries', async () => {
+      const { completed, billing } = await seedBillingReady(context.services, actor);
+      const idempotencyKey = `billing-void-retry-${crypto.randomUUID()}`;
+
+      const voided = await context.services.billingAccess.voidRecord(actor, completed.id, billing.id, {
+        rowVersion: billing.rowVersion,
+        voidReason: 'Retry após timeout.',
+        idempotencyKey,
+      });
+
+      const replayed = await context.services.billingAccess.voidRecord(actor, completed.id, billing.id, {
+        rowVersion: billing.rowVersion,
+        voidReason: 'Retry após timeout.',
+        idempotencyKey,
+      });
+
+      expect(replayed.id).toBe(voided.id);
+      expect(replayed.status).toBe('VOIDED');
+
+      const records = await context.pool.query<{ count: string }>(
+        `SELECT COUNT(*)::text AS count FROM bil.billing_records WHERE id = $1 AND status = 'VOIDED'`,
+        [billing.id],
+      );
+      expect(records.rows[0]?.count).toBe('1');
+    });
+  });
+
   describe('external side effect reconciliation', () => {
     it('reuses billing document idempotency when finalize is retried after successful issue', async () => {
       const { completed, billing } = await seedBillingReady(context.services, actor);

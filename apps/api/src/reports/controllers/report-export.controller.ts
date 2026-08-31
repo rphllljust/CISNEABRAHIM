@@ -1,14 +1,12 @@
-import { Controller, Delete, Get, Param, Post, Query, Res, UseFilters, UseGuards } from '@nestjs/common';
+import { Controller, Delete, Get, Param, Post, Query, Res, UseGuards } from '@nestjs/common';
 import type { FastifyReply } from 'fastify';
 import { CurrentAuth } from '../../auth/decorators/current-auth.decorator';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import type { AccessTokenClaims } from '../../auth/services/token.service';
-import { ReportExceptionFilter } from '../errors/report-exception.filter';
 import { ReportExportAccessService } from '../services/report-export-access.service';
 
 @Controller('reports')
 @UseGuards(JwtAuthGuard)
-@UseFilters(ReportExceptionFilter)
 export class ReportExportController {
   constructor(private readonly accessService: ReportExportAccessService) {}
 

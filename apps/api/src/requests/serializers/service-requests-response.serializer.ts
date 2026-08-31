@@ -1,14 +1,13 @@
+import {
+  toDocumentLinkResponse as toSharedDocumentLinkResponse,
+  type DocumentLinkResponse,
+} from '../../infrastructure/http/contracts';
 import type {
   ServiceRequestDocumentLinkRow,
   ServiceRequestRow,
 } from '../repositories/service-requests.repository.types';
 
-export type ServiceRequestDocumentLinkResponse = {
-  id: string;
-  documentId: string;
-  linkPurpose: string;
-  createdAt: string;
-};
+export type ServiceRequestDocumentLinkResponse = DocumentLinkResponse;
 
 export type ServiceRequestResponse = {
   id: string;
@@ -50,12 +49,7 @@ export type ServiceRequestDetailResponse = {
 };
 
 function toDocumentLinkResponse(row: ServiceRequestDocumentLinkRow): ServiceRequestDocumentLinkResponse {
-  return {
-    id: row.id,
-    documentId: row.document_id,
-    linkPurpose: row.link_purpose,
-    createdAt: row.created_at,
-  };
+  return toSharedDocumentLinkResponse(row);
 }
 
 export function toServiceRequestResponse(row: ServiceRequestRow): ServiceRequestResponse {

@@ -7,7 +7,7 @@ import {
 } from './pilot-feedback';
 import { assertNoUnauthorizedPilotFlags, isPilotEnvFlagEnabled } from './pilot-flags';
 import { evaluateObservationThresholds, hasMetMinObservationDays } from './pilot-exit';
-import { buildPilotObservation } from './pilot-observation';
+import { buildPilotObservation, httpBaselineFromPrompt82 } from './pilot-observation';
 import { formatPilotStatusSummary, runPilotStatusCheck } from './pilot-runner';
 import { assertPilotNotFullRollout, loadPilotScope } from './pilot-scope';
 
@@ -112,6 +112,16 @@ describe('controlled pilot (Prompt 90)', () => {
     expect(formatPilotStatusSummary(report)).toContain('phase=EXIT_READY');
   });
 
+  it('reports BLOCKED when allocation conflicts exceed threshold', () => {
+    const blocked = runPilotStatusCheck({
+      env: pilotEnv(),
+      metrics: { ...healthyMetrics(), allocationConflictSignals: 2 },
+      pilotStartedAt: '2026-08-01T00:00:00.000Z',
+    });
+    expect(blocked.phase).toBe('BLOCKED');
+    expect(blocked.exitCriteriaFailed).toContain('allocation_conflicts=2');
+  });
+
   it('reports BLOCKED when worker/outbox failures exceed threshold', () => {
     const blocked = runPilotStatusCheck({
       env: pilotEnv(),
@@ -139,5 +149,12 @@ describe('controlled pilot (Prompt 90)', () => {
     expect(hasMetMinObservationDays('2026-08-01T00:00:00.000Z', 14, new Date('2026-08-30T00:00:00.000Z'))).toBe(
       true,
     );
+  });
+
+  it('uses the recorded Prompt 82 max smoke p95 and zero error rate', () => {
+    const baseline = httpBaselineFromPrompt82();
+    expect(baseline.httpErrorRate).toBe(0);
+    expect(baseline.httpLatencyP95Ms).toBe(200);
+    expect(baseline.source).toContain('PROMPT_82_SMOKE_P95_MS');
   });
 });

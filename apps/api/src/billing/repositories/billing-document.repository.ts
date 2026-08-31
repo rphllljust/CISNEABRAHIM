@@ -60,30 +60,48 @@ export class BillingDocumentRepository {
       `SELECT ${BILLING_DOCUMENT_RETURNING}
        FROM bil.billing_documents
        WHERE billing_record_id = $1
-       ORDER BY issued_at DESC, version_number DESC`,
+       ORDER BY issued_at DESC, version_number DESC, id DESC`,
       [billingRecordId],
     );
     return result.rows;
   }
 
   async listItems(billingDocumentId: string): Promise<BillingDocumentItemRow[]> {
+    return this.listItemsForBillingDocuments([billingDocumentId]);
+  }
+
+  async listItemsForBillingDocuments(
+    billingDocumentIds: string[],
+  ): Promise<BillingDocumentItemRow[]> {
+    if (billingDocumentIds.length === 0) {
+      return [];
+    }
     const result = await this.pool().query<BillingDocumentItemRow>(
       `SELECT ${BILLING_DOCUMENT_ITEM_RETURNING}
        FROM bil.billing_document_items
-       WHERE billing_document_id = $1
-       ORDER BY line_number ASC`,
-      [billingDocumentId],
+       WHERE billing_document_id = ANY($1::uuid[])
+       ORDER BY billing_document_id, line_number ASC`,
+      [billingDocumentIds],
     );
     return result.rows;
   }
 
   async listHistoryEvents(billingDocumentId: string): Promise<BillingDocumentHistoryEventRow[]> {
+    return this.listHistoryEventsForBillingDocuments([billingDocumentId]);
+  }
+
+  async listHistoryEventsForBillingDocuments(
+    billingDocumentIds: string[],
+  ): Promise<BillingDocumentHistoryEventRow[]> {
+    if (billingDocumentIds.length === 0) {
+      return [];
+    }
     const result = await this.pool().query<BillingDocumentHistoryEventRow>(
       `SELECT id, billing_document_id, event_type, payload, actor_identity_id, occurred_at
        FROM bil.billing_document_history_events
-       WHERE billing_document_id = $1
-       ORDER BY occurred_at ASC, id ASC`,
-      [billingDocumentId],
+       WHERE billing_document_id = ANY($1::uuid[])
+       ORDER BY billing_document_id, occurred_at ASC, id ASC`,
+      [billingDocumentIds],
     );
     return result.rows;
   }

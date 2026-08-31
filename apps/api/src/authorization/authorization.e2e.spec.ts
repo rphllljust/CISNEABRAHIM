@@ -9,6 +9,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Pool } from 'pg';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../app.module';
+import { configureApiTestApp } from '../infrastructure/http/configure-api-test-app';
 import { normalizeLoginIdentifier } from '../auth/crypto/token-crypto';
 import { applyAuthTestEnv, AUTH_TEST_PASSWORD } from '../auth/test/auth-test-env';
 import { parseAuthTokenResponse } from '../auth/test/auth-response-test-types';
@@ -16,11 +17,6 @@ import { AUTHZ_ERROR_CODES } from './errors/authz-error-codes';
 import { AUTHZ_ACTIONS } from './types/authz-actions';
 import { AUTHZ_RESOURCE_TYPES } from './types/authz-resources';
 import { AUTHZ_SCOPES } from './types/authz-scopes';
-import { AuthExceptionFilter } from '../infrastructure/http/auth-exception.filter';
-import { AuthzExceptionFilter } from './errors/authz-exception.filter';
-import { CorrelationIdInterceptor } from '../infrastructure/http/correlation-id.interceptor';
-import { SecurityHeadersInterceptor } from '../infrastructure/http/security-headers.interceptor';
-
 function parseAuthzError(body: string): { error: { code: string; message: string } } {
   return JSON.parse(body) as { error: { code: string; message: string } };
 }
@@ -44,9 +40,7 @@ describe('Authorization E2E (negative)', () => {
     app = moduleFixture.createNestApplication<NestFastifyApplication>(
       new FastifyAdapter({ bodyLimit: 8_192 }),
     );
-    app.setGlobalPrefix('api/v1');
-    app.useGlobalFilters(new AuthExceptionFilter(), new AuthzExceptionFilter());
-    app.useGlobalInterceptors(new CorrelationIdInterceptor(), new SecurityHeadersInterceptor());
+    configureApiTestApp(app);
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
     pool = new Pool({ connectionString: testDatabaseUrl });

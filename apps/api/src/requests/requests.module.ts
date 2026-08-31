@@ -8,7 +8,13 @@ import { ServiceOrdersModule } from '../service-orders/service-orders.module';
 import { ServiceRequestsController } from './controllers/service-requests.controller';
 import { ServiceRequestsRepository } from './repositories/service-requests.repository';
 import { ServiceRequestsAccessAuthz } from './services/service-requests-access.authz';
+import { ServiceRequestsAccessAudit } from './services/service-requests-access.audit';
+import { ServiceRequestsAccessCommands } from './services/service-requests-access.commands';
+import { ServiceRequestsAccessIdempotency } from './services/service-requests-access.idempotency';
+import { ServiceRequestsAccessPersistence } from './services/service-requests-access.persistence';
+import { ServiceRequestsAccessQuery } from './services/service-requests-access.query';
 import { ServiceRequestsAccessService } from './services/service-requests-access.service';
+import { ServiceRequestsAccessValidation } from './services/service-requests-access.validation';
 import { ServiceRequestsReferenceValidationService } from './services/service-requests-reference-validation.service';
 
 @Module({
@@ -17,6 +23,12 @@ import { ServiceRequestsReferenceValidationService } from './services/service-re
   providers: [
     ServiceRequestsRepository,
     ServiceRequestsAccessAuthz,
+    ServiceRequestsAccessAudit,
+    ServiceRequestsAccessPersistence,
+    ServiceRequestsAccessValidation,
+    ServiceRequestsAccessQuery,
+    ServiceRequestsAccessIdempotency,
+    ServiceRequestsAccessCommands,
     ServiceRequestsReferenceValidationService,
     ServiceRequestsAccessService,
   ],

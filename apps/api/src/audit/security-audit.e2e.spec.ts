@@ -8,14 +8,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Pool } from 'pg';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../app.module';
+import { configureApiTestApp } from '../infrastructure/http/configure-api-test-app';
 import { SECURITY_AUDIT_ACTIONS } from './types/security-audit.types';
 import { applyAuthTestEnv, AUTH_TEST_PASSWORD } from '../auth/test/auth-test-env';
 import { normalizeLoginIdentifier } from '../auth/crypto/token-crypto';
-import { AuthExceptionFilter } from '../infrastructure/http/auth-exception.filter';
-import { AuthzExceptionFilter } from '../authorization/errors/authz-exception.filter';
-import { CorrelationIdInterceptor } from '../infrastructure/http/correlation-id.interceptor';
-import { SecurityHeadersInterceptor } from '../infrastructure/http/security-headers.interceptor';
-
 describe('Security audit E2E', () => {
   let app: NestFastifyApplication;
   let pool: Pool;
@@ -35,9 +31,7 @@ describe('Security audit E2E', () => {
     app = moduleFixture.createNestApplication<NestFastifyApplication>(
       new FastifyAdapter({ bodyLimit: 8_192 }),
     );
-    app.setGlobalPrefix('api/v1');
-    app.useGlobalFilters(new AuthExceptionFilter(), new AuthzExceptionFilter());
-    app.useGlobalInterceptors(new CorrelationIdInterceptor(), new SecurityHeadersInterceptor());
+    configureApiTestApp(app);
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
 

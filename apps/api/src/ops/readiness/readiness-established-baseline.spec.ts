@@ -49,4 +49,15 @@ describe('readiness established baseline', () => {
     expect(pending.some((entry) => entry.includes('piloto'))).toBe(true);
     expect(pending.some((entry) => entry.includes('UAT/UX'))).toBe(true);
   });
+
+  it('clears pending human actions when authorized evidence is complete', () => {
+    const record = createPendingReadinessEvidence();
+    record.rpoRto.decision = 'APPROVED';
+    record.businessSignOff.decision = 'APPROVED';
+    record.pilot.phase = 'OBSERVATION';
+    record.pilot.startedAt = '2026-08-30T22:28:40.517Z';
+    record.manualUatUx.status = 'PASSED';
+    const pending = summarizePendingHumanActions(buildReadinessEstablishedBaseline(new Date(), record));
+    expect(pending).toEqual([]);
+  });
 });

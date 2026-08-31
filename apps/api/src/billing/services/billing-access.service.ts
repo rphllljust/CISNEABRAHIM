@@ -265,10 +265,12 @@ export class BillingAccessService {
       );
     }
 
-    await this.audit(actor, SECURITY_AUDIT_ACTIONS.BillingBillingRecordVoid, order.id, {
-      billingRecordId,
-      voidReason: validated.voidReason,
-    });
+    if (result.outcome === 'voided') {
+      await this.audit(actor, SECURITY_AUDIT_ACTIONS.BillingBillingRecordVoid, order.id, {
+        billingRecordId,
+        voidReason: validated.voidReason,
+      });
+    }
 
     return this.loadDetail(result.billingRecord);
   }

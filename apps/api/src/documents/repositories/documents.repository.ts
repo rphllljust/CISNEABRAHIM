@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { Pool } from 'pg';
 import { DatabaseService } from '../../infrastructure/database/database.service';
+import { queryIsUnitRegistered } from '../../infrastructure/database/reference-lookups';
 import type { DocumentStatus } from '../domain/document-categories';
 import type { AllowedMimeType } from '../domain/document-categories';
 
@@ -64,14 +65,7 @@ export class DocumentsRepository {
   }
 
   async isUnitRegistered(unitId: string): Promise<boolean> {
-    const result = await this.pool().query<{ exists: boolean }>(
-      `SELECT EXISTS (
-         SELECT 1 FROM "authorization".scope_refs
-         WHERE scope_type = 'UNIT' AND ref_id = $1
-       ) AS exists`,
-      [unitId],
-    );
-    return result.rows[0]?.exists === true;
+    return queryIsUnitRegistered(this.pool(), unitId);
   }
 
   async findDocumentById(documentId: string): Promise<DocumentRow | null> {

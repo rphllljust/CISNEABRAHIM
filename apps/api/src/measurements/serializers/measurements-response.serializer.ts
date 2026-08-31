@@ -5,6 +5,10 @@ import type {
   MeasurementRow,
 } from '../repositories/measurements.repository.types';
 import { formatMoneyAmountForApi } from '../../commercial/domain/money';
+import {
+  toHistoryEventResponse as toSharedHistoryEventResponse,
+  type HistoryEventResponse,
+} from '../../infrastructure/http/contracts';
 import { normalizeMeasuredQuantity } from '../domain/measurement-quantity';
 
 export type MeasurementItemResponse = {
@@ -30,13 +34,7 @@ export type MeasurementAdjustmentResponse = {
   createdAt: string;
 };
 
-export type MeasurementHistoryEventResponse = {
-  id: string;
-  eventType: string;
-  payload: Record<string, unknown>;
-  actorIdentityId: string | null;
-  occurredAt: string;
-};
+export type MeasurementHistoryEventResponse = HistoryEventResponse;
 
 export type MeasurementResponse = {
   id: string;
@@ -94,13 +92,7 @@ export function toMeasurementAdjustmentResponse(
 export function toMeasurementHistoryEventResponse(
   row: MeasurementHistoryEventRow,
 ): MeasurementHistoryEventResponse {
-  return {
-    id: row.id,
-    eventType: row.event_type,
-    payload: row.payload,
-    actorIdentityId: row.actor_identity_id,
-    occurredAt: row.occurred_at,
-  };
+  return toSharedHistoryEventResponse(row);
 }
 
 export function toMeasurementResponse(row: MeasurementRow): MeasurementResponse {

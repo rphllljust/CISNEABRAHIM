@@ -15,14 +15,14 @@ describe('Commercial purchase orders characterization (unit)', () => {
     const error = purchaseOrdersAccessDenied();
     expect(error).toBeInstanceOf(CommercialHttpException);
     expect(error.getStatus()).toBe(HttpStatus.FORBIDDEN);
-    expect(error.getResponse()).toMatchObject({ code: COMMERCIAL_ERROR_CODES.DENIED });
+    expect(error.getResponse()).toMatchObject({ error: { code: COMMERCIAL_ERROR_CODES.DENIED } });
   });
 
   it('maps missing purchase order to PURCHASE_ORDER_NOT_FOUND', () => {
     const error = purchaseOrdersAccessNotFound();
     expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
     expect(error.getResponse()).toMatchObject({
-      code: COMMERCIAL_ERROR_CODES.PURCHASE_ORDER_NOT_FOUND,
+      error: { code: COMMERCIAL_ERROR_CODES.PURCHASE_ORDER_NOT_FOUND },
     });
   });
 
@@ -30,7 +30,7 @@ describe('Commercial purchase orders characterization (unit)', () => {
     const error = purchaseOrdersVersionConflict();
     expect(error.getStatus()).toBe(HttpStatus.CONFLICT);
     expect(error.getResponse()).toMatchObject({
-      code: COMMERCIAL_ERROR_CODES.PURCHASE_ORDER_VERSION_CONFLICT,
+      error: { code: COMMERCIAL_ERROR_CODES.PURCHASE_ORDER_VERSION_CONFLICT },
     });
   });
 
@@ -48,7 +48,7 @@ describe('Commercial purchase orders characterization (unit)', () => {
       const httpError = error as CommercialHttpException;
       expect(httpError.getStatus()).toBe(HttpStatus.NOT_FOUND);
       expect(httpError.getResponse()).toMatchObject({
-        code: COMMERCIAL_ERROR_CODES.PURCHASE_ORDER_NOT_FOUND,
+        error: { code: COMMERCIAL_ERROR_CODES.PURCHASE_ORDER_NOT_FOUND },
       });
     }
   });

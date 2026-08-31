@@ -1,3 +1,7 @@
+import {
+  toHistoryEventResponse as toSharedHistoryEventResponse,
+  type HistoryEventResponse,
+} from '../../infrastructure/http/contracts';
 import type { ServiceOrderHistoryEventRow, ServiceOrderRow } from '../repositories/service-orders.repository.types';
 
 export type ServiceOrderResponse = {
@@ -36,13 +40,7 @@ export type ServiceOrderResponse = {
   completedAt: string | null;
 };
 
-export type ServiceOrderHistoryEventResponse = {
-  id: string;
-  eventType: string;
-  payload: Record<string, unknown>;
-  actorIdentityId: string | null;
-  occurredAt: string;
-};
+export type ServiceOrderHistoryEventResponse = HistoryEventResponse;
 
 export type ServiceOrderDetailResponse = ServiceOrderResponse & {
   historyEvents: ServiceOrderHistoryEventResponse[];
@@ -89,13 +87,7 @@ export function toServiceOrderResponse(row: ServiceOrderRow): ServiceOrderRespon
 export function toServiceOrderHistoryEventResponse(
   row: ServiceOrderHistoryEventRow,
 ): ServiceOrderHistoryEventResponse {
-  return {
-    id: row.id,
-    eventType: row.event_type,
-    payload: row.payload,
-    actorIdentityId: row.actor_identity_id,
-    occurredAt: row.occurred_at,
-  };
+  return toSharedHistoryEventResponse(row);
 }
 
 export function toServiceOrderDetailResponse(

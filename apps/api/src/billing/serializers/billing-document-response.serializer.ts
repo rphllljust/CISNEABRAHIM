@@ -1,3 +1,4 @@
+import { type HistoryEventResponse } from '../../infrastructure/http/contracts';
 import type {
   BillingDocumentHistoryEventRow,
   BillingDocumentItemRow,
@@ -17,13 +18,7 @@ export type BillingDocumentItemResponse = {
   pricingLineSnapshot: Record<string, unknown>;
 };
 
-export type BillingDocumentHistoryEventResponse = {
-  id: string;
-  eventType: string;
-  payload: Record<string, unknown>;
-  actorIdentityId: string | null;
-  occurredAt: string;
-};
+export type BillingDocumentHistoryEventResponse = HistoryEventResponse;
 
 export type BillingDocumentDetailResponse = {
   id: string;

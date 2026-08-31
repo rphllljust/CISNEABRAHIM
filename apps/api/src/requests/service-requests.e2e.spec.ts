@@ -19,32 +19,21 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Pool } from 'pg';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../app.module';
+import { configureApiTestApp } from '../infrastructure/http/configure-api-test-app';
 import { normalizeLoginIdentifier } from '../auth/crypto/token-crypto';
 import { applyAuthTestEnv, AUTH_TEST_PASSWORD } from '../auth/test/auth-test-env';
 import { parseAuthTokenResponse } from '../auth/test/auth-response-test-types';
-import { AuthExceptionFilter } from '../infrastructure/http/auth-exception.filter';
-import { AuthzExceptionFilter } from '../authorization/errors/authz-exception.filter';
-import { CorrelationIdInterceptor } from '../infrastructure/http/correlation-id.interceptor';
-import { SecurityHeadersInterceptor } from '../infrastructure/http/security-headers.interceptor';
 import { AUTHZ_ACTIONS } from '../authorization/types/authz-actions';
 import { AUTHZ_RESOURCE_TYPES } from '../authorization/types/authz-resources';
 import { AUTHZ_SCOPES } from '../authorization/types/authz-scopes';
-import { CatalogExceptionFilter } from '../catalog/errors/catalog-exception.filter';
-import { ClientExceptionFilter } from '../clients/errors/client-exception.filter';
-import { CommercialExceptionFilter } from '../commercial/errors/commercial-exception.filter';
-import { DocumentExceptionFilter } from '../documents/errors/document-exception.filter';
-import { AssetExceptionFilter } from '../resources/errors/asset-exception.filter';
 import { CONTACT_PURPOSES } from '../clients/domain/client-status';
 import { SERVICE_REQUEST_ORIGINS, SERVICE_REQUEST_STATUSES } from './domain/service-request';
 import { REQUESTS_ERROR_CODES } from './errors/requests-error-codes';
-import { RequestsExceptionFilter } from './errors/requests-exception.filter';
 
 const UNIT_A = 'unit-sr-e2e';
 const TEST_CNPJ = '11222333000181';
 
-function parseRequestsError(body: string): { code: string } {
-  return JSON.parse(body) as { code: string };
-}
+import { parseApiErrorCode } from '../infrastructure/http/api-error-response';
 
 describe('Service requests E2E', () => {
   let app: NestFastifyApplication;
@@ -65,18 +54,7 @@ describe('Service requests E2E', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication<NestFastifyApplication>(new FastifyAdapter());
-    app.setGlobalPrefix('api/v1');
-    app.useGlobalFilters(
-      new AuthExceptionFilter(),
-      new AuthzExceptionFilter(),
-      new ClientExceptionFilter(),
-      new CatalogExceptionFilter(),
-      new AssetExceptionFilter(),
-      new DocumentExceptionFilter(),
-      new CommercialExceptionFilter(),
-      new RequestsExceptionFilter(),
-    );
-    app.useGlobalInterceptors(new CorrelationIdInterceptor(), new SecurityHeadersInterceptor());
+    configureApiTestApp(app);
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
     pool = new Pool({ connectionString: testDatabaseUrl });
@@ -259,6 +237,6 @@ describe('Service requests E2E', () => {
       headers: { authorization: `Bearer ${intruderToken}` },
     });
     expect(getResponse.statusCode).toBe(403);
-    expect(parseRequestsError(getResponse.body).code).toBe(REQUESTS_ERROR_CODES.DENIED);
+    expect(parseApiErrorCode(getResponse.body)).toBe(REQUESTS_ERROR_CODES.DENIED);
   });
 });

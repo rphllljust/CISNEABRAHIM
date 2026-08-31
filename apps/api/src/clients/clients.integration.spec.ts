@@ -131,6 +131,38 @@ describe('Clients PostgreSQL integration', () => {
     expect(reactivated.deactivatedAt).not.toBeNull();
   });
 
+  it('lists clients with contacts in a single batch load', async () => {
+    const { identityId } = await seedActor();
+    const actor = { identityId, sessionId: 'sid' };
+
+    const created = await clientAccess.create(actor, {
+      legalName: 'Cliente Lista LTDA',
+      taxId: '11222333000518',
+      contacts: [
+        {
+          name: 'Lista Ops',
+          purpose: CONTACT_PURPOSES.Operational,
+          email: 'lista@client.invalid',
+        },
+      ],
+    });
+
+    const listed = await clientAccess.list(actor, { limit: 20, offset: 0 });
+    expect(listed.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: created.id,
+          contacts: [
+            expect.objectContaining({
+              name: 'Lista Ops',
+              email: 'lista@client.invalid',
+            }),
+          ],
+        }),
+      ]),
+    );
+  });
+
   it('rejects duplicate CNPJ', async () => {
     const { identityId } = await seedActor();
     const actor = { identityId, sessionId: 'sid' };

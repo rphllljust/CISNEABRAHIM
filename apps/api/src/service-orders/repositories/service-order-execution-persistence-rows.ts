@@ -38,10 +38,8 @@ export function historyEventForExecutionTransition(
   }
 }
 
+import { isIdempotencyKeyViolation } from '../../infrastructure/database/pg-unique-violation';
+
 export function isExecutionIdempotencyViolation(error: unknown): boolean {
-  if (!error || typeof error !== 'object') {
-    return false;
-  }
-  const pgError = error as { code?: string; constraint?: string };
-  return pgError.code === '23505' && (pgError.constraint?.includes('idempotency') ?? false);
+  return isIdempotencyKeyViolation(error);
 }

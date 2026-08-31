@@ -36,7 +36,7 @@ import { ClientsModule } from '../clients/clients.module';
 import { ADDRESS_PURPOSES, CONTACT_PURPOSES } from '../clients/domain/client-status';
 import { ClientAccessService } from '../clients/services/client-access.service';
 import { CommercialModule } from '../commercial/commercial.module';
-import { PURCHASE_ORDER_PRICING_STRUCTURES, PURCHASE_ORDER_RULE_TYPES } from '../commercial/domain/purchase-order';
+import { PURCHASE_ORDER_PRICING_STRUCTURES, PURCHASE_ORDER_RULE_TYPES, type PurchaseOrderRuleType } from '../commercial/domain/purchase-order';
 import { PurchaseOrdersAccessService } from '../commercial/services/purchase-orders-access.service';
 import { DocumentsModule } from '../documents/documents.module';
 import { ObjectStorageService } from '../documents/storage/object-storage.service';
@@ -203,7 +203,7 @@ describe('Billing document PostgreSQL integration', () => {
     actor: { identityId: string; sessionId: string },
     poNumber?: string,
     options?: {
-      billingRules?: Array<{ ruleType: string; ruleConfig?: Record<string, unknown> }>;
+      billingRules?: Array<{ ruleType: PurchaseOrderRuleType; ruleConfig?: Record<string, unknown> }>;
     },
   ) {
     const taxId = clientTaxIdCounter++ % 2 === 0 ? TEST_CNPJ : ALT_TEST_CNPJ;

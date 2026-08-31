@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import type { Pool } from 'pg';
 import { DatabaseService } from '../../infrastructure/database/database.service';
+import { queryIsUnitRegistered } from '../../infrastructure/database/reference-lookups';
+import { orderByCreatedAtDesc } from '../../infrastructure/database/sql';
 import { PURCHASE_ORDER_STATUSES } from '../domain/purchase-order';
 import type {
   ClientSnapshotSource,
@@ -64,14 +66,7 @@ export class PurchaseOrdersRepository {
   }
 
   async isUnitRegistered(unitId: string): Promise<boolean> {
-    const result = await this.pool().query<{ exists: boolean }>(
-      `SELECT EXISTS (
-         SELECT 1 FROM "authorization".scope_refs
-         WHERE scope_type = 'UNIT' AND ref_id = $1
-       ) AS exists`,
-      [unitId],
-    );
-    return result.rows[0]?.exists === true;
+    return queryIsUnitRegistered(this.pool(), unitId);
   }
 
   async findClientById(clientId: string): Promise<ClientSnapshotSource | null> {
@@ -131,7 +126,7 @@ export class PurchaseOrdersRepository {
     const result = await this.pool().query<PurchaseOrderRow>(
       `${PO_SELECT}
        WHERE ${whereClause}
-       ORDER BY created_at DESC
+       ORDER BY ${orderByCreatedAtDesc()}
        LIMIT $${params.length + 1}
        OFFSET $${params.length + 2}`,
       [...params, limit, offset],

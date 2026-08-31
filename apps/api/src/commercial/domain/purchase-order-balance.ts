@@ -1,5 +1,5 @@
 import { normalizeMoneyAmount } from './money';
-import { PURCHASE_ORDER_PRICING_STRUCTURES } from './purchase-order';
+import { PURCHASE_ORDER_PRICING_STRUCTURES, type PurchaseOrderPricingStructure } from './purchase-order';
 
 export class PurchaseOrderBalanceError extends Error {
   constructor(readonly code: string) {
@@ -8,7 +8,7 @@ export class PurchaseOrderBalanceError extends Error {
 }
 
 export type PurchaseOrderBalanceSource = {
-  pricingStructure: string;
+  pricingStructure: PurchaseOrderPricingStructure;
   totalAmount: string | null;
   lineTotals: Array<string | null | undefined>;
   consumedAmount: string | null;

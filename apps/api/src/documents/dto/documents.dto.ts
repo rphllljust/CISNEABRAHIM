@@ -1,4 +1,8 @@
 import {
+  parseClampedOffsetLimit,
+  parsePositiveVersionNumberParam,
+} from '../../infrastructure/http/contracts';
+import {
   isDocumentCategory,
   isDocumentClassification,
   MAX_FILE_SIZE_BYTES,
@@ -50,10 +54,7 @@ export function parseCreateDocumentUploadFields(
 }
 
 export function parseListDocumentsQuery(query: Record<string, unknown>): ListDocumentsQuery {
-  const limitRaw = Number(query['limit'] ?? 20);
-  const offsetRaw = Number(query['offset'] ?? 0);
-  const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 100) : 20;
-  const offset = Number.isFinite(offsetRaw) ? Math.max(offsetRaw, 0) : 0;
+  const { limit, offset } = parseClampedOffsetLimit(query);
   const unitId = typeof query['unitId'] === 'string' ? query['unitId'].trim() : undefined;
   const categoryCode =
     typeof query['categoryCode'] === 'string' ? query['categoryCode'].trim() : undefined;
@@ -62,11 +63,11 @@ export function parseListDocumentsQuery(query: Record<string, unknown>): ListDoc
 }
 
 export function parseVersionNumberParam(value: string): number {
-  const parsed = Number(value);
-  if (!Number.isInteger(parsed) || parsed < 1) {
+  try {
+    return parsePositiveVersionNumberParam(value);
+  } catch {
     throw new Error('versionNumber is invalid');
   }
-  return parsed;
 }
 
 export const DOCUMENT_UPLOAD_LIMITS = {
