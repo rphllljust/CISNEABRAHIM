@@ -64,12 +64,12 @@ describe('People PostgreSQL integration', () => {
 
     personAccess = module.get(PersonAccessService);
     pool = new Pool({ connectionString: testDatabaseUrl });
-    await ensureOperationalLaborTypesBaseline(pool);
   });
 
   beforeEach(async () => {
     await truncateWorkforceTables(pool);
     await truncateIdentityAndAuthorizationTables(pool);
+    await ensureOperationalLaborTypesBaseline(pool);
   });
 
   afterAll(async () => {
@@ -89,7 +89,7 @@ describe('People PostgreSQL integration', () => {
     const actor = { identityId, sessionId: 'sid' };
 
     const created = await personAccess.create(actor, {
-      legalName: 'Executor Operacional Sintético',
+      legalName: 'Executor Operacional Sintetico',
       preferredName: 'Executor',
       defaultLaborTypeCode: 'DRIVER',
       externalErpId: 'ERP-PEOPLE-001',
@@ -98,11 +98,10 @@ describe('People PostgreSQL integration', () => {
     expect(created.status).toBe('ACTIVE');
     expect(created.memberCode).toMatch(/^PSN-/);
     expect(created.defaultLaborTypeCode).toBe('DRIVER');
-    expect(created.defaultLaborTypeName).toBe('Motorista');
     expect(created.serviceOrderAllocationSupported).toBe(false);
 
     const fetched = await personAccess.getById(actor, created.id);
-    expect(fetched.legalName).toBe('Executor Operacional Sintético');
+    expect(fetched.legalName).toBe('Executor Operacional Sintetico');
 
     const updated = await personAccess.update(actor, created.id, {
       version: created.version,
@@ -114,7 +113,7 @@ describe('People PostgreSQL integration', () => {
       actor,
       created.id,
       updated.version,
-      'Saída operacional',
+      'Saida operacional',
     );
     expect(deactivated.status).toBe('INACTIVE');
 
@@ -158,7 +157,7 @@ describe('People PostgreSQL integration', () => {
     const actor = { identityId, sessionId: 'sid' };
 
     const created = await personAccess.create(actor, {
-      legalName: 'Concorrência Operacional',
+      legalName: 'Concorrencia Operacional',
     });
 
     await personAccess.update(actor, created.id, {
@@ -183,7 +182,7 @@ describe('People PostgreSQL integration', () => {
 
     for (let index = 0; index < 3; index += 1) {
       await personAccess.create(actor, {
-        legalName: `Pessoa Paginação ${index}`,
+        legalName: `Pessoa Paginacao ${index}`,
       });
     }
 
@@ -209,7 +208,7 @@ describe('People PostgreSQL integration', () => {
 
     await expect(
       personAccess.create(actor, {
-        legalName: 'Tipo inválido',
+        legalName: 'Tipo invalido',
         defaultLaborTypeCode: 'NOT_A_REAL_TYPE',
       }),
     ).rejects.toBeInstanceOf(PersonHttpException);

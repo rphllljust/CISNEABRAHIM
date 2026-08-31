@@ -1,5 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
-import { randomBytes } from 'node:crypto';
+import { Injectable } from '@nestjs/common';
 import {
   SECURITY_AUDIT_ACTIONS,
   SECURITY_AUDIT_CLASSIFICATIONS,
@@ -7,30 +6,14 @@ import {
   SECURITY_AUDIT_RESOURCE_TYPES,
 } from '../../audit/types/security-audit.types';
 import { SecurityAuditService } from '../../audit/services/security-audit.service';
-import { AuthorizationRepository } from '../../authorization/repositories/authorization.repository';
-import { PolicyDecisionPointService } from '../../authorization/services/policy-decision-point.service';
-import { ScopeEnforcementService } from '../../authorization/services/scope-enforcement.service';
-import { toResourceContextFromPurchaseOrder } from '../../authorization/scope/scope-matcher';
-import type { AuthzAction } from '../../authorization/types/authz-actions';
 import { AUTHZ_ACTIONS } from '../../authorization/types/authz-actions';
-import { AUTHZ_RESOURCE_TYPES } from '../../authorization/types/authz-resources';
-import { AUTHZ_SCOPES } from '../../authorization/types/authz-scopes';
+import type { AuthzAction } from '../../authorization/types/authz-actions';
 import type { IdentityAuthzContext } from '../../authorization/types/authz-decision';
-import { assertUuid, CatalogValidationError } from '../../catalog/domain/service-catalog.validation';
-import { COMMERCIAL_ERROR_CODES } from '../errors/commercial-error-codes';
-import { CommercialHttpException } from '../errors/commercial-http.exception';
-import {
-  PurchaseOrderValidationError,
-  validateCancelPurchaseOrderInput,
-  validateCreatePurchaseOrderInput,
-  validateLinkPurchaseOrderDocumentInput,
-  validateRegisterPurchaseOrderInput,
-  validateUpdatePurchaseOrderDraftInput,
-  type CancelPurchaseOrderInput,
-  type CreatePurchaseOrderInput,
-  type LinkPurchaseOrderDocumentInput,
-  type PurchaseOrderItemInput,
-  type UpdatePurchaseOrderDraftInput,
+import type {
+  CancelPurchaseOrderInput,
+  CreatePurchaseOrderInput,
+  LinkPurchaseOrderDocumentInput,
+  UpdatePurchaseOrderDraftInput,
 } from '../domain/purchase-order.validation';
 import { PurchaseOrdersRepository } from '../repositories/purchase-orders.repository';
 import type { PurchaseOrderRow } from '../repositories/purchase-orders.repository.types';
@@ -39,14 +22,33 @@ import {
   toPurchaseOrderResponse,
   type PurchaseOrderDetailResponse,
 } from '../serializers/purchase-orders-response.serializer';
+import { PurchaseOrdersAccessAuthz } from './purchase-orders-access.authz';
+import {
+  isDuplicatePoViolation,
+  purchaseOrdersAccessNotFound,
+  purchaseOrdersClientNotFound,
+  purchaseOrdersDuplicatePo,
+  purchaseOrdersInUse,
+  purchaseOrdersInvalidState,
+  purchaseOrdersVersionConflict,
+} from './purchase-orders-access.errors';
+import {
+  assertValidPurchaseOrderId,
+  generatePurchaseOrderInternalCode,
+  resolveCancelPurchaseOrderInput,
+  resolveCreatePurchaseOrderInput,
+  resolveLinkPurchaseOrderDocumentInput,
+  resolveRegisterPurchaseOrderInput,
+  resolveUpdatePurchaseOrderDraftInput,
+} from './purchase-orders-input-resolution';
+import { PurchaseOrdersReferenceValidationService } from './purchase-orders-reference-validation.service';
 
 @Injectable()
 export class PurchaseOrdersAccessService {
   constructor(
     private readonly purchaseOrdersRepository: PurchaseOrdersRepository,
-    private readonly authorizationRepository: AuthorizationRepository,
-    private readonly policyDecisionPoint: PolicyDecisionPointService,
-    private readonly scopeEnforcement: ScopeEnforcementService,
+    private readonly authz: PurchaseOrdersAccessAuthz,
+    private readonly referenceValidation: PurchaseOrdersReferenceValidationService,
     private readonly securityAudit: SecurityAuditService,
   ) {}
 
@@ -54,47 +56,25 @@ export class PurchaseOrdersAccessService {
     actor: IdentityAuthzContext,
     input: CreatePurchaseOrderInput,
   ): Promise<PurchaseOrderDetailResponse> {
-    let validated;
-    try {
-      validated = validateCreatePurchaseOrderInput(input);
-    } catch (error) {
-      if (error instanceof PurchaseOrderValidationError) {
-        throw this.validationFailed();
-      }
-      throw error;
-    }
+    const validated = resolveCreatePurchaseOrderInput(input);
 
-    await this.assertCreateAction(actor, input.clientId, input.unitId);
-
-    if (!(await this.purchaseOrdersRepository.isUnitRegistered(input.unitId))) {
-      throw new CommercialHttpException(
-        HttpStatus.BAD_REQUEST,
-        COMMERCIAL_ERROR_CODES.UNIT_NOT_REGISTERED,
-        'Unit is not registered.',
-      );
-    }
-
-    const client = await this.purchaseOrdersRepository.findClientById(input.clientId);
-    if (!client) {
-      throw this.clientNotFound();
-    }
-    if (client.status !== 'ACTIVE') {
-      throw new CommercialHttpException(
-        HttpStatus.CONFLICT,
-        COMMERCIAL_ERROR_CODES.CLIENT_INACTIVE,
-        'Client is inactive.',
-      );
-    }
+    await this.authz.assertCreateAction(actor, input.clientId, input.unitId);
+    await this.referenceValidation.assertUnitRegistered(input.unitId);
+    await this.referenceValidation.assertClientActive(input.clientId);
 
     if (input.originalDocumentId) {
-      await this.assertDocumentAccessible(actor, input.originalDocumentId, input.unitId);
+      await this.referenceValidation.assertDocumentAccessible(
+        actor,
+        input.originalDocumentId,
+        input.unitId,
+      );
     }
 
-    await this.assertServiceReferences(validated.items);
+    await this.referenceValidation.assertServiceReferences(validated.items);
 
     try {
       const created = await this.purchaseOrdersRepository.createPurchaseOrder({
-        internalCode: this.generateInternalCode(),
+        internalCode: generatePurchaseOrderInternalCode(),
         clientId: input.clientId,
         unitId: input.unitId,
         poNumber: validated.poNumber,
@@ -136,12 +116,8 @@ export class PurchaseOrdersAccessService {
         [],
       );
     } catch (error) {
-      if (this.purchaseOrdersRepository.isDuplicatePoViolation(error)) {
-        throw new CommercialHttpException(
-          HttpStatus.CONFLICT,
-          COMMERCIAL_ERROR_CODES.PURCHASE_ORDER_DUPLICATE,
-          'Purchase order number already exists for this client.',
-        );
+      if (isDuplicatePoViolation(error)) {
+        throw purchaseOrdersDuplicatePo();
       }
       throw error;
     }
@@ -152,21 +128,13 @@ export class PurchaseOrdersAccessService {
     purchaseOrderId: string,
     input: UpdatePurchaseOrderDraftInput,
   ): Promise<PurchaseOrderDetailResponse> {
-    this.assertValidPurchaseOrderId(purchaseOrderId);
+    assertValidPurchaseOrderId(purchaseOrderId);
     await this.requirePurchaseOrder(actor, purchaseOrderId, AUTHZ_ACTIONS.CommercialPurchaseOrderUpdate);
 
-    let validated;
-    try {
-      validated = validateUpdatePurchaseOrderDraftInput(input);
-    } catch (error) {
-      if (error instanceof PurchaseOrderValidationError) {
-        throw this.validationFailed();
-      }
-      throw error;
-    }
+    const validated = resolveUpdatePurchaseOrderDraftInput(input);
 
     if (validated.items) {
-      await this.assertServiceReferences(validated.items);
+      await this.referenceValidation.assertServiceReferences(validated.items);
     }
 
     try {
@@ -192,10 +160,10 @@ export class PurchaseOrdersAccessService {
       });
 
       if (updated === 'VERSION_CONFLICT') {
-        throw this.versionConflict();
+        throw purchaseOrdersVersionConflict();
       }
       if (updated === 'INVALID_STATE') {
-        throw this.invalidState();
+        throw purchaseOrdersInvalidState();
       }
 
       const documentLinks = await this.purchaseOrdersRepository.listDocumentLinks(purchaseOrderId);
@@ -206,12 +174,8 @@ export class PurchaseOrdersAccessService {
         documentLinks,
       );
     } catch (error) {
-      if (this.purchaseOrdersRepository.isDuplicatePoViolation(error)) {
-        throw new CommercialHttpException(
-          HttpStatus.CONFLICT,
-          COMMERCIAL_ERROR_CODES.PURCHASE_ORDER_DUPLICATE,
-          'Purchase order number already exists for this client.',
-        );
+      if (isDuplicatePoViolation(error)) {
+        throw purchaseOrdersDuplicatePo();
       }
       throw error;
     }
@@ -222,26 +186,18 @@ export class PurchaseOrdersAccessService {
     purchaseOrderId: string,
     input: { rowVersion: number },
   ): Promise<PurchaseOrderDetailResponse> {
-    this.assertValidPurchaseOrderId(purchaseOrderId);
+    assertValidPurchaseOrderId(purchaseOrderId);
     const purchaseOrder = await this.requirePurchaseOrder(
       actor,
       purchaseOrderId,
       AUTHZ_ACTIONS.CommercialPurchaseOrderRegister,
     );
 
-    let validated;
-    try {
-      validated = validateRegisterPurchaseOrderInput(input);
-    } catch (error) {
-      if (error instanceof PurchaseOrderValidationError) {
-        throw this.validationFailed();
-      }
-      throw error;
-    }
+    const validated = resolveRegisterPurchaseOrderInput(input);
 
     const client = await this.purchaseOrdersRepository.findClientById(purchaseOrder.client_id);
     if (!client) {
-      throw this.clientNotFound();
+      throw purchaseOrdersClientNotFound();
     }
 
     const items = await this.purchaseOrdersRepository.listItems(purchaseOrderId);
@@ -286,10 +242,10 @@ export class PurchaseOrdersAccessService {
     });
 
     if (registered === 'VERSION_CONFLICT') {
-      throw this.versionConflict();
+      throw purchaseOrdersVersionConflict();
     }
     if (registered === 'INVALID_STATE') {
-      throw this.invalidState();
+      throw purchaseOrdersInvalidState();
     }
 
     await this.securityAudit.record({
@@ -314,17 +270,13 @@ export class PurchaseOrdersAccessService {
     purchaseOrderId: string,
     input: CancelPurchaseOrderInput,
   ): Promise<PurchaseOrderDetailResponse> {
-    this.assertValidPurchaseOrderId(purchaseOrderId);
+    assertValidPurchaseOrderId(purchaseOrderId);
     await this.requirePurchaseOrder(actor, purchaseOrderId, AUTHZ_ACTIONS.CommercialPurchaseOrderCancel);
 
-    let validated;
-    try {
-      validated = validateCancelPurchaseOrderInput(input);
-    } catch (error) {
-      if (error instanceof PurchaseOrderValidationError) {
-        throw this.validationFailed();
-      }
-      throw error;
+    const validated = resolveCancelPurchaseOrderInput(input);
+
+    if (await this.purchaseOrdersRepository.hasBlockingReferences(purchaseOrderId)) {
+      throw purchaseOrdersInUse();
     }
 
     const cancelled = await this.purchaseOrdersRepository.cancel(
@@ -335,10 +287,10 @@ export class PurchaseOrdersAccessService {
     );
 
     if (cancelled === 'VERSION_CONFLICT') {
-      throw this.versionConflict();
+      throw purchaseOrdersVersionConflict();
     }
     if (cancelled === 'INVALID_STATE') {
-      throw this.invalidState();
+      throw purchaseOrdersInvalidState();
     }
 
     await this.securityAudit.record({
@@ -362,30 +314,16 @@ export class PurchaseOrdersAccessService {
     purchaseOrderId: string,
     input: LinkPurchaseOrderDocumentInput,
   ): Promise<PurchaseOrderDetailResponse> {
-    this.assertValidPurchaseOrderId(purchaseOrderId);
+    assertValidPurchaseOrderId(purchaseOrderId);
     const purchaseOrder = await this.requirePurchaseOrder(
       actor,
       purchaseOrderId,
       AUTHZ_ACTIONS.CommercialPurchaseOrderUpdate,
     );
 
-    let validated;
-    try {
-      validated = validateLinkPurchaseOrderDocumentInput(input);
-    } catch (error) {
-      if (error instanceof PurchaseOrderValidationError) {
-        throw this.validationFailed();
-      }
-      throw error;
-    }
+    const validated = resolveLinkPurchaseOrderDocumentInput(input);
 
-    const document = await this.purchaseOrdersRepository.findDocumentById(validated.documentId);
-    if (!document) {
-      throw this.documentNotFound();
-    }
-    if (document.unit_id !== purchaseOrder.unit_id) {
-      throw this.denied();
-    }
+    await this.referenceValidation.assertDocumentUnitMatch(validated.documentId, purchaseOrder.unit_id);
 
     await this.purchaseOrdersRepository.linkDocument(
       purchaseOrderId,
@@ -401,7 +339,7 @@ export class PurchaseOrdersAccessService {
     actor: IdentityAuthzContext,
     purchaseOrderId: string,
   ): Promise<PurchaseOrderDetailResponse> {
-    this.assertValidPurchaseOrderId(purchaseOrderId);
+    assertValidPurchaseOrderId(purchaseOrderId);
     const purchaseOrder = await this.requirePurchaseOrder(
       actor,
       purchaseOrderId,
@@ -417,24 +355,7 @@ export class PurchaseOrdersAccessService {
     actor: IdentityAuthzContext,
     query: { clientId?: string; unitId?: string; limit: number; offset: number },
   ): Promise<{ items: ReturnType<typeof toPurchaseOrderResponse>[]; limit: number; offset: number }> {
-    const decision = await this.policyDecisionPoint.decide(
-      actor,
-      {
-        action: AUTHZ_ACTIONS.CommercialPurchaseOrderList,
-        resourceType: AUTHZ_RESOURCE_TYPES.CommercialPurchaseOrder,
-      },
-      { audit: true },
-    );
-    if (decision.result === 'DENY') {
-      throw this.denied();
-    }
-
-    const grants = await this.authorizationRepository.findActiveGrants(
-      actor.identityId,
-      AUTHZ_ACTIONS.CommercialPurchaseOrderList,
-      AUTHZ_RESOURCE_TYPES.CommercialPurchaseOrder,
-    );
-    const scopeFilter = this.scopeEnforcement.buildPurchaseOrderListFilter(grants);
+    const scopeFilter = await this.authz.buildListScopeFilter(actor);
 
     const clauses = [scopeFilter.clause];
     const params = [...scopeFilter.params];
@@ -461,47 +382,6 @@ export class PurchaseOrdersAccessService {
     };
   }
 
-  private async assertServiceReferences(items: PurchaseOrderItemInput[]): Promise<void> {
-    for (const item of items) {
-      if (!item.serviceDefinitionId) {
-        continue;
-      }
-      const service = await this.purchaseOrdersRepository.findServiceSnapshot(
-        item.serviceDefinitionId,
-        item.serviceDefinitionVersionId,
-      );
-      if (!service) {
-        throw this.serviceNotFound();
-      }
-    }
-  }
-
-  private async assertDocumentAccessible(
-    actor: IdentityAuthzContext,
-    documentId: string,
-    unitId: string,
-  ): Promise<void> {
-    const document = await this.purchaseOrdersRepository.findDocumentById(documentId);
-    if (!document) {
-      throw this.documentNotFound();
-    }
-    if (document.unit_id !== unitId) {
-      throw this.denied();
-    }
-    const decision = await this.policyDecisionPoint.decide(
-      actor,
-      {
-        action: AUTHZ_ACTIONS.DocumentsDocumentRead,
-        resourceType: AUTHZ_RESOURCE_TYPES.DocumentsDocument,
-        context: { resourceId: documentId, unitId: document.unit_id, documentId },
-      },
-      { audit: false },
-    );
-    if (decision.result === 'DENY') {
-      throw this.denied();
-    }
-  }
-
   private async requirePurchaseOrder(
     actor: IdentityAuthzContext,
     purchaseOrderId: string,
@@ -509,160 +389,9 @@ export class PurchaseOrdersAccessService {
   ): Promise<PurchaseOrderRow> {
     const purchaseOrder = await this.purchaseOrdersRepository.findById(purchaseOrderId);
     if (!purchaseOrder) {
-      throw this.notFound();
+      throw purchaseOrdersAccessNotFound();
     }
-    await this.assertRecordAction(actor, action, purchaseOrder);
+    await this.authz.assertRecordAction(actor, action, purchaseOrder);
     return purchaseOrder;
-  }
-
-  private async assertCreateAction(
-    actor: IdentityAuthzContext,
-    clientId: string,
-    unitId: string,
-  ): Promise<void> {
-    const decision = await this.policyDecisionPoint.decide(
-      actor,
-      {
-        action: AUTHZ_ACTIONS.CommercialPurchaseOrderCreate,
-        resourceType: AUTHZ_RESOURCE_TYPES.CommercialPurchaseOrder,
-      },
-      { audit: true },
-    );
-    if (decision.result === 'DENY') {
-      throw this.denied();
-    }
-
-    const grants = await this.authorizationRepository.findActiveGrants(
-      actor.identityId,
-      AUTHZ_ACTIONS.CommercialPurchaseOrderCreate,
-      AUTHZ_RESOURCE_TYPES.CommercialPurchaseOrder,
-    );
-    const hasAccess = grants.some((grant) => {
-      if (grant.scope_type === AUTHZ_SCOPES.Global && grant.resource_id === null) {
-        return true;
-      }
-      if (grant.scope_type === AUTHZ_SCOPES.Unit && grant.resource_id === unitId) {
-        return true;
-      }
-      if (grant.scope_type === AUTHZ_SCOPES.Client && grant.resource_id === clientId) {
-        return true;
-      }
-      return false;
-    });
-    if (!hasAccess) {
-      throw this.denied();
-    }
-  }
-
-  private async assertRecordAction(
-    actor: IdentityAuthzContext,
-    action: AuthzAction,
-    purchaseOrder: PurchaseOrderRow,
-  ): Promise<void> {
-    const context = toResourceContextFromPurchaseOrder(purchaseOrder);
-    const decision = await this.policyDecisionPoint.decide(
-      actor,
-      { action, resourceType: AUTHZ_RESOURCE_TYPES.CommercialPurchaseOrder, context },
-      { audit: true },
-    );
-    if (decision.result === 'DENY') {
-      throw this.denied();
-    }
-
-    const grants = await this.authorizationRepository.findActiveGrants(
-      actor.identityId,
-      action,
-      AUTHZ_RESOURCE_TYPES.CommercialPurchaseOrder,
-    );
-    const hasAccess = grants.some((grant) => {
-      if (grant.scope_type === AUTHZ_SCOPES.Global && grant.resource_id === null) {
-        return true;
-      }
-      if (grant.scope_type === AUTHZ_SCOPES.Unit && grant.resource_id === purchaseOrder.unit_id) {
-        return true;
-      }
-      if (grant.scope_type === AUTHZ_SCOPES.Client && grant.resource_id === purchaseOrder.client_id) {
-        return true;
-      }
-      return false;
-    });
-    if (!hasAccess) {
-      throw this.denied();
-    }
-  }
-
-  private assertValidPurchaseOrderId(purchaseOrderId: string): void {
-    try {
-      assertUuid(purchaseOrderId);
-    } catch (error) {
-      if (error instanceof CatalogValidationError) {
-        throw this.notFound();
-      }
-      throw error;
-    }
-  }
-
-  private generateInternalCode(): string {
-    return `PO-${new Date().getUTCFullYear()}-${randomBytes(4).toString('hex').toUpperCase()}`;
-  }
-
-  private validationFailed(): CommercialHttpException {
-    return new CommercialHttpException(
-      HttpStatus.BAD_REQUEST,
-      COMMERCIAL_ERROR_CODES.VALIDATION_FAILED,
-      'Invalid request body.',
-    );
-  }
-
-  private denied(): CommercialHttpException {
-    return new CommercialHttpException(HttpStatus.FORBIDDEN, COMMERCIAL_ERROR_CODES.DENIED, 'Access denied.');
-  }
-
-  private notFound(): CommercialHttpException {
-    return new CommercialHttpException(
-      HttpStatus.NOT_FOUND,
-      COMMERCIAL_ERROR_CODES.PURCHASE_ORDER_NOT_FOUND,
-      'Purchase order not found.',
-    );
-  }
-
-  private versionConflict(): CommercialHttpException {
-    return new CommercialHttpException(
-      HttpStatus.CONFLICT,
-      COMMERCIAL_ERROR_CODES.PURCHASE_ORDER_VERSION_CONFLICT,
-      'Purchase order was modified by another request.',
-    );
-  }
-
-  private invalidState(): CommercialHttpException {
-    return new CommercialHttpException(
-      HttpStatus.CONFLICT,
-      COMMERCIAL_ERROR_CODES.PURCHASE_ORDER_INVALID_STATE,
-      'Purchase order is not in a valid state for this operation.',
-    );
-  }
-
-  private clientNotFound(): CommercialHttpException {
-    return new CommercialHttpException(
-      HttpStatus.NOT_FOUND,
-      COMMERCIAL_ERROR_CODES.CLIENT_NOT_FOUND,
-      'Client not found.',
-    );
-  }
-
-  private serviceNotFound(): CommercialHttpException {
-    return new CommercialHttpException(
-      HttpStatus.NOT_FOUND,
-      COMMERCIAL_ERROR_CODES.SERVICE_NOT_FOUND,
-      'Service definition not found.',
-    );
-  }
-
-  private documentNotFound(): CommercialHttpException {
-    return new CommercialHttpException(
-      HttpStatus.NOT_FOUND,
-      COMMERCIAL_ERROR_CODES.DOCUMENT_NOT_FOUND,
-      'Document not found.',
-    );
   }
 }

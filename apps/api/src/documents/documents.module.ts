@@ -10,6 +10,7 @@ import { SecurityModule } from '../security/security.module';
 import { DocumentsController } from './controllers/documents.controller';
 import { DocumentsRepository } from './repositories/documents.repository';
 import { DocumentUploadCoordinator } from './services/document-upload-coordinator';
+import { DocumentsAccessAuthz } from './services/documents-access.authz';
 import { DocumentsAccessService } from './services/documents-access.service';
 import { DownloadTokenService } from './storage/download-token.service';
 import { ObjectStorageService } from './storage/object-storage.service';
@@ -20,6 +21,7 @@ import { DOCUMENT_UPLOAD_LIMITS } from './dto/documents.dto';
   controllers: [DocumentsController],
   providers: [
     DocumentsRepository,
+    DocumentsAccessAuthz,
     DocumentsAccessService,
     DocumentUploadCoordinator,
     ObjectStorageService,

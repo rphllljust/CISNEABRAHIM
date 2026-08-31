@@ -6690,3 +6690,85 @@ BUILD web: PASS
 NEXT_ACTION: STOP (usuário validar refresh)
 USER_CONFIRMED: 2026-08-30 — layout/larguras OK após correção index.css
 ```
+
+---
+
+## Decisão humana — Sign-off UAT/UX (Administrador real)
+
+```text
+PROMPT: HUMAN-UAT-UX-001
+TITLE: Sign-off humano UAT — Administrador real, sessão operador
+STARTED_AT: 2026-08-31T01:05:00.000Z
+FINISHED_AT: 2026-08-31T01:06:02.000Z
+STATUS: PASS
+FILES_CREATED:
+  docs/inputs/UAT-UX-001-human-operator-session-signoff.md
+FILES_CHANGED:
+  docs/19-operations/readiness-evidence.json
+  docs/16-testing/uat-ux-session-checklist.json
+  docs/16-testing/uat-ux-checklist.md
+  docs/16-testing/uat-business-scenarios.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: NO
+NEXT_PROMPT_EXECUTED: NO
+DECISION:
+  signed_by: Abrahim Jabour Junior
+  role: Administrador
+  operator_profile: control_admin (Administrador real)
+  session_id: UAT-UX-8CFE4AB9
+  environment: pilot-hml
+  release_candidate: ef30b56 / 0.0.0-rc.1
+  verdict: PASSED (54/54 checklist items PASS; 0 blockers; 0 observations)
+EVIDENCE:
+  readiness-evidence.json → manualUatUx.status=PASSED
+  history → UAT_HUMAN_SIGN_OFF_FORMAL
+  checklist → docs/16-testing/uat-ux-session-checklist.json (CLOSED)
+TESTS:
+  readiness-gate.spec.ts — 24/24 PASS
+NOTES:
+  Evidência anterior (UAT-UX-342FDEBA) estava PASSED sem checklist fechado; reaberta e re-registrada.
+  Go-live produção permanece BLOCKED (piloto OBSERVATION < 14d; PILOT_NOT_EXIT_READY).
+```
+
+---
+
+## Decisão humana — Sign-off UAT/UX (Administrador 2 real)
+
+```text
+PROMPT: HUMAN-UAT-UX-002
+TITLE: Sign-off humano UAT — Administrador 2 Monica Perez Badra Jabour
+STARTED_AT: 2026-08-31T01:08:00.000Z
+FINISHED_AT: 2026-08-31T01:08:43.000Z
+STATUS: PASS
+FILES_CREATED:
+  docs/inputs/UAT-UX-002-human-operator-session-signoff.md
+  docs/16-testing/uat-ux-session-checklist-UAT-UX-F132B3A9.json
+FILES_CHANGED:
+  docs/19-operations/readiness-evidence.json
+  docs/16-testing/uat-ux-session-checklist.json
+  docs/16-testing/uat-ux-checklist.md
+  docs/16-testing/uat-business-scenarios.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: NO
+NEXT_PROMPT_EXECUTED: NO
+DECISION:
+  signed_by: Monica Perez Badra Jabour
+  role: Administrador 2
+  operator_profile: control_admin (Administrador real)
+  session_id: UAT-UX-F132B3A9
+  environment: pilot-hml
+  release_candidate: ef30b56 / 0.0.0-rc.1
+  verdict: PASSED (54/54 checklist items PASS; 0 blockers; 0 observations)
+CO_SIGNATORY_SESSION:
+  session_id: UAT-UX-8CFE4AB9
+  signed_by: Abrahim Jabour Junior (Administrador 1)
+  checklist: docs/16-testing/uat-ux-session-checklist-UAT-UX-8CFE4AB9.json
+EVIDENCE:
+  readiness-evidence.json → manualUatUx.status=PASSED (última sessão Monica)
+  history → UAT_HUMAN_SIGN_OFF_FORMAL (Monica)
+NOTES:
+  Duas sessões UAT humanas concluídas (Administrador 1 + Administrador 2).
+  Go-live produção permanece BLOCKED (piloto OBSERVATION < 14d).
+```

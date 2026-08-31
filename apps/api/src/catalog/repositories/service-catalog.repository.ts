@@ -1,15 +1,27 @@
 import { Injectable } from '@nestjs/common';
-import type { Pool, PoolClient } from 'pg';
+import type { Pool } from 'pg';
 import { DatabaseService } from '../../infrastructure/database/database.service';
 import type { LineageStatus } from '../domain/service-catalog-status';
+import { normalizePricingModelInput } from '../../commercial/domain/commercial-compatibility';
+import type { NormalizedExecutionRequirementInput } from '../domain/service-catalog.validation';
+import {
+  replaceServiceCatalogAllowedUnits,
+  replaceServiceCatalogExecutionRequirements,
+  replaceServiceCatalogLaborRequirements,
+  replaceServiceCatalogPricingModels,
+  replaceServiceCatalogResourceRequirements,
+} from './service-catalog-version-child-rows';
 import type {
-  AllowedUnitInput,
-  LaborRequirementInput,
-  NormalizedExecutionRequirementInput,
-  NormalizedPricingModelInput,
-  ResourceRequirementInput,
-} from '../domain/service-catalog.validation';
-import { toPersistedPricingModel, normalizePricingModelInput } from '../../commercial/domain/commercial-compatibility';
+  CreateDefinitionWithDraftInput,
+  CreateDraftVersionInput,
+  UpdateDraftVersionInput,
+} from './service-catalog.repository.types';
+
+export type {
+  CreateDefinitionWithDraftInput,
+  CreateDraftVersionInput,
+  UpdateDraftVersionInput,
+} from './service-catalog.repository.types';
 import { commercialCodeFromPersisted, isCommercialPricingModelCode } from '../../commercial/domain/pricing-model';
 import type {
   AllowedUnitRow,
@@ -22,60 +34,6 @@ import type {
   ServiceDefinitionVersionDetail,
   ServiceDefinitionVersionRow,
 } from '../serializers/service-catalog-response.serializer';
-
-export type CreateDefinitionWithDraftInput = {
-  code: string;
-  name: string;
-  categoryId: string;
-  archetype: string;
-  measurementMode: string;
-  measurementBasis: string;
-  description?: string;
-  defaultUnitCode?: string;
-  allowedUnits: AllowedUnitInput[];
-  resourceRequirements: ResourceRequirementInput[];
-  laborRequirements: LaborRequirementInput[];
-  pricingModels: NormalizedPricingModelInput[];
-  executionRequirements: NormalizedExecutionRequirementInput[];
-  actorIdentityId: string;
-};
-
-export type CreateDraftVersionInput = {
-  definitionId: string;
-  name: string;
-  categoryId: string;
-  archetype: string;
-  measurementMode: string;
-  measurementBasis: string;
-  description?: string;
-  defaultUnitCode?: string;
-  allowedUnits: AllowedUnitInput[];
-  resourceRequirements: ResourceRequirementInput[];
-  laborRequirements: LaborRequirementInput[];
-  pricingModels: NormalizedPricingModelInput[];
-  executionRequirements: NormalizedExecutionRequirementInput[];
-  sourceVersion?: number;
-  actorIdentityId: string;
-};
-
-export type UpdateDraftVersionInput = {
-  definitionId: string;
-  versionNumber: number;
-  expectedLineageVersion: number;
-  name: string;
-  categoryId: string;
-  archetype: string;
-  measurementMode: string;
-  measurementBasis: string;
-  description?: string | null;
-  defaultUnitCode?: string | null;
-  allowedUnits: AllowedUnitInput[];
-  resourceRequirements: ResourceRequirementInput[];
-  laborRequirements: LaborRequirementInput[];
-  pricingModels: NormalizedPricingModelInput[];
-  executionRequirements: NormalizedExecutionRequirementInput[];
-  actorIdentityId: string;
-};
 
 @Injectable()
 export class ServiceCatalogRepository {
@@ -313,11 +271,11 @@ export class ServiceCatalogRepository {
         throw new Error('Failed to create service definition version.');
       }
 
-      await this.replaceAllowedUnits(client, versionId, input.allowedUnits);
-      await this.replaceResourceRequirements(client, versionId, input.resourceRequirements);
-      await this.replaceLaborRequirements(client, versionId, input.laborRequirements);
-      await this.replacePricingModels(client, versionId, input.pricingModels);
-      await this.replaceExecutionRequirements(client, versionId, input.executionRequirements);
+      await replaceServiceCatalogAllowedUnits(client, versionId, input.allowedUnits);
+      await replaceServiceCatalogResourceRequirements(client, versionId, input.resourceRequirements);
+      await replaceServiceCatalogLaborRequirements(client, versionId, input.laborRequirements);
+      await replaceServiceCatalogPricingModels(client, versionId, input.pricingModels);
+      await replaceServiceCatalogExecutionRequirements(client, versionId, input.executionRequirements);
       await client.query('COMMIT');
 
       const detail = await this.findVersionDetail(defRow.id, 1);
@@ -476,11 +434,11 @@ export class ServiceCatalogRepository {
         throw new Error('Failed to create draft version.');
       }
 
-      await this.replaceAllowedUnits(client, versionId, payload.allowedUnits);
-      await this.replaceResourceRequirements(client, versionId, payload.resourceRequirements);
-      await this.replaceLaborRequirements(client, versionId, payload.laborRequirements);
-      await this.replacePricingModels(client, versionId, payload.pricingModels);
-      await this.replaceExecutionRequirements(client, versionId, payload.executionRequirements);
+      await replaceServiceCatalogAllowedUnits(client, versionId, payload.allowedUnits);
+      await replaceServiceCatalogResourceRequirements(client, versionId, payload.resourceRequirements);
+      await replaceServiceCatalogLaborRequirements(client, versionId, payload.laborRequirements);
+      await replaceServiceCatalogPricingModels(client, versionId, payload.pricingModels);
+      await replaceServiceCatalogExecutionRequirements(client, versionId, payload.executionRequirements);
       await client.query(
         `UPDATE cat.service_definitions
          SET updated_at = now(), updated_by_identity_id = $2, version = version + 1
@@ -576,11 +534,11 @@ export class ServiceCatalogRepository {
         ],
       );
 
-      await this.replaceAllowedUnits(client, currentRow.id, input.allowedUnits);
-      await this.replaceResourceRequirements(client, currentRow.id, input.resourceRequirements);
-      await this.replaceLaborRequirements(client, currentRow.id, input.laborRequirements);
-      await this.replacePricingModels(client, currentRow.id, input.pricingModels);
-      await this.replaceExecutionRequirements(client, currentRow.id, input.executionRequirements);
+      await replaceServiceCatalogAllowedUnits(client, currentRow.id, input.allowedUnits);
+      await replaceServiceCatalogResourceRequirements(client, currentRow.id, input.resourceRequirements);
+      await replaceServiceCatalogLaborRequirements(client, currentRow.id, input.laborRequirements);
+      await replaceServiceCatalogPricingModels(client, currentRow.id, input.pricingModels);
+      await replaceServiceCatalogExecutionRequirements(client, currentRow.id, input.executionRequirements);
 
       const lineageUpdated = await client.query(
         `UPDATE cat.service_definitions
@@ -798,142 +756,5 @@ export class ServiceCatalogRepository {
       [categoryId],
     );
     return (result.rowCount ?? 0) > 0;
-  }
-
-  private async replaceAllowedUnits(
-    client: PoolClient,
-    versionId: string,
-    units: AllowedUnitInput[],
-  ): Promise<void> {
-    await client.query(`DELETE FROM cat.service_allowed_units WHERE service_definition_version_id = $1`, [
-      versionId,
-    ]);
-    for (const unit of units) {
-      await client.query(
-        `INSERT INTO cat.service_allowed_units (
-           service_definition_version_id, unit_code, is_default, sort_order
-         ) VALUES ($1, $2, $3, $4)`,
-        [versionId, unit.unitCode, unit.isDefault ?? false, unit.sortOrder ?? 0],
-      );
-    }
-  }
-
-  private async replaceResourceRequirements(
-    client: PoolClient,
-    versionId: string,
-    requirements: ResourceRequirementInput[],
-  ): Promise<void> {
-    await client.query(
-      `DELETE FROM cat.service_resource_requirements WHERE service_definition_version_id = $1`,
-      [versionId],
-    );
-    for (const requirement of requirements) {
-      await client.query(
-        `INSERT INTO cat.service_resource_requirements (
-           service_definition_version_id,
-           physical_resource_type_code,
-           requirement_level,
-           min_quantity,
-           sort_order
-         ) VALUES ($1, $2, $3::cat.requirement_level, $4, $5)`,
-        [
-          versionId,
-          requirement.resourceTypeCode,
-          requirement.requirementLevel,
-          requirement.minQuantity ?? 1,
-          requirement.sortOrder ?? 0,
-        ],
-      );
-    }
-  }
-
-  private async replaceLaborRequirements(
-    client: PoolClient,
-    versionId: string,
-    requirements: LaborRequirementInput[],
-  ): Promise<void> {
-    await client.query(
-      `DELETE FROM cat.service_labor_requirements WHERE service_definition_version_id = $1`,
-      [versionId],
-    );
-    for (const requirement of requirements) {
-      await client.query(
-        `INSERT INTO cat.service_labor_requirements (
-           service_definition_version_id,
-           labor_type_code,
-           requirement_level,
-           min_quantity,
-           sort_order
-         ) VALUES ($1, $2, $3::cat.requirement_level, $4, $5)`,
-        [
-          versionId,
-          requirement.laborTypeCode,
-          requirement.requirementLevel,
-          requirement.minQuantity ?? 1,
-          requirement.sortOrder ?? 0,
-        ],
-      );
-    }
-  }
-
-  private async replacePricingModels(
-    client: PoolClient,
-    versionId: string,
-    models: NormalizedPricingModelInput[],
-  ): Promise<void> {
-    await client.query(`DELETE FROM cat.service_pricing_models WHERE service_definition_version_id = $1`, [
-      versionId,
-    ]);
-    for (const model of models) {
-      const persisted = toPersistedPricingModel(model);
-      await client.query(
-        `INSERT INTO cat.service_pricing_models (
-           service_definition_version_id,
-           pricing_model_code,
-           config,
-           sale_price_amount,
-           internal_cost_amount,
-           currency_code,
-           sort_order
-         ) VALUES ($1, $2::cat.pricing_model_code, $3::jsonb, $4, $5, $6, $7)`,
-        [
-          versionId,
-          persisted.persistedCode,
-          JSON.stringify(persisted.config),
-          persisted.salePrice,
-          persisted.internalCost,
-          persisted.currencyCode,
-          persisted.sortOrder,
-        ],
-      );
-    }
-  }
-
-  private async replaceExecutionRequirements(
-    client: PoolClient,
-    versionId: string,
-    requirements: NormalizedExecutionRequirementInput[],
-  ): Promise<void> {
-    await client.query(`DELETE FROM cat.service_evidence_requirements WHERE service_definition_version_id = $1`, [
-      versionId,
-    ]);
-    for (const requirement of requirements) {
-      await client.query(
-        `INSERT INTO cat.service_evidence_requirements (
-           service_definition_version_id,
-           evidence_kind,
-           requirement_level,
-           config,
-           sort_order
-         ) VALUES ($1, $2::cat.evidence_kind, $3::cat.requirement_level, $4::jsonb, $5)`,
-        [
-          versionId,
-          requirement.requirementType,
-          requirement.requirementLevel,
-          requirement.config ? JSON.stringify(requirement.config) : null,
-          requirement.sortOrder,
-        ],
-      );
-    }
   }
 }

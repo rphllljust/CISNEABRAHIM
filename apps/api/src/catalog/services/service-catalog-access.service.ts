@@ -6,23 +6,9 @@ import {
   SECURITY_AUDIT_RESOURCE_TYPES,
 } from '../../audit/types/security-audit.types';
 import { SecurityAuditService } from '../../audit/services/security-audit.service';
-import { AuthorizationRepository } from '../../authorization/repositories/authorization.repository';
-import { PolicyDecisionPointService } from '../../authorization/services/policy-decision-point.service';
-import type { AuthzAction } from '../../authorization/types/authz-actions';
-import { AUTHZ_ACTIONS } from '../../authorization/types/authz-actions';
-import { AUTHZ_RESOURCE_TYPES } from '../../authorization/types/authz-resources';
-import { AUTHZ_SCOPES } from '../../authorization/types/authz-scopes';
 import type { IdentityAuthzContext } from '../../authorization/types/authz-decision';
+import { AUTHZ_ACTIONS } from '../../authorization/types/authz-actions';
 import { LINEAGE_STATUSES } from '../domain/service-catalog-status';
-import type { MeasurementMode } from '../domain/service-catalog-status';
-import {
-  CatalogValidationError,
-  assertCommercialCatalogInput,
-  assertExecutionRequirementsCatalog,
-  assertUuid,
-} from '../domain/service-catalog.validation';
-import type { NormalizedExecutionRequirementInput, ExecutionRequirementInput } from '../domain/execution-requirement';
-import { normalizeUnitCode } from '../domain/unit-of-measure';
 import type {
   CreateServiceDefinitionInput,
   CreateServiceDefinitionVersionInput,
@@ -31,25 +17,31 @@ import type {
 import { CATALOG_ERROR_CODES } from '../errors/catalog-error-codes';
 import { CatalogHttpException } from '../errors/catalog-http.exception';
 import { ServiceCatalogRepository } from '../repositories/service-catalog.repository';
-import { UnitsOfMeasureRepository } from '../repositories/units-of-measure.repository';
-import { PhysicalResourceTypesRepository } from '../../resources/repositories/physical-resource-types.repository';
-import { OperationalLaborTypesRepository } from '../../resources/repositories/operational-labor-types.repository';
 import {
   toServiceDefinitionResponse,
   toServiceDefinitionVersionResponse,
   type ServiceDefinitionResponse,
   type ServiceDefinitionVersionResponse,
 } from '../serializers/service-catalog-response.serializer';
+import { ServiceCatalogAccessAuthz } from './service-catalog-access.authz';
+import {
+  catalogAccessNotFound,
+  catalogVersionConflict,
+  isUniqueCatalogCodeViolation,
+} from './service-catalog-access.errors';
+import {
+  assertValidCatalogDefinitionId,
+  resolveCommercialCatalogAccessInput,
+  resolveExecutionRequirementsCatalogAccess,
+} from './service-catalog-input-resolution';
+import { ServiceCatalogReferenceValidationService } from './service-catalog-reference-validation.service';
 
 @Injectable()
 export class ServiceCatalogAccessService {
   constructor(
     private readonly repository: ServiceCatalogRepository,
-    private readonly unitsRepository: UnitsOfMeasureRepository,
-    private readonly resourceTypesRepository: PhysicalResourceTypesRepository,
-    private readonly laborTypesRepository: OperationalLaborTypesRepository,
-    private readonly authorizationRepository: AuthorizationRepository,
-    private readonly policyDecisionPoint: PolicyDecisionPointService,
+    private readonly authz: ServiceCatalogAccessAuthz,
+    private readonly referenceValidation: ServiceCatalogReferenceValidationService,
     private readonly securityAudit: SecurityAuditService,
   ) {}
 
@@ -57,7 +49,7 @@ export class ServiceCatalogAccessService {
     actor: IdentityAuthzContext,
     input: CreateServiceDefinitionInput,
   ): Promise<ServiceDefinitionVersionResponse> {
-    await this.assertGlobalAction(actor, AUTHZ_ACTIONS.CatalogServiceCreate);
+    await this.authz.assertGlobalAction(actor, AUTHZ_ACTIONS.CatalogServiceCreate);
 
     if (!(await this.repository.categoryExists(input.categoryId))) {
       throw new CatalogHttpException(
@@ -66,17 +58,17 @@ export class ServiceCatalogAccessService {
         'Invalid request body.',
       );
     }
-    await this.assertActiveUnitReferences(
+    await this.referenceValidation.assertActiveUnitReferences(
       input.allowedUnits.map((unit) => unit.unitCode),
       input.defaultUnitCode,
     );
-    await this.assertActiveResourceTypeReferences(
+    await this.referenceValidation.assertActiveResourceTypeReferences(
       (input.resourceRequirements ?? []).map((requirement) => requirement.resourceTypeCode),
     );
-    await this.assertActiveLaborTypeReferences(
+    await this.referenceValidation.assertActiveLaborTypeReferences(
       (input.laborRequirements ?? []).map((requirement) => requirement.laborTypeCode),
     );
-    const commercial = this.resolveCommercialInput(input);
+    const commercial = resolveCommercialCatalogAccessInput(input);
 
     try {
       const created = await this.repository.createDefinitionWithDraft({
@@ -84,7 +76,7 @@ export class ServiceCatalogAccessService {
         ...commercial,
         resourceRequirements: input.resourceRequirements ?? [],
         laborRequirements: input.laborRequirements ?? [],
-        executionRequirements: this.resolveExecutionRequirements(input.executionRequirements),
+        executionRequirements: resolveExecutionRequirementsCatalogAccess(input.executionRequirements),
         actorIdentityId: actor.identityId,
       });
 
@@ -101,7 +93,7 @@ export class ServiceCatalogAccessService {
 
       return toServiceDefinitionVersionResponse(created);
     } catch (error) {
-      if (this.isUniqueCodeViolation(error)) {
+      if (isUniqueCatalogCodeViolation(error)) {
         throw new CatalogHttpException(
           HttpStatus.CONFLICT,
           CATALOG_ERROR_CODES.CODE_CONFLICT,
@@ -113,12 +105,12 @@ export class ServiceCatalogAccessService {
   }
 
   async getDefinition(actor: IdentityAuthzContext, definitionId: string): Promise<ServiceDefinitionResponse> {
-    this.assertValidDefinitionId(definitionId);
+    assertValidCatalogDefinitionId(definitionId);
     const definition = await this.repository.findDefinitionSummary(definitionId);
     if (!definition) {
-      throw this.notFound();
+      throw catalogAccessNotFound();
     }
-    await this.assertGlobalAction(actor, AUTHZ_ACTIONS.CatalogServiceRead);
+    await this.authz.assertGlobalAction(actor, AUTHZ_ACTIONS.CatalogServiceRead);
     return toServiceDefinitionResponse(definition);
   }
 
@@ -126,7 +118,7 @@ export class ServiceCatalogAccessService {
     actor: IdentityAuthzContext,
     query: { limit: number; offset: number; status?: 'ACTIVE' | 'INACTIVE' },
   ): Promise<{ items: ServiceDefinitionResponse[]; limit: number; offset: number }> {
-    await this.assertListAction(actor);
+    await this.authz.assertListAction(actor);
 
     const clauses = ['TRUE'];
     const params: unknown[] = [];
@@ -148,12 +140,12 @@ export class ServiceCatalogAccessService {
     definitionId: string,
     input: CreateServiceDefinitionVersionInput,
   ): Promise<ServiceDefinitionVersionResponse> {
-    this.assertValidDefinitionId(definitionId);
-    await this.assertGlobalAction(actor, AUTHZ_ACTIONS.CatalogServiceUpdate);
+    assertValidCatalogDefinitionId(definitionId);
+    await this.authz.assertGlobalAction(actor, AUTHZ_ACTIONS.CatalogServiceUpdate);
 
     const definition = await this.repository.findDefinitionSummary(definitionId);
     if (!definition) {
-      throw this.notFound();
+      throw catalogAccessNotFound();
     }
     if (definition.status !== LINEAGE_STATUSES.Active) {
       throw new CatalogHttpException(
@@ -172,23 +164,23 @@ export class ServiceCatalogAccessService {
     if (input.sourceVersion !== undefined) {
       const source = await this.repository.findVersionDetail(definitionId, input.sourceVersion);
       if (!source) {
-        throw this.notFound();
+        throw catalogAccessNotFound();
       }
     }
-    await this.assertActiveUnitReferences(
+    await this.referenceValidation.assertActiveUnitReferences(
       input.allowedUnits.map((unit) => unit.unitCode),
       input.defaultUnitCode,
     );
-    await this.assertActiveResourceTypeReferences(
+    await this.referenceValidation.assertActiveResourceTypeReferences(
       (input.resourceRequirements ?? []).map((requirement) => requirement.resourceTypeCode),
     );
-    await this.assertActiveLaborTypeReferences(
+    await this.referenceValidation.assertActiveLaborTypeReferences(
       (input.laborRequirements ?? []).map((requirement) => requirement.laborTypeCode),
     );
     const commercial =
       input.pricingModels.length === 0 && input.sourceVersion !== undefined
         ? { measurementBasis: input.measurementBasis, pricingModels: [] as const }
-        : this.resolveCommercialInput(input);
+        : resolveCommercialCatalogAccessInput(input);
 
     const created = await this.repository.createDraftVersion({
       definitionId,
@@ -197,7 +189,7 @@ export class ServiceCatalogAccessService {
       pricingModels: [...commercial.pricingModels],
       resourceRequirements: input.resourceRequirements ?? [],
       laborRequirements: input.laborRequirements ?? [],
-      executionRequirements: this.resolveExecutionRequirements(
+      executionRequirements: resolveExecutionRequirementsCatalogAccess(
         input.executionRequirements,
         input.sourceVersion,
       ),
@@ -212,7 +204,7 @@ export class ServiceCatalogAccessService {
       );
     }
     if (created === 'SOURCE_NOT_FOUND') {
-      throw this.notFound();
+      throw catalogAccessNotFound();
     }
 
     await this.securityAudit.record({
@@ -234,12 +226,12 @@ export class ServiceCatalogAccessService {
     definitionId: string,
     versionNumber: number,
   ): Promise<ServiceDefinitionVersionResponse> {
-    this.assertValidDefinitionId(definitionId);
-    await this.assertGlobalAction(actor, AUTHZ_ACTIONS.CatalogServiceRead);
+    assertValidCatalogDefinitionId(definitionId);
+    await this.authz.assertGlobalAction(actor, AUTHZ_ACTIONS.CatalogServiceRead);
 
     const version = await this.repository.findVersionDetail(definitionId, versionNumber);
     if (!version) {
-      throw this.notFound();
+      throw catalogAccessNotFound();
     }
     return toServiceDefinitionVersionResponse(version);
   }
@@ -248,12 +240,12 @@ export class ServiceCatalogAccessService {
     actor: IdentityAuthzContext,
     definitionId: string,
   ): Promise<ServiceDefinitionVersionResponse[]> {
-    this.assertValidDefinitionId(definitionId);
-    await this.assertGlobalAction(actor, AUTHZ_ACTIONS.CatalogServiceRead);
+    assertValidCatalogDefinitionId(definitionId);
+    await this.authz.assertGlobalAction(actor, AUTHZ_ACTIONS.CatalogServiceRead);
 
     const definition = await this.repository.findDefinitionSummary(definitionId);
     if (!definition) {
-      throw this.notFound();
+      throw catalogAccessNotFound();
     }
 
     const rows = await this.repository.listVersions(definitionId);
@@ -273,8 +265,8 @@ export class ServiceCatalogAccessService {
     versionNumber: number,
     input: UpdateDraftServiceDefinitionInput,
   ): Promise<ServiceDefinitionVersionResponse> {
-    this.assertValidDefinitionId(definitionId);
-    await this.assertGlobalAction(actor, AUTHZ_ACTIONS.CatalogServiceUpdate);
+    assertValidCatalogDefinitionId(definitionId);
+    await this.authz.assertGlobalAction(actor, AUTHZ_ACTIONS.CatalogServiceUpdate);
 
     if (!(await this.repository.categoryExists(input.categoryId))) {
       throw new CatalogHttpException(
@@ -283,17 +275,17 @@ export class ServiceCatalogAccessService {
         'Invalid request body.',
       );
     }
-    await this.assertActiveUnitReferences(
+    await this.referenceValidation.assertActiveUnitReferences(
       input.allowedUnits.map((unit) => unit.unitCode),
       input.defaultUnitCode ?? undefined,
     );
-    await this.assertActiveResourceTypeReferences(
+    await this.referenceValidation.assertActiveResourceTypeReferences(
       (input.resourceRequirements ?? []).map((requirement) => requirement.resourceTypeCode),
     );
-    await this.assertActiveLaborTypeReferences(
+    await this.referenceValidation.assertActiveLaborTypeReferences(
       (input.laborRequirements ?? []).map((requirement) => requirement.laborTypeCode),
     );
-    const commercial = this.resolveCommercialInput(input);
+    const commercial = resolveCommercialCatalogAccessInput(input);
 
     const updated = await this.repository.updateDraftVersion({
       definitionId,
@@ -310,15 +302,15 @@ export class ServiceCatalogAccessService {
       resourceRequirements: input.resourceRequirements ?? [],
       laborRequirements: input.laborRequirements ?? [],
       pricingModels: commercial.pricingModels,
-      executionRequirements: this.resolveExecutionRequirements(input.executionRequirements),
+      executionRequirements: resolveExecutionRequirementsCatalogAccess(input.executionRequirements),
       actorIdentityId: actor.identityId,
     });
 
     if (updated === null) {
-      throw this.notFound();
+      throw catalogAccessNotFound();
     }
     if (updated === 'VERSION_CONFLICT') {
-      throw this.versionConflict();
+      throw catalogVersionConflict();
     }
     if (updated === 'NOT_DRAFT') {
       throw new CatalogHttpException(
@@ -355,21 +347,21 @@ export class ServiceCatalogAccessService {
     versionNumber: number,
     lineageVersion: number,
   ): Promise<ServiceDefinitionVersionResponse> {
-    this.assertValidDefinitionId(definitionId);
-    await this.assertGlobalAction(actor, AUTHZ_ACTIONS.CatalogServicePublish);
+    assertValidCatalogDefinitionId(definitionId);
+    await this.authz.assertGlobalAction(actor, AUTHZ_ACTIONS.CatalogServicePublish);
 
     const draft = await this.repository.findVersionDetail(definitionId, versionNumber);
     if (!draft) {
-      throw this.notFound();
+      throw catalogAccessNotFound();
     }
-    await this.assertActiveUnitReferences(
+    await this.referenceValidation.assertActiveUnitReferences(
       draft.allowed_units.map((unit) => unit.unit_code),
       draft.default_unit_code,
     );
-    await this.assertActiveResourceTypeReferences(
+    await this.referenceValidation.assertActiveResourceTypeReferences(
       draft.resource_requirements.map((requirement) => requirement.physical_resource_type_code),
     );
-    await this.assertActiveLaborTypeReferences(
+    await this.referenceValidation.assertActiveLaborTypeReferences(
       draft.labor_requirements.map((requirement) => requirement.labor_type_code),
     );
 
@@ -381,10 +373,10 @@ export class ServiceCatalogAccessService {
     );
 
     if (result === null) {
-      throw this.notFound();
+      throw catalogAccessNotFound();
     }
     if (result === 'VERSION_CONFLICT') {
-      throw this.versionConflict();
+      throw catalogVersionConflict();
     }
     if (result === 'NOT_DRAFT') {
       throw new CatalogHttpException(
@@ -428,8 +420,8 @@ export class ServiceCatalogAccessService {
     lineageVersion: number,
     reason: string,
   ): Promise<ServiceDefinitionResponse> {
-    this.assertValidDefinitionId(definitionId);
-    await this.assertGlobalAction(actor, AUTHZ_ACTIONS.CatalogServiceDeactivate);
+    assertValidCatalogDefinitionId(definitionId);
+    await this.authz.assertGlobalAction(actor, AUTHZ_ACTIONS.CatalogServiceDeactivate);
 
     const updated = await this.repository.setDefinitionStatus(
       definitionId,
@@ -440,10 +432,10 @@ export class ServiceCatalogAccessService {
     );
 
     if (updated === null) {
-      throw this.notFound();
+      throw catalogAccessNotFound();
     }
     if (updated === 'VERSION_CONFLICT') {
-      throw this.versionConflict();
+      throw catalogVersionConflict();
     }
     if (updated === 'INVALID_STATE') {
       throw new CatalogHttpException(
@@ -472,8 +464,8 @@ export class ServiceCatalogAccessService {
     definitionId: string,
     lineageVersion: number,
   ): Promise<ServiceDefinitionResponse> {
-    this.assertValidDefinitionId(definitionId);
-    await this.assertGlobalAction(actor, AUTHZ_ACTIONS.CatalogServiceActivate);
+    assertValidCatalogDefinitionId(definitionId);
+    await this.authz.assertGlobalAction(actor, AUTHZ_ACTIONS.CatalogServiceActivate);
 
     const updated = await this.repository.setDefinitionStatus(
       definitionId,
@@ -483,10 +475,10 @@ export class ServiceCatalogAccessService {
     );
 
     if (updated === null) {
-      throw this.notFound();
+      throw catalogAccessNotFound();
     }
     if (updated === 'VERSION_CONFLICT') {
-      throw this.versionConflict();
+      throw catalogVersionConflict();
     }
     if (updated === 'INVALID_STATE') {
       throw new CatalogHttpException(
@@ -507,203 +499,5 @@ export class ServiceCatalogAccessService {
     });
 
     return toServiceDefinitionResponse(updated);
-  }
-
-  private async assertGlobalAction(actor: IdentityAuthzContext, action: AuthzAction): Promise<void> {
-    const decision = await this.policyDecisionPoint.decide(
-      actor,
-      { action, resourceType: AUTHZ_RESOURCE_TYPES.CatalogService },
-      { audit: true },
-    );
-    if (decision.result === 'DENY') {
-      throw this.denied();
-    }
-
-    const grants = await this.authorizationRepository.findActiveGrants(
-      actor.identityId,
-      action,
-      AUTHZ_RESOURCE_TYPES.CatalogService,
-    );
-    const hasGlobal = grants.some(
-      (grant) => grant.scope_type === AUTHZ_SCOPES.Global && grant.resource_id === null,
-    );
-    if (!hasGlobal) {
-      throw this.denied();
-    }
-  }
-
-  private async assertListAction(actor: IdentityAuthzContext): Promise<void> {
-    const grants = await this.authorizationRepository.findActiveGrants(
-      actor.identityId,
-      AUTHZ_ACTIONS.CatalogServiceList,
-      AUTHZ_RESOURCE_TYPES.CatalogService,
-    );
-    if (grants.length === 0) {
-      throw this.denied();
-    }
-    const hasGlobal = grants.some(
-      (grant) => grant.scope_type === AUTHZ_SCOPES.Global && grant.resource_id === null,
-    );
-    if (!hasGlobal) {
-      throw this.denied();
-    }
-  }
-
-  private assertValidDefinitionId(definitionId: string): void {
-    try {
-      assertUuid(definitionId);
-    } catch (error) {
-      if (error instanceof CatalogValidationError) {
-        throw this.notFound();
-      }
-      throw error;
-    }
-  }
-
-  private denied(): CatalogHttpException {
-    return new CatalogHttpException(HttpStatus.FORBIDDEN, CATALOG_ERROR_CODES.DENIED, 'Access denied.');
-  }
-
-  private notFound(): CatalogHttpException {
-    return new CatalogHttpException(HttpStatus.NOT_FOUND, CATALOG_ERROR_CODES.NOT_FOUND, 'Service definition not found.');
-  }
-
-  private versionConflict(): CatalogHttpException {
-    return new CatalogHttpException(
-      HttpStatus.CONFLICT,
-      CATALOG_ERROR_CODES.VERSION_CONFLICT,
-      'Service definition was modified by another request.',
-    );
-  }
-
-  private isUniqueCodeViolation(error: unknown): boolean {
-    if (!error || typeof error !== 'object') {
-      return false;
-    }
-    const pgError = error as { code?: string; constraint?: string };
-    return pgError.code === '23505' && (pgError.constraint?.includes('code') ?? false);
-  }
-
-  private async assertActiveUnitReferences(
-    unitCodes: string[],
-    defaultUnitCode?: string | null,
-  ): Promise<void> {
-    const normalizedDefault = defaultUnitCode ? normalizeUnitCode(defaultUnitCode) : undefined;
-    const validation = await this.unitsRepository.validateUnitReferences(
-      unitCodes.map((code) => normalizeUnitCode(code)),
-      normalizedDefault,
-      true,
-    );
-    if (validation === 'INVALID_UNIT') {
-      throw new CatalogHttpException(
-        HttpStatus.BAD_REQUEST,
-        CATALOG_ERROR_CODES.INVALID_UNIT,
-        'One or more unit codes are not registered in the catalog.',
-      );
-    }
-    if (validation === 'INACTIVE_UNIT') {
-      throw new CatalogHttpException(
-        HttpStatus.CONFLICT,
-        CATALOG_ERROR_CODES.INACTIVE_UNIT,
-        'One or more unit codes are inactive.',
-      );
-    }
-  }
-
-  private async assertActiveResourceTypeReferences(typeCodes: string[]): Promise<void> {
-    const validation = await this.resourceTypesRepository.validateTypeReferences(typeCodes, true);
-    if (validation === 'INVALID_TYPE') {
-      throw new CatalogHttpException(
-        HttpStatus.BAD_REQUEST,
-        CATALOG_ERROR_CODES.INVALID_RESOURCE_TYPE,
-        'One or more resource type codes are not registered in the catalog.',
-      );
-    }
-    if (validation === 'INACTIVE_TYPE') {
-      throw new CatalogHttpException(
-        HttpStatus.CONFLICT,
-        CATALOG_ERROR_CODES.INACTIVE_RESOURCE_TYPE,
-        'One or more resource type codes are inactive.',
-      );
-    }
-  }
-
-  private async assertActiveLaborTypeReferences(typeCodes: string[]): Promise<void> {
-    const validation = await this.laborTypesRepository.validateTypeReferences(typeCodes, true);
-    if (validation === 'INVALID_TYPE') {
-      throw new CatalogHttpException(
-        HttpStatus.BAD_REQUEST,
-        CATALOG_ERROR_CODES.INVALID_LABOR_TYPE,
-        'One or more labor type codes are not registered in the catalog.',
-      );
-    }
-    if (validation === 'INACTIVE_TYPE') {
-      throw new CatalogHttpException(
-        HttpStatus.CONFLICT,
-        CATALOG_ERROR_CODES.INACTIVE_LABOR_TYPE,
-        'One or more labor type codes are inactive.',
-      );
-    }
-  }
-
-  private resolveCommercialInput(input: {
-    measurementBasis: string;
-    measurementMode: string;
-    allowedUnits: Array<{ unitCode: string }>;
-    pricingModels: Array<{
-      modelCode: string;
-      unitCode?: string | null;
-      salePrice?: string | null;
-      internalCost?: string | null;
-      currencyCode?: string;
-      sortOrder?: number;
-    }>;
-  }) {
-    try {
-      return assertCommercialCatalogInput({
-        measurementBasis: input.measurementBasis,
-        measurementMode: input.measurementMode as MeasurementMode,
-        allowedUnits: input.allowedUnits.map((unit, index) => ({
-          unitCode: unit.unitCode,
-          sortOrder: index,
-        })),
-        pricingModels: input.pricingModels.map((model) => ({
-          modelCode: model.modelCode,
-          unitCode: model.unitCode ?? undefined,
-          salePrice: model.salePrice ?? undefined,
-          internalCost: model.internalCost ?? undefined,
-          currencyCode: model.currencyCode,
-          sortOrder: model.sortOrder,
-        })),
-      });
-    } catch (error) {
-      if (error instanceof CatalogValidationError) {
-        const code =
-          CATALOG_ERROR_CODES[error.code as keyof typeof CATALOG_ERROR_CODES] ??
-          CATALOG_ERROR_CODES.VALIDATION_FAILED;
-        throw new CatalogHttpException(HttpStatus.BAD_REQUEST, code, 'Invalid request body.');
-      }
-      throw error;
-    }
-  }
-
-  private resolveExecutionRequirements(
-    requirements: ExecutionRequirementInput[] | undefined,
-    sourceVersion?: number,
-  ): NormalizedExecutionRequirementInput[] {
-    if ((requirements?.length ?? 0) === 0 && sourceVersion !== undefined) {
-      return [];
-    }
-    try {
-      return assertExecutionRequirementsCatalog(requirements ?? []);
-    } catch (error) {
-      if (error instanceof CatalogValidationError) {
-        const code =
-          CATALOG_ERROR_CODES[error.code as keyof typeof CATALOG_ERROR_CODES] ??
-          CATALOG_ERROR_CODES.VALIDATION_FAILED;
-        throw new CatalogHttpException(HttpStatus.BAD_REQUEST, code, 'Invalid request body.');
-      }
-      throw error;
-    }
   }
 }

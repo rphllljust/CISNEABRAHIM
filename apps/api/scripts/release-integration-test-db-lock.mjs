@@ -24,6 +24,8 @@ const INTEGRATION_TEST_DB_LOCK_KEY = 0x43534e45;
 
 const pool = new Pool({ connectionString: testDatabaseUrl, max: 1 });
 
+let cleanupPassed = false;
+
 try {
   const holders = await pool.query(
     `SELECT a.pid, a.state
@@ -31,7 +33,9 @@ try {
      INNER JOIN pg_stat_activity a ON a.pid = l.pid
      WHERE l.locktype = 'advisory'
        AND l.objid = $1
-       AND a.pid <> pg_backend_pid()`,
+       AND l.granted = true
+       AND a.pid <> pg_backend_pid()
+       AND a.state = 'idle'`,
     [INTEGRATION_TEST_DB_LOCK_KEY],
   );
 
@@ -50,10 +54,20 @@ try {
   if (acquired.rows[0]?.acquired) {
     await pool.query('SELECT pg_advisory_unlock($1)', [INTEGRATION_TEST_DB_LOCK_KEY]);
     console.log('Integration test lock is available.');
+    cleanupPassed = true;
+    console.log('LOCK CLEANUP: PASS');
   } else {
     console.log('Integration test lock still unavailable after cleanup.');
+    console.log('LOCK CLEANUP: FAIL');
     process.exit(1);
   }
+} catch (error) {
+  console.error('LOCK CLEANUP: FAIL');
+  console.error(error);
+  process.exit(1);
 } finally {
   await pool.end();
+  if (!cleanupPassed) {
+    process.exit(1);
+  }
 }

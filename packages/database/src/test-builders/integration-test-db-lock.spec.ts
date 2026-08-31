@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   INTEGRATION_TEST_DB_LOCK_KEY,
+  releaseIntegrationTestDatabaseLock,
   withIntegrationTestDatabaseLock,
 } from './integration-test-db-lock';
 
@@ -30,5 +31,42 @@ describe('withIntegrationTestDatabaseLock', () => {
 
     expect(client.lockCalls).toBe(1);
     expect(client.unlockCalls).toBe(1);
+  });
+
+  it('releases the lock in finally when run throws', async () => {
+    const client = {
+      lockCalls: 0,
+      unlockCalls: 0,
+      async query(sql: string) {
+        if (sql.includes('pg_advisory_lock')) {
+          this.lockCalls += 1;
+        }
+        if (sql.includes('pg_advisory_unlock')) {
+          this.unlockCalls += 1;
+        }
+      },
+    };
+
+    await expect(
+      withIntegrationTestDatabaseLock(client, async () => {
+        throw new Error('boom');
+      }),
+    ).rejects.toThrow('boom');
+
+    expect(client.lockCalls).toBe(1);
+    expect(client.unlockCalls).toBe(1);
+  });
+
+  it('reports whether pg_advisory_unlock succeeded', async () => {
+    const client = {
+      async query(sql: string) {
+        if (sql.includes('pg_advisory_unlock')) {
+          return { rows: [{ released: true }] };
+        }
+        return { rows: [] };
+      },
+    };
+
+    await expect(releaseIntegrationTestDatabaseLock(client)).resolves.toBe(true);
   });
 });

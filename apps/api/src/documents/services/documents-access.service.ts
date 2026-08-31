@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import {
   SECURITY_AUDIT_ACTIONS,
   SECURITY_AUDIT_CLASSIFICATIONS,
@@ -6,17 +6,9 @@ import {
   SECURITY_AUDIT_RESOURCE_TYPES,
 } from '../../audit/types/security-audit.types';
 import { SecurityAuditService } from '../../audit/services/security-audit.service';
-import { AuthorizationRepository } from '../../authorization/repositories/authorization.repository';
-import { toResourceContextFromDocument } from '../../authorization/scope/scope-matcher';
-import { PolicyDecisionPointService } from '../../authorization/services/policy-decision-point.service';
 import { ScopeEnforcementService } from '../../authorization/services/scope-enforcement.service';
-import type { AuthzAction } from '../../authorization/types/authz-actions';
 import { AUTHZ_ACTIONS } from '../../authorization/types/authz-actions';
-import { AUTHZ_RESOURCE_TYPES } from '../../authorization/types/authz-resources';
-import { AUTHZ_SCOPES } from '../../authorization/types/authz-scopes';
 import type { IdentityAuthzContext } from '../../authorization/types/authz-decision';
-import { assertUuid } from '../../catalog/domain/service-catalog.validation';
-import { CatalogValidationError } from '../../catalog/domain/service-catalog.validation';
 import {
   DOCUMENT_CLASSIFICATIONS,
   DOCUMENT_CATEGORIES,
@@ -26,9 +18,6 @@ import {
 } from '../domain/document-categories';
 import { validateUploadedFile } from '../domain/file-validation';
 import type { CreateDocumentUploadInput, ListDocumentsQuery, UploadedFileInput } from '../dto/documents.dto';
-import { DOCUMENT_ERROR_CODES } from '../errors/document-error-codes';
-import { DocumentHttpException } from '../errors/document-http.exception';
-import type { DocumentRow } from '../repositories/documents.repository';
 import { DocumentsRepository } from '../repositories/documents.repository';
 import {
   assertNoStorageKeyLeak,
@@ -41,13 +30,26 @@ import { createPersistWithCompensation } from './document-upload-coordinator';
 import { DownloadTokenService } from '../storage/download-token.service';
 import { ObjectStorageService } from '../storage/object-storage.service';
 import { EndpointRateLimitService } from '../../security/services/endpoint-rate-limit.service';
+import { DocumentsAccessAuthz } from './documents-access.authz';
+import {
+  documentsAccessDenied,
+  documentsAccessNotFound,
+  documentsDownloadTokenExpired,
+  documentsDownloadTokenInvalid,
+  documentsFileValidationError,
+  documentsInvalidInput,
+  documentsMaxVersionsReached,
+  documentsStorageFailure,
+  documentsUnitNotRegistered,
+  documentsVersionNotFound,
+} from './documents-access.errors';
+import { assertValidDocumentId } from './documents-input-resolution';
 
 @Injectable()
 export class DocumentsAccessService {
   constructor(
     private readonly documentsRepository: DocumentsRepository,
-    private readonly authorizationRepository: AuthorizationRepository,
-    private readonly policyDecisionPoint: PolicyDecisionPointService,
+    private readonly authz: DocumentsAccessAuthz,
     private readonly scopeEnforcement: ScopeEnforcementService,
     private readonly securityAudit: SecurityAuditService,
     private readonly objectStorage: ObjectStorageService,
@@ -61,7 +63,7 @@ export class DocumentsAccessService {
     file: UploadedFileInput,
   ): Promise<{ document: DocumentResponse; version: DocumentVersionResponse }> {
     this.endpointRateLimit.assertAllowed('upload', actor.identityId);
-    await this.assertCreateAction(actor, metadata.unitId);
+    await this.authz.assertCreateAction(actor, metadata.unitId);
     await this.assertUnitRegistered(metadata.unitId);
     this.assertSingleFile(file);
 
@@ -73,7 +75,7 @@ export class DocumentsAccessService {
       maxSizeBytes: MAX_FILE_SIZE_BYTES,
     });
     if (!validation.ok) {
-      throw this.validationError(validation.reason);
+      throw documentsFileValidationError(validation.reason);
     }
 
     try {
@@ -100,7 +102,7 @@ export class DocumentsAccessService {
         persisted.versionNumber,
       );
       if (!document || !version) {
-        throw this.notFound();
+        throw documentsAccessNotFound();
       }
 
       await this.securityAudit.record({
@@ -128,11 +130,7 @@ export class DocumentsAccessService {
       return response;
     } catch (error) {
       if (error instanceof Error && error.message === 'STORAGE_PUT_FAILED') {
-        throw new DocumentHttpException(
-          HttpStatus.SERVICE_UNAVAILABLE,
-          DOCUMENT_ERROR_CODES.STORAGE_FAILURE,
-          'Object storage upload failed.',
-        );
+        throw documentsStorageFailure();
       }
       throw error;
     }
@@ -144,22 +142,18 @@ export class DocumentsAccessService {
     file: UploadedFileInput,
   ): Promise<DocumentVersionResponse> {
     this.endpointRateLimit.assertAllowed('upload', actor.identityId);
-    this.assertValidDocumentId(documentId);
+    assertValidDocumentId(documentId);
     const document = await this.documentsRepository.findDocumentById(documentId);
     if (!document) {
-      throw this.notFound();
+      throw documentsAccessNotFound();
     }
 
-    await this.assertRecordAction(actor, AUTHZ_ACTIONS.DocumentsDocumentUploadVersion, document);
+    await this.authz.assertRecordAction(actor, AUTHZ_ACTIONS.DocumentsDocumentUploadVersion, document);
     this.assertSingleFile(file);
 
     const versionCount = await this.documentsRepository.countVersions(documentId);
     if (versionCount >= MAX_VERSIONS_PER_DOCUMENT) {
-      throw new DocumentHttpException(
-        HttpStatus.CONFLICT,
-        DOCUMENT_ERROR_CODES.MAX_VERSIONS_REACHED,
-        'Maximum number of document versions reached.',
-      );
+      throw documentsMaxVersionsReached();
     }
 
     const validation = await validateUploadedFile({
@@ -172,7 +166,7 @@ export class DocumentsAccessService {
       maxSizeBytes: MAX_FILE_SIZE_BYTES,
     });
     if (!validation.ok) {
-      throw this.validationError(validation.reason);
+      throw documentsFileValidationError(validation.reason);
     }
 
     const persisted = await createPersistWithCompensation(
@@ -198,7 +192,7 @@ export class DocumentsAccessService {
     );
     const refreshed = await this.documentsRepository.findDocumentById(documentId);
     if (!version || !refreshed) {
-      throw this.notFound();
+      throw documentsAccessNotFound();
     }
 
     await this.securityAudit.record({
@@ -218,12 +212,12 @@ export class DocumentsAccessService {
   }
 
   async getById(actor: IdentityAuthzContext, documentId: string): Promise<DocumentResponse> {
-    this.assertValidDocumentId(documentId);
+    assertValidDocumentId(documentId);
     const document = await this.documentsRepository.findDocumentById(documentId);
     if (!document) {
-      throw this.notFound();
+      throw documentsAccessNotFound();
     }
-    await this.assertRecordAction(actor, AUTHZ_ACTIONS.DocumentsDocumentRead, document);
+    await this.authz.assertRecordAction(actor, AUTHZ_ACTIONS.DocumentsDocumentRead, document);
     const response = toDocumentResponse(document);
     assertNoStorageKeyLeak(response);
     return response;
@@ -233,18 +227,10 @@ export class DocumentsAccessService {
     actor: IdentityAuthzContext,
     query: ListDocumentsQuery,
   ): Promise<{ items: DocumentResponse[]; limit: number; offset: number }> {
-    const grants = await this.authorizationRepository.findActiveGrants(
-      actor.identityId,
-      AUTHZ_ACTIONS.DocumentsDocumentList,
-      AUTHZ_RESOURCE_TYPES.DocumentsDocument,
-    );
-    if (grants.length === 0) {
-      throw this.denied();
-    }
-
+    const grants = await this.authz.findListGrants(actor);
     const scopeFilter = this.scopeEnforcement.buildDocumentListFilter(grants);
     if (scopeFilter.clause === 'FALSE') {
-      throw this.denied();
+      throw documentsAccessDenied();
     }
 
     const clauses = [scopeFilter.clause === 'TRUE' ? 'TRUE' : scopeFilter.clause];
@@ -279,12 +265,12 @@ export class DocumentsAccessService {
     actor: IdentityAuthzContext,
     documentId: string,
   ): Promise<DocumentVersionResponse[]> {
-    this.assertValidDocumentId(documentId);
+    assertValidDocumentId(documentId);
     const document = await this.documentsRepository.findDocumentById(documentId);
     if (!document) {
-      throw this.notFound();
+      throw documentsAccessNotFound();
     }
-    await this.assertRecordAction(actor, AUTHZ_ACTIONS.DocumentsDocumentRead, document);
+    await this.authz.assertRecordAction(actor, AUTHZ_ACTIONS.DocumentsDocumentRead, document);
 
     const versions = await this.documentsRepository.listVersions(documentId);
     const response = versions.map((version) =>
@@ -299,20 +285,16 @@ export class DocumentsAccessService {
     documentId: string,
     versionNumber: number,
   ): Promise<DocumentVersionResponse> {
-    this.assertValidDocumentId(documentId);
+    assertValidDocumentId(documentId);
     const document = await this.documentsRepository.findDocumentById(documentId);
     if (!document) {
-      throw this.notFound();
+      throw documentsAccessNotFound();
     }
-    await this.assertRecordAction(actor, AUTHZ_ACTIONS.DocumentsDocumentRead, document);
+    await this.authz.assertRecordAction(actor, AUTHZ_ACTIONS.DocumentsDocumentRead, document);
 
     const version = await this.documentsRepository.findVersion(documentId, versionNumber);
     if (!version) {
-      throw new DocumentHttpException(
-        HttpStatus.NOT_FOUND,
-        DOCUMENT_ERROR_CODES.VERSION_NOT_FOUND,
-        'Document version not found.',
-      );
+      throw documentsVersionNotFound();
     }
 
     const response = toDocumentVersionResponse(version, document.current_version_number);
@@ -325,29 +307,21 @@ export class DocumentsAccessService {
     documentId: string,
     versionNumber: number,
   ): Promise<{ buffer: Buffer; mimeType: string; filename: string; sha256: string }> {
-    this.assertValidDocumentId(documentId);
+    assertValidDocumentId(documentId);
     const document = await this.documentsRepository.findDocumentById(documentId);
     if (!document) {
-      throw this.notFound();
+      throw documentsAccessNotFound();
     }
-    await this.assertRecordAction(actor, AUTHZ_ACTIONS.DocumentsDocumentDownload, document);
+    await this.authz.assertRecordAction(actor, AUTHZ_ACTIONS.DocumentsDocumentDownload, document);
 
     const version = await this.documentsRepository.findVersionWithStorage(documentId, versionNumber);
     if (!version) {
-      throw new DocumentHttpException(
-        HttpStatus.NOT_FOUND,
-        DOCUMENT_ERROR_CODES.VERSION_NOT_FOUND,
-        'Document version not found.',
-      );
+      throw documentsVersionNotFound();
     }
 
     const stored = await this.objectStorage.getObject(version.storage_key);
     if (!stored) {
-      throw new DocumentHttpException(
-        HttpStatus.NOT_FOUND,
-        DOCUMENT_ERROR_CODES.NOT_FOUND,
-        'Stored object not found.',
-      );
+      throw documentsAccessNotFound();
     }
 
     await this.securityAudit.record({
@@ -377,20 +351,16 @@ export class DocumentsAccessService {
     documentId: string,
     versionNumber: number,
   ): Promise<{ downloadUrl: string; expiresAt: string }> {
-    this.assertValidDocumentId(documentId);
+    assertValidDocumentId(documentId);
     const document = await this.documentsRepository.findDocumentById(documentId);
     if (!document) {
-      throw this.notFound();
+      throw documentsAccessNotFound();
     }
-    await this.assertRecordAction(actor, AUTHZ_ACTIONS.DocumentsDocumentDownload, document);
+    await this.authz.assertRecordAction(actor, AUTHZ_ACTIONS.DocumentsDocumentDownload, document);
 
     const version = await this.documentsRepository.findVersion(documentId, versionNumber);
     if (!version) {
-      throw new DocumentHttpException(
-        HttpStatus.NOT_FOUND,
-        DOCUMENT_ERROR_CODES.VERSION_NOT_FOUND,
-        'Document version not found.',
-      );
+      throw documentsVersionNotFound();
     }
 
     const issued = this.downloadTokens.issue(documentId, versionNumber);
@@ -405,18 +375,10 @@ export class DocumentsAccessService {
   ): Promise<{ buffer: Buffer; mimeType: string; filename: string }> {
     const verified = this.downloadTokens.verify(token);
     if (verified === 'INVALID') {
-      throw new DocumentHttpException(
-        HttpStatus.FORBIDDEN,
-        DOCUMENT_ERROR_CODES.DOWNLOAD_TOKEN_INVALID,
-        'Download token is invalid.',
-      );
+      throw documentsDownloadTokenInvalid();
     }
     if (verified === 'EXPIRED') {
-      throw new DocumentHttpException(
-        HttpStatus.FORBIDDEN,
-        DOCUMENT_ERROR_CODES.DOWNLOAD_TOKEN_EXPIRED,
-        'Download token has expired.',
-      );
+      throw documentsDownloadTokenExpired();
     }
 
     const version = await this.documentsRepository.findVersionWithStorage(
@@ -424,16 +386,12 @@ export class DocumentsAccessService {
       verified.versionNumber,
     );
     if (!version) {
-      throw this.notFound();
+      throw documentsAccessNotFound();
     }
 
     const stored = await this.objectStorage.getObject(version.storage_key);
     if (!stored) {
-      throw new DocumentHttpException(
-        HttpStatus.NOT_FOUND,
-        DOCUMENT_ERROR_CODES.NOT_FOUND,
-        'Stored object not found.',
-      );
+      throw documentsAccessNotFound();
     }
 
     return {
@@ -445,168 +403,14 @@ export class DocumentsAccessService {
 
   private assertSingleFile(file: UploadedFileInput | null | undefined): void {
     if (!file || !file.buffer || file.buffer.byteLength === 0) {
-      throw new DocumentHttpException(
-        HttpStatus.BAD_REQUEST,
-        DOCUMENT_ERROR_CODES.INVALID_INPUT,
-        'A single file upload is required.',
-      );
+      throw documentsInvalidInput();
     }
   }
 
   private async assertUnitRegistered(unitId: string): Promise<void> {
     const registered = await this.documentsRepository.isUnitRegistered(unitId);
     if (!registered) {
-      throw new DocumentHttpException(
-        HttpStatus.BAD_REQUEST,
-        DOCUMENT_ERROR_CODES.UNIT_NOT_REGISTERED,
-        'Unit is not registered.',
-      );
+      throw documentsUnitNotRegistered();
     }
-  }
-
-  private async assertCreateAction(actor: IdentityAuthzContext, unitId: string): Promise<void> {
-    const decision = await this.policyDecisionPoint.decide(
-      actor,
-      {
-        action: AUTHZ_ACTIONS.DocumentsDocumentCreate,
-        resourceType: AUTHZ_RESOURCE_TYPES.DocumentsDocument,
-      },
-      { audit: true },
-    );
-    if (decision.result === 'DENY') {
-      throw this.denied();
-    }
-
-    const grants = await this.authorizationRepository.findActiveGrants(
-      actor.identityId,
-      AUTHZ_ACTIONS.DocumentsDocumentCreate,
-      AUTHZ_RESOURCE_TYPES.DocumentsDocument,
-    );
-
-    const hasAccess = grants.some((grant) => {
-      if (grant.scope_type === AUTHZ_SCOPES.Global && grant.resource_id === null) {
-        return true;
-      }
-      return (
-        grant.scope_type === AUTHZ_SCOPES.Unit &&
-        grant.resource_id !== null &&
-        grant.resource_id === unitId
-      );
-    });
-
-    if (!hasAccess) {
-      throw this.denied();
-    }
-  }
-
-  private async assertRecordAction(
-    actor: IdentityAuthzContext,
-    action: AuthzAction,
-    document: DocumentRow,
-  ): Promise<void> {
-    const context = toResourceContextFromDocument(document);
-    const decision = await this.policyDecisionPoint.decide(
-      actor,
-      { action, resourceType: AUTHZ_RESOURCE_TYPES.DocumentsDocument, context },
-      { audit: true },
-    );
-    if (decision.result === 'DENY') {
-      throw this.denied();
-    }
-
-    const grants = await this.authorizationRepository.findActiveGrants(
-      actor.identityId,
-      action,
-      AUTHZ_RESOURCE_TYPES.DocumentsDocument,
-    );
-
-    const hasAccess = grants.some((grant) => {
-      if (grant.scope_type === AUTHZ_SCOPES.Global && grant.resource_id === null) {
-        return true;
-      }
-      if (
-        grant.scope_type === AUTHZ_SCOPES.Unit &&
-        grant.resource_id !== null &&
-        grant.resource_id === document.unit_id
-      ) {
-        return true;
-      }
-      if (
-        grant.scope_type === AUTHZ_SCOPES.Document &&
-        grant.resource_id !== null &&
-        grant.resource_id === document.id
-      ) {
-        return true;
-      }
-      return false;
-    });
-
-    if (!hasAccess) {
-      throw this.denied();
-    }
-  }
-
-  private assertValidDocumentId(documentId: string): void {
-    try {
-      assertUuid(documentId);
-    } catch (error) {
-      if (error instanceof CatalogValidationError) {
-        throw this.notFound();
-      }
-      throw error;
-    }
-  }
-
-  private validationError(
-    reason: 'INVALID_MIME' | 'INVALID_EXTENSION' | 'MAGIC_BYTES_MISMATCH' | 'FILE_TOO_LARGE',
-  ): DocumentHttpException {
-    switch (reason) {
-      case 'INVALID_MIME':
-        return new DocumentHttpException(
-          HttpStatus.BAD_REQUEST,
-          DOCUMENT_ERROR_CODES.INVALID_MIME,
-          'MIME type is not allowed.',
-        );
-      case 'INVALID_EXTENSION':
-        return new DocumentHttpException(
-          HttpStatus.BAD_REQUEST,
-          DOCUMENT_ERROR_CODES.INVALID_EXTENSION,
-          'File extension does not match MIME type.',
-        );
-      case 'MAGIC_BYTES_MISMATCH':
-        return new DocumentHttpException(
-          HttpStatus.BAD_REQUEST,
-          DOCUMENT_ERROR_CODES.MAGIC_BYTES_MISMATCH,
-          'File content does not match declared MIME type.',
-        );
-      case 'FILE_TOO_LARGE':
-        return new DocumentHttpException(
-          HttpStatus.PAYLOAD_TOO_LARGE,
-          DOCUMENT_ERROR_CODES.FILE_TOO_LARGE,
-          'File exceeds maximum allowed size.',
-        );
-      default:
-        return new DocumentHttpException(
-          HttpStatus.BAD_REQUEST,
-          DOCUMENT_ERROR_CODES.INVALID_INPUT,
-          'Invalid upload.',
-        );
-    }
-  }
-
-  private denied(): DocumentHttpException {
-    return new DocumentHttpException(
-      HttpStatus.FORBIDDEN,
-      DOCUMENT_ERROR_CODES.DENIED,
-      'Document access denied.',
-    );
-  }
-
-  private notFound(): DocumentHttpException {
-    return new DocumentHttpException(
-      HttpStatus.NOT_FOUND,
-      DOCUMENT_ERROR_CODES.NOT_FOUND,
-      'Document not found.',
-    );
   }
 }

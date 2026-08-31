@@ -9,8 +9,12 @@ import { ProposalsController } from './controllers/proposals.controller';
 import { PurchaseOrdersRepository } from './repositories/purchase-orders.repository';
 import { ProposalsRepository } from './repositories/proposals.repository';
 import { CommercialPoliciesAccessService } from './services/commercial-policies-access.service';
-import { PurchaseOrdersAccessService } from './services/purchase-orders-access.service';
+import { ProposalsAccessAuthz } from './services/proposals-access.authz';
 import { ProposalsAccessService } from './services/proposals-access.service';
+import { ProposalsReferenceValidationService } from './services/proposals-reference-validation.service';
+import { PurchaseOrdersAccessAuthz } from './services/purchase-orders-access.authz';
+import { PurchaseOrdersAccessService } from './services/purchase-orders-access.service';
+import { PurchaseOrdersReferenceValidationService } from './services/purchase-orders-reference-validation.service';
 
 @Module({
   imports: [DatabaseModule, AuthModule, AuthorizationModule, AuditModule],
@@ -18,8 +22,12 @@ import { ProposalsAccessService } from './services/proposals-access.service';
   providers: [
     CommercialPoliciesAccessService,
     ProposalsRepository,
+    ProposalsAccessAuthz,
+    ProposalsReferenceValidationService,
     ProposalsAccessService,
     PurchaseOrdersRepository,
+    PurchaseOrdersAccessAuthz,
+    PurchaseOrdersReferenceValidationService,
     PurchaseOrdersAccessService,
   ],
   exports: [

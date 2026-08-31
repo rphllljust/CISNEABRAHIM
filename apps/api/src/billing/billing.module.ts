@@ -5,6 +5,7 @@ import { AuthorizationModule } from '../authorization/authorization.module';
 import { DocumentsModule } from '../documents/documents.module';
 import { DatabaseModule } from '../infrastructure/database/database.module';
 import { OutboxModule } from '../platform/outbox/outbox.module';
+import { CommercialModule } from '../commercial/commercial.module';
 import { MeasurementsModule } from '../measurements/measurements.module';
 import { ServiceOrdersModule } from '../service-orders/service-orders.module';
 import { BillingController } from './controllers/billing.controller';
@@ -12,7 +13,9 @@ import { BillingDocumentController } from './controllers/billing-document.contro
 import { BillingRepository } from './repositories/billing.repository';
 import { BillingDocumentRepository } from './repositories/billing-document.repository';
 import { BillingAccessService } from './services/billing-access.service';
+import { BillingDocumentAccessAuthz } from './services/billing-document-access.authz';
 import { BillingDocumentAccessService } from './services/billing-document-access.service';
+import { BillingDocumentArtifactService } from './services/billing-document-artifact.service';
 
 @Module({
   imports: [
@@ -22,6 +25,7 @@ import { BillingDocumentAccessService } from './services/billing-document-access
     AuditModule,
     OutboxModule,
     DocumentsModule,
+    CommercialModule,
     ServiceOrdersModule,
     MeasurementsModule,
   ],
@@ -29,6 +33,8 @@ import { BillingDocumentAccessService } from './services/billing-document-access
   providers: [
     BillingRepository,
     BillingDocumentRepository,
+    BillingDocumentAccessAuthz,
+    BillingDocumentArtifactService,
     BillingAccessService,
     BillingDocumentAccessService,
   ],

@@ -1,4 +1,5 @@
 import {
+  createIntegrationTestPool,
   ensureOperationalLaborTypesBaseline,
   ensurePhysicalResourceTypesBaseline,
   ensureUnitsOfMeasureBaseline,
@@ -19,7 +20,7 @@ import {
   truncateServiceRequestTables,
 } from '@cisne/database';
 import { Test, TestingModule } from '@nestjs/testing';
-import { Pool } from 'pg';
+import type { Pool } from 'pg';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
@@ -35,7 +36,7 @@ import { ClientsModule } from '../clients/clients.module';
 import { ADDRESS_PURPOSES, CONTACT_PURPOSES } from '../clients/domain/client-status';
 import { ClientAccessService } from '../clients/services/client-access.service';
 import { CommercialModule } from '../commercial/commercial.module';
-import { PURCHASE_ORDER_PRICING_STRUCTURES } from '../commercial/domain/purchase-order';
+import { PURCHASE_ORDER_PRICING_STRUCTURES, PURCHASE_ORDER_RULE_TYPES } from '../commercial/domain/purchase-order';
 import { PurchaseOrdersAccessService } from '../commercial/services/purchase-orders-access.service';
 import { DocumentsModule } from '../documents/documents.module';
 import { ObjectStorageService } from '../documents/storage/object-storage.service';
@@ -165,7 +166,7 @@ describe('Billing document PostgreSQL integration', () => {
     catalogAccess = module.get(ServiceCatalogAccessService);
     purchaseOrdersAccess = module.get(PurchaseOrdersAccessService);
     objectStorage = module.get(ObjectStorageService);
-    pool = new Pool({ connectionString: testDatabaseUrl });
+    pool = createIntegrationTestPool(testDatabaseUrl);
   });
 
   beforeEach(async () => {
@@ -198,7 +199,13 @@ describe('Billing document PostgreSQL integration', () => {
     return { identityId, actor: { identityId, sessionId: 'sid' } };
   }
 
-  async function seedPreparedBilling(actor: { identityId: string; sessionId: string }, poNumber?: string) {
+  async function seedPreparedBilling(
+    actor: { identityId: string; sessionId: string },
+    poNumber?: string,
+    options?: {
+      billingRules?: Array<{ ruleType: string; ruleConfig?: Record<string, unknown> }>;
+    },
+  ) {
     const taxId = clientTaxIdCounter++ % 2 === 0 ? TEST_CNPJ : ALT_TEST_CNPJ;
     const client = await clientAccess.create(actor, {
       legalName: `Cliente Doc ${crypto.randomUUID()}`,
@@ -244,6 +251,7 @@ describe('Billing document PostgreSQL integration', () => {
         poNumber,
         pricingStructure: PURCHASE_ORDER_PRICING_STRUCTURES.LineItems,
         paymentTerms: '30 DDL',
+        billingRules: options?.billingRules,
         items: [
           {
             lineNumber: 1,
@@ -418,5 +426,16 @@ describe('Billing document PostgreSQL integration', () => {
     );
     expect(active.rows[0]?.count).toBe('0');
     putSpy.mockRestore();
+  });
+
+  it('rejects document issue when purchase order requires XML attachment', async () => {
+    const { actor } = await seedActor();
+    const { completed, billing } = await seedPreparedBilling(actor, `PO-XML-${crypto.randomUUID().slice(0, 8)}`, {
+      billingRules: [{ ruleType: PURCHASE_ORDER_RULE_TYPES.XmlRequired }],
+    });
+
+    await expect(
+      billingDocumentAccess.issue(actor, completed.id, billing.id, {}),
+    ).rejects.toMatchObject({ code: BILLING_ERROR_CODES.PURCHASE_ORDER_BILLING_RULE_VIOLATED });
   });
 });

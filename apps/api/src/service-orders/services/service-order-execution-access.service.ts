@@ -1,4 +1,4 @@
-import { HttpStatus, Inject, Injectable, Optional } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import {
   SECURITY_AUDIT_ACTIONS,
   SECURITY_AUDIT_CLASSIFICATIONS,
@@ -6,18 +6,12 @@ import {
   SECURITY_AUDIT_RESOURCE_TYPES,
 } from '../../audit/types/security-audit.types';
 import { SecurityAuditService } from '../../audit/services/security-audit.service';
-import { AuthorizationRepository } from '../../authorization/repositories/authorization.repository';
-import { PolicyDecisionPointService } from '../../authorization/services/policy-decision-point.service';
-import { toResourceContextFromServiceOrder } from '../../authorization/scope/scope-matcher';
 import type { AuthzAction } from '../../authorization/types/authz-actions';
 import { AUTHZ_ACTIONS } from '../../authorization/types/authz-actions';
-import { AUTHZ_RESOURCE_TYPES } from '../../authorization/types/authz-resources';
-import { AUTHZ_SCOPES } from '../../authorization/types/authz-scopes';
 import type { IdentityAuthzContext } from '../../authorization/types/authz-decision';
 import { FAULT_HOOKS } from '../../platform/fault-injection/fault-hook.ids';
 import { FAULT_INJECTION_PORT, type FaultInjectionPort } from '../../platform/fault-injection/fault-injection.port';
 import { maybeInjectFault } from '../../platform/fault-injection/fault-injection.util';
-import { assertUuid, CatalogValidationError } from '../../catalog/domain/service-catalog.validation';
 import type { ClientStatus } from '../../clients/domain/client-status';
 import {
   assertEvidenceKindInSnapshot,
@@ -33,7 +27,6 @@ import {
   ServiceOrderExecutionError,
 } from '../domain/service-order-execution';
 import {
-  ServiceOrderExecutionValidationError,
   validateRecordEvidenceInput,
   validateRecordMeasuredValueInput,
   validateRecordObservationInput,
@@ -50,8 +43,6 @@ import {
 import type { ServiceOrderServiceSnapshot } from '../domain/service-order-snapshot';
 import { SERVICE_ORDER_STATUSES } from '../domain/service-order';
 import { assertTransition, ServiceOrderStateError } from '../domain/service-order.state-machine';
-import { SERVICE_ORDERS_ERROR_CODES } from '../errors/service-orders-error-codes';
-import { ServiceOrdersHttpException } from '../errors/service-orders-http.exception';
 import { ServiceOrderExecutionRepository } from '../repositories/service-order-execution.repository';
 import type {
   ExecutionEntryRow,
@@ -68,14 +59,22 @@ import {
   type ExecutionBundleResponse,
 } from '../serializers/service-order-execution-response.serializer';
 import { toServiceOrderDetailResponse } from '../serializers/service-orders-response.serializer';
+import { ServiceOrdersAccessAuthz } from './service-orders-access.authz';
+import {
+  mapServiceOrderExecutionError,
+  serviceOrdersAccessNotFound,
+  serviceOrdersInvalidState,
+  serviceOrdersValidationFailed,
+  serviceOrdersVersionConflict,
+} from './service-orders-access.errors';
+import { assertValidServiceOrderId } from './service-orders-input-resolution';
 
 @Injectable()
 export class ServiceOrderExecutionAccessService {
   constructor(
     private readonly serviceOrdersRepository: ServiceOrdersRepository,
     private readonly executionRepository: ServiceOrderExecutionRepository,
-    private readonly authorizationRepository: AuthorizationRepository,
-    private readonly policyDecisionPoint: PolicyDecisionPointService,
+    private readonly authz: ServiceOrdersAccessAuthz,
     private readonly securityAudit: SecurityAuditService,
     @Optional() @Inject(FAULT_INJECTION_PORT) private readonly faultInjection?: FaultInjectionPort,
   ) {}
@@ -106,7 +105,7 @@ export class ServiceOrderExecutionAccessService {
   }
 
   async complete(actor: IdentityAuthzContext, serviceOrderId: string, input: RowVersionCommandInput) {
-    this.assertValidServiceOrderId(serviceOrderId);
+    assertValidServiceOrderId(serviceOrderId);
     const order = await this.requireServiceOrder(
       actor,
       serviceOrderId,
@@ -116,7 +115,7 @@ export class ServiceOrderExecutionAccessService {
     try {
       validated = validateRowVersionCommandInput(input);
     } catch {
-      throw this.validationFailed();
+      throw serviceOrdersValidationFailed();
     }
 
     if (validated.idempotencyKey) {
@@ -139,14 +138,16 @@ export class ServiceOrderExecutionAccessService {
     const satisfied = collectSatisfiedEvidenceKinds({
       evidenceKinds: evidence.map((item) => item.evidence_kind),
       entryEvidenceKinds: entries.map((item) => item.evidence_kind ?? ''),
-      entryTypes: entries.map((item) => item.entry_type as (typeof EXECUTION_ENTRY_TYPES)[keyof typeof EXECUTION_ENTRY_TYPES]),
+      entryTypes: entries.map(
+        (item) => item.entry_type as (typeof EXECUTION_ENTRY_TYPES)[keyof typeof EXECUTION_ENTRY_TYPES],
+      ),
     });
 
     try {
       assertExecutionCompletePreconditions(order.service_snapshot, satisfied);
     } catch (error) {
       if (error instanceof ServiceOrderExecutionError) {
-        throw this.mapExecutionError(error);
+        throw mapServiceOrderExecutionError(error);
       }
       throw error;
     }
@@ -166,10 +167,10 @@ export class ServiceOrderExecutionAccessService {
     });
 
     if (result.outcome === 'version_conflict') {
-      throw this.versionConflict();
+      throw serviceOrdersVersionConflict();
     }
     if (result.outcome === 'invalid_state') {
-      throw this.invalidState();
+      throw serviceOrdersInvalidState('Service order is not in a valid state for this operation.');
     }
 
     await this.audit(actor, SECURITY_AUDIT_ACTIONS.ServiceOrdersExecutionComplete, serviceOrderId, {
@@ -226,20 +227,17 @@ export class ServiceOrderExecutionAccessService {
   }
 
   async recordOccurrence(actor: IdentityAuthzContext, serviceOrderId: string, input: RecordOccurrenceInput) {
-    this.assertValidServiceOrderId(serviceOrderId);
+    assertValidServiceOrderId(serviceOrderId);
     const order = await this.requireServiceOrder(actor, serviceOrderId, AUTHZ_ACTIONS.ServiceOrdersExecutionRecord);
     let validated: RecordOccurrenceInput;
     try {
       validated = validateRecordOccurrenceInput(input);
       assertExecutionOperationalState(order.status, EXECUTION_RECORDING_ALLOWED_STATUSES);
     } catch (error) {
-      if (error instanceof ServiceOrderExecutionValidationError) {
-        throw this.validationFailed();
-      }
       if (error instanceof ServiceOrderExecutionError) {
-        throw this.mapExecutionError(error);
+        throw mapServiceOrderExecutionError(error);
       }
-      throw error;
+      throw serviceOrdersValidationFailed();
     }
 
     const result = await this.executionRepository.recordOccurrence({
@@ -256,7 +254,7 @@ export class ServiceOrderExecutionAccessService {
   }
 
   async recordEvidence(actor: IdentityAuthzContext, serviceOrderId: string, input: RecordEvidenceInput) {
-    this.assertValidServiceOrderId(serviceOrderId);
+    assertValidServiceOrderId(serviceOrderId);
     const order = await this.requireServiceOrder(actor, serviceOrderId, AUTHZ_ACTIONS.ServiceOrdersExecutionRecord);
     let validated: RecordEvidenceInput;
     try {
@@ -265,13 +263,10 @@ export class ServiceOrderExecutionAccessService {
       const snapshot = order.service_snapshot as unknown as ServiceOrderServiceSnapshot;
       assertEvidenceKindInSnapshot(snapshot, validated.evidenceKind);
     } catch (error) {
-      if (error instanceof ServiceOrderExecutionValidationError) {
-        throw this.validationFailed();
-      }
       if (error instanceof ServiceOrderExecutionError) {
-        throw this.mapExecutionError(error);
+        throw mapServiceOrderExecutionError(error);
       }
-      throw error;
+      throw serviceOrdersValidationFailed();
     }
 
     const result = await this.executionRepository.recordEvidence({
@@ -293,13 +288,13 @@ export class ServiceOrderExecutionAccessService {
     transition: 'start' | 'pause' | 'resume',
     action: AuthzAction,
   ) {
-    this.assertValidServiceOrderId(serviceOrderId);
+    assertValidServiceOrderId(serviceOrderId);
     const order = await this.requireServiceOrder(actor, serviceOrderId, action);
     let validated: RowVersionCommandInput;
     try {
       validated = validateRowVersionCommandInput(input);
     } catch {
-      throw this.validationFailed();
+      throw serviceOrdersValidationFailed();
     }
 
     const commandName =
@@ -327,7 +322,7 @@ export class ServiceOrderExecutionAccessService {
       nextStatus = assertTransition(order.status as typeof SERVICE_ORDER_STATUSES.Released, transition);
     } catch (error) {
       if (error instanceof ServiceOrderStateError) {
-        throw this.invalidState();
+        throw serviceOrdersInvalidState('Service order is not in a valid state for this operation.');
       }
       throw error;
     }
@@ -351,7 +346,7 @@ export class ServiceOrderExecutionAccessService {
         );
       } catch (error) {
         if (error instanceof ServiceOrderExecutionError) {
-          throw this.mapExecutionError(error);
+          throw mapServiceOrderExecutionError(error);
         }
         throw error;
       }
@@ -370,10 +365,10 @@ export class ServiceOrderExecutionAccessService {
     });
 
     if (result.outcome === 'version_conflict') {
-      throw this.versionConflict();
+      throw serviceOrdersVersionConflict();
     }
     if (result.outcome === 'invalid_state') {
-      throw this.invalidState();
+      throw serviceOrdersInvalidState('Service order is not in a valid state for this operation.');
     }
 
     const auditAction =
@@ -398,7 +393,7 @@ export class ServiceOrderExecutionAccessService {
       validated: RecordQuantityInput | RecordMeasuredValueInput | RecordObservationInput,
     ) => { quantityValue: string | null; quantityUnitCode: string | null; textValue: string | null },
   ) {
-    this.assertValidServiceOrderId(serviceOrderId);
+    assertValidServiceOrderId(serviceOrderId);
     const order = await this.requireServiceOrder(actor, serviceOrderId, AUTHZ_ACTIONS.ServiceOrdersExecutionRecord);
     let validated: RecordQuantityInput | RecordMeasuredValueInput | RecordObservationInput;
     try {
@@ -418,13 +413,10 @@ export class ServiceOrderExecutionAccessService {
         assertEvidenceKindInSnapshot(snapshot, evidenceKind);
       }
     } catch (error) {
-      if (error instanceof ServiceOrderExecutionValidationError) {
-        throw this.validationFailed();
-      }
       if (error instanceof ServiceOrderExecutionError) {
-        throw this.mapExecutionError(error);
+        throw mapServiceOrderExecutionError(error);
       }
-      throw error;
+      throw serviceOrdersValidationFailed();
     }
 
     const values = mapValues(validated);
@@ -453,10 +445,10 @@ export class ServiceOrderExecutionAccessService {
       return { entry: toExecutionEntryResponse(result.payload.entry as ExecutionEntryRow), rowVersion: null };
     }
     if (result.outcome === 'version_conflict') {
-      throw this.versionConflict();
+      throw serviceOrdersVersionConflict();
     }
     if (result.outcome === 'invalid_state') {
-      throw this.invalidState();
+      throw serviceOrdersInvalidState('Service order is not in a valid state for this operation.');
     }
     await this.audit(actor, SECURITY_AUDIT_ACTIONS.ServiceOrdersExecutionRecord, serviceOrderId, {
       entryId: result.entry.id,
@@ -476,10 +468,10 @@ export class ServiceOrderExecutionAccessService {
       };
     }
     if (result.outcome === 'version_conflict') {
-      throw this.versionConflict();
+      throw serviceOrdersVersionConflict();
     }
     if (result.outcome === 'invalid_state') {
-      throw this.invalidState();
+      throw serviceOrdersInvalidState('Service order is not in a valid state for this operation.');
     }
     await this.audit(actor, SECURITY_AUDIT_ACTIONS.ServiceOrdersExecutionRecord, serviceOrderId, {
       evidenceId: result.evidence.id,
@@ -499,10 +491,10 @@ export class ServiceOrderExecutionAccessService {
       };
     }
     if (result.outcome === 'version_conflict') {
-      throw this.versionConflict();
+      throw serviceOrdersVersionConflict();
     }
     if (result.outcome === 'invalid_state') {
-      throw this.invalidState();
+      throw serviceOrdersInvalidState('Service order is not in a valid state for this operation.');
     }
     await this.audit(actor, SECURITY_AUDIT_ACTIONS.ServiceOrdersExecutionRecord, serviceOrderId, {
       occurrenceId: result.occurrence.id,
@@ -517,50 +509,10 @@ export class ServiceOrderExecutionAccessService {
   ): Promise<ServiceOrderRow> {
     const row = await this.serviceOrdersRepository.findById(serviceOrderId);
     if (!row) {
-      throw this.notFound();
+      throw serviceOrdersAccessNotFound();
     }
-    await this.assertRecordAction(actor, action, row);
+    await this.authz.assertRecordAction(actor, action, row);
     return row;
-  }
-
-  private async assertRecordAction(
-    actor: IdentityAuthzContext,
-    action: AuthzAction,
-    row: ServiceOrderRow,
-  ): Promise<void> {
-    const decision = await this.policyDecisionPoint.decide(
-      actor,
-      {
-        action,
-        resourceType: AUTHZ_RESOURCE_TYPES.ServiceOrdersServiceOrder,
-        context: toResourceContextFromServiceOrder(row),
-      },
-      { audit: true },
-    );
-    if (decision.result === 'DENY') {
-      throw this.denied();
-    }
-
-    const grants = await this.authorizationRepository.findActiveGrants(
-      actor.identityId,
-      action,
-      AUTHZ_RESOURCE_TYPES.ServiceOrdersServiceOrder,
-    );
-    const hasAccess = grants.some((grant) => {
-      if (grant.scope_type === AUTHZ_SCOPES.Global && grant.resource_id === null) {
-        return true;
-      }
-      if (grant.scope_type === AUTHZ_SCOPES.Unit && grant.resource_id === row.unit_id) {
-        return true;
-      }
-      if (row.client_id && grant.scope_type === AUTHZ_SCOPES.Client && grant.resource_id === row.client_id) {
-        return true;
-      }
-      return false;
-    });
-    if (!hasAccess) {
-      throw this.denied();
-    }
   }
 
   private async audit(
@@ -579,112 +531,5 @@ export class ServiceOrderExecutionAccessService {
       classification: SECURITY_AUDIT_CLASSIFICATIONS.Standard,
       metadata,
     });
-  }
-
-  private assertValidServiceOrderId(serviceOrderId: string): void {
-    try {
-      assertUuid(serviceOrderId, 'serviceOrderId');
-    } catch (error) {
-      if (error instanceof CatalogValidationError) {
-        throw this.notFound();
-      }
-      throw error;
-    }
-  }
-
-  private validationFailed(): ServiceOrdersHttpException {
-    return new ServiceOrdersHttpException(
-      HttpStatus.BAD_REQUEST,
-      SERVICE_ORDERS_ERROR_CODES.VALIDATION_FAILED,
-      'Invalid request body.',
-    );
-  }
-
-  private denied(): ServiceOrdersHttpException {
-    return new ServiceOrdersHttpException(
-      HttpStatus.FORBIDDEN,
-      SERVICE_ORDERS_ERROR_CODES.DENIED,
-      'Access denied.',
-    );
-  }
-
-  private notFound(): ServiceOrdersHttpException {
-    return new ServiceOrdersHttpException(
-      HttpStatus.NOT_FOUND,
-      SERVICE_ORDERS_ERROR_CODES.NOT_FOUND,
-      'Service order not found.',
-    );
-  }
-
-  private invalidState(): ServiceOrdersHttpException {
-    return new ServiceOrdersHttpException(
-      HttpStatus.CONFLICT,
-      SERVICE_ORDERS_ERROR_CODES.INVALID_STATE,
-      'Service order is not in a valid state for this operation.',
-    );
-  }
-
-  private versionConflict(): ServiceOrdersHttpException {
-    return new ServiceOrdersHttpException(
-      HttpStatus.CONFLICT,
-      SERVICE_ORDERS_ERROR_CODES.VERSION_CONFLICT,
-      'Service order was modified by another request.',
-    );
-  }
-
-  private mapExecutionError(error: ServiceOrderExecutionError): ServiceOrdersHttpException {
-    switch (error.code) {
-      case 'CLIENT_NOT_FOUND':
-        return new ServiceOrdersHttpException(
-          HttpStatus.NOT_FOUND,
-          SERVICE_ORDERS_ERROR_CODES.CLIENT_NOT_FOUND,
-          'Client not found.',
-        );
-      case 'CLIENT_INACTIVE':
-        return new ServiceOrdersHttpException(
-          HttpStatus.CONFLICT,
-          SERVICE_ORDERS_ERROR_CODES.CLIENT_INACTIVE,
-          'Client must be active for execution.',
-        );
-      case 'MINIMUM_RESOURCES_NOT_PLANNED':
-      case 'MINIMUM_LABOR_NOT_PLANNED':
-        return new ServiceOrdersHttpException(
-          HttpStatus.CONFLICT,
-          SERVICE_ORDERS_ERROR_CODES.MINIMUM_RESOURCES_NOT_MET,
-          'Minimum planned resources are not met.',
-        );
-      case 'REQUIRED_EVIDENCE_MISSING':
-        return new ServiceOrdersHttpException(
-          HttpStatus.CONFLICT,
-          SERVICE_ORDERS_ERROR_CODES.REQUIRED_EVIDENCE_MISSING,
-          'Required execution evidence is missing.',
-        );
-      case 'EVIDENCE_KIND_NOT_RECOGNIZED':
-        return new ServiceOrdersHttpException(
-          HttpStatus.BAD_REQUEST,
-          SERVICE_ORDERS_ERROR_CODES.EVIDENCE_KIND_NOT_RECOGNIZED,
-          'Evidence kind is not recognized.',
-        );
-      case 'EVIDENCE_KIND_NOT_REQUIRED':
-        return new ServiceOrdersHttpException(
-          HttpStatus.CONFLICT,
-          SERVICE_ORDERS_ERROR_CODES.EVIDENCE_KIND_NOT_REQUIRED,
-          'Evidence kind is not required by the service snapshot.',
-        );
-      case 'UNIT_NOT_ALLOWED':
-        return new ServiceOrdersHttpException(
-          HttpStatus.CONFLICT,
-          SERVICE_ORDERS_ERROR_CODES.UNIT_NOT_ALLOWED,
-          'Unit is not allowed for this service.',
-        );
-      case 'SERVICE_SNAPSHOT_REQUIRED':
-        return new ServiceOrdersHttpException(
-          HttpStatus.CONFLICT,
-          SERVICE_ORDERS_ERROR_CODES.SERVICE_REQUIRED,
-          'Service snapshot is required.',
-        );
-      default:
-        return this.invalidState();
-    }
   }
 }

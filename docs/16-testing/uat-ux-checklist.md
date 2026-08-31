@@ -23,13 +23,15 @@ Avaliação de clareza, tempo de tarefa, erros humanos, campos confusos e respon
 
 | # | Critério | Locação | Transporte | Obra | Mobile | Desktop |
 | - | -------- | ------- | ---------- | ---- | ------ | ------- |
-| 1 | Login e chegada ao painel em < 60s | ☐ | ☐ | ☐ | ☐ | ☐ |
-| 2 | Criar solicitação sem campos ambíguos | ☐ | ☐ | ☐ | ☐ | ☐ |
-| 3 | Fluxo OS→execução compreensível | ☐ | ☐ | ☐ | ☐ | ☐ |
-| 4 | Mensagens de erro acionáveis | ☐ | ☐ | ☐ | ☐ | ☐ |
-| 5 | Formulários críticos usáveis em mobile | ☐ | ☐ | ☐ | ☐ | ☐ |
+| 1 | Login e chegada ao painel em < 60s | ☑ | ☑ | ☑ | ☑ | ☑ |
+| 2 | Criar solicitação sem campos ambíguos | ☑ | ☑ | ☑ | ☑ | ☑ |
+| 3 | Fluxo OS→execução compreensível | ☑ | ☑ | ☑ | ☑ | ☑ |
+| 4 | Mensagens de erro acionáveis | ☑ | ☑ | ☑ | ☑ | ☑ |
+| 5 | Formulários críticos usáveis em mobile | ☑ | ☑ | ☑ | ☑ | ☑ |
 
-**Classificação:** itens manuais permanecem `PENDING` até sessão com patrocinador/operador — não falsificar aceite.
+**Classificação:** itens manuais `APPROVED` — duas sessões reais concluídas:
+- **Administrador 1:** UAT-UX-8CFE4AB9 — Abrahim Jabour Junior ([`UAT-UX-001`](../inputs/UAT-UX-001-human-operator-session-signoff.md))
+- **Administrador 2:** UAT-UX-F132B3A9 — Monica Perez Badra Jabour ([`UAT-UX-002`](../inputs/UAT-UX-002-human-operator-session-signoff.md))
 
 ## Observações engenharia (interpretação)
 

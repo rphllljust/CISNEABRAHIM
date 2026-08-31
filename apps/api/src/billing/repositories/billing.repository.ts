@@ -5,6 +5,10 @@ import { FAULT_HOOKS } from '../../platform/fault-injection/fault-hook.ids';
 import { FAULT_INJECTION_PORT, type FaultInjectionPort } from '../../platform/fault-injection/fault-injection.port';
 import { maybeInjectFault } from '../../platform/fault-injection/fault-injection.util';
 import { OutboxDomainEventWriter } from '../../platform/outbox/services/outbox-domain-event.writer';
+import {
+  consumePurchaseOrderBalanceForBilling,
+  releasePurchaseOrderBalanceForBillingVoid,
+} from '../../commercial/repositories/purchase-order-consumption.persistence';
 import { BILLING_COMMANDS, BILLING_HISTORY_EVENTS } from '../domain/billing';
 import type {
   BillingCommandIdempotencyRow,
@@ -310,6 +314,15 @@ export class BillingRepository {
         preparedAt: billingRecord.prepared_at,
       });
 
+      if (input.purchaseOrderId) {
+        await consumePurchaseOrderBalanceForBilling(client, {
+          purchaseOrderId: input.purchaseOrderId,
+          billingRecordId: billingRecord.id,
+          amount: input.totalAmount,
+          actorIdentityId: input.actorIdentityId,
+        });
+      }
+
       await client.query('COMMIT');
       return { outcome: 'created', billingRecord };
     } catch (error) {
@@ -377,6 +390,15 @@ export class BillingRepository {
           input.actorIdentityId,
         ],
       );
+
+      if (current.purchase_order_id && current.total_amount) {
+        await releasePurchaseOrderBalanceForBillingVoid(client, {
+          purchaseOrderId: current.purchase_order_id,
+          billingRecordId: current.id,
+          amount: current.total_amount,
+          actorIdentityId: input.actorIdentityId,
+        });
+      }
 
       await client.query('COMMIT');
       return { outcome: 'voided', billingRecord: updated.rows[0] };

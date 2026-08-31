@@ -20,6 +20,12 @@ import type {
   RecordExecutionPersistenceResult,
   RecordOccurrencePersistenceResult,
 } from './service-order-execution.repository.types';
+import {
+  EXECUTION_ENTRY_RETURNING,
+  executionTransitionSql,
+  historyEventForExecutionTransition,
+  isExecutionIdempotencyViolation,
+} from './service-order-execution-persistence-rows';
 
 type PlannedResourceCoverageRow = {
   requirement_kind: string;
@@ -28,12 +34,6 @@ type PlannedResourceCoverageRow = {
   planned_quantity: string;
   status: string;
 };
-
-const ENTRY_RETURNING = `
-  id, service_order_id, entry_type::text AS entry_type, evidence_kind,
-  quantity_value::text AS quantity_value, quantity_unit_code, text_value, context,
-  actor_identity_id, recorded_at, idempotency_key, row_version
-`;
 
 @Injectable()
 export class ServiceOrderExecutionRepository {
@@ -67,7 +67,7 @@ export class ServiceOrderExecutionRepository {
 
   async listEntries(serviceOrderId: string): Promise<ExecutionEntryRow[]> {
     const result = await this.pool().query<ExecutionEntryRow>(
-      `SELECT ${ENTRY_RETURNING}
+      `SELECT ${EXECUTION_ENTRY_RETURNING}
        FROM so.execution_entries
        WHERE service_order_id = $1
        ORDER BY recorded_at ASC, id ASC`,
@@ -148,7 +148,7 @@ export class ServiceOrderExecutionRepository {
         return { outcome: 'invalid_state' };
       }
 
-      const transitionSql = this.transitionSql(input.transition);
+      const transitionSql = executionTransitionSql(input.transition);
       const updated = await client.query<{ row_version: number }>(
         `UPDATE so.service_orders
          SET status = $3::so.service_order_status,
@@ -182,7 +182,7 @@ export class ServiceOrderExecutionRepository {
          VALUES ($1, $2, $3::jsonb, $4)`,
         [
           input.serviceOrderId,
-          this.historyEventForTransition(input.transition),
+          historyEventForExecutionTransition(input.transition),
           JSON.stringify({ fromStatus: input.currentStatus, toStatus: input.nextStatus }),
           input.actorIdentityId,
         ],
@@ -248,7 +248,7 @@ export class ServiceOrderExecutionRepository {
 
       if (input.idempotencyKey) {
         const existing = await client.query<ExecutionEntryRow>(
-          `SELECT ${ENTRY_RETURNING}
+          `SELECT ${EXECUTION_ENTRY_RETURNING}
            FROM so.execution_entries
            WHERE idempotency_key = $1`,
           [input.idempotencyKey],
@@ -283,7 +283,7 @@ export class ServiceOrderExecutionRepository {
          ) VALUES (
            $1, $2::so.execution_entry_type, $3, $4::numeric, $5, $6, $7::jsonb, $8, $9
          )
-         RETURNING ${ENTRY_RETURNING}`,
+         RETURNING ${EXECUTION_ENTRY_RETURNING}`,
         [
           input.serviceOrderId,
           input.entryType,
@@ -325,9 +325,9 @@ export class ServiceOrderExecutionRepository {
       };
     } catch (error) {
       await client.query('ROLLBACK');
-      if (this.isIdempotencyViolation(error) && input.idempotencyKey) {
+      if (isExecutionIdempotencyViolation(error) && input.idempotencyKey) {
         const existing = await this.pool().query<ExecutionEntryRow>(
-          `SELECT ${ENTRY_RETURNING} FROM so.execution_entries WHERE idempotency_key = $1`,
+          `SELECT ${EXECUTION_ENTRY_RETURNING} FROM so.execution_entries WHERE idempotency_key = $1`,
           [input.idempotencyKey],
         );
         if (existing.rows[0]) {
@@ -408,7 +408,7 @@ export class ServiceOrderExecutionRepository {
       };
     } catch (error) {
       await client.query('ROLLBACK');
-      if (this.isIdempotencyViolation(error) && input.idempotencyKey) {
+      if (isExecutionIdempotencyViolation(error) && input.idempotencyKey) {
         const existing = await this.pool().query<ExecutionEvidenceRow>(
           `SELECT id, service_order_id, evidence_kind, payload, actor_identity_id, recorded_at, idempotency_key
            FROM so.execution_evidence WHERE idempotency_key = $1`,
@@ -493,7 +493,7 @@ export class ServiceOrderExecutionRepository {
       };
     } catch (error) {
       await client.query('ROLLBACK');
-      if (this.isIdempotencyViolation(error) && input.idempotencyKey) {
+      if (isExecutionIdempotencyViolation(error) && input.idempotencyKey) {
         const existing = await this.pool().query<ExecutionOccurrenceRow>(
           `SELECT id, service_order_id, occurrence_code, description, payload, actor_identity_id, recorded_at, idempotency_key
            FROM so.execution_occurrences WHERE idempotency_key = $1`,
@@ -522,43 +522,5 @@ export class ServiceOrderExecutionRepository {
       [serviceOrderId, commandName, idempotencyKey],
     );
     return result.rows[0] ?? null;
-  }
-
-  private transitionSql(transition: ExecutionTransitionPersistenceInput['transition']): string {
-    switch (transition) {
-      case 'start':
-        return 'started_at = NOW(), started_by_identity_id = $4, paused_at = NULL, paused_by_identity_id = NULL';
-      case 'pause':
-        return 'paused_at = NOW(), paused_by_identity_id = $4';
-      case 'resume':
-        return 'paused_at = NULL, paused_by_identity_id = NULL';
-      case 'complete':
-        return 'completed_at = NOW(), completed_by_identity_id = $4';
-      default:
-        return '';
-    }
-  }
-
-  private historyEventForTransition(
-    transition: ExecutionTransitionPersistenceInput['transition'],
-  ): string {
-    switch (transition) {
-      case 'start':
-        return 'STARTED';
-      case 'pause':
-        return 'PAUSED';
-      case 'resume':
-        return 'RESUMED';
-      case 'complete':
-        return 'COMPLETED';
-    }
-  }
-
-  private isIdempotencyViolation(error: unknown): boolean {
-    if (!error || typeof error !== 'object') {
-      return false;
-    }
-    const pgError = error as { code?: string; constraint?: string };
-    return pgError.code === '23505' && (pgError.constraint?.includes('idempotency') ?? false);
   }
 }

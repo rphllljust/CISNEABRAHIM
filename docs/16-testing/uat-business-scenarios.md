@@ -60,8 +60,9 @@ Cada correção relevante de UAT deve:
 | Camada | Status | Evidência |
 | ------ | ------ | --------- |
 | UAT engenharia (automatizado) | **APPROVED** | testes integração PASS |
-| Aceite empresarial (patrocinador) | **PENDING** | não falsificado — sign-off manual requerido |
-| Go-live formal | **BLOCKED** | `BUSINESS_STAKEHOLDER_SIGN_OFF_PENDING`, RPO/RTO `TARGET_NOT_DEFINED` |
+| Aceite empresarial (patrocinador) | **APPROVED** | sign-off + UAT manual UAT-UX-001 |
+| UAT/UX manual (operador) | **APPROVED** | UAT-UX-8CFE4AB9 (Abrahim) + UAT-UX-F132B3A9 (Monica) |
+| Go-live formal | **BLOCKED** | janela piloto 14d + `PILOT_NOT_EXIT_READY` |
 
 ## Execução
 

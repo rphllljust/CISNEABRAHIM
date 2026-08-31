@@ -25,34 +25,14 @@ import type {
   ServiceSnapshotResourceRequirement,
   ServiceSnapshotSource,
 } from '../domain/service-order-snapshot';
-
-const SO_RETURNING = `
-  id, internal_code, order_number, unit_id, status::text AS status, origin::text AS origin,
-  client_id, client_snapshot, service_definition_id, service_definition_version_id,
-  service_snapshot, description, location, priority, operational_notes,
-  service_request_id, proposal_id, proposal_snapshot, purchase_order_id, purchase_order_snapshot,
-  rc_number, contract_reference, contract_snapshot,
-  prepared_at, prepared_by_identity_id, released_at, released_by_identity_id,
-  cancelled_at, cancelled_by_identity_id, cancellation_reason,
-  started_at, started_by_identity_id, paused_at, paused_by_identity_id,
-  completed_at, completed_by_identity_id,
-  row_version, created_at, updated_at, created_by_identity_id, updated_by_identity_id
-`;
-
-const SO_SELECT = `
-  SELECT
-    id, internal_code, order_number, unit_id, status::text AS status, origin::text AS origin,
-    client_id, client_snapshot, service_definition_id, service_definition_version_id,
-    service_snapshot, description, location, priority, operational_notes,
-    service_request_id, proposal_id, proposal_snapshot, purchase_order_id, purchase_order_snapshot,
-    rc_number, contract_reference, contract_snapshot,
-    prepared_at, prepared_by_identity_id, released_at, released_by_identity_id,
-    cancelled_at, cancelled_by_identity_id, cancellation_reason,
-    started_at, started_by_identity_id, paused_at, paused_by_identity_id,
-    completed_at, completed_by_identity_id,
-    row_version, created_at, updated_at, created_by_identity_id, updated_by_identity_id
-  FROM so.service_orders
-`;
+import {
+  buildServiceOrderTransitionFields,
+  historyEventForServiceOrderTransition,
+  insertServiceOrderHistoryEvent,
+  SERVICE_ORDER_RETURNING,
+  SERVICE_ORDER_SELECT,
+} from './service-orders-history-rows';
+import { isServiceRequestUniqueViolation, isServiceOrderUniqueViolation } from './service-orders.repository.errors';
 
 @Injectable()
 export class ServiceOrdersRepository {
@@ -82,7 +62,7 @@ export class ServiceOrdersRepository {
   }
 
   async findById(serviceOrderId: string): Promise<ServiceOrderRow | null> {
-    const result = await this.pool().query<ServiceOrderRow>(`${SO_SELECT} WHERE id = $1`, [
+    const result = await this.pool().query<ServiceOrderRow>(`${SERVICE_ORDER_SELECT} WHERE id = $1`, [
       serviceOrderId,
     ]);
     return result.rows[0] ?? null;
@@ -90,7 +70,7 @@ export class ServiceOrdersRepository {
 
   async findByServiceRequestId(serviceRequestId: string): Promise<ServiceOrderRow | null> {
     const result = await this.pool().query<ServiceOrderRow>(
-      `${SO_SELECT} WHERE service_request_id = $1`,
+      `${SERVICE_ORDER_SELECT} WHERE service_request_id = $1`,
       [serviceRequestId],
     );
     return result.rows[0] ?? null;
@@ -432,7 +412,7 @@ export class ServiceOrdersRepository {
       return { outcome: 'converted', serviceOrder };
     } catch (error) {
       await client.query('ROLLBACK');
-      if (this.isServiceRequestUniqueViolation(error)) {
+      if (isServiceRequestUniqueViolation(error)) {
         const existing = await this.findByServiceRequestId(input.serviceRequestId);
         if (existing) {
           return { outcome: 'already_converted', serviceOrderId: existing.id };
@@ -465,7 +445,7 @@ export class ServiceOrdersRepository {
          $20, $21, $22::jsonb,
          $23, $23
        )
-       RETURNING ${SO_RETURNING}`,
+       RETURNING ${SERVICE_ORDER_RETURNING}`,
       [
         input.internalCode,
         input.orderNumber,
@@ -497,7 +477,7 @@ export class ServiceOrdersRepository {
       throw new Error('SERVICE_ORDER_INSERT_FAILED');
     }
 
-    await this.insertHistoryEvent(client, {
+    await insertServiceOrderHistoryEvent(client, {
       serviceOrderId: row.id,
       eventType: input.historyEventType,
       payload: input.historyPayload ?? { origin: input.origin },
@@ -514,7 +494,7 @@ export class ServiceOrdersRepository {
     try {
       await client.query('BEGIN');
       const locked = await client.query<ServiceOrderRow>(
-        `${SO_SELECT} WHERE id = $1 FOR UPDATE`,
+        `${SERVICE_ORDER_SELECT} WHERE id = $1 FOR UPDATE`,
         [input.serviceOrderId],
       );
       const current = locked.rows[0];
@@ -557,7 +537,7 @@ export class ServiceOrdersRepository {
            updated_at = NOW(),
            row_version = row_version + 1
          WHERE id = $1 AND row_version = $2
-         RETURNING ${SO_RETURNING}`,
+         RETURNING ${SERVICE_ORDER_RETURNING}`,
         [
           input.serviceOrderId,
           input.rowVersion,
@@ -604,7 +584,7 @@ export class ServiceOrdersRepository {
         return 'VERSION_CONFLICT';
       }
 
-      await this.insertHistoryEvent(client, {
+      await insertServiceOrderHistoryEvent(client, {
         serviceOrderId: updated.id,
         eventType: 'UPDATED',
         payload: {},
@@ -627,7 +607,7 @@ export class ServiceOrdersRepository {
     try {
       await client.query('BEGIN');
       const locked = await client.query<ServiceOrderRow>(
-        `${SO_SELECT} WHERE id = $1 FOR UPDATE`,
+        `${SERVICE_ORDER_SELECT} WHERE id = $1 FOR UPDATE`,
         [input.serviceOrderId],
       );
       const current = locked.rows[0];
@@ -644,7 +624,7 @@ export class ServiceOrdersRepository {
         return 'INVALID_STATE';
       }
 
-      const transitionFields = this.buildTransitionFields(input);
+      const transitionFields = buildServiceOrderTransitionFields(input);
       const result = await client.query<ServiceOrderRow>(
         `UPDATE so.service_orders
          SET
@@ -656,7 +636,7 @@ export class ServiceOrdersRepository {
          WHERE id = $1
            AND row_version = $2
            AND status = $5::so.service_order_status
-         RETURNING ${SO_RETURNING}`,
+         RETURNING ${SERVICE_ORDER_RETURNING}`,
         [
           input.serviceOrderId,
           input.rowVersion,
@@ -675,9 +655,9 @@ export class ServiceOrdersRepository {
       if (input.transition === 'release') {
         await maybeInjectFault(this.faultInjection, FAULT_HOOKS.ServiceOrderReleaseAfterMutationBeforeHistory);
       }
-      await this.insertHistoryEvent(client, {
+      await insertServiceOrderHistoryEvent(client, {
         serviceOrderId: updated.id,
-        eventType: this.historyEventForTransition(input.transition),
+        eventType: historyEventForServiceOrderTransition(input.transition),
         payload: {
           fromStatus: input.currentStatus,
           toStatus: input.nextStatus,
@@ -717,108 +697,7 @@ export class ServiceOrdersRepository {
     }
   }
 
-  private buildTransitionFields(input: TransitionServiceOrderPersistenceInput): {
-    sql: string;
-    params: unknown[];
-  } {
-    switch (input.transition) {
-      case 'prepare':
-        return {
-          sql: 'prepared_at = NOW(), prepared_by_identity_id = $4',
-          params: [],
-        };
-      case 'release':
-        return {
-          sql: 'released_at = NOW(), released_by_identity_id = $4, client_snapshot = COALESCE($6::jsonb, client_snapshot)',
-          params: [input.clientSnapshot ? JSON.stringify(input.clientSnapshot) : null],
-        };
-      case 'cancel':
-        return {
-          sql: 'cancelled_at = NOW(), cancelled_by_identity_id = $4, cancellation_reason = $6',
-          params: [input.cancellationReason ?? null],
-        };
-      case 'start':
-        return {
-          sql: 'started_at = NOW(), started_by_identity_id = $4, paused_at = NULL, paused_by_identity_id = NULL',
-          params: [],
-        };
-      case 'pause':
-        return {
-          sql: 'paused_at = NOW(), paused_by_identity_id = $4',
-          params: [],
-        };
-      case 'resume':
-        return {
-          sql: 'paused_at = NULL, paused_by_identity_id = NULL',
-          params: [],
-        };
-      case 'complete':
-        return {
-          sql: 'completed_at = NOW(), completed_by_identity_id = $4',
-          params: [],
-        };
-      default:
-        return { sql: '', params: [] };
-    }
-  }
-
-  private historyEventForTransition(
-    transition: TransitionServiceOrderPersistenceInput['transition'],
-  ): string {
-    switch (transition) {
-      case 'prepare':
-        return 'PREPARED';
-      case 'release':
-        return 'RELEASED';
-      case 'cancel':
-        return 'CANCELLED';
-      case 'start':
-        return 'STARTED';
-      case 'pause':
-        return 'PAUSED';
-      case 'resume':
-        return 'RESUMED';
-      case 'complete':
-        return 'COMPLETED';
-      default:
-        return transition;
-    }
-  }
-
-  private async insertHistoryEvent(
-    client: PoolClient,
-    input: {
-      serviceOrderId: string;
-      eventType: string;
-      payload: Record<string, unknown>;
-      actorIdentityId: string;
-    },
-  ): Promise<void> {
-    await client.query(
-      `INSERT INTO so.service_order_history_events (
-         service_order_id, event_type, payload, actor_identity_id
-       )
-       VALUES ($1, $2, $3::jsonb, $4)`,
-      [input.serviceOrderId, input.eventType, JSON.stringify(input.payload), input.actorIdentityId],
-    );
-  }
-
-  private isServiceRequestUniqueViolation(error: unknown): boolean {
-    if (!error || typeof error !== 'object') {
-      return false;
-    }
-    const pgError = error as { code?: string; constraint?: string };
-    return (
-      pgError.code === '23505' &&
-      (pgError.constraint === 'service_orders_service_request_id_uidx' ||
-        pgError.constraint?.includes('service_request_id') === true)
-    );
-  }
-
   isUniqueViolation(error: unknown): boolean {
-    if (!error || typeof error !== 'object') {
-      return false;
-    }
-    return (error as { code?: string }).code === '23505';
+    return isServiceOrderUniqueViolation(error);
   }
 }

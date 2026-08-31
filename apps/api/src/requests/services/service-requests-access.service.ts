@@ -1,5 +1,4 @@
-import { HttpStatus, Inject, Injectable } from '@nestjs/common';
-import { randomBytes } from 'node:crypto';
+import { Inject, Injectable } from '@nestjs/common';
 import {
   SECURITY_AUDIT_ACTIONS,
   SECURITY_AUDIT_CLASSIFICATIONS,
@@ -7,20 +6,10 @@ import {
   SECURITY_AUDIT_RESOURCE_TYPES,
 } from '../../audit/types/security-audit.types';
 import { SecurityAuditService } from '../../audit/services/security-audit.service';
-import { AuthorizationRepository } from '../../authorization/repositories/authorization.repository';
-import { PolicyDecisionPointService } from '../../authorization/services/policy-decision-point.service';
 import { ScopeEnforcementService } from '../../authorization/services/scope-enforcement.service';
-import {
-  toResourceContextFromProposal,
-  toResourceContextFromPurchaseOrder,
-  toResourceContextFromServiceRequest,
-} from '../../authorization/scope/scope-matcher';
 import type { AuthzAction } from '../../authorization/types/authz-actions';
 import { AUTHZ_ACTIONS } from '../../authorization/types/authz-actions';
-import { AUTHZ_RESOURCE_TYPES } from '../../authorization/types/authz-resources';
-import { AUTHZ_SCOPES } from '../../authorization/types/authz-scopes';
 import type { IdentityAuthzContext } from '../../authorization/types/authz-decision';
-import { assertUuid, CatalogValidationError } from '../../catalog/domain/service-catalog.validation';
 import {
   SERVICE_REQUEST_CONVERSION_PORT,
   type ServiceRequestConversionPort,
@@ -46,8 +35,6 @@ import {
   type RejectServiceRequestInput,
   type UpdateServiceRequestDraftInput,
 } from '../domain/service-request.validation';
-import { REQUESTS_ERROR_CODES } from '../errors/requests-error-codes';
-import { RequestsHttpException } from '../errors/requests-http.exception';
 import { ServiceRequestsRepository } from '../repositories/service-requests.repository';
 import type { ServiceRequestRow } from '../repositories/service-requests.repository.types';
 import {
@@ -55,13 +42,31 @@ import {
   toServiceRequestResponse,
   type ServiceRequestDetailResponse,
 } from '../serializers/service-requests-response.serializer';
+import { ServiceRequestsAccessAuthz } from './service-requests-access.authz';
+import {
+  serviceRequestsAccessDenied,
+  serviceRequestsAccessNotFound,
+  serviceRequestsConversionNotAllowed,
+  serviceRequestsDocumentNotFound,
+  serviceRequestsDuplicateIdempotency,
+  serviceRequestsInvalidState,
+  serviceRequestsServiceNotFound,
+  serviceRequestsUnitNotRegistered,
+  serviceRequestsValidationFailed,
+  serviceRequestsVersionConflict,
+} from './service-requests-access.errors';
+import {
+  assertValidServiceRequestId,
+  generateServiceRequestCode,
+} from './service-requests-input-resolution';
+import { ServiceRequestsReferenceValidationService } from './service-requests-reference-validation.service';
 
 @Injectable()
 export class ServiceRequestsAccessService {
   constructor(
     private readonly repository: ServiceRequestsRepository,
-    private readonly authorizationRepository: AuthorizationRepository,
-    private readonly policyDecisionPoint: PolicyDecisionPointService,
+    private readonly authz: ServiceRequestsAccessAuthz,
+    private readonly referenceValidation: ServiceRequestsReferenceValidationService,
     private readonly scopeEnforcement: ScopeEnforcementService,
     private readonly securityAudit: SecurityAuditService,
     @Inject(SERVICE_REQUEST_CONVERSION_PORT)
@@ -75,7 +80,7 @@ export class ServiceRequestsAccessService {
     if (input.idempotencyKey) {
       const existing = await this.repository.findByIdempotencyKey(input.idempotencyKey.trim());
       if (existing) {
-        await this.assertRecordAction(actor, AUTHZ_ACTIONS.RequestsServiceRequestRead, existing);
+        await this.authz.assertRecordAction(actor, AUTHZ_ACTIONS.RequestsServiceRequestRead, existing);
         const links = await this.repository.listDocumentLinks(existing.id);
         return toServiceRequestDetailResponse(existing, links);
       }
@@ -86,37 +91,41 @@ export class ServiceRequestsAccessService {
       validated = validateCreateServiceRequestInput(input);
     } catch (error) {
       if (error instanceof ServiceRequestValidationError) {
-        throw this.validationFailed();
+        throw serviceRequestsValidationFailed();
       }
       throw error;
     }
 
-    await this.assertCreateAction(actor, input.clientId, input.unitId);
+    await this.authz.assertCreateAction(actor, input.clientId, input.unitId);
 
     if (!(await this.repository.isUnitRegistered(input.unitId))) {
-      throw new RequestsHttpException(
-        HttpStatus.BAD_REQUEST,
-        REQUESTS_ERROR_CODES.UNIT_NOT_REGISTERED,
-        'Unit is not registered.',
-      );
+      throw serviceRequestsUnitNotRegistered();
     }
 
     if (input.clientId) {
-      await this.assertActiveClient(input.clientId);
+      await this.referenceValidation.assertActiveClient(input.clientId);
     }
     if (input.serviceDefinitionId) {
-      await this.assertServiceDefinition(input.serviceDefinitionId, input.serviceDefinitionVersionId);
+      await this.referenceValidation.assertServiceDefinition(
+        input.serviceDefinitionId,
+        input.serviceDefinitionVersionId,
+      );
     }
     if (input.proposalId) {
-      await this.assertProposalReference(actor, input.proposalId, input.unitId);
+      await this.referenceValidation.assertProposalReference(actor, input.proposalId, input.unitId);
     }
     if (input.purchaseOrderId) {
-      await this.assertPurchaseOrderReference(actor, input.purchaseOrderId, input.unitId);
+      await this.referenceValidation.assertPurchaseOrderReference(
+        actor,
+        input.purchaseOrderId,
+        input.unitId,
+        input.clientId,
+      );
     }
 
     try {
       const created = await this.repository.create({
-        requestCode: this.generateRequestCode(),
+        requestCode: generateServiceRequestCode(),
         unitId: input.unitId,
         originSource: validated.originSource,
         externalContact: validated.externalContact,
@@ -149,11 +158,7 @@ export class ServiceRequestsAccessService {
       return toServiceRequestDetailResponse(created, []);
     } catch (error) {
       if (this.repository.isIdempotencyViolation(error)) {
-        throw new RequestsHttpException(
-          HttpStatus.CONFLICT,
-          REQUESTS_ERROR_CODES.DUPLICATE_IDEMPOTENCY,
-          'Idempotency key already used.',
-        );
+        throw serviceRequestsDuplicateIdempotency();
       }
       throw error;
     }
@@ -164,7 +169,7 @@ export class ServiceRequestsAccessService {
     serviceRequestId: string,
     input: UpdateServiceRequestDraftInput,
   ): Promise<ServiceRequestDetailResponse> {
-    this.assertValidServiceRequestId(serviceRequestId);
+    assertValidServiceRequestId(serviceRequestId);
     await this.requireServiceRequest(actor, serviceRequestId, AUTHZ_ACTIONS.RequestsServiceRequestUpdate);
 
     let validated;
@@ -172,16 +177,16 @@ export class ServiceRequestsAccessService {
       validated = validateUpdateServiceRequestDraftInput(input);
     } catch (error) {
       if (error instanceof ServiceRequestValidationError) {
-        throw this.validationFailed();
+        throw serviceRequestsValidationFailed();
       }
       throw error;
     }
 
     if (validated.clientId) {
-      await this.assertActiveClient(validated.clientId);
+      await this.referenceValidation.assertActiveClient(validated.clientId);
     }
     if (validated.serviceDefinitionId) {
-      await this.assertServiceDefinition(
+      await this.referenceValidation.assertServiceDefinition(
         validated.serviceDefinitionId,
         validated.serviceDefinitionVersionId ?? undefined,
       );
@@ -189,14 +194,21 @@ export class ServiceRequestsAccessService {
 
     const current = await this.repository.findById(serviceRequestId);
     if (!current) {
-      throw this.notFound();
+      throw serviceRequestsAccessNotFound();
     }
 
     if (validated.proposalId) {
-      await this.assertProposalReference(actor, validated.proposalId, current.unit_id);
+      await this.referenceValidation.assertProposalReference(actor, validated.proposalId, current.unit_id);
     }
     if (validated.purchaseOrderId) {
-      await this.assertPurchaseOrderReference(actor, validated.purchaseOrderId, current.unit_id);
+      const effectiveClientId =
+        validated.clientId !== undefined ? validated.clientId : current.client_id;
+      await this.referenceValidation.assertPurchaseOrderReference(
+        actor,
+        validated.purchaseOrderId,
+        current.unit_id,
+        effectiveClientId,
+      );
     }
 
     const updated = await this.repository.updateDraft({
@@ -219,10 +231,10 @@ export class ServiceRequestsAccessService {
     });
 
     if (updated === 'VERSION_CONFLICT') {
-      throw this.versionConflict();
+      throw serviceRequestsVersionConflict();
     }
     if (updated === 'INVALID_STATE') {
-      throw this.invalidState();
+      throw serviceRequestsInvalidState();
     }
 
     const links = await this.repository.listDocumentLinks(serviceRequestId);
@@ -261,7 +273,7 @@ export class ServiceRequestsAccessService {
       validated = validateApproveServiceRequestInput(input);
     } catch (error) {
       if (error instanceof ServiceRequestValidationError) {
-        throw this.validationFailed();
+        throw serviceRequestsValidationFailed();
       }
       throw error;
     }
@@ -286,7 +298,7 @@ export class ServiceRequestsAccessService {
       validated = validateRejectServiceRequestInput(input);
     } catch (error) {
       if (error instanceof ServiceRequestValidationError) {
-        throw this.validationFailed();
+        throw serviceRequestsValidationFailed();
       }
       throw error;
     }
@@ -312,7 +324,7 @@ export class ServiceRequestsAccessService {
       validated = validateCancelServiceRequestInput(input);
     } catch (error) {
       if (error instanceof ServiceRequestValidationError) {
-        throw this.validationFailed();
+        throw serviceRequestsValidationFailed();
       }
       throw error;
     }
@@ -334,7 +346,7 @@ export class ServiceRequestsAccessService {
     serviceRequestId: string,
     input: { rowVersion: number },
   ): Promise<ServiceRequestDetailResponse> {
-    this.assertValidServiceRequestId(serviceRequestId);
+    assertValidServiceRequestId(serviceRequestId);
     const current = await this.requireServiceRequest(
       actor,
       serviceRequestId,
@@ -348,9 +360,9 @@ export class ServiceRequestsAccessService {
     } catch (error) {
       if (error instanceof ServiceRequestValidationError || error instanceof ServiceRequestStateError) {
         if (error instanceof ServiceRequestStateError && error.code === 'CONVERSION_NOT_ALLOWED') {
-          throw this.conversionNotAllowed();
+          throw serviceRequestsConversionNotAllowed();
         }
-        throw this.invalidState();
+        throw serviceRequestsInvalidState();
       }
       throw error;
     }
@@ -375,20 +387,20 @@ export class ServiceRequestsAccessService {
         });
         break;
       case 'already_converted':
-        throw this.invalidState();
+        throw serviceRequestsInvalidState();
       case 'version_conflict':
-        throw this.versionConflict();
+        throw serviceRequestsVersionConflict();
       case 'service_not_found':
-        throw this.serviceNotFound();
+        throw serviceRequestsServiceNotFound();
       case 'invalid_state':
-        throw this.invalidState();
+        throw serviceRequestsInvalidState();
       default:
-        throw this.invalidState();
+        throw serviceRequestsInvalidState();
     }
 
     const converted = await this.repository.findById(serviceRequestId);
     if (!converted) {
-      throw this.notFound();
+      throw serviceRequestsAccessNotFound();
     }
 
     const links = await this.repository.listDocumentLinks(serviceRequestId);
@@ -400,7 +412,7 @@ export class ServiceRequestsAccessService {
     serviceRequestId: string,
     input: LinkServiceRequestDocumentInput,
   ): Promise<ServiceRequestDetailResponse> {
-    this.assertValidServiceRequestId(serviceRequestId);
+    assertValidServiceRequestId(serviceRequestId);
     const current = await this.requireServiceRequest(
       actor,
       serviceRequestId,
@@ -412,17 +424,17 @@ export class ServiceRequestsAccessService {
       validated = validateLinkServiceRequestDocumentInput(input);
     } catch (error) {
       if (error instanceof ServiceRequestValidationError) {
-        throw this.validationFailed();
+        throw serviceRequestsValidationFailed();
       }
       throw error;
     }
 
     const document = await this.repository.findDocumentById(validated.documentId);
     if (!document) {
-      throw this.documentNotFound();
+      throw serviceRequestsDocumentNotFound();
     }
     if (document.unit_id !== current.unit_id) {
-      throw this.denied();
+      throw serviceRequestsAccessDenied();
     }
 
     await this.repository.linkDocument(
@@ -439,7 +451,7 @@ export class ServiceRequestsAccessService {
     actor: IdentityAuthzContext,
     serviceRequestId: string,
   ): Promise<ServiceRequestDetailResponse> {
-    this.assertValidServiceRequestId(serviceRequestId);
+    assertValidServiceRequestId(serviceRequestId);
     const row = await this.requireServiceRequest(actor, serviceRequestId, AUTHZ_ACTIONS.RequestsServiceRequestRead);
     const links = await this.repository.listDocumentLinks(serviceRequestId);
     return toServiceRequestDetailResponse(row, links);
@@ -449,23 +461,7 @@ export class ServiceRequestsAccessService {
     actor: IdentityAuthzContext,
     query: { clientId?: string; unitId?: string; status?: string; limit: number; offset: number },
   ): Promise<{ items: ReturnType<typeof toServiceRequestResponse>[]; limit: number; offset: number }> {
-    const decision = await this.policyDecisionPoint.decide(
-      actor,
-      {
-        action: AUTHZ_ACTIONS.RequestsServiceRequestList,
-        resourceType: AUTHZ_RESOURCE_TYPES.RequestsServiceRequest,
-      },
-      { audit: true },
-    );
-    if (decision.result === 'DENY') {
-      throw this.denied();
-    }
-
-    const grants = await this.authorizationRepository.findActiveGrants(
-      actor.identityId,
-      AUTHZ_ACTIONS.RequestsServiceRequestList,
-      AUTHZ_RESOURCE_TYPES.RequestsServiceRequest,
-    );
+    const grants = await this.authz.findListGrants(actor);
     const scopeFilter = this.scopeEnforcement.buildServiceRequestListFilter(grants);
 
     const clauses = [scopeFilter.clause];
@@ -480,7 +476,7 @@ export class ServiceRequestsAccessService {
     }
     if (query.status) {
       if (!isServiceRequestStatus(query.status)) {
-        throw this.validationFailed();
+        throw serviceRequestsValidationFailed();
       }
       params.push(query.status);
       clauses.push(`status = $${params.length}::sr.service_request_status`);
@@ -510,7 +506,7 @@ export class ServiceRequestsAccessService {
     rejectionReason: string | null = null,
     cancellationReason: string | null = null,
   ): Promise<ServiceRequestDetailResponse> {
-    this.assertValidServiceRequestId(serviceRequestId);
+    assertValidServiceRequestId(serviceRequestId);
     const current = await this.requireServiceRequest(actor, serviceRequestId, action);
 
     let nextStatus: ServiceRequestStatus;
@@ -519,7 +515,7 @@ export class ServiceRequestsAccessService {
       nextStatus = assertTransition(current.status as ServiceRequestStatus, transition);
     } catch (error) {
       if (error instanceof ServiceRequestValidationError || error instanceof ServiceRequestStateError) {
-        throw error instanceof ServiceRequestStateError ? this.invalidState() : this.validationFailed();
+        throw error instanceof ServiceRequestStateError ? serviceRequestsInvalidState() : serviceRequestsValidationFailed();
       }
       throw error;
     }
@@ -537,10 +533,10 @@ export class ServiceRequestsAccessService {
     });
 
     if (updated === 'VERSION_CONFLICT') {
-      throw this.versionConflict();
+      throw serviceRequestsVersionConflict();
     }
     if (updated === 'INVALID_STATE') {
-      throw this.invalidState();
+      throw serviceRequestsInvalidState();
     }
 
     await this.recordTransitionAudit(actor, serviceRequestId, transition);
@@ -577,85 +573,6 @@ export class ServiceRequestsAccessService {
     });
   }
 
-  private async assertActiveClient(clientId: string): Promise<void> {
-    const client = await this.repository.findClientById(clientId);
-    if (!client) {
-      throw this.clientNotFound();
-    }
-    if (client.status !== 'ACTIVE') {
-      throw new RequestsHttpException(
-        HttpStatus.CONFLICT,
-        REQUESTS_ERROR_CODES.CLIENT_INACTIVE,
-        'Client is inactive.',
-      );
-    }
-  }
-
-  private async assertServiceDefinition(
-    serviceDefinitionId: string,
-    serviceDefinitionVersionId?: string,
-  ): Promise<void> {
-    const service = await this.repository.findServiceDefinition(
-      serviceDefinitionId,
-      serviceDefinitionVersionId,
-    );
-    if (!service) {
-      throw this.serviceNotFound();
-    }
-  }
-
-  private async assertProposalReference(
-    actor: IdentityAuthzContext,
-    proposalId: string,
-    unitId: string,
-  ): Promise<void> {
-    const proposal = await this.repository.findProposalById(proposalId);
-    if (!proposal) {
-      throw this.proposalNotFound();
-    }
-    if (proposal.unit_id !== unitId) {
-      throw this.denied();
-    }
-    const decision = await this.policyDecisionPoint.decide(
-      actor,
-      {
-        action: AUTHZ_ACTIONS.CommercialProposalRead,
-        resourceType: AUTHZ_RESOURCE_TYPES.CommercialProposal,
-        context: toResourceContextFromProposal(proposal),
-      },
-      { audit: false },
-    );
-    if (decision.result === 'DENY') {
-      throw this.denied();
-    }
-  }
-
-  private async assertPurchaseOrderReference(
-    actor: IdentityAuthzContext,
-    purchaseOrderId: string,
-    unitId: string,
-  ): Promise<void> {
-    const purchaseOrder = await this.repository.findPurchaseOrderById(purchaseOrderId);
-    if (!purchaseOrder) {
-      throw this.purchaseOrderNotFound();
-    }
-    if (purchaseOrder.unit_id !== unitId) {
-      throw this.denied();
-    }
-    const decision = await this.policyDecisionPoint.decide(
-      actor,
-      {
-        action: AUTHZ_ACTIONS.CommercialPurchaseOrderRead,
-        resourceType: AUTHZ_RESOURCE_TYPES.CommercialPurchaseOrder,
-        context: toResourceContextFromPurchaseOrder(purchaseOrder),
-      },
-      { audit: false },
-    );
-    if (decision.result === 'DENY') {
-      throw this.denied();
-    }
-  }
-
   private async requireServiceRequest(
     actor: IdentityAuthzContext,
     serviceRequestId: string,
@@ -663,184 +580,9 @@ export class ServiceRequestsAccessService {
   ): Promise<ServiceRequestRow> {
     const row = await this.repository.findById(serviceRequestId);
     if (!row) {
-      throw this.notFound();
+      throw serviceRequestsAccessNotFound();
     }
-    await this.assertRecordAction(actor, action, row);
+    await this.authz.assertRecordAction(actor, action, row);
     return row;
-  }
-
-  private async assertCreateAction(
-    actor: IdentityAuthzContext,
-    clientId: string | undefined,
-    unitId: string,
-  ): Promise<void> {
-    const decision = await this.policyDecisionPoint.decide(
-      actor,
-      {
-        action: AUTHZ_ACTIONS.RequestsServiceRequestCreate,
-        resourceType: AUTHZ_RESOURCE_TYPES.RequestsServiceRequest,
-      },
-      { audit: true },
-    );
-    if (decision.result === 'DENY') {
-      throw this.denied();
-    }
-
-    const grants = await this.authorizationRepository.findActiveGrants(
-      actor.identityId,
-      AUTHZ_ACTIONS.RequestsServiceRequestCreate,
-      AUTHZ_RESOURCE_TYPES.RequestsServiceRequest,
-    );
-    const hasAccess = grants.some((grant) => {
-      if (grant.scope_type === AUTHZ_SCOPES.Global && grant.resource_id === null) {
-        return true;
-      }
-      if (grant.scope_type === AUTHZ_SCOPES.Unit && grant.resource_id === unitId) {
-        return true;
-      }
-      if (grant.scope_type === AUTHZ_SCOPES.Client && clientId && grant.resource_id === clientId) {
-        return true;
-      }
-      return false;
-    });
-    if (!hasAccess) {
-      throw this.denied();
-    }
-  }
-
-  private async assertRecordAction(
-    actor: IdentityAuthzContext,
-    action: AuthzAction,
-    row: ServiceRequestRow,
-  ): Promise<void> {
-    const context = toResourceContextFromServiceRequest(row);
-    const decision = await this.policyDecisionPoint.decide(
-      actor,
-      { action, resourceType: AUTHZ_RESOURCE_TYPES.RequestsServiceRequest, context },
-      { audit: true },
-    );
-    if (decision.result === 'DENY') {
-      throw this.denied();
-    }
-
-    const grants = await this.authorizationRepository.findActiveGrants(
-      actor.identityId,
-      action,
-      AUTHZ_RESOURCE_TYPES.RequestsServiceRequest,
-    );
-    const hasAccess = grants.some((grant) => {
-      if (grant.scope_type === AUTHZ_SCOPES.Global && grant.resource_id === null) {
-        return true;
-      }
-      if (grant.scope_type === AUTHZ_SCOPES.Unit && grant.resource_id === row.unit_id) {
-        return true;
-      }
-      if (grant.scope_type === AUTHZ_SCOPES.Client && row.client_id && grant.resource_id === row.client_id) {
-        return true;
-      }
-      return false;
-    });
-    if (!hasAccess) {
-      throw this.denied();
-    }
-  }
-
-  private assertValidServiceRequestId(serviceRequestId: string): void {
-    try {
-      assertUuid(serviceRequestId);
-    } catch (error) {
-      if (error instanceof CatalogValidationError) {
-        throw this.notFound();
-      }
-      throw error;
-    }
-  }
-
-  private generateRequestCode(): string {
-    return `SR-${new Date().getUTCFullYear()}-${randomBytes(4).toString('hex').toUpperCase()}`;
-  }
-
-  private validationFailed(): RequestsHttpException {
-    return new RequestsHttpException(
-      HttpStatus.BAD_REQUEST,
-      REQUESTS_ERROR_CODES.VALIDATION_FAILED,
-      'Invalid request body.',
-    );
-  }
-
-  private denied(): RequestsHttpException {
-    return new RequestsHttpException(HttpStatus.FORBIDDEN, REQUESTS_ERROR_CODES.DENIED, 'Access denied.');
-  }
-
-  private notFound(): RequestsHttpException {
-    return new RequestsHttpException(
-      HttpStatus.NOT_FOUND,
-      REQUESTS_ERROR_CODES.NOT_FOUND,
-      'Service request not found.',
-    );
-  }
-
-  private versionConflict(): RequestsHttpException {
-    return new RequestsHttpException(
-      HttpStatus.CONFLICT,
-      REQUESTS_ERROR_CODES.VERSION_CONFLICT,
-      'Service request was modified by another request.',
-    );
-  }
-
-  private invalidState(): RequestsHttpException {
-    return new RequestsHttpException(
-      HttpStatus.CONFLICT,
-      REQUESTS_ERROR_CODES.INVALID_STATE,
-      'Service request is not in a valid state for this operation.',
-    );
-  }
-
-  private conversionNotAllowed(): RequestsHttpException {
-    return new RequestsHttpException(
-      HttpStatus.CONFLICT,
-      REQUESTS_ERROR_CODES.CONVERSION_NOT_ALLOWED,
-      'Service request cannot be converted.',
-    );
-  }
-
-  private clientNotFound(): RequestsHttpException {
-    return new RequestsHttpException(
-      HttpStatus.NOT_FOUND,
-      REQUESTS_ERROR_CODES.CLIENT_NOT_FOUND,
-      'Client not found.',
-    );
-  }
-
-  private serviceNotFound(): RequestsHttpException {
-    return new RequestsHttpException(
-      HttpStatus.NOT_FOUND,
-      REQUESTS_ERROR_CODES.SERVICE_NOT_FOUND,
-      'Service definition not found.',
-    );
-  }
-
-  private documentNotFound(): RequestsHttpException {
-    return new RequestsHttpException(
-      HttpStatus.NOT_FOUND,
-      REQUESTS_ERROR_CODES.DOCUMENT_NOT_FOUND,
-      'Document not found.',
-    );
-  }
-
-  private proposalNotFound(): RequestsHttpException {
-    return new RequestsHttpException(
-      HttpStatus.NOT_FOUND,
-      REQUESTS_ERROR_CODES.PROPOSAL_NOT_FOUND,
-      'Proposal not found.',
-    );
-  }
-
-  private purchaseOrderNotFound(): RequestsHttpException {
-    return new RequestsHttpException(
-      HttpStatus.NOT_FOUND,
-      REQUESTS_ERROR_CODES.PURCHASE_ORDER_NOT_FOUND,
-      'Purchase order not found.',
-    );
   }
 }

@@ -59,12 +59,12 @@ describe('People E2E', () => {
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
     pool = new Pool({ connectionString: testDatabaseUrl });
-    await ensureOperationalLaborTypesBaseline(pool);
   });
 
   beforeEach(async () => {
     await truncateWorkforceTables(pool);
     await truncateIdentityAndAuthorizationTables(pool);
+    await ensureOperationalLaborTypesBaseline(pool);
   });
 
   afterAll(async () => {
@@ -115,7 +115,7 @@ describe('People E2E', () => {
       url: '/api/v1/people',
       headers: { authorization: `Bearer ${accessToken}` },
       payload: {
-        legalName: 'Pessoa E2E Sintética',
+        legalName: 'Pessoa E2E Sintetica',
         defaultLaborTypeCode: 'OPERATOR',
       },
     });
@@ -134,7 +134,7 @@ describe('People E2E', () => {
       method: 'POST',
       url: `/api/v1/people/${created.id}/deactivate`,
       headers: { authorization: `Bearer ${accessToken}` },
-      payload: { version: created.version, reason: 'Inativação E2E' },
+      payload: { version: created.version, reason: 'Inativacao E2E' },
     });
     expect(deactivateResponse.statusCode).toBe(200);
 

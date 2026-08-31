@@ -34,6 +34,8 @@ import { ClientsModule } from '../clients/clients.module';
 import { CONTACT_PURPOSES } from '../clients/domain/client-status';
 import { ClientAccessService } from '../clients/services/client-access.service';
 import { CommercialModule } from '../commercial/commercial.module';
+import { COMMERCIAL_ERROR_CODES } from '../commercial/errors/commercial-error-codes';
+import { CommercialHttpException } from '../commercial/errors/commercial-http.exception';
 import { PROPOSAL_PRICING_STRUCTURES } from '../commercial/domain/proposal';
 import { PURCHASE_ORDER_PRICING_STRUCTURES } from '../commercial/domain/purchase-order';
 import { ProposalsAccessService } from '../commercial/services/proposals-access.service';
@@ -56,6 +58,7 @@ import { ServiceRequestsAccessService } from './services/service-requests-access
 const UNIT_A = 'unit-sr-a';
 const UNIT_B = 'unit-sr-b';
 const TEST_CNPJ = '11222333000181';
+const TEST_CNPJ_ALT = '11897171000181';
 
 async function grantServiceRequestAdmin(
   pool: Pool,
@@ -88,6 +91,7 @@ async function grantServiceRequestAdmin(
     AUTHZ_ACTIONS.CommercialPurchaseOrderCreate,
     AUTHZ_ACTIONS.CommercialPurchaseOrderRead,
     AUTHZ_ACTIONS.CommercialPurchaseOrderRegister,
+    AUTHZ_ACTIONS.CommercialPurchaseOrderCancel,
   ];
 
   for (const action of [...requestActions, ...extraActions]) {
@@ -516,5 +520,106 @@ describe('Service requests PostgreSQL integration', () => {
     const actions = audit.rows.map((row) => row.action);
     expect(actions).toContain(SECURITY_AUDIT_ACTIONS.RequestsServiceRequestCreate);
     expect(actions).toContain(SECURITY_AUDIT_ACTIONS.RequestsServiceRequestSubmit);
+  });
+
+  it('rejects linking a draft purchase order to a service request', async () => {
+    const { actor } = await seedActor();
+    const client = await seedClient(actor);
+
+    const draftPo = await purchaseOrdersAccess.create(actor, {
+      clientId: client.id,
+      unitId: UNIT_A,
+      poNumber: `PO-DRAFT-${crypto.randomUUID().slice(0, 8)}`,
+      pricingStructure: PURCHASE_ORDER_PRICING_STRUCTURES.HeaderTotal,
+      totalAmount: '1000.0000',
+    });
+
+    await expect(
+      serviceRequestsAccess.create(actor, {
+        unitId: UNIT_A,
+        originSource: SERVICE_REQUEST_ORIGINS.Email,
+        clientId: client.id,
+        externalContact: { email: 'draft-po@test.invalid' },
+        description: 'PO ainda em rascunho',
+        purchaseOrderId: draftPo.purchaseOrder.id,
+      }),
+    ).rejects.toMatchObject({
+      code: REQUESTS_ERROR_CODES.PURCHASE_ORDER_INVALID_STATE,
+    } satisfies Partial<RequestsHttpException>);
+  });
+
+  it('rejects purchase order client mismatch on service request', async () => {
+    const { actor } = await seedActor();
+    const clientA = await seedClient(actor);
+    const clientB = await clientAccess.create(actor, {
+      legalName: `Cliente B ${crypto.randomUUID()}`,
+      tradeName: 'Cliente B',
+      taxId: TEST_CNPJ_ALT,
+      contacts: [
+        {
+          name: 'Contato B',
+          purpose: CONTACT_PURPOSES.Operational,
+          phone: '69999990001',
+        },
+      ],
+    });
+
+    const created = await purchaseOrdersAccess.create(actor, {
+      clientId: clientA.id,
+      unitId: UNIT_A,
+      poNumber: `PO-${crypto.randomUUID().slice(0, 8)}`,
+      pricingStructure: PURCHASE_ORDER_PRICING_STRUCTURES.HeaderTotal,
+      totalAmount: '1000.0000',
+    });
+    const registered = await purchaseOrdersAccess.register(actor, created.purchaseOrder.id, {
+      rowVersion: created.purchaseOrder.rowVersion,
+    });
+
+    await expect(
+      serviceRequestsAccess.create(actor, {
+        unitId: UNIT_A,
+        originSource: SERVICE_REQUEST_ORIGINS.Email,
+        clientId: clientB.id,
+        externalContact: { email: 'mismatch@test.invalid' },
+        description: 'Cliente diferente do PO',
+        purchaseOrderId: registered.purchaseOrder.id,
+      }),
+    ).rejects.toMatchObject({
+      code: REQUESTS_ERROR_CODES.PURCHASE_ORDER_CLIENT_MISMATCH,
+    } satisfies Partial<RequestsHttpException>);
+  });
+
+  it('blocks purchase order cancel when linked to an active service request', async () => {
+    const { actor } = await seedActor();
+    const client = await seedClient(actor);
+
+    const created = await purchaseOrdersAccess.create(actor, {
+      clientId: client.id,
+      unitId: UNIT_A,
+      poNumber: `PO-${crypto.randomUUID().slice(0, 8)}`,
+      pricingStructure: PURCHASE_ORDER_PRICING_STRUCTURES.HeaderTotal,
+      totalAmount: '1000.0000',
+    });
+    const registered = await purchaseOrdersAccess.register(actor, created.purchaseOrder.id, {
+      rowVersion: created.purchaseOrder.rowVersion,
+    });
+
+    await serviceRequestsAccess.create(actor, {
+      unitId: UNIT_A,
+      originSource: SERVICE_REQUEST_ORIGINS.Email,
+      clientId: client.id,
+      externalContact: { email: 'po-active@test.invalid' },
+      description: 'Solicitação ativa com PO',
+      purchaseOrderId: registered.purchaseOrder.id,
+    });
+
+    await expect(
+      purchaseOrdersAccess.cancel(actor, registered.purchaseOrder.id, {
+        rowVersion: registered.purchaseOrder.rowVersion,
+        cancellationReason: 'Tentativa inválida',
+      }),
+    ).rejects.toMatchObject({
+      code: COMMERCIAL_ERROR_CODES.PURCHASE_ORDER_IN_USE,
+    } satisfies Partial<CommercialHttpException>);
   });
 });

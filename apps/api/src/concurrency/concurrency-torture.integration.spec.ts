@@ -721,7 +721,7 @@ describe('Concurrency torture (PostgreSQL integration)', () => {
   describe('billing document numbering', () => {
     it('uses transactional sequence allocation (not MAX+1) and issues unique numbers concurrently', async () => {
       const repositorySource = readFileSync(
-        resolve(__dirname, '../billing/repositories/billing-document.repository.ts'),
+        resolve(__dirname, '../billing/repositories/billing-document-persistence.helpers.ts'),
         'utf8',
       );
       expect(repositorySource).toContain('billing_document_number_sequences');

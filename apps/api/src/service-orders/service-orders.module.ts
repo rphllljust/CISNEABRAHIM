@@ -11,9 +11,11 @@ import { ServiceOrderPlanningController } from './controllers/service-order-plan
 import { ServiceOrderExecutionRepository } from './repositories/service-order-execution.repository';
 import { ServiceOrdersRepository } from './repositories/service-orders.repository';
 import { ResourcePlanningRepository } from './repositories/resource-planning.repository';
+import { ServiceOrdersAccessAuthz } from './services/service-orders-access.authz';
 import { ServiceOrderExecutionAccessService } from './services/service-order-execution-access.service';
 import { ServiceOrdersAccessService } from './services/service-orders-access.service';
 import { ServiceOrderPlanningAccessService } from './services/service-order-planning-access.service';
+import { ServiceOrdersReferenceValidationService } from './services/service-orders-reference-validation.service';
 import { ServiceRequestConversionService } from './services/service-request-conversion.service';
 
 @Module({
@@ -23,6 +25,8 @@ import { ServiceRequestConversionService } from './services/service-request-conv
     ServiceOrdersRepository,
     ResourcePlanningRepository,
     ServiceOrderExecutionRepository,
+    ServiceOrdersAccessAuthz,
+    ServiceOrdersReferenceValidationService,
     ServiceOrdersAccessService,
     ServiceOrderPlanningAccessService,
     ServiceOrderExecutionAccessService,

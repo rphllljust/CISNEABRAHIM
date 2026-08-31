@@ -1,12 +1,15 @@
 import {
+  createIntegrationTestPool,
   insertGrant,
   insertIdentity,
   insertScopeRef,
+  truncateBillingTables,
   truncateClientTables,
   truncateIdentityAndAuthorizationTables,
+  truncateServiceOrderTables,
 } from '@cisne/database';
 import { Test, TestingModule } from '@nestjs/testing';
-import { Pool } from 'pg';
+import type { Pool } from 'pg';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { applyAuthTestEnv } from '../auth/test/auth-test-env';
 import { AuthorizationModule } from '../authorization/authorization.module';
@@ -39,10 +42,12 @@ describe('Search PostgreSQL integration', () => {
     }).compile();
 
     searchService = module.get(SearchAccessService);
-    pool = new Pool({ connectionString: testDatabaseUrl });
+    pool = createIntegrationTestPool(testDatabaseUrl);
   });
 
   beforeEach(async () => {
+    await truncateBillingTables(pool);
+    await truncateServiceOrderTables(pool);
     await truncateClientTables(pool);
     await truncateIdentityAndAuthorizationTables(pool);
     await insertScopeRef(pool, { scopeType: 'UNIT', refId: UNIT_A });
@@ -67,7 +72,7 @@ describe('Search PostgreSQL integration', () => {
       resourceId: UNIT_A,
       grantedByIdentityId: identityB,
     });
-  }, 30_000);
+  }, 120_000);
 
   afterAll(async () => {
     await pool?.end();

@@ -141,6 +141,13 @@
       "when": 1787987200000,
       "tag": "0036_workforce_members_baseline",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1787987300000,
+      "tag": "0037_purchase_order_balance",
+      "breakpoints": true
     }
   ]
 }

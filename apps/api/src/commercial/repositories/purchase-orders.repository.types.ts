@@ -32,6 +32,7 @@ export type PurchaseOrderRow = {
   currency_code: string;
   pricing_structure: string;
   total_amount: string | null;
+  consumed_amount: string;
   payment_terms: string | null;
   payment_method: string | null;
   client_snapshot: Record<string, unknown> | null;

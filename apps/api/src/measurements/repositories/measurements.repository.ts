@@ -6,6 +6,11 @@ import { FAULT_INJECTION_PORT, type FaultInjectionPort } from '../../platform/fa
 import { maybeInjectFault } from '../../platform/fault-injection/fault-injection.util';
 import { OutboxDomainEventWriter } from '../../platform/outbox/services/outbox-domain-event.writer';
 import { MEASUREMENT_HISTORY_EVENTS } from '../domain/measurement';
+import { MEASUREMENT_ITEM_RETURNING, MEASUREMENT_RETURNING } from './measurements-sql.constants';
+import {
+  measurementHistoryEventForTransition,
+  measurementTransitionSql,
+} from './measurements-transition.helpers';
 import type {
   AuthorizeAdjustmentInput,
   AuthorizeAdjustmentResult,
@@ -26,22 +31,6 @@ import type {
   UpdateMeasurementItemInput,
   UpdateMeasurementItemResult,
 } from './measurements.repository.types';
-
-const MEASUREMENT_RETURNING = `
-  id, service_order_id, unit_id, status::text AS status, commercial_reference_snapshot,
-  submitted_at, submitted_by_identity_id, review_started_at, review_started_by_identity_id,
-  decided_at, decided_by_identity_id, rejection_reason,
-  row_version, created_at, updated_at, created_by_identity_id, updated_by_identity_id
-`;
-
-const ITEM_RETURNING = `
-  id, measurement_id, line_number, source_execution_entry_id, unit_code,
-  actual_quantity::text AS actual_quantity,
-  measured_quantity::text AS measured_quantity,
-  unit_price::text AS unit_price,
-  line_amount::text AS line_amount,
-  pricing_line_snapshot, notes, created_at, updated_at
-`;
 
 @Injectable()
 export class MeasurementsRepository {
@@ -93,7 +82,7 @@ export class MeasurementsRepository {
 
   async listItems(measurementId: string): Promise<MeasurementItemRow[]> {
     const result = await this.pool().query<MeasurementItemRow>(
-      `SELECT ${ITEM_RETURNING}
+      `SELECT ${MEASUREMENT_ITEM_RETURNING}
        FROM msr.measurement_items
        WHERE measurement_id = $1
        ORDER BY line_number ASC`,
@@ -377,7 +366,7 @@ export class MeasurementsRepository {
              updated_at = NOW()
          WHERE id = $2
            AND measurement_id = $1
-         RETURNING ${ITEM_RETURNING}`,
+         RETURNING ${MEASUREMENT_ITEM_RETURNING}`,
         [input.measurementId, input.itemId, input.measuredQuantity, input.lineAmount],
       );
       if (!updatedItem.rows[0]) {
@@ -549,7 +538,7 @@ export class MeasurementsRepository {
         return { outcome: 'invalid_state' };
       }
 
-      const transitionSql = this.transitionSql(input.transition);
+      const transitionSql = measurementTransitionSql(input.transition);
       const params: unknown[] = [
         input.measurementId,
         input.rowVersion,
@@ -588,7 +577,7 @@ export class MeasurementsRepository {
          VALUES ($1, $2, $3::jsonb, $4)`,
         [
           input.measurementId,
-          this.historyEventForTransition(input.transition),
+          measurementHistoryEventForTransition(input.transition),
           JSON.stringify({
             fromStatus: input.currentStatus,
             toStatus: input.nextStatus,
@@ -668,29 +657,4 @@ export class MeasurementsRepository {
     return result.rows[0] ?? null;
   }
 
-  private transitionSql(transition: MeasurementTransitionInput['transition']): string {
-    switch (transition) {
-      case 'submit':
-        return 'submitted_at = NOW(), submitted_by_identity_id = $4';
-      case 'startReview':
-        return 'review_started_at = NOW(), review_started_by_identity_id = $4';
-      case 'approve':
-        return 'decided_at = NOW(), decided_by_identity_id = $4, rejection_reason = NULL';
-      case 'reject':
-        return 'decided_at = NOW(), decided_by_identity_id = $4, rejection_reason = $6';
-    }
-  }
-
-  private historyEventForTransition(transition: MeasurementTransitionInput['transition']): string {
-    switch (transition) {
-      case 'submit':
-        return MEASUREMENT_HISTORY_EVENTS.Submitted;
-      case 'startReview':
-        return MEASUREMENT_HISTORY_EVENTS.ReviewStarted;
-      case 'approve':
-        return MEASUREMENT_HISTORY_EVENTS.Approved;
-      case 'reject':
-        return MEASUREMENT_HISTORY_EVENTS.Rejected;
-    }
-  }
 }

@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import type { Pool, PoolClient } from 'pg';
+import type { Pool } from 'pg';
 import { DatabaseService } from '../../infrastructure/database/database.service';
 import { PURCHASE_ORDER_STATUSES } from '../domain/purchase-order';
-import type { PurchaseOrderItemInput } from '../domain/purchase-order.validation';
 import type {
   ClientSnapshotSource,
   CreatePurchaseOrderPersistenceInput,
@@ -14,6 +13,10 @@ import type {
   ServiceSnapshotSource,
   UpdatePurchaseOrderDraftPersistenceInput,
 } from './purchase-orders.repository.types';
+import {
+  replacePurchaseOrderBillingRules,
+  replacePurchaseOrderItems,
+} from './purchase-orders-child-rows';
 
 const PO_SELECT = `
   SELECT
@@ -31,6 +34,7 @@ const PO_SELECT = `
     currency_code,
     pricing_structure::text AS pricing_structure,
     total_amount::text AS total_amount,
+    consumed_amount::text AS consumed_amount,
     payment_terms,
     payment_method,
     client_snapshot,
@@ -205,7 +209,7 @@ export class PurchaseOrdersRepository {
            issue_date::text AS issue_date, buyer_contact, service_manager,
            delivery_location, billing_location, currency_code,
            pricing_structure::text AS pricing_structure,
-           total_amount::text AS total_amount, payment_terms, payment_method,
+           total_amount::text AS total_amount, consumed_amount::text AS consumed_amount, payment_terms, payment_method,
            client_snapshot, original_document_id, status::text AS status,
            registered_at, registered_by_identity_id, cancelled_at,
            cancelled_by_identity_id, cancellation_reason, row_version, created_at, updated_at`,
@@ -234,8 +238,8 @@ export class PurchaseOrdersRepository {
         throw new Error('PURCHASE_ORDER_CREATE_FAILED');
       }
 
-      const items = await this.replaceItems(client, purchaseOrder.id, input.items);
-      const billingRules = await this.replaceBillingRules(
+      const items = await replacePurchaseOrderItems(client, purchaseOrder.id, input.items);
+      const billingRules = await replacePurchaseOrderBillingRules(
         client,
         purchaseOrder.id,
         input.billingRules,
@@ -323,14 +327,14 @@ export class PurchaseOrdersRepository {
 
       let items: PurchaseOrderItemRow[];
       if (input.items) {
-        items = await this.replaceItems(client, input.purchaseOrderId, input.items);
+        items = await replacePurchaseOrderItems(client, input.purchaseOrderId, input.items);
       } else {
         items = await this.listItems(input.purchaseOrderId);
       }
 
       let billingRules: PurchaseOrderBillingRuleRow[];
       if (input.billingRules) {
-        billingRules = await this.replaceBillingRules(
+        billingRules = await replacePurchaseOrderBillingRules(
           client,
           input.purchaseOrderId,
           input.billingRules,
@@ -408,7 +412,7 @@ export class PurchaseOrdersRepository {
            issue_date::text AS issue_date, buyer_contact, service_manager,
            delivery_location, billing_location, currency_code,
            pricing_structure::text AS pricing_structure,
-           total_amount::text AS total_amount, payment_terms, payment_method,
+           total_amount::text AS total_amount, consumed_amount::text AS consumed_amount, payment_terms, payment_method,
            client_snapshot, original_document_id, status::text AS status,
            registered_at, registered_by_identity_id, cancelled_at,
            cancelled_by_identity_id, cancellation_reason, row_version, created_at, updated_at`,
@@ -428,6 +432,24 @@ export class PurchaseOrdersRepository {
     } finally {
       client.release();
     }
+  }
+
+  async hasBlockingReferences(purchaseOrderId: string): Promise<boolean> {
+    const result = await this.pool().query<{ blocked: boolean }>(
+      `SELECT EXISTS (
+         SELECT 1
+         FROM sr.service_requests
+         WHERE purchase_order_id = $1
+           AND status NOT IN ('CANCELLED', 'REJECTED')
+       ) OR EXISTS (
+         SELECT 1
+         FROM so.service_orders
+         WHERE purchase_order_id = $1
+           AND status <> 'CANCELLED'
+       ) AS blocked`,
+      [purchaseOrderId],
+    );
+    return result.rows[0]?.blocked === true;
   }
 
   async cancel(
@@ -454,7 +476,7 @@ export class PurchaseOrdersRepository {
          issue_date::text AS issue_date, buyer_contact, service_manager,
          delivery_location, billing_location, currency_code,
          pricing_structure::text AS pricing_structure,
-         total_amount::text AS total_amount, payment_terms, payment_method,
+         total_amount::text AS total_amount, consumed_amount::text AS consumed_amount, payment_terms, payment_method,
          client_snapshot, original_document_id, status::text AS status,
          registered_at, registered_by_identity_id, cancelled_at,
          cancelled_by_identity_id, cancellation_reason, row_version, created_at, updated_at`,
@@ -494,87 +516,5 @@ export class PurchaseOrdersRepository {
       throw new Error('DOCUMENT_LINK_FAILED');
     }
     return row;
-  }
-
-  private async replaceItems(
-    client: PoolClient,
-    purchaseOrderId: string,
-    items: PurchaseOrderItemInput[],
-  ): Promise<PurchaseOrderItemRow[]> {
-    await client.query(`DELETE FROM com.purchase_order_items WHERE purchase_order_id = $1`, [
-      purchaseOrderId,
-    ]);
-    const rows: PurchaseOrderItemRow[] = [];
-    for (const item of items) {
-      const result = await client.query<PurchaseOrderItemRow>(
-        `INSERT INTO com.purchase_order_items (
-           purchase_order_id, line_number, description,
-           service_definition_id, service_definition_version_id,
-           quantity, unit_code, unit_price_amount, line_total_amount, rc_line_reference
-         )
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-         RETURNING
-           id, purchase_order_id, line_number, description,
-           service_definition_id, service_definition_version_id, service_snapshot,
-           quantity::text AS quantity, unit_code,
-           unit_price_amount::text AS unit_price_amount,
-           line_total_amount::text AS line_total_amount, rc_line_reference`,
-        [
-          purchaseOrderId,
-          item.lineNumber,
-          item.description,
-          item.serviceDefinitionId ?? null,
-          item.serviceDefinitionVersionId ?? null,
-          item.quantity ?? null,
-          item.unitCode ?? null,
-          item.unitPrice ?? null,
-          item.lineTotal ?? null,
-          item.rcLineReference ?? null,
-        ],
-      );
-      const row = result.rows[0];
-      if (row) {
-        rows.push(row);
-      }
-    }
-    return rows;
-  }
-
-  private async replaceBillingRules(
-    client: PoolClient,
-    purchaseOrderId: string,
-    rules: Array<{ ruleType: string; ruleConfig?: Record<string, unknown> }>,
-    actorIdentityId: string,
-  ): Promise<PurchaseOrderBillingRuleRow[]> {
-    await client.query(`DELETE FROM com.purchase_order_billing_rules WHERE purchase_order_id = $1`, [
-      purchaseOrderId,
-    ]);
-    const rows: PurchaseOrderBillingRuleRow[] = [];
-    for (const rule of rules) {
-      const result = await client.query<PurchaseOrderBillingRuleRow>(
-        `INSERT INTO com.purchase_order_billing_rules (
-           purchase_order_id, rule_type, rule_config, precedence_tier, created_by_identity_id
-         )
-         VALUES ($1, $2::com.purchase_order_rule_type, $3, 'PURCHASE_ORDER', $4)
-         RETURNING id, purchase_order_id, rule_type::text AS rule_type, rule_config, precedence_tier, created_at`,
-        [purchaseOrderId, rule.ruleType, JSON.stringify(rule.ruleConfig ?? {}), actorIdentityId],
-      );
-      const row = result.rows[0];
-      if (row) {
-        rows.push(row);
-      }
-    }
-    return rows;
-  }
-
-  isDuplicatePoViolation(error: unknown): boolean {
-    if (!error || typeof error !== 'object') {
-      return false;
-    }
-    const pgError = error as { code?: string; constraint?: string };
-    return (
-      pgError.code === '23505' &&
-      (pgError.constraint?.includes('client_po_number') ?? false)
-    );
   }
 }

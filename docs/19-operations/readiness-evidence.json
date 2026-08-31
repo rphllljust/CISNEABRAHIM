@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "releaseCandidate": {
-    "commitSha": "5be4230",
+    "commitSha": "ef30b56",
     "artifactDigest": null,
     "version": "0.0.0-rc.1"
   },
@@ -96,12 +96,12 @@
   "manualUatUx": {
     "status": "PASSED",
     "engineeringReadiness": "UAT_COMPLETED",
-    "sessionId": "UAT-UX-342FDEBA",
-    "performedBy": "Abrahim Jabour Junior (Administrador)",
-    "performedAt": "2026-08-30T22:28:40.526Z",
+    "sessionId": "UAT-UX-F132B3A9",
+    "performedBy": "Monica Perez Badra Jabour (Administrador 2)",
+    "performedAt": "2026-08-31T01:08:42.997Z",
     "environment": "pilot-hml",
     "releaseCandidate": {
-      "commitSha": "5be4230",
+      "commitSha": "ef30b56",
       "artifactDigest": null,
       "version": "0.0.0-rc.1"
     },
@@ -119,9 +119,9 @@
     "result": "PASSED",
     "issuesFound": [],
     "blockingIssues": [],
-    "approval": "Abrahim Jabour Junior (Administrador)",
+    "approval": "Monica Perez Badra Jabour (Administrador 2)",
     "evidenceReference": "docs/16-testing/uat-ux-checklist.md",
-    "notes": "Cenários derivados dos fluxos UAT. Pendente sessão manual com operador."
+    "notes": "Administrador 1: UAT-UX-8CFE4AB9 — Abrahim Jabour Junior (docs/inputs/UAT-UX-001-human-operator-session-signoff.md; checklist docs/16-testing/uat-ux-session-checklist-UAT-UX-8CFE4AB9.json). Administrador 2: UAT-UX-F132B3A9 — Monica Perez Badra Jabour (docs/inputs/UAT-UX-002-human-operator-session-signoff.md; checklist docs/16-testing/uat-ux-session-checklist-UAT-UX-F132B3A9.json)."
   },
   "history": [
     {
@@ -193,6 +193,118 @@
         "version": "0.0.0-rc.1"
       },
       "notes": "blockers=0; observations=0"
+    },
+    {
+      "recordedAt": "2026-08-31T01:10:00.000Z",
+      "actor": "Abrahim Jabour Junior (Administrador)",
+      "action": "UAT_SESSION_EVIDENCE_REOPENED",
+      "field": "manualUatUx.status",
+      "previousValue": "PASSED",
+      "newValue": "NOT_STARTED",
+      "releaseCandidate": {
+        "commitSha": "ef30b56",
+        "artifactDigest": null,
+        "version": "0.0.0-rc.1"
+      },
+      "notes": "Evidência anterior sem checklist fechado; reabertura para sessão real Administrador/operador."
+    },
+    {
+      "recordedAt": "2026-08-31T01:06:01.192Z",
+      "actor": "Abrahim Jabour Junior (Administrador)",
+      "action": "UAT_SESSION_STARTED",
+      "field": "manualUatUx.sessionId",
+      "previousValue": null,
+      "newValue": "UAT-UX-8CFE4AB9",
+      "releaseCandidate": {
+        "commitSha": "ef30b56",
+        "artifactDigest": null,
+        "version": "0.0.0-rc.1"
+      },
+      "notes": "environment=pilot-hml"
+    },
+    {
+      "recordedAt": "2026-08-31T01:06:01.193Z",
+      "actor": "Abrahim Jabour Junior (Administrador)",
+      "action": "UAT_SESSION_CLOSED",
+      "field": "manualUatUx.status",
+      "previousValue": "IN_PROGRESS",
+      "newValue": "PASSED",
+      "releaseCandidate": {
+        "commitSha": "ef30b56",
+        "artifactDigest": null,
+        "version": "0.0.0-rc.1"
+      },
+      "notes": "blockers=0; observations=0"
+    },
+    {
+      "recordedAt": "2026-08-31T01:06:02.000Z",
+      "actor": "Abrahim Jabour Junior (Administrador)",
+      "action": "UAT_HUMAN_SIGN_OFF_FORMAL",
+      "field": "manualUatUx.approval",
+      "previousValue": null,
+      "newValue": "Abrahim Jabour Junior (Administrador)",
+      "releaseCandidate": {
+        "commitSha": "ef30b56",
+        "artifactDigest": null,
+        "version": "0.0.0-rc.1"
+      },
+      "notes": "Sessão real Administrador/operador; decisão formal UAT-UX-001."
+    },
+    {
+      "recordedAt": "2026-08-31T01:12:00.000Z",
+      "actor": "Abrahim Jabour Junior (Administrador)",
+      "action": "UAT_SESSION_EVIDENCE_REOPENED",
+      "field": "manualUatUx.status",
+      "previousValue": "PASSED",
+      "newValue": "NOT_STARTED",
+      "releaseCandidate": {
+        "commitSha": "ef30b56",
+        "artifactDigest": null,
+        "version": "0.0.0-rc.1"
+      },
+      "notes": "Sessão UAT-UX-8CFE4AB9 arquivada; reabertura para Administrador 2 Monica Perez Badra Jabour."
+    },
+    {
+      "recordedAt": "2026-08-31T01:08:42.997Z",
+      "actor": "Monica Perez Badra Jabour (Administrador 2)",
+      "action": "UAT_SESSION_STARTED",
+      "field": "manualUatUx.sessionId",
+      "previousValue": null,
+      "newValue": "UAT-UX-F132B3A9",
+      "releaseCandidate": {
+        "commitSha": "ef30b56",
+        "artifactDigest": null,
+        "version": "0.0.0-rc.1"
+      },
+      "notes": "environment=pilot-hml"
+    },
+    {
+      "recordedAt": "2026-08-31T01:08:42.997Z",
+      "actor": "Monica Perez Badra Jabour (Administrador 2)",
+      "action": "UAT_SESSION_CLOSED",
+      "field": "manualUatUx.status",
+      "previousValue": "IN_PROGRESS",
+      "newValue": "PASSED",
+      "releaseCandidate": {
+        "commitSha": "ef30b56",
+        "artifactDigest": null,
+        "version": "0.0.0-rc.1"
+      },
+      "notes": "blockers=0; observations=0"
+    },
+    {
+      "recordedAt": "2026-08-31T01:08:43.000Z",
+      "actor": "Monica Perez Badra Jabour (Administrador 2)",
+      "action": "UAT_HUMAN_SIGN_OFF_FORMAL",
+      "field": "manualUatUx.approval",
+      "previousValue": null,
+      "newValue": "Monica Perez Badra Jabour (Administrador 2)",
+      "releaseCandidate": {
+        "commitSha": "ef30b56",
+        "artifactDigest": null,
+        "version": "0.0.0-rc.1"
+      },
+      "notes": "Sessão real Administrador 2/operador; decisão formal UAT-UX-002."
     }
   ]
 }

@@ -8,7 +8,9 @@ import { ServiceDefinitionsController } from './controllers/service-definitions.
 import { UnitsOfMeasureController } from './controllers/units-of-measure.controller';
 import { ServiceCatalogRepository } from './repositories/service-catalog.repository';
 import { UnitsOfMeasureRepository } from './repositories/units-of-measure.repository';
+import { ServiceCatalogAccessAuthz } from './services/service-catalog-access.authz';
 import { ServiceCatalogAccessService } from './services/service-catalog-access.service';
+import { ServiceCatalogReferenceValidationService } from './services/service-catalog-reference-validation.service';
 import { UnitsOfMeasureAccessService } from './services/units-of-measure-access.service';
 
 @Module({
@@ -17,6 +19,8 @@ import { UnitsOfMeasureAccessService } from './services/units-of-measure-access.
   providers: [
     ServiceCatalogRepository,
     UnitsOfMeasureRepository,
+    ServiceCatalogAccessAuthz,
+    ServiceCatalogReferenceValidationService,
     ServiceCatalogAccessService,
     UnitsOfMeasureAccessService,
   ],

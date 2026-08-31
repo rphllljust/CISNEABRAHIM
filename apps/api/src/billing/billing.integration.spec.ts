@@ -563,4 +563,235 @@ describe('Billing PostgreSQL integration', () => {
     expect(voided.status).toBe(BILLING_RECORD_STATUSES.Voided);
     expect(voided.voidReason).toBe('Erro operacional detectado.');
   });
+
+  it('consumes and releases purchase order balance across prepare and void', async () => {
+    const { actor } = await seedActor();
+    const client = await clientAccess.create(actor, {
+      legalName: `Cliente PO Balance ${crypto.randomUUID()}`,
+      tradeName: 'Cliente PO Balance',
+      taxId: TEST_CNPJ,
+      contacts: [{ name: 'Contato', purpose: CONTACT_PURPOSES.Operational, phone: '69999990000' }],
+      addresses: [
+        {
+          purpose: ADDRESS_PURPOSES.Billing,
+          street: 'Rua PO',
+          number: '1',
+          city: 'Porto Velho',
+          state: 'RO',
+          postalCode: '76800000',
+          country: 'BR',
+        },
+      ],
+    });
+
+    const suffix = crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase();
+    const category = await insertCatalogCategory(pool, { code: `CAT-${suffix}`, name: 'Serviços' });
+    const draft = await catalogAccess.create(actor, {
+      code: `PO-BAL-${suffix}`,
+      name: 'Serviço PO Balance',
+      categoryId: category.categoryId,
+      archetype: 'RENTAL',
+      measurementMode: 'BY_EVENT',
+      measurementBasis: 'GLOBAL_COMPLETION',
+      allowedUnits: [{ unitCode: 'SERVICE', isDefault: true, sortOrder: 0 }],
+      pricingModels: [{ modelCode: 'GLOBAL_PRICE', salePrice: '1000.0000' }],
+      resourceRequirements: [],
+      laborRequirements: [],
+      executionRequirements: SAMPLE_EXECUTION_REQUIREMENTS,
+    });
+    const definition = await catalogAccess.getDefinition(actor, draft.serviceDefinitionId);
+    const published = await catalogAccess.publishVersion(actor, draft.serviceDefinitionId, 1, definition.version);
+
+    const purchaseOrder = await purchaseOrdersAccess.create(actor, {
+      clientId: client.id,
+      unitId: UNIT_A,
+      poNumber: `PO-BAL-${suffix}`,
+      pricingStructure: PURCHASE_ORDER_PRICING_STRUCTURES.LineItems,
+      paymentTerms: '30 DDL',
+      items: [
+        {
+          lineNumber: 1,
+          description: 'Serviço PO',
+          serviceDefinitionId: published.serviceDefinitionId,
+          serviceDefinitionVersionId: published.id,
+          quantity: '1.0000',
+          unitCode: 'SERVICE',
+          unitPrice: '1000.0000',
+          lineTotal: '1000.0000',
+        },
+      ],
+    });
+    const registered = await purchaseOrdersAccess.register(actor, purchaseOrder.purchaseOrder.id, {
+      rowVersion: purchaseOrder.purchaseOrder.rowVersion,
+    });
+
+    const created = await serviceOrdersAccess.create(actor, {
+      origin: SERVICE_ORDER_ORIGINS.PurchaseOrder,
+      unitId: UNIT_A,
+      clientId: client.id,
+      purchaseOrderId: registered.purchaseOrder.id,
+      serviceDefinitionId: published.serviceDefinitionId,
+      serviceDefinitionVersionId: published.id,
+    });
+    const prepared = await serviceOrdersAccess.prepare(actor, created.id, { rowVersion: created.rowVersion });
+    const released = await serviceOrdersAccess.release(actor, prepared.id, { rowVersion: prepared.rowVersion });
+    const started = await executionAccess.start(actor, released.id, { rowVersion: released.rowVersion });
+    await executionAccess.recordObservation(actor, started.id, {
+      rowVersion: started.rowVersion,
+      text: 'OK',
+    });
+    const afterObservation = await serviceOrdersAccess.getById(actor, started.id);
+    await executionAccess.recordQuantity(actor, afterObservation.id, {
+      rowVersion: afterObservation.rowVersion,
+      quantityValue: '1',
+      unitCode: 'SERVICE',
+    });
+    const afterQuantity = await serviceOrdersAccess.getById(actor, started.id);
+    const completed = await executionAccess.complete(actor, afterQuantity.id, {
+      rowVersion: afterQuantity.rowVersion,
+    });
+    const measurement = await measurementsAccess.create(actor, completed.id);
+    const submitted = await measurementsAccess.submit(actor, completed.id, measurement.id, {
+      rowVersion: measurement.rowVersion,
+    });
+    const reviewed = await measurementsAccess.startReview(actor, completed.id, measurement.id, {
+      rowVersion: submitted.rowVersion,
+    });
+    const login = normalizeLoginIdentifier(`bil-bal-${crypto.randomUUID()}@cisne.invalid`);
+    const passwordHash = await hashPassword(AUTH_TEST_PASSWORD);
+    const { identityId: reviewerId } = await insertIdentity(pool, login, passwordHash);
+    await grantBillingAdmin(pool, reviewerId, actor.identityId);
+    const reviewer = { identityId: reviewerId, sessionId: 'sid-bal' };
+    const approved = await measurementsAccess.approve(reviewer, completed.id, measurement.id, {
+      rowVersion: reviewed.rowVersion,
+    });
+
+    const billing = await billingAccess.prepare(actor, completed.id, {
+      measurementId: approved.id,
+      paymentTerms: '30 DDL',
+    });
+
+    const consumed = await purchaseOrdersAccess.getById(actor, registered.purchaseOrder.id);
+    expect(consumed.balance.consumedAmount).toBe('1000');
+    expect(consumed.balance.availableBalance).toBe('0');
+
+    await billingAccess.voidRecord(actor, completed.id, billing.id, {
+      rowVersion: billing.rowVersion,
+      voidReason: 'Libera saldo do PO.',
+    });
+
+    const releasedBalance = await purchaseOrdersAccess.getById(actor, registered.purchaseOrder.id);
+    expect(releasedBalance.balance.consumedAmount).toBe('0');
+    expect(releasedBalance.balance.availableBalance).toBe('1000');
+  });
+
+  it('rejects billing prepare when purchase order balance is insufficient', async () => {
+    const { actor } = await seedActor();
+    const client = await clientAccess.create(actor, {
+      legalName: `Cliente PO Insuf ${crypto.randomUUID()}`,
+      tradeName: 'Cliente PO Insuf',
+      taxId: TEST_CNPJ,
+      contacts: [{ name: 'Contato', purpose: CONTACT_PURPOSES.Operational, phone: '69999990000' }],
+      addresses: [
+        {
+          purpose: ADDRESS_PURPOSES.Billing,
+          street: 'Rua PO',
+          number: '1',
+          city: 'Porto Velho',
+          state: 'RO',
+          postalCode: '76800000',
+          country: 'BR',
+        },
+      ],
+    });
+
+    const suffix = crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase();
+    const category = await insertCatalogCategory(pool, { code: `CAT-${suffix}`, name: 'Serviços' });
+    const draft = await catalogAccess.create(actor, {
+      code: `PO-INS-${suffix}`,
+      name: 'Serviço PO Insuf',
+      categoryId: category.categoryId,
+      archetype: 'RENTAL',
+      measurementMode: 'BY_EVENT',
+      measurementBasis: 'GLOBAL_COMPLETION',
+      allowedUnits: [{ unitCode: 'SERVICE', isDefault: true, sortOrder: 0 }],
+      pricingModels: [{ modelCode: 'GLOBAL_PRICE', salePrice: '1000.0000' }],
+      resourceRequirements: [],
+      laborRequirements: [],
+      executionRequirements: SAMPLE_EXECUTION_REQUIREMENTS,
+    });
+    const definition = await catalogAccess.getDefinition(actor, draft.serviceDefinitionId);
+    const published = await catalogAccess.publishVersion(actor, draft.serviceDefinitionId, 1, definition.version);
+
+    const purchaseOrder = await purchaseOrdersAccess.create(actor, {
+      clientId: client.id,
+      unitId: UNIT_A,
+      poNumber: `PO-INS-${suffix}`,
+      pricingStructure: PURCHASE_ORDER_PRICING_STRUCTURES.LineItems,
+      paymentTerms: '30 DDL',
+      items: [
+        {
+          lineNumber: 1,
+          description: 'Serviço PO',
+          serviceDefinitionId: published.serviceDefinitionId,
+          serviceDefinitionVersionId: published.id,
+          quantity: '1.0000',
+          unitCode: 'SERVICE',
+          unitPrice: '500.0000',
+          lineTotal: '500.0000',
+        },
+      ],
+    });
+    const registered = await purchaseOrdersAccess.register(actor, purchaseOrder.purchaseOrder.id, {
+      rowVersion: purchaseOrder.purchaseOrder.rowVersion,
+    });
+
+    const created = await serviceOrdersAccess.create(actor, {
+      origin: SERVICE_ORDER_ORIGINS.PurchaseOrder,
+      unitId: UNIT_A,
+      clientId: client.id,
+      purchaseOrderId: registered.purchaseOrder.id,
+      serviceDefinitionId: published.serviceDefinitionId,
+      serviceDefinitionVersionId: published.id,
+    });
+    const prepared = await serviceOrdersAccess.prepare(actor, created.id, { rowVersion: created.rowVersion });
+    const released = await serviceOrdersAccess.release(actor, prepared.id, { rowVersion: prepared.rowVersion });
+    const started = await executionAccess.start(actor, released.id, { rowVersion: released.rowVersion });
+    await executionAccess.recordObservation(actor, started.id, {
+      rowVersion: started.rowVersion,
+      text: 'OK',
+    });
+    const afterObservation = await serviceOrdersAccess.getById(actor, started.id);
+    await executionAccess.recordQuantity(actor, afterObservation.id, {
+      rowVersion: afterObservation.rowVersion,
+      quantityValue: '1',
+      unitCode: 'SERVICE',
+    });
+    const afterQuantity = await serviceOrdersAccess.getById(actor, started.id);
+    const completed = await executionAccess.complete(actor, afterQuantity.id, {
+      rowVersion: afterQuantity.rowVersion,
+    });
+    const measurement = await measurementsAccess.create(actor, completed.id);
+    const submitted = await measurementsAccess.submit(actor, completed.id, measurement.id, {
+      rowVersion: measurement.rowVersion,
+    });
+    const reviewed = await measurementsAccess.startReview(actor, completed.id, measurement.id, {
+      rowVersion: submitted.rowVersion,
+    });
+    const login = normalizeLoginIdentifier(`bil-ins-${crypto.randomUUID()}@cisne.invalid`);
+    const passwordHash = await hashPassword(AUTH_TEST_PASSWORD);
+    const { identityId: reviewerId } = await insertIdentity(pool, login, passwordHash);
+    await grantBillingAdmin(pool, reviewerId, actor.identityId);
+    const reviewer = { identityId: reviewerId, sessionId: 'sid-ins' };
+    const approved = await measurementsAccess.approve(reviewer, completed.id, measurement.id, {
+      rowVersion: reviewed.rowVersion,
+    });
+
+    await expect(
+      billingAccess.prepare(actor, completed.id, {
+        measurementId: approved.id,
+        paymentTerms: '30 DDL',
+      }),
+    ).rejects.toMatchObject({ code: BILLING_ERROR_CODES.PURCHASE_ORDER_BALANCE_EXCEEDED });
+  });
 });

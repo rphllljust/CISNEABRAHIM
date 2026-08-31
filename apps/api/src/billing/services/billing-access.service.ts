@@ -16,6 +16,7 @@ import { AUTHZ_SCOPES } from '../../authorization/types/authz-scopes';
 import type { IdentityAuthzContext } from '../../authorization/types/authz-decision';
 import { assertUuid } from '../../catalog/domain/service-catalog.validation';
 import { assertCurrencyCode } from '../../commercial/domain/money';
+import { PurchaseOrderConsumptionPersistenceError } from '../../commercial/repositories/purchase-order-consumption.persistence';
 import { ADDRESS_PURPOSES } from '../../clients/domain/client-status';
 import { ServiceOrdersRepository } from '../../service-orders/repositories/service-orders.repository';
 import type { ServiceOrderRow } from '../../service-orders/repositories/service-orders.repository.types';
@@ -172,27 +173,32 @@ export class BillingAccessService {
       (measurement.commercial_reference_snapshot as { currencyCode?: string }).currencyCode ?? 'BRL',
     );
 
-    const result = await this.billingRepository.prepareBillingRecord({
-      serviceOrderId: order.id,
-      measurementId: measurement.id,
-      clientId: order.client_id,
-      unitId: order.unit_id,
-      proposalId: order.proposal_id,
-      purchaseOrderId: order.purchase_order_id,
-      contractReference: order.contract_reference,
-      clientLegalNameSnapshot: client.legal_name,
-      clientTaxIdSnapshot: client.tax_id,
-      billingAddressSnapshot,
-      commercialReferenceSnapshot: measurement.commercial_reference_snapshot,
-      currencyCode,
-      paymentTerms: termsResolution.appliedTerms,
-      paymentTermsSource: termsResolution.source,
-      paymentTermsAuthoritative: termsResolution.authoritativeTerms,
-      totalAmount: computedTotal,
-      actorIdentityId: actor.identityId,
-      items: itemDrafts,
-      idempotencyKey: validated.idempotencyKey,
-    });
+    let result;
+    try {
+      result = await this.billingRepository.prepareBillingRecord({
+        serviceOrderId: order.id,
+        measurementId: measurement.id,
+        clientId: order.client_id,
+        unitId: order.unit_id,
+        proposalId: order.proposal_id,
+        purchaseOrderId: order.purchase_order_id,
+        contractReference: order.contract_reference,
+        clientLegalNameSnapshot: client.legal_name,
+        clientTaxIdSnapshot: client.tax_id,
+        billingAddressSnapshot,
+        commercialReferenceSnapshot: measurement.commercial_reference_snapshot,
+        currencyCode,
+        paymentTerms: termsResolution.appliedTerms,
+        paymentTermsSource: termsResolution.source,
+        paymentTermsAuthoritative: termsResolution.authoritativeTerms,
+        totalAmount: computedTotal,
+        actorIdentityId: actor.identityId,
+        items: itemDrafts,
+        idempotencyKey: validated.idempotencyKey,
+      });
+    } catch (error) {
+      throw this.mapPurchaseOrderConsumptionError(error);
+    }
 
     if (result.outcome === 'already_exists') {
       throw new BillingHttpException(
@@ -231,13 +237,18 @@ export class BillingAccessService {
       throw this.validationFailed();
     }
 
-    const result = await this.billingRepository.voidBillingRecord({
-      billingRecordId,
-      rowVersion: validated.rowVersion,
-      voidReason: validated.voidReason,
-      actorIdentityId: actor.identityId,
-      idempotencyKey: validated.idempotencyKey,
-    });
+    let result;
+    try {
+      result = await this.billingRepository.voidBillingRecord({
+        billingRecordId,
+        rowVersion: validated.rowVersion,
+        voidReason: validated.voidReason,
+        actorIdentityId: actor.identityId,
+        idempotencyKey: validated.idempotencyKey,
+      });
+    } catch (error) {
+      throw this.mapPurchaseOrderConsumptionError(error);
+    }
 
     if (result.outcome === 'invalid_state') {
       throw new BillingHttpException(
@@ -470,6 +481,33 @@ export class BillingAccessService {
       BILLING_ERROR_CODES.NOT_FOUND,
       'Billing record not found.',
     );
+  }
+
+  private mapPurchaseOrderConsumptionError(error: unknown): BillingHttpException {
+    if (!(error instanceof PurchaseOrderConsumptionPersistenceError)) {
+      throw error;
+    }
+
+    switch (error.code) {
+      case 'PURCHASE_ORDER_BALANCE_EXCEEDED':
+        return new BillingHttpException(
+          HttpStatus.CONFLICT,
+          BILLING_ERROR_CODES.PURCHASE_ORDER_BALANCE_EXCEEDED,
+          'Purchase order authorized balance exceeded.',
+        );
+      case 'PURCHASE_ORDER_INVALID_STATE':
+        return new BillingHttpException(
+          HttpStatus.CONFLICT,
+          BILLING_ERROR_CODES.PURCHASE_ORDER_INVALID_STATE,
+          'Purchase order is not in a billable state.',
+        );
+      default:
+        return new BillingHttpException(
+          HttpStatus.CONFLICT,
+          BILLING_ERROR_CODES.INVALID_STATE,
+          'Purchase order consumption could not be applied.',
+        );
+    }
   }
 
   private mapBillingError(error: unknown): BillingHttpException {

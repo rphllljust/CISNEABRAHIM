@@ -24,6 +24,12 @@ import type {
   ResourceAllocationRow,
   UpdatePlannedResourcePersistenceInput,
 } from './resource-planning.repository.types';
+import {
+  ALLOCATION_RETURNING,
+  ALLOCATION_SELECT,
+  insertResourceAllocationHistory,
+  isAllocationExclusionViolation,
+} from './resource-planning-allocation-rows';
 
 const PLANNED_SELECT = `
   SELECT
@@ -32,18 +38,6 @@ const PLANNED_SELECT = `
     operational_start, operational_end, notes, status::text AS status,
     row_version, created_at, updated_at, created_by_identity_id, updated_by_identity_id
   FROM so.planned_resources
-`;
-
-const ALLOCATION_RETURNING = `
-  id, service_order_id, planned_resource_id, physical_asset_id, resource_type_code,
-  operational_start, operational_end, status::text AS status, row_version,
-  allocated_at, allocated_by_identity_id, removed_at, removed_by_identity_id,
-  reallocated_to_allocation_id, created_at, updated_at
-`;
-
-const ALLOCATION_SELECT = `
-  SELECT ${ALLOCATION_RETURNING}
-  FROM res.resource_allocations
 `;
 
 @Injectable()
@@ -347,7 +341,7 @@ export class ResourcePlanningRepository {
       return { outcome: 'allocated', allocation: inserted };
     } catch (error) {
       await client.query('ROLLBACK');
-      if (this.isExclusionViolation(error)) {
+      if (isAllocationExclusionViolation(error)) {
         return { outcome: 'allocation_conflict' };
       }
       throw error;
@@ -434,7 +428,7 @@ export class ResourcePlanningRepository {
         return { outcome: 'version_conflict' };
       }
 
-      await this.insertAllocationHistory(client, {
+      await insertResourceAllocationHistory(client, {
         allocationId: input.allocationId,
         eventType: ALLOCATION_HISTORY_EVENTS.ReallocateResource,
         payload: { toAllocationId: newAllocation.id },
@@ -458,7 +452,7 @@ export class ResourcePlanningRepository {
       return { outcome: 'allocated', allocation: newAllocation };
     } catch (error) {
       await client.query('ROLLBACK');
-      if (this.isExclusionViolation(error)) {
+      if (isAllocationExclusionViolation(error)) {
         return { outcome: 'allocation_conflict' };
       }
       throw error;
@@ -510,7 +504,7 @@ export class ResourcePlanningRepository {
         return 'VERSION_CONFLICT';
       }
 
-      await this.insertAllocationHistory(client, {
+      await insertResourceAllocationHistory(client, {
         allocationId: updated.id,
         eventType: ALLOCATION_HISTORY_EVENTS.RemoveAllocation,
         payload: {},
@@ -609,7 +603,7 @@ export class ResourcePlanningRepository {
       if (!row) {
         return null;
       }
-      await this.insertAllocationHistory(client, {
+      await insertResourceAllocationHistory(client, {
         allocationId: row.id,
         eventType: input.historyEventType,
         payload: input.historyPayload,
@@ -617,39 +611,11 @@ export class ResourcePlanningRepository {
       });
       return row;
     } catch (error) {
-      if (this.isExclusionViolation(error)) {
+      if (isAllocationExclusionViolation(error)) {
         return null;
       }
       throw error;
     }
   }
 
-  private async insertAllocationHistory(
-    client: PoolClient,
-    input: {
-      allocationId: string;
-      eventType: string;
-      payload: Record<string, unknown>;
-      actorIdentityId: string;
-    },
-  ): Promise<void> {
-    await client.query(
-      `INSERT INTO res.resource_allocation_history_events (
-         resource_allocation_id, event_type, payload, actor_identity_id
-       )
-       VALUES ($1, $2, $3::jsonb, $4)`,
-      [input.allocationId, input.eventType, JSON.stringify(input.payload), input.actorIdentityId],
-    );
-  }
-
-  private isExclusionViolation(error: unknown): boolean {
-    if (!error || typeof error !== 'object') {
-      return false;
-    }
-    const pgError = error as { code?: string; constraint?: string };
-    return (
-      pgError.code === '23P01' ||
-      pgError.constraint === 'resource_allocations_no_overlap_active_excl'
-    );
-  }
 }

@@ -1,4 +1,8 @@
 import { formatMoneyAmountForApi } from '../domain/money';
+import {
+  computePurchaseOrderAvailableBalance,
+  resolvePurchaseOrderAuthorizedAmount,
+} from '../domain/purchase-order-balance';
 import type {
   PurchaseOrderBillingRuleRow,
   PurchaseOrderDocumentLinkRow,
@@ -63,11 +67,18 @@ export type PurchaseOrderResponse = {
   updatedAt: string;
 };
 
+export type PurchaseOrderBalanceResponse = {
+  authorizedAmount: string;
+  consumedAmount: string;
+  availableBalance: string;
+};
+
 export type PurchaseOrderDetailResponse = {
   purchaseOrder: PurchaseOrderResponse;
   items: PurchaseOrderItemResponse[];
   billingRules: PurchaseOrderBillingRuleResponse[];
   documentLinks: PurchaseOrderDocumentLinkResponse[];
+  balance: PurchaseOrderBalanceResponse;
 };
 
 function toItemResponse(row: PurchaseOrderItemRow): PurchaseOrderItemResponse {
@@ -135,6 +146,23 @@ export function toPurchaseOrderResponse(row: PurchaseOrderRow): PurchaseOrderRes
   };
 }
 
+function toBalanceResponse(
+  purchaseOrder: PurchaseOrderRow,
+  items: PurchaseOrderItemRow[],
+): PurchaseOrderBalanceResponse {
+  const source = {
+    pricingStructure: purchaseOrder.pricing_structure,
+    totalAmount: purchaseOrder.total_amount,
+    lineTotals: items.map((item) => item.line_total_amount),
+    consumedAmount: purchaseOrder.consumed_amount,
+  };
+  return {
+    authorizedAmount: formatMoneyAmountForApi(resolvePurchaseOrderAuthorizedAmount(source))!,
+    consumedAmount: formatMoneyAmountForApi(purchaseOrder.consumed_amount)!,
+    availableBalance: formatMoneyAmountForApi(computePurchaseOrderAvailableBalance(source))!,
+  };
+}
+
 export function toPurchaseOrderDetailResponse(
   purchaseOrder: PurchaseOrderRow,
   items: PurchaseOrderItemRow[],
@@ -146,5 +174,6 @@ export function toPurchaseOrderDetailResponse(
     items: items.map(toItemResponse),
     billingRules: billingRules.map(toRuleResponse),
     documentLinks: documentLinks.map(toDocumentLinkResponse),
+    balance: toBalanceResponse(purchaseOrder, items),
   };
 }

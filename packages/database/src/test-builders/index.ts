@@ -49,5 +49,8 @@ export {
   INTEGRATION_TEST_DB_LOCK_KEY,
   acquireAdvisoryLockWithTimeout,
   createIntegrationTestPool,
+  findIntegrationTestLockHolders,
+  releaseIntegrationTestDatabaseLock,
   withIntegrationTestDatabaseLock,
+  type IntegrationTestLockHolder,
 } from './integration-test-db-lock';

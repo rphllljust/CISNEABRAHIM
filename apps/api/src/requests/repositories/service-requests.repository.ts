@@ -81,9 +81,16 @@ export class ServiceRequestsRepository {
 
   async findPurchaseOrderById(
     purchaseOrderId: string,
-  ): Promise<{ id: string; unit_id: string; client_id: string } | null> {
-    const result = await this.pool().query<{ id: string; unit_id: string; client_id: string }>(
-      `SELECT id, unit_id, client_id FROM com.purchase_orders WHERE id = $1`,
+  ): Promise<{ id: string; unit_id: string; client_id: string; status: string } | null> {
+    const result = await this.pool().query<{
+      id: string;
+      unit_id: string;
+      client_id: string;
+      status: string;
+    }>(
+      `SELECT id, unit_id, client_id, status::text AS status
+       FROM com.purchase_orders
+       WHERE id = $1`,
       [purchaseOrderId],
     );
     return result.rows[0] ?? null;

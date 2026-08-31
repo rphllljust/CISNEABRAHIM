@@ -12,7 +12,10 @@ import type {
   ServiceSnapshotSource,
   UpdateProposalDraftPersistenceInput,
 } from './proposals.repository.types';
-import type { ProposalItemInput } from '../domain/proposal.validation';
+import {
+  copyProposalItemsFromVersion,
+  replaceProposalItems,
+} from './proposals-version-child-rows';
 
 const PROPOSAL_SELECT = `
   SELECT
@@ -273,15 +276,15 @@ export class ProposalsRepository {
         throw new Error('PROPOSAL_VERSION_CREATE_FAILED');
       }
 
-      const items = await this.replaceItems(client, versionId, input.items);
-
+      await replaceProposalItems(client, versionId, input.items);
       await client.query('COMMIT');
 
       const version = await this.findVersion(proposal.id, 1);
       if (!version) {
         throw new Error('PROPOSAL_VERSION_LOAD_FAILED');
       }
-      return { proposal, version, items };
+      const loadedItems = await this.listItems(versionId);
+      return { proposal, version, items: loadedItems };
     } catch (error) {
       await client.query('ROLLBACK');
       throw error;
@@ -356,7 +359,8 @@ export class ProposalsRepository {
 
       let items: ProposalItemRow[] = [];
       if (input.items) {
-        items = await this.replaceItems(client, current.id, input.items);
+        await replaceProposalItems(client, current.id, input.items);
+        items = await this.listItems(current.id);
       } else {
         items = await this.listItems(current.id);
       }
@@ -449,32 +453,7 @@ export class ProposalsRepository {
       }
 
       const sourceItems = await this.listItems(source.id);
-      for (const item of sourceItems) {
-        await client.query(
-          `INSERT INTO com.proposal_items (
-             proposal_version_id, line_number, item_kind, description,
-             service_definition_id, service_definition_version_id, service_snapshot,
-             quantity, unit_code, unit_sale_price_amount, unit_internal_cost_amount,
-             line_sale_amount, line_internal_cost_amount
-           )
-           VALUES ($1, $2, $3::com.proposal_item_kind, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
-          [
-            newVersionId,
-            item.line_number,
-            item.item_kind,
-            item.description,
-            item.service_definition_id,
-            item.service_definition_version_id,
-            item.service_snapshot ? JSON.stringify(item.service_snapshot) : null,
-            item.quantity,
-            item.unit_code,
-            item.unit_sale_price_amount,
-            item.unit_internal_cost_amount,
-            item.line_sale_amount,
-            item.line_internal_cost_amount,
-          ],
-        );
-      }
+      await copyProposalItemsFromVersion(client, newVersionId, sourceItems);
 
       await client.query(
         `UPDATE com.proposals
@@ -771,43 +750,5 @@ export class ProposalsRepository {
       throw new Error('DOCUMENT_LINK_FAILED');
     }
     return row;
-  }
-
-  private async replaceItems(
-    client: Pool | { query: Pool['query'] },
-    proposalVersionId: string,
-    items: ProposalItemInput[],
-  ): Promise<ProposalItemRow[]> {
-    await client.query(`DELETE FROM com.proposal_items WHERE proposal_version_id = $1`, [
-      proposalVersionId,
-    ]);
-
-    for (const item of items) {
-      await client.query(
-        `INSERT INTO com.proposal_items (
-           proposal_version_id, line_number, item_kind, description,
-           service_definition_id, service_definition_version_id,
-           quantity, unit_code, unit_sale_price_amount, unit_internal_cost_amount,
-           line_sale_amount, line_internal_cost_amount
-         )
-         VALUES ($1, $2, $3::com.proposal_item_kind, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
-        [
-          proposalVersionId,
-          item.lineNumber,
-          item.itemKind,
-          item.description,
-          item.serviceDefinitionId ?? null,
-          item.serviceDefinitionVersionId ?? null,
-          item.quantity ?? null,
-          item.unitCode ?? null,
-          item.unitSalePrice ?? null,
-          item.unitInternalCost ?? null,
-          item.lineSaleAmount ?? null,
-          item.lineInternalCost ?? null,
-        ],
-      );
-    }
-
-    return this.listItems(proposalVersionId);
   }
 }

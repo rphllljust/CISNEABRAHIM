@@ -277,6 +277,11 @@ export default async function ensureMigrations(): Promise<void> {
     if (!hasOperationalAlertScanJob.rows[0]?.exists) {
       await applySqlFile(pool, '0032_background_job_operational_alert_scan.sql');
     }
+
+    const hasPoConsumedAmount = await columnExists(pool, 'com', 'purchase_orders', 'consumed_amount');
+    if (!hasPoConsumedAmount) {
+      await applySqlFile(pool, '0037_purchase_order_balance.sql');
+    }
   } finally {
     await pool.end();
   }
