@@ -20,6 +20,7 @@ export type ServiceOrderRow = {
   purchase_order_id: string | null;
   purchase_order_snapshot: Record<string, unknown> | null;
   rc_number: string | null;
+  contract_id: string | null;
   contract_reference: string | null;
   contract_snapshot: Record<string, unknown> | null;
   prepared_at: string | null;
@@ -71,29 +72,12 @@ export type CreateServiceOrderPersistenceInput = {
   purchaseOrderId?: string | null;
   purchaseOrderSnapshot?: Record<string, unknown> | null;
   rcNumber?: string | null;
+  contractId?: string | null;
   contractReference?: string | null;
   contractSnapshot?: Record<string, unknown> | null;
   actorIdentityId: string;
   historyEventType: string;
   historyPayload?: Record<string, unknown>;
-};
-
-export type LockedServiceRequestRow = {
-  id: string;
-  request_code: string;
-  unit_id: string;
-  status: string;
-  client_id: string | null;
-  service_definition_id: string | null;
-  service_definition_version_id: string | null;
-  description: string | null;
-  location: Record<string, unknown>;
-  priority: string | null;
-  operational_notes: string | null;
-  proposal_id: string | null;
-  purchase_order_id: string | null;
-  row_version: number;
-  converted_service_order_id: string | null;
 };
 
 export type ConvertServiceRequestPersistenceInput = {
@@ -107,6 +91,9 @@ export type ConvertServiceRequestPersistenceInput = {
   proposalSnapshot: Record<string, unknown> | null;
   purchaseOrderSnapshot: Record<string, unknown> | null;
   rcNumber: string | null;
+  contractId?: string | null;
+  contractReference?: string | null;
+  contractSnapshot?: Record<string, unknown> | null;
 };
 
 export type ConvertServiceRequestPersistenceResult =

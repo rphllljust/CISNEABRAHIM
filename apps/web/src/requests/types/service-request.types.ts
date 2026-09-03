@@ -111,15 +111,32 @@ export type ServiceRequestDocumentLink = {
   createdAt: string;
 };
 
+export type ServiceRequestHistoryEvent = {
+  id: string;
+  eventType: string;
+  payload: Record<string, unknown>;
+  actorIdentityId: string | null;
+  occurredAt: string;
+};
+
 export type ServiceRequestDetail = {
   serviceRequest: ServiceRequest;
   documentLinks: ServiceRequestDocumentLink[];
+  historyEvents: ServiceRequestHistoryEvent[];
 };
 
 export type ServiceRequestListResponse = {
   items: ServiceRequest[];
   limit: number;
   offset: number;
+};
+
+export type ServiceRequestListSummary = {
+  total: number;
+  pending: number;
+  underReview: number;
+  converted: number;
+  cancelled: number;
 };
 
 export type CreateServiceRequestPayload = {

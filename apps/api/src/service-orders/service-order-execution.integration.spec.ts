@@ -78,6 +78,7 @@ async function grantExecutionAdmin(pool: Pool, identityId: string, grantedBy: st
     AUTHZ_ACTIONS.ServiceOrdersServiceOrderCancel,
     AUTHZ_ACTIONS.ServiceOrdersPlannedResourcePlan,
     AUTHZ_ACTIONS.ServiceOrdersPlannedResourceRead,
+    AUTHZ_ACTIONS.ServiceOrdersPlannedResourceUpdate,
     AUTHZ_ACTIONS.ServiceOrdersExecutionRead,
     AUTHZ_ACTIONS.ServiceOrdersExecutionStart,
     AUTHZ_ACTIONS.ServiceOrdersExecutionPause,
@@ -366,5 +367,294 @@ describe('Service order execution PostgreSQL integration', () => {
     const actions = audit.rows.map((row) => row.action);
     expect(actions).toContain(SECURITY_AUDIT_ACTIONS.ServiceOrdersExecutionStart);
     expect(actions).toContain(SECURITY_AUDIT_ACTIONS.ServiceOrdersExecutionComplete);
+  });
+
+  it('rejects execution transitions from invalid states', async () => {
+    const { actor } = await seedActor();
+    const { released } = await seedReleasedOrder(actor);
+
+    const draftOrder = await serviceOrdersAccess.create(actor, {
+      origin: SERVICE_ORDER_ORIGINS.AuthorizedDirect,
+      unitId: UNIT_A,
+      description: 'OS em rascunho',
+    });
+
+    await expect(
+      executionAccess.start(actor, draftOrder.id, { rowVersion: draftOrder.rowVersion }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.INVALID_STATE });
+
+    await expect(
+      executionAccess.pause(actor, released.id, { rowVersion: released.rowVersion }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.INVALID_STATE });
+
+    const started = await executionAccess.start(actor, released.id, { rowVersion: released.rowVersion });
+    await expect(
+      executionAccess.start(actor, started.id, { rowVersion: started.rowVersion }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.INVALID_STATE });
+    await expect(
+      executionAccess.resume(actor, started.id, { rowVersion: started.rowVersion }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.INVALID_STATE });
+    await expect(
+      serviceOrdersAccess.cancel(actor, started.id, {
+        rowVersion: started.rowVersion,
+        cancellationReason: 'Tentativa inválida',
+      }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.INVALID_STATE });
+
+    await executionAccess.recordObservation(actor, started.id, {
+      rowVersion: started.rowVersion,
+      text: 'Evidência antes da pausa.',
+    });
+    const withEvidence = await serviceOrdersAccess.getById(actor, started.id);
+    await executionAccess.recordQuantity(actor, withEvidence.id, {
+      rowVersion: withEvidence.rowVersion,
+      quantityValue: '1',
+      unitCode: 'SERVICE',
+    });
+    const readyToPause = await serviceOrdersAccess.getById(actor, started.id);
+    const paused = await executionAccess.pause(actor, readyToPause.id, {
+      rowVersion: readyToPause.rowVersion,
+    });
+    await expect(
+      executionAccess.complete(actor, paused.id, { rowVersion: paused.rowVersion }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.INVALID_STATE });
+  });
+
+  it('records security audit for pause and resume', async () => {
+    const { actor } = await seedActor();
+    const { released } = await seedReleasedOrder(actor);
+    const started = await executionAccess.start(actor, released.id, { rowVersion: released.rowVersion });
+    const paused = await executionAccess.pause(actor, started.id, { rowVersion: started.rowVersion });
+    await executionAccess.resume(actor, paused.id, { rowVersion: paused.rowVersion });
+
+    const audit = await pool.query<{ action: string }>(
+      `SELECT action FROM audit.security_audit_events WHERE resource_id = $1 ORDER BY occurred_at ASC`,
+      [released.id],
+    );
+    const actions = audit.rows.map((row) => row.action);
+    expect(actions).toContain(SECURITY_AUDIT_ACTIONS.ServiceOrdersExecutionPause);
+    expect(actions).toContain(SECURITY_AUDIT_ACTIONS.ServiceOrdersExecutionResume);
+  });
+
+  it('returns VERSION_CONFLICT on stale pause rowVersion', async () => {
+    const { actor } = await seedActor();
+    const { released } = await seedReleasedOrder(actor);
+    const started = await executionAccess.start(actor, released.id, { rowVersion: released.rowVersion });
+
+    await executionAccess.recordObservation(actor, started.id, {
+      rowVersion: started.rowVersion,
+      text: 'Registro concorrente.',
+    });
+
+    await expect(
+      executionAccess.pause(actor, started.id, { rowVersion: started.rowVersion }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.VERSION_CONFLICT });
+  });
+
+  it('rejects cancel and complete from terminal COMPLETED', async () => {
+    const { actor } = await seedActor();
+    const { released } = await seedReleasedOrder(actor);
+    const started = await executionAccess.start(actor, released.id, { rowVersion: released.rowVersion });
+
+    await executionAccess.recordObservation(actor, started.id, {
+      rowVersion: started.rowVersion,
+      text: 'Evidência mínima.',
+    });
+    const mid = await serviceOrdersAccess.getById(actor, started.id);
+    await executionAccess.recordQuantity(actor, mid.id, {
+      rowVersion: mid.rowVersion,
+      quantityValue: '1',
+      unitCode: 'SERVICE',
+    });
+    const ready = await serviceOrdersAccess.getById(actor, started.id);
+    const completed = await executionAccess.complete(actor, ready.id, { rowVersion: ready.rowVersion });
+
+    await expect(
+      serviceOrdersAccess.cancel(actor, completed.id, {
+        rowVersion: completed.rowVersion,
+        cancellationReason: 'Tarde demais',
+      }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.INVALID_STATE });
+
+    await expect(
+      executionAccess.complete(actor, completed.id, { rowVersion: completed.rowVersion }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.INVALID_STATE });
+  });
+
+  it('resolves pause versus complete race deterministically', async () => {
+    const { actor } = await seedActor();
+    const { released } = await seedReleasedOrder(actor);
+    const started = await executionAccess.start(actor, released.id, { rowVersion: released.rowVersion });
+
+    await executionAccess.recordObservation(actor, started.id, {
+      rowVersion: started.rowVersion,
+      text: 'Evidência para conclusão.',
+    });
+    const mid = await serviceOrdersAccess.getById(actor, started.id);
+    await executionAccess.recordQuantity(actor, mid.id, {
+      rowVersion: mid.rowVersion,
+      quantityValue: '1',
+      unitCode: 'SERVICE',
+    });
+    const ready = await serviceOrdersAccess.getById(actor, started.id);
+
+    const results = await Promise.allSettled([
+      executionAccess.pause(actor, ready.id, { rowVersion: ready.rowVersion }),
+      executionAccess.complete(actor, ready.id, { rowVersion: ready.rowVersion }),
+    ]);
+
+    const fulfilled = results.filter((result) => result.status === 'fulfilled');
+    const rejected = results.filter((result) => result.status === 'rejected');
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+
+    const current = await serviceOrdersAccess.getById(actor, released.id);
+    expect([SERVICE_ORDER_STATUSES.Paused, SERVICE_ORDER_STATUSES.Completed]).toContain(current.status);
+  });
+
+  it('exposes planned versus actual comparison without mutating execution entries', async () => {
+    const { actor } = await seedActor();
+    const { released } = await seedReleasedOrder(actor);
+    const started = await executionAccess.start(actor, released.id, { rowVersion: released.rowVersion });
+    await executionAccess.recordObservation(actor, started.id, {
+      rowVersion: started.rowVersion,
+      text: 'Observacao inicial.',
+    });
+    const afterObservation = await serviceOrdersAccess.getById(actor, started.id);
+    await executionAccess.recordQuantity(actor, afterObservation.id, {
+      rowVersion: afterObservation.rowVersion,
+      quantityValue: '1',
+      unitCode: 'SERVICE',
+    });
+
+    const bundle = await executionAccess.getExecution(actor, started.id);
+    const quantityRow = bundle.comparison.quantities.find((row) => row.unitCode === 'SERVICE');
+    expect(quantityRow?.actualQuantity).toBe('1');
+    expect(quantityRow?.plannedQuantity).toBeTruthy();
+    expect(bundle.comparison.entryCount).toBe(2);
+    expect(bundle.entries).toHaveLength(2);
+  });
+
+  it('preserves immutable execution facts when planning changes during IN_EXECUTION', async () => {
+    const { actor } = await seedActor();
+    const { released } = await seedReleasedOrder(actor);
+    const started = await executionAccess.start(actor, released.id, { rowVersion: released.rowVersion });
+    await executionAccess.recordObservation(actor, started.id, {
+      rowVersion: started.rowVersion,
+      text: 'Fato registrado antes do replanejamento.',
+    });
+    const afterRecord = await serviceOrdersAccess.getById(actor, started.id);
+    const entriesBefore = await pool.query<{ id: string; text_value: string | null }>(
+      `SELECT id, text_value FROM so.execution_entries WHERE service_order_id = $1 ORDER BY recorded_at ASC`,
+      [started.id],
+    );
+
+    const labor = (await planningAccess.listPlannedResources(actor, started.id)).find(
+      (item) => item.laborTypeCode === 'DRIVER',
+    );
+    expect(labor).toBeDefined();
+    await planningAccess.updatePlannedResource(actor, started.id, labor!.id, {
+      rowVersion: labor!.rowVersion,
+      plannedQuantity: '3',
+      notes: 'Reforco operacional',
+    });
+
+    const entriesAfter = await pool.query<{ id: string; text_value: string | null }>(
+      `SELECT id, text_value FROM so.execution_entries WHERE service_order_id = $1 ORDER BY recorded_at ASC`,
+      [started.id],
+    );
+    expect(entriesAfter.rows.map((row) => row.id)).toEqual(entriesBefore.rows.map((row) => row.id));
+    expect(entriesAfter.rows[0]?.text_value).toBe('Fato registrado antes do replanejamento.');
+
+    const bundle = await executionAccess.getExecution(actor, afterRecord.id);
+    expect(bundle.comparison.entryCount).toBe(1);
+    expect(bundle.entries[0]?.textValue).toBe('Fato registrado antes do replanejamento.');
+    expect(bundle.comparison.resources.some(
+      (row) => row.code === 'DRIVER' && Number(row.plannedQuantity) === 3,
+    )).toBe(true);
+  });
+
+  it('records occurrences as actual facts independent from planning', async () => {
+    const { actor } = await seedActor();
+    const { released } = await seedReleasedOrder(actor);
+    const started = await executionAccess.start(actor, released.id, { rowVersion: released.rowVersion });
+    const recorded = await executionAccess.recordOccurrence(actor, started.id, {
+      rowVersion: started.rowVersion,
+      occurrenceCode: 'WEATHER_DELAY',
+      description: 'Chuva forte interrompeu a frente.',
+    });
+    expect(recorded.occurrence.occurrenceCode).toBe('WEATHER_DELAY');
+
+    const bundle = await executionAccess.getExecution(actor, started.id);
+    expect(bundle.occurrences).toHaveLength(1);
+    expect(bundle.comparison.occurrenceCount).toBe(1);
+  });
+
+  it('rejects recording execution facts from RELEASED and COMPLETED states', async () => {
+    const { actor } = await seedActor();
+    const { released } = await seedReleasedOrder(actor);
+
+    await expect(
+      executionAccess.recordObservation(actor, released.id, {
+        rowVersion: released.rowVersion,
+        text: 'Nao deveria registrar em RELEASED.',
+      }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.INVALID_STATE });
+
+    const started = await executionAccess.start(actor, released.id, { rowVersion: released.rowVersion });
+    await executionAccess.recordObservation(actor, started.id, {
+      rowVersion: started.rowVersion,
+      text: 'Evidencia minima.',
+    });
+    const mid = await serviceOrdersAccess.getById(actor, started.id);
+    await executionAccess.recordQuantity(actor, mid.id, {
+      rowVersion: mid.rowVersion,
+      quantityValue: '1',
+      unitCode: 'SERVICE',
+    });
+    const ready = await serviceOrdersAccess.getById(actor, started.id);
+    const completed = await executionAccess.complete(actor, ready.id, { rowVersion: ready.rowVersion });
+
+    await expect(
+      executionAccess.recordQuantity(actor, completed.id, {
+        rowVersion: completed.rowVersion,
+        quantityValue: '2',
+        unitCode: 'SERVICE',
+      }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.INVALID_STATE });
+  });
+
+  it('resolves record versus complete race deterministically', async () => {
+    const { actor } = await seedActor();
+    const { released } = await seedReleasedOrder(actor);
+    const started = await executionAccess.start(actor, released.id, { rowVersion: released.rowVersion });
+
+    await executionAccess.recordObservation(actor, started.id, {
+      rowVersion: started.rowVersion,
+      text: 'Evidencia para conclusao.',
+    });
+    const mid = await serviceOrdersAccess.getById(actor, started.id);
+    await executionAccess.recordQuantity(actor, mid.id, {
+      rowVersion: mid.rowVersion,
+      quantityValue: '1',
+      unitCode: 'SERVICE',
+    });
+    const ready = await serviceOrdersAccess.getById(actor, started.id);
+
+    const results = await Promise.allSettled([
+      executionAccess.recordObservation(actor, ready.id, {
+        rowVersion: ready.rowVersion,
+        text: 'Registro concorrente.',
+      }),
+      executionAccess.complete(actor, ready.id, { rowVersion: ready.rowVersion }),
+    ]);
+
+    const fulfilled = results.filter((result) => result.status === 'fulfilled');
+    const rejected = results.filter((result) => result.status === 'rejected');
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+
+    const bundle = await executionAccess.getExecution(actor, released.id);
+    expect(bundle.comparison.entryCount).toBeGreaterThanOrEqual(2);
   });
 });

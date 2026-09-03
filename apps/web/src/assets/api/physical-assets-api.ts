@@ -3,11 +3,14 @@ import { tokenStore } from '../../auth/storage/token-store';
 import {
   ASSET_ERROR_CODES,
   type AssetErrorCode,
+  VEHICLE_CLASSIFICATION,
   type AssetAllocationStatus,
   type AssetLifecycleStatus,
+  type AssetOperationalAvailability,
   type CreatePhysicalAssetPayload,
   type PhysicalAsset,
   type PhysicalAssetListResponse,
+  type PhysicalAssetListSummary,
   type PhysicalResourceTypeOption,
   type UpdatePhysicalAssetPayload,
 } from '../types/physical-asset.types';
@@ -118,7 +121,10 @@ export type ListPhysicalAssetsParams = {
   offset: number;
   lifecycleStatus?: AssetLifecycleStatus;
   allocationStatus?: AssetAllocationStatus;
+  availability?: AssetOperationalAvailability;
   resourceTypeId?: string;
+  classification?: typeof VEHICLE_CLASSIFICATION;
+  q?: string;
 };
 
 export function buildListPhysicalAssetsQuery(params: ListPhysicalAssetsParams): string {
@@ -131,8 +137,17 @@ export function buildListPhysicalAssetsQuery(params: ListPhysicalAssetsParams): 
   if (params.allocationStatus) {
     search.set('allocationStatus', params.allocationStatus);
   }
+  if (params.availability) {
+    search.set('availability', params.availability);
+  }
   if (params.resourceTypeId) {
     search.set('resourceTypeId', params.resourceTypeId);
+  }
+  if (params.classification) {
+    search.set('classification', params.classification);
+  }
+  if (params.q?.trim()) {
+    search.set('q', params.q.trim());
   }
   return search.toString();
 }
@@ -143,6 +158,35 @@ export async function listPhysicalAssets(
 ): Promise<PhysicalAssetListResponse> {
   const query = buildListPhysicalAssetsQuery(params);
   return requestJson<PhysicalAssetListResponse>(`/api/v1/resources/physical-assets?${query}`, {
+    method: 'GET',
+    headers: authHeaders(),
+    signal,
+  });
+}
+
+export type PhysicalAssetSummaryParams = {
+  resourceTypeId?: string;
+  classification?: typeof VEHICLE_CLASSIFICATION;
+};
+
+export function buildPhysicalAssetSummaryQuery(params: PhysicalAssetSummaryParams): string {
+  const search = new URLSearchParams();
+  if (params.resourceTypeId) {
+    search.set('resourceTypeId', params.resourceTypeId);
+  }
+  if (params.classification) {
+    search.set('classification', params.classification);
+  }
+  return search.toString();
+}
+
+export async function getPhysicalAssetSummary(
+  params: PhysicalAssetSummaryParams = {},
+  signal?: AbortSignal,
+): Promise<PhysicalAssetListSummary> {
+  const query = buildPhysicalAssetSummaryQuery(params);
+  const suffix = query.length > 0 ? `?${query}` : '';
+  return requestJson<PhysicalAssetListSummary>(`/api/v1/resources/physical-assets/summary${suffix}`, {
     method: 'GET',
     headers: authHeaders(),
     signal,

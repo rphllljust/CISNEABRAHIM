@@ -18,9 +18,11 @@ import {
   MEASUREMENT_COMMANDS,
   MEASUREMENT_STATUSES,
   MeasurementError,
+  assertMeasurementEditable,
   type CommercialPricingLineSnapshot,
   type MeasurementCommercialReferenceSnapshot,
 } from '../domain/measurement';
+import { assertExecutionEntriesAvailableForMeasurement } from '../domain/measurement-invariants';
 import { computeLineAmount } from '../domain/measurement-quantity';
 import { assertTransition, MeasurementStateError } from '../domain/measurement.state-machine';
 import {
@@ -103,6 +105,20 @@ export class MeasurementsAccessService {
 
     const commercialSnapshot = await this.commercialResolution.buildCommercialSnapshot(order);
     const items = await this.commercialResolution.buildItemsFromExecution(order, commercialSnapshot);
+    const lockedEntryIds = await this.measurementsRepository.listApprovedMeasurementExecutionEntryIds(
+      order.id,
+    );
+    try {
+      assertExecutionEntriesAvailableForMeasurement(
+        items.map((item) => item.sourceExecutionEntryId),
+        lockedEntryIds,
+      );
+    } catch (error) {
+      if (error instanceof MeasurementError) {
+        throw mapMeasurementDomainError(error);
+      }
+      throw error;
+    }
 
     const result = await this.measurementsRepository.createMeasurement({
       serviceOrderId: order.id,
@@ -135,6 +151,15 @@ export class MeasurementsAccessService {
       AUTHZ_ACTIONS.MeasurementsMeasurementUpdate,
     );
     const measurement = await this.requireMeasurementForOrder(measurementId, order.id);
+    try {
+      assertMeasurementEditable(measurement.status);
+    } catch (error) {
+      if (error instanceof MeasurementError) {
+        throw mapMeasurementDomainError(error);
+      }
+      throw error;
+    }
+
     let validated: RowVersionCommandInput;
     try {
       validated = validateRowVersionCommandInput(input);
@@ -144,6 +169,20 @@ export class MeasurementsAccessService {
 
     const commercialSnapshot = measurement.commercial_reference_snapshot as MeasurementCommercialReferenceSnapshot;
     const items = await this.commercialResolution.buildItemsFromExecution(order, commercialSnapshot);
+    const lockedEntryIds = await this.measurementsRepository.listApprovedMeasurementExecutionEntryIds(
+      order.id,
+    );
+    try {
+      assertExecutionEntriesAvailableForMeasurement(
+        items.map((item) => item.sourceExecutionEntryId),
+        lockedEntryIds,
+      );
+    } catch (error) {
+      if (error instanceof MeasurementError) {
+        throw mapMeasurementDomainError(error);
+      }
+      throw error;
+    }
 
     const result = await this.measurementsRepository.regenerateItems({
       measurementId: measurement.id,
@@ -181,6 +220,14 @@ export class MeasurementsAccessService {
       AUTHZ_ACTIONS.MeasurementsMeasurementUpdate,
     );
     const measurement = await this.requireMeasurementForOrder(measurementId, order.id);
+    try {
+      assertMeasurementEditable(measurement.status);
+    } catch (error) {
+      if (error instanceof MeasurementError) {
+        throw mapMeasurementDomainError(error);
+      }
+      throw error;
+    }
     const items = await this.measurementsRepository.listItems(measurement.id);
     const item = items.find((row) => row.id === itemId);
     if (!item) {
@@ -266,6 +313,14 @@ export class MeasurementsAccessService {
       AUTHZ_ACTIONS.MeasurementsMeasurementUpdate,
     );
     const measurement = await this.requireMeasurementForOrder(measurementId, order.id);
+    try {
+      assertMeasurementEditable(measurement.status);
+    } catch (error) {
+      if (error instanceof MeasurementError) {
+        throw mapMeasurementDomainError(error);
+      }
+      throw error;
+    }
 
     let validated: AuthorizeMeasurementAdjustmentInput;
     try {

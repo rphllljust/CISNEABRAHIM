@@ -495,4 +495,98 @@ describe('Measurements PostgreSQL integration', () => {
     expect(snapPrice).toBe(originalPrice);
     expect(snapPrice).not.toBe('9999.0000');
   });
+
+  async function seedApprovedMeasurement(actor: { identityId: string; sessionId: string }) {
+    const { completed } = await seedCompletedOrder(actor);
+    const measurement = await measurementsAccess.create(actor, completed.id);
+    const submitted = await measurementsAccess.submit(actor, completed.id, measurement.id, {
+      rowVersion: measurement.rowVersion,
+    });
+    const reviewed = await measurementsAccess.startReview(actor, completed.id, measurement.id, {
+      rowVersion: submitted.rowVersion,
+    });
+    const login = normalizeLoginIdentifier(`msr-reviewer-${crypto.randomUUID()}@cisne.invalid`);
+    const passwordHash = await hashPassword(AUTH_TEST_PASSWORD);
+    const { identityId: reviewerId } = await insertIdentity(pool, login, passwordHash);
+    await grantMeasurementAdmin(pool, reviewerId, actor.identityId);
+    const reviewer = { identityId: reviewerId, sessionId: 'sid-reviewer' };
+    const approved = await measurementsAccess.approve(reviewer, completed.id, measurement.id, {
+      rowVersion: reviewed.rowVersion,
+    });
+    return { completed, measurement: approved };
+  }
+
+  it('rejects duplicate active measurement for the same service order', async () => {
+    const { actor } = await seedActor();
+    const { completed } = await seedCompletedOrder(actor);
+    await measurementsAccess.create(actor, completed.id);
+    await expect(measurementsAccess.create(actor, completed.id)).rejects.toMatchObject({
+      code: MEASUREMENTS_ERROR_CODES.MEASUREMENT_ALREADY_EXISTS,
+    });
+  });
+
+  it('preserves commercial linkage with service order period and contract reference', async () => {
+    const { actor } = await seedActor();
+    const { completed } = await seedCompletedOrder(actor);
+    await pool.query(
+      `UPDATE so.service_orders
+       SET contract_reference = $2,
+           contract_snapshot = $3::jsonb
+       WHERE id = $1`,
+      [completed.id, 'CTR-2026-001', JSON.stringify({ paymentTerms: '30 DDL' })],
+    );
+    const measurement = await measurementsAccess.create(actor, completed.id);
+    const snapshot = measurement.commercialReferenceSnapshot as {
+      contractReference?: string;
+      servicePeriod?: { startedAt: string | null; completedAt: string | null };
+      serviceDefinitionVersionId?: string;
+    };
+    expect(snapshot.contractReference).toBe('CTR-2026-001');
+    expect(snapshot.servicePeriod?.completedAt).toBeTruthy();
+    expect(snapshot.serviceDefinitionVersionId).toBe(completed.serviceDefinitionVersionId);
+    expect(measurement.serviceOrderId).toBe(completed.id);
+  });
+
+  it('rejects silent edits on approved measurement', async () => {
+    const { actor } = await seedActor();
+    const { completed, measurement } = await seedApprovedMeasurement(actor);
+    const item = measurement.items[0]!;
+
+    await expect(
+      measurementsAccess.updateItem(actor, completed.id, measurement.id, item.id, {
+        rowVersion: measurement.rowVersion,
+        measuredQuantity: '2',
+      }),
+    ).rejects.toMatchObject({ code: MEASUREMENTS_ERROR_CODES.NOT_EDITABLE });
+
+    await expect(
+      measurementsAccess.regenerate(actor, completed.id, measurement.id, {
+        rowVersion: measurement.rowVersion,
+      }),
+    ).rejects.toMatchObject({ code: MEASUREMENTS_ERROR_CODES.NOT_EDITABLE });
+
+    await expect(
+      measurementsAccess.authorizeAdjustment(actor, completed.id, measurement.id, {
+        rowVersion: measurement.rowVersion,
+        measurementItemId: item.id,
+        adjustmentQuantity: '1',
+        reason: 'Tentativa invalida apos aprovacao.',
+      }),
+    ).rejects.toMatchObject({ code: MEASUREMENTS_ERROR_CODES.NOT_EDITABLE });
+  });
+
+  it('derives billable items from actual execution entries with traceable origin', async () => {
+    const { actor } = await seedActor();
+    const { completed, unitCode } = await seedCompletedOrder(actor, {
+      unitCode: 'M3',
+      quantityValue: '12.5',
+    });
+    const measurement = await measurementsAccess.create(actor, completed.id);
+    const item = measurement.items[0]!;
+    expect(item.sourceExecutionEntryId).toBeTruthy();
+    expect(item.actualQuantity).toBe('12.5');
+    expect(item.measuredQuantity).toBe('12.5');
+    expect(item.unitCode).toBe(unitCode);
+    expect(item.lineAmount).toBeTruthy();
+  });
 });

@@ -4,6 +4,7 @@ import { createCatalogFetchMock } from './catalog-fetch-mock';
 import {
   ASSET_ALLOCATION_STATUSES,
   ASSET_LIFECYCLE_STATUSES,
+  ASSET_OPERATIONAL_AVAILABILITIES,
   VEHICLE_CLASSIFICATION,
   type PhysicalAsset,
 } from '../assets/types/physical-asset.types';
@@ -61,8 +62,69 @@ export function createAssetsFetchMock(options: AssetsFetchMockOptions = {}) {
       updatedAt: '2026-01-01T00:00:00.000Z',
       deactivatedAt: null,
       vehicle: { plate: 'DEM-0A12', chassis: 'CH-001', model: 'Volvo' },
+      currentAllocation: null,
     },
   ];
+
+  function filterAssets(searchParams: URLSearchParams): PhysicalAsset[] {
+    let items = [...store];
+    const lifecycleStatus = searchParams.get('lifecycleStatus');
+    const availability = searchParams.get('availability');
+    const resourceTypeId = searchParams.get('resourceTypeId');
+    const classification = searchParams.get('classification');
+    const q = searchParams.get('q')?.trim().toLowerCase();
+
+    if (classification) {
+      items = items.filter((asset) => asset.resourceTypeClassification === classification);
+    }
+    if (lifecycleStatus) {
+      items = items.filter((asset) => asset.lifecycleStatus === lifecycleStatus);
+    }
+    if (resourceTypeId) {
+      items = items.filter((asset) => asset.resourceTypeId === resourceTypeId);
+    }
+    if (availability === ASSET_OPERATIONAL_AVAILABILITIES.Available) {
+      items = items.filter(
+        (asset) =>
+          asset.lifecycleStatus === ASSET_LIFECYCLE_STATUSES.Active &&
+          asset.allocationStatus === ASSET_ALLOCATION_STATUSES.Available,
+      );
+    } else if (availability === ASSET_OPERATIONAL_AVAILABILITIES.Allocated) {
+      items = items.filter((asset) => asset.allocationStatus === ASSET_ALLOCATION_STATUSES.Allocated);
+    } else if (availability === ASSET_OPERATIONAL_AVAILABILITIES.Unavailable) {
+      items = items.filter((asset) => asset.lifecycleStatus === ASSET_LIFECYCLE_STATUSES.Inactive);
+    }
+    if (q) {
+      items = items.filter((asset) => {
+        if (asset.assetCode.toLowerCase().includes(q)) {
+          return true;
+        }
+        if (asset.name.toLowerCase().includes(q)) {
+          return true;
+        }
+        if (asset.vehicle?.plate.toLowerCase().includes(q)) {
+          return true;
+        }
+        return false;
+      });
+    }
+    return items;
+  }
+
+  function buildSummary(items: PhysicalAsset[]) {
+    return {
+      total: items.length,
+      available: items.filter(
+        (asset) =>
+          asset.lifecycleStatus === ASSET_LIFECYCLE_STATUSES.Active &&
+          asset.allocationStatus === ASSET_ALLOCATION_STATUSES.Available,
+      ).length,
+      allocated: items.filter((asset) => asset.allocationStatus === ASSET_ALLOCATION_STATUSES.Allocated)
+        .length,
+      unavailable: items.filter((asset) => asset.lifecycleStatus === ASSET_LIFECYCLE_STATUSES.Inactive)
+        .length,
+    };
+  }
 
   const resourceTypes = {
     items: [
@@ -114,16 +176,26 @@ export function createAssetsFetchMock(options: AssetsFetchMockOptions = {}) {
       return assetError('AUTH_UNAUTHORIZED', 401);
     }
 
+    if (pathname === '/api/v1/resources/physical-assets/summary' && method === 'GET') {
+      if (!listAllowed) {
+        return assetError('ASSET_DENIED', 403);
+      }
+      const filtered = filterAssets(searchParams);
+      return jsonResponse(buildSummary(filtered));
+    }
+
     if (pathname === '/api/v1/resources/physical-assets' && method === 'GET') {
       if (!listAllowed) {
         return assetError('ASSET_DENIED', 403);
       }
       const limit = Number(searchParams.get('limit') ?? '20');
       const offset = Number(searchParams.get('offset') ?? '0');
+      const filtered = filterAssets(searchParams);
       return jsonResponse({
-        items: store.slice(offset, offset + limit),
+        items: filtered.slice(offset, offset + limit),
         limit,
         offset,
+        total: filtered.length,
       });
     }
 
@@ -169,6 +241,7 @@ export function createAssetsFetchMock(options: AssetsFetchMockOptions = {}) {
               model: body.vehicle?.model ?? null,
             }
           : null,
+        currentAllocation: null,
       };
       store.push(created);
       return jsonResponse(created, 201);

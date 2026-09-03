@@ -16,6 +16,7 @@ import type { AccessTokenClaims } from '../../auth/services/token.service';
 import {
   parseCreatePhysicalAssetInput,
   parseListPhysicalAssetsQuery,
+  parsePhysicalAssetSummaryQuery,
   parsePhysicalAssetTransitionInput,
   parseUpdatePhysicalAssetInput,
 } from '../dto/physical-assets.dto';
@@ -37,6 +38,12 @@ export class PhysicalAssetsController {
   list(@CurrentAuth() auth: AccessTokenClaims, @Query() query: Record<string, unknown>) {
     const parsed = parseListPhysicalAssetsQuery(query);
     return this.assetsAccess.list({ identityId: auth.sub, sessionId: auth.sid }, parsed);
+  }
+
+  @Get('summary')
+  summary(@CurrentAuth() auth: AccessTokenClaims, @Query() query: Record<string, unknown>) {
+    const parsed = parsePhysicalAssetSummaryQuery(query);
+    return this.assetsAccess.summary({ identityId: auth.sub, sessionId: auth.sid }, parsed);
   }
 
   @Get(':assetId')

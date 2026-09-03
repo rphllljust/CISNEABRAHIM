@@ -5,14 +5,56 @@ import { queryIsUnitRegistered } from '../../infrastructure/database/reference-l
 import { orderByCreatedAtDesc } from '../../infrastructure/database/sql';
 import { isIdempotencyKeyViolation } from '../../infrastructure/database/pg-unique-violation';
 import { OutboxDomainEventWriter } from '../../platform/outbox/services/outbox-domain-event.writer';
-import { SERVICE_REQUEST_STATUSES } from '../domain/service-request';
+import { SERVICE_REQUEST_HISTORY_EVENTS, SERVICE_REQUEST_STATUSES } from '../domain/service-request';
+import { historyEventTypeForTransition } from '../domain/service-request.state-machine';
+import { insertServiceRequestHistoryEvent } from './service-request-history-rows';
 import type {
   CreateServiceRequestPersistenceInput,
   ServiceRequestDocumentLinkRow,
+  ServiceRequestHistoryEventRow,
   ServiceRequestRow,
   TransitionServiceRequestPersistenceInput,
   UpdateServiceRequestDraftPersistenceInput,
 } from './service-requests.repository.types';
+
+export type ServiceRequestListSummaryCounts = {
+  total: number;
+  pending: number;
+  underReview: number;
+  converted: number;
+  cancelled: number;
+};
+
+function buildServiceRequestListSummarySelectSql(): string {
+  const submitted = SERVICE_REQUEST_STATUSES.Submitted;
+  const underReview = SERVICE_REQUEST_STATUSES.UnderReview;
+  const converted = SERVICE_REQUEST_STATUSES.Converted;
+  const cancelled = SERVICE_REQUEST_STATUSES.Cancelled;
+
+  return [
+    'COUNT(*)::int AS total,',
+    `COUNT(*) FILTER (WHERE status = '${submitted}'::sr.service_request_status)::int AS pending,`,
+    `COUNT(*) FILTER (WHERE status = '${underReview}'::sr.service_request_status)::int AS under_review,`,
+    `COUNT(*) FILTER (WHERE status = '${converted}'::sr.service_request_status)::int AS converted,`,
+    `COUNT(*) FILTER (WHERE status = '${cancelled}'::sr.service_request_status)::int AS cancelled`,
+  ].join('\n    ');
+}
+
+function mapServiceRequestListSummaryRow(row: {
+  total: number;
+  pending: number;
+  under_review: number;
+  converted: number;
+  cancelled: number;
+}): ServiceRequestListSummaryCounts {
+  return {
+    total: row.total,
+    pending: row.pending,
+    underReview: row.under_review,
+    converted: row.converted,
+    cancelled: row.cancelled,
+  };
+}
 
 const SR_SELECT = `
   SELECT
@@ -51,7 +93,7 @@ export class ServiceRequestsRepository {
 
   async findClientById(clientId: string): Promise<{ id: string; status: string } | null> {
     const result = await this.pool().query<{ id: string; status: string }>(
-      `SELECT id, status::text AS status FROM pty.clients WHERE id = $1`,
+      `SELECT id, status::text AS status FROM rpt.read_clients WHERE id = $1`,
       [clientId],
     );
     return result.rows[0] ?? null;
@@ -59,7 +101,7 @@ export class ServiceRequestsRepository {
 
   async findDocumentById(documentId: string): Promise<{ id: string; unit_id: string } | null> {
     const result = await this.pool().query<{ id: string; unit_id: string }>(
-      `SELECT id, unit_id FROM doc.documents WHERE id = $1`,
+      `SELECT id, unit_id FROM rpt.read_documents WHERE id = $1`,
       [documentId],
     );
     return result.rows[0] ?? null;
@@ -69,7 +111,7 @@ export class ServiceRequestsRepository {
     proposalId: string,
   ): Promise<{ id: string; unit_id: string; client_id: string } | null> {
     const result = await this.pool().query<{ id: string; unit_id: string; client_id: string }>(
-      `SELECT id, unit_id, client_id FROM com.proposals WHERE id = $1`,
+      `SELECT id, unit_id, client_id FROM rpt.read_proposals WHERE id = $1`,
       [proposalId],
     );
     return result.rows[0] ?? null;
@@ -85,7 +127,7 @@ export class ServiceRequestsRepository {
       status: string;
     }>(
       `SELECT id, unit_id, client_id, status::text AS status
-       FROM com.purchase_orders
+       FROM rpt.read_purchase_orders
        WHERE id = $1`,
       [purchaseOrderId],
     );
@@ -141,6 +183,24 @@ export class ServiceRequestsRepository {
     return result.rows;
   }
 
+  async countListSummary(whereClause: string, params: unknown[]): Promise<ServiceRequestListSummaryCounts> {
+    const selectSql = buildServiceRequestListSummarySelectSql();
+    const result = await this.pool().query<{
+      total: number;
+      pending: number;
+      under_review: number;
+      converted: number;
+      cancelled: number;
+    }>(`SELECT ${selectSql} FROM sr.service_requests WHERE ${whereClause}`, params);
+    return mapServiceRequestListSummaryRow(result.rows[0] ?? {
+      total: 0,
+      pending: 0,
+      under_review: 0,
+      converted: 0,
+      cancelled: 0,
+    });
+  }
+
   async listDocumentLinks(serviceRequestId: string): Promise<ServiceRequestDocumentLinkRow[]> {
     const result = await this.pool().query<ServiceRequestDocumentLinkRow>(
       `SELECT id, service_request_id, document_id, link_purpose, created_at
@@ -152,8 +212,22 @@ export class ServiceRequestsRepository {
     return result.rows;
   }
 
+  async listHistoryEvents(serviceRequestId: string): Promise<ServiceRequestHistoryEventRow[]> {
+    const result = await this.pool().query<ServiceRequestHistoryEventRow>(
+      `SELECT id, service_request_id, event_type, occurred_at, actor_identity_id, payload
+       FROM sr.service_request_history_events
+       WHERE service_request_id = $1
+       ORDER BY occurred_at ASC, id ASC`,
+      [serviceRequestId],
+    );
+    return result.rows;
+  }
+
   async create(input: CreateServiceRequestPersistenceInput): Promise<ServiceRequestRow> {
-    const result = await this.pool().query<ServiceRequestRow>(
+    const client = await this.pool().connect();
+    try {
+      await client.query('BEGIN');
+      const result = await client.query<ServiceRequestRow>(
       `INSERT INTO sr.service_requests (
          request_code, unit_id, origin_source, external_contact, external_origin_reference,
          client_id, service_definition_id, service_definition_version_id, description, location,
@@ -200,9 +274,23 @@ export class ServiceRequestsRepository {
     );
     const row = result.rows[0];
     if (!row) {
+      await client.query('ROLLBACK');
       throw new Error('SERVICE_REQUEST_CREATE_FAILED');
     }
+    await insertServiceRequestHistoryEvent(client, {
+      serviceRequestId: row.id,
+      eventType: SERVICE_REQUEST_HISTORY_EVENTS.Created,
+      actorIdentityId: input.actorIdentityId,
+      payload: { status: row.status },
+    });
+    await client.query('COMMIT');
     return row;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   async updateDraft(
@@ -331,6 +419,22 @@ export class ServiceRequestsRepository {
         return 'INVALID_STATE';
       }
       const updated = result.rows[0]!;
+      const transitionEventType =
+        input.transitionField === 'convert'
+          ? SERVICE_REQUEST_HISTORY_EVENTS.Converted
+          : historyEventTypeForTransition(input.transitionField);
+      await insertServiceRequestHistoryEvent(client, {
+        serviceRequestId: updated.id,
+        eventType: transitionEventType,
+        actorIdentityId: input.actorIdentityId,
+        payload: {
+          fromStatus: input.currentStatus,
+          toStatus: input.nextStatus,
+          priority: input.priority ?? null,
+          rejectionReason: input.rejectionReason ?? null,
+          cancellationReason: input.cancellationReason ?? null,
+        },
+      });
       if (input.transitionField === 'submit' && updated.submitted_at) {
         await this.outboxWriter.appendServiceRequestSubmitted(client, {
           serviceRequestId: updated.id,

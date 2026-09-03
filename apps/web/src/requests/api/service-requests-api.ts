@@ -6,6 +6,7 @@ import {
   type RequestErrorCode,
   type ServiceRequestDetail,
   type ServiceRequestListResponse,
+  type ServiceRequestListSummary,
   type ServiceRequestPriority,
   type ServiceRequestStatus,
   type UpdateServiceRequestDraftPayload,
@@ -110,6 +111,22 @@ export type ListServiceRequestsParams = {
   unitId?: string;
 };
 
+export type ServiceRequestSummaryParams = {
+  clientId?: string;
+  unitId?: string;
+};
+
+export function buildServiceRequestSummaryQuery(params: ServiceRequestSummaryParams): string {
+  const search = new URLSearchParams();
+  if (params.clientId) {
+    search.set('clientId', params.clientId);
+  }
+  if (params.unitId) {
+    search.set('unitId', params.unitId);
+  }
+  return search.toString();
+}
+
 export function buildListServiceRequestsQuery(params: ListServiceRequestsParams): string {
   const search = new URLSearchParams();
   search.set('limit', String(params.limit));
@@ -132,6 +149,19 @@ export async function listServiceRequests(
 ): Promise<ServiceRequestListResponse> {
   const query = buildListServiceRequestsQuery(params);
   return requestJson<ServiceRequestListResponse>(`/api/v1/requests/service-requests?${query}`, {
+    method: 'GET',
+    headers: authHeaders(),
+    signal,
+  });
+}
+
+export async function getServiceRequestSummary(
+  params: ServiceRequestSummaryParams = {},
+  signal?: AbortSignal,
+): Promise<ServiceRequestListSummary> {
+  const query = buildServiceRequestSummaryQuery(params);
+  const suffix = query ? `?${query}` : '';
+  return requestJson<ServiceRequestListSummary>(`/api/v1/requests/service-requests/summary${suffix}`, {
     method: 'GET',
     headers: authHeaders(),
     signal,

@@ -43,6 +43,13 @@ describe('execution-requirements', () => {
         },
       ],
       occurrences: [],
+      comparison: {
+        quantities: [],
+        resources: [],
+        periods: [],
+        occurrenceCount: 0,
+        entryCount: 1,
+      },
     });
 
     expect(satisfied.has('OBSERVATION')).toBe(true);

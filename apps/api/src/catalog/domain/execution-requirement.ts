@@ -8,7 +8,7 @@ import {
   isValidPhysicalResourceTypeCodeFormat,
   normalizePhysicalResourceTypeCode,
 } from '../../resources/domain/physical-resource-type';
-import type { RequirementLevel } from './service-catalog.validation';
+import type { RequirementLevel } from './requirement-level';
 
 export const EXECUTION_REQUIREMENT_TYPES = [
   'PHOTO',

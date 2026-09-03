@@ -307,12 +307,21 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
 
   function executionBundle(orderId: string) {
     const order = getOrder(orderId);
+    const bundleEntries = entries.get(orderId) ?? [];
+    const bundleOccurrences = occurrences.get(orderId) ?? [];
     return {
       serviceOrderId: orderId,
       status: order.status,
-      entries: entries.get(orderId) ?? [],
+      entries: bundleEntries,
       evidence: evidence.get(orderId) ?? [],
-      occurrences: occurrences.get(orderId) ?? [],
+      occurrences: bundleOccurrences,
+      comparison: {
+        quantities: [],
+        resources: [],
+        periods: [],
+        occurrenceCount: bundleOccurrences.length,
+        entryCount: bundleEntries.length,
+      },
     };
   }
 
@@ -350,6 +359,7 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
       updatedAt: '2026-01-01T00:00:00.000Z',
       deactivatedAt: null,
       vehicle: { plate: 'DEM-0A12', chassis: 'CH-001', model: 'Volvo' },
+      currentAllocation: null,
     },
     {
       id: MOCK_ASSET_B_ID,
@@ -366,6 +376,7 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
       updatedAt: '2026-01-01T00:00:00.000Z',
       deactivatedAt: null,
       vehicle: { plate: 'ALT-0B34', chassis: 'CH-002', model: 'Mercedes' },
+      currentAllocation: null,
     },
   ];
 
@@ -1225,6 +1236,7 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
         items: items.slice(offset, offset + limit),
         limit,
         offset,
+        total: items.length,
       });
     }
 
@@ -1247,8 +1259,15 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
       const filter = searchParams.get('filter');
       const q = searchParams.get('q');
       let items = [serviceOrderSummary(MOCK_SERVICE_ORDER_ID)];
-      if (status === 'COMPLETED') {
-        items = [];
+      if (status === 'active') {
+        const activeStatuses = new Set<string>([
+          SERVICE_ORDER_STATUSES.Released,
+          SERVICE_ORDER_STATUSES.InExecution,
+          SERVICE_ORDER_STATUSES.Paused,
+        ]);
+        items = items.filter((item) => activeStatuses.has(getOrder(item.id).status));
+      } else if (status) {
+        items = items.filter((item) => getOrder(item.id).status === status);
       }
       if (filter === 'overdue') {
         items = [serviceOrderSummary(MOCK_SERVICE_ORDER_ID)];

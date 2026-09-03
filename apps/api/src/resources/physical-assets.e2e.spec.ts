@@ -191,4 +191,87 @@ describe('Physical assets E2E', () => {
     expect(second.statusCode).toBe(409);
     expect(parseAssetError(second.body).error.code).toBe(ASSET_ERROR_CODES.CODE_CONFLICT);
   });
+
+  it('exposes summary and operational list filters over HTTP', async () => {
+    const { accessToken } = await loginWithAssetGrants();
+    const resourceTypeId = await truckTypeId();
+
+    const createPayload = {
+      resourceTypeId,
+      unitId: UNIT_A,
+      vehicle: { plate: 'AVL-1A23' },
+    };
+
+    const availableResponse = await app.inject({
+      method: 'POST',
+      url: '/api/v1/resources/physical-assets',
+      headers: { authorization: `Bearer ${accessToken}` },
+      payload: {
+        ...createPayload,
+        assetCode: 'HTTP-AVL',
+        name: 'Disponivel HTTP',
+      },
+    });
+    expect(availableResponse.statusCode).toBe(201);
+
+    const inactiveResponse = await app.inject({
+      method: 'POST',
+      url: '/api/v1/resources/physical-assets',
+      headers: { authorization: `Bearer ${accessToken}` },
+      payload: {
+        ...createPayload,
+        assetCode: 'HTTP-INA',
+        name: 'Inativo HTTP',
+        vehicle: { plate: 'INA-1B23' },
+      },
+    });
+    const inactive = JSON.parse(inactiveResponse.body) as { id: string; version: number };
+    await app.inject({
+      method: 'POST',
+      url: `/api/v1/resources/physical-assets/${inactive.id}/deactivate`,
+      headers: { authorization: `Bearer ${accessToken}` },
+      payload: { version: inactive.version },
+    });
+
+    const summaryResponse = await app.inject({
+      method: 'GET',
+      url: '/api/v1/resources/physical-assets/summary',
+      headers: { authorization: `Bearer ${accessToken}` },
+    });
+    expect(summaryResponse.statusCode).toBe(200);
+    const summary = JSON.parse(summaryResponse.body) as {
+      total: number;
+      available: number;
+      unavailable: number;
+    };
+    expect(summary.total).toBeGreaterThanOrEqual(2);
+    expect(summary.available).toBeGreaterThanOrEqual(1);
+    expect(summary.unavailable).toBeGreaterThanOrEqual(1);
+
+    const filteredList = await app.inject({
+      method: 'GET',
+      url: '/api/v1/resources/physical-assets?limit=10&offset=0&availability=UNAVAILABLE',
+      headers: { authorization: `Bearer ${accessToken}` },
+    });
+    expect(filteredList.statusCode).toBe(200);
+    const body = JSON.parse(filteredList.body) as {
+      total: number;
+      items: Array<{ lifecycleStatus: string; assetCode: string }>;
+    };
+    expect(body.total).toBeGreaterThanOrEqual(1);
+    expect(body.items.every((item) => item.lifecycleStatus === 'INACTIVE')).toBe(true);
+    expect(body.items.some((item) => item.assetCode === 'HTTP-INA')).toBe(true);
+
+    const searchList = await app.inject({
+      method: 'GET',
+      url: '/api/v1/resources/physical-assets?limit=10&offset=0&q=Disponivel',
+      headers: { authorization: `Bearer ${accessToken}` },
+    });
+    const searchBody = JSON.parse(searchList.body) as {
+      total: number;
+      items: Array<{ assetCode: string }>;
+    };
+    expect(searchBody.total).toBe(1);
+    expect(searchBody.items[0]?.assetCode).toBe('HTTP-AVL');
+  });
 });

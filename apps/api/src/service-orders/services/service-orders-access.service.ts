@@ -14,6 +14,10 @@ import { FAULT_HOOKS } from '../../platform/fault-injection/fault-hook.ids';
 import { FAULT_INJECTION_PORT, type FaultInjectionPort } from '../../platform/fault-injection/fault-injection.port';
 import { maybeInjectFault } from '../../platform/fault-injection/fault-injection.util';
 import type { ClientStatus } from '../../clients/domain/client-status';
+import {
+  buildServiceOrderContractSnapshot,
+} from '../../requests/domain/service-request-contract';
+import { ContractsOperationalValidationService } from '../../commercial/services/contracts-operational-validation.service';
 import { SERVICE_ORDER_HISTORY_EVENTS, SERVICE_ORDER_ORIGINS } from '../domain/service-order';
 import {
   assertServiceOrderPreparePreconditions,
@@ -30,6 +34,7 @@ import {
   buildServiceOrderProposalSnapshot,
   buildServiceOrderPurchaseOrderSnapshot,
   buildServiceOrderServiceSnapshot,
+  type ServiceOrderProposalSnapshot,
 } from '../domain/service-order-snapshot';
 import type { ListServiceOrdersQuery } from '../domain/service-order-list.query';
 import type {
@@ -70,6 +75,7 @@ export class ServiceOrdersAccessService {
     private readonly repository: ServiceOrdersRepository,
     private readonly authz: ServiceOrdersAccessAuthz,
     private readonly referenceValidation: ServiceOrdersReferenceValidationService,
+    private readonly contractOperationalValidation: ContractsOperationalValidationService,
     private readonly securityAudit: SecurityAuditService,
     @Optional() @Inject(FAULT_INJECTION_PORT) private readonly faultInjection?: FaultInjectionPort,
   ) {}
@@ -146,6 +152,29 @@ export class ServiceOrdersAccessService {
       }
     }
 
+    const proposalBuilt = proposalSnapshot as ServiceOrderProposalSnapshot | null;
+    const contractReference =
+      validated.contractReference?.trim() || proposalBuilt?.contractReference || null;
+
+    let contractId: string | null = null;
+    let contractSnapshot: Record<string, unknown> | null = null;
+    if (contractReference && validated.clientId) {
+      const resolved = await this.contractOperationalValidation.tryResolveContractForOperationalUse(
+        validated.clientId,
+        contractReference,
+      );
+      if (resolved) {
+        contractId = resolved.contract.id;
+        contractSnapshot = { ...resolved.snapshot };
+      }
+    }
+    if (!contractSnapshot && contractReference) {
+      contractSnapshot = buildServiceOrderContractSnapshot({
+        contractReference,
+        paymentTerms: proposalBuilt?.paymentTerms ?? null,
+      });
+    }
+
     const created = await this.repository.create({
       internalCode: this.generateInternalCode(),
       orderNumber: this.generateOrderNumber(),
@@ -165,10 +194,11 @@ export class ServiceOrdersAccessService {
       purchaseOrderId,
       purchaseOrderSnapshot,
       rcNumber,
-      contractReference: validated.contractReference ?? null,
-      contractSnapshot: validated.contractReference
-        ? { contractReference: validated.contractReference, snapshottedAt: new Date().toISOString() }
-        : null,
+      contractId,
+      contractReference: contractId
+        ? (contractSnapshot as { contractNumber?: string }).contractNumber ?? contractReference
+        : contractReference,
+      contractSnapshot,
       actorIdentityId: actor.identityId,
       historyEventType: SERVICE_ORDER_HISTORY_EVENTS.Created,
       historyPayload: { origin: validated.origin },

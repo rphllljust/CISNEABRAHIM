@@ -2,8 +2,13 @@ import {
   toDocumentLinkResponse as toSharedDocumentLinkResponse,
   type DocumentLinkResponse,
 } from '../../infrastructure/http/contracts';
+import {
+  toHistoryEventResponse,
+  type HistoryEventResponse,
+} from '../../infrastructure/http/contracts';
 import type {
   ServiceRequestDocumentLinkRow,
+  ServiceRequestHistoryEventRow,
   ServiceRequestRow,
 } from '../repositories/service-requests.repository.types';
 
@@ -46,6 +51,7 @@ export type ServiceRequestResponse = {
 export type ServiceRequestDetailResponse = {
   serviceRequest: ServiceRequestResponse;
   documentLinks: ServiceRequestDocumentLinkResponse[];
+  historyEvents: HistoryEventResponse[];
 };
 
 function toDocumentLinkResponse(row: ServiceRequestDocumentLinkRow): ServiceRequestDocumentLinkResponse {
@@ -91,9 +97,19 @@ export function toServiceRequestResponse(row: ServiceRequestRow): ServiceRequest
 export function toServiceRequestDetailResponse(
   row: ServiceRequestRow,
   documentLinks: ServiceRequestDocumentLinkRow[],
+  historyEvents: ServiceRequestHistoryEventRow[] = [],
 ): ServiceRequestDetailResponse {
   return {
     serviceRequest: toServiceRequestResponse(row),
     documentLinks: documentLinks.map(toDocumentLinkResponse),
+    historyEvents: historyEvents.map((event) =>
+      toHistoryEventResponse({
+        id: event.id,
+        event_type: event.event_type,
+        payload: event.payload,
+        actor_identity_id: event.actor_identity_id,
+        occurred_at: event.occurred_at,
+      }),
+    ),
   };
 }

@@ -63,12 +63,41 @@ export type ExecutionOccurrence = {
   recordedAt: string;
 };
 
+export type ExecutionQuantityFactRow = {
+  unitCode: string;
+  plannedQuantity: string | null;
+  actualQuantity: string;
+};
+
+export type ExecutionResourceFactRow = {
+  requirementKind: string;
+  code: string;
+  plannedQuantity: string;
+  allocatedActiveCount: number;
+};
+
+export type ExecutionPeriodFactRow = {
+  source: 'PLANNED_RESOURCE' | 'ALLOCATION' | 'EXECUTION_LIFECYCLE';
+  label: string;
+  startAt: string | null;
+  endAt: string | null;
+};
+
+export type ExecutionFactsComparison = {
+  quantities: ExecutionQuantityFactRow[];
+  resources: ExecutionResourceFactRow[];
+  periods: ExecutionPeriodFactRow[];
+  occurrenceCount: number;
+  entryCount: number;
+};
+
 export type ExecutionBundle = {
   serviceOrderId: string;
   status: string;
   entries: ExecutionEntry[];
   evidence: ExecutionEvidence[];
   occurrences: ExecutionOccurrence[];
+  comparison: ExecutionFactsComparison;
 };
 
 export type RowVersionCommand = {

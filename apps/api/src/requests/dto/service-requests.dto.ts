@@ -177,3 +177,13 @@ export function parseListServiceRequestsQuery(query: Record<string, unknown>): {
     offset,
   };
 }
+
+export function parseServiceRequestSummaryQuery(query: Record<string, unknown>): {
+  clientId?: string;
+  unitId?: string;
+} {
+  return {
+    clientId: typeof query['clientId'] === 'string' ? query['clientId'] : undefined,
+    unitId: typeof query['unitId'] === 'string' ? query['unitId'] : undefined,
+  };
+}

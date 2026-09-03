@@ -12,10 +12,21 @@ import type { IdentityAuthzContext } from '../../authorization/types/authz-decis
 import { ResourceCompatibilityError, assertResourceTypeMatchesRequirement, assertLaborTypeInServiceRequirements } from '../domain/resource-compatibility';
 import {
   assertIntervalWithinParent,
+  assertPlannedOperationalWindow,
   isHalfOpenIntervalValid,
   PLANNED_RESOURCE_KINDS,
+  resolvePlannedOperationalWindow,
   SERVICE_ORDER_PLANNING_ALLOWED_STATUSES,
 } from '../domain/resource-planning';
+import {
+  assertRentalContractedPeriodPresent,
+  isRentalServiceOrder,
+} from '../domain/rental-operations';
+import {
+  assertTransportRoutePresent,
+  assertTransportScheduledWindowPresent,
+  isTransportServiceOrder,
+} from '../domain/transport-operations';
 import type {
   AllocateResourceInput,
   PlanResourceInput,
@@ -35,6 +46,7 @@ import {
   type ResourceAllocationDetailResponse,
   type ResourceAllocationResponse,
 } from '../serializers/resource-planning-response.serializer';
+import type { ServiceOrderServiceSnapshot } from '../domain/service-order-snapshot';
 import { ServiceOrdersAccessAuthz } from './service-orders-access.authz';
 import {
   mapResourceCompatibilityError,
@@ -45,12 +57,21 @@ import {
   serviceOrdersAssetInactive,
   serviceOrdersAssetNotFound,
   serviceOrdersInvalidState,
+  serviceOrdersLaborAllocationNotSupported,
   serviceOrdersPlannedResourceNotFound,
   serviceOrdersResourceTypeMismatch,
   serviceOrdersValidationFailed,
   serviceOrdersVersionConflict,
 } from './service-orders-access.errors';
 import { assertValidServiceOrderId } from './service-orders-input-resolution';
+
+function readServiceOrderArchetypeSnapshot(
+  snapshot: Record<string, unknown>,
+): Pick<ServiceOrderServiceSnapshot, 'archetype'> {
+  return {
+    archetype: typeof snapshot['archetype'] === 'string' ? snapshot['archetype'] : '',
+  };
+}
 
 @Injectable()
 export class ServiceOrderPlanningAccessService {
@@ -91,6 +112,44 @@ export class ServiceOrderPlanningAccessService {
     );
     this.validatePlanInput(order, input);
 
+    if (
+      isRentalServiceOrder(readServiceOrderArchetypeSnapshot(order.service_snapshot)) &&
+      input.requirementKind === PLANNED_RESOURCE_KINDS.PhysicalResource
+    ) {
+      try {
+        assertRentalContractedPeriodPresent({
+          operationalStart: input.operationalStart ?? null,
+          operationalEnd: input.operationalEnd ?? null,
+        });
+      } catch (error) {
+        if (error instanceof Error && error.message === 'RENTAL_CONTRACTED_PERIOD_REQUIRED') {
+          throw serviceOrdersValidationFailed();
+        }
+        throw error;
+      }
+    }
+
+    if (
+      isTransportServiceOrder(readServiceOrderArchetypeSnapshot(order.service_snapshot)) &&
+      input.requirementKind === PLANNED_RESOURCE_KINDS.PhysicalResource
+    ) {
+      try {
+        assertTransportRoutePresent(order.location);
+        assertTransportScheduledWindowPresent({
+          operationalStart: input.operationalStart ?? null,
+          operationalEnd: input.operationalEnd ?? null,
+        });
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          ['TRANSPORT_ROUTE_REQUIRED', 'TRANSPORT_SCHEDULED_WINDOW_REQUIRED'].includes(error.message)
+        ) {
+          throw serviceOrdersValidationFailed();
+        }
+        throw error;
+      }
+    }
+
     const created = await this.planningRepository.createPlannedResource({
       serviceOrderId,
       requirementKind: input.requirementKind,
@@ -129,6 +188,21 @@ export class ServiceOrderPlanningAccessService {
       throw serviceOrdersValidationFailed();
     }
 
+    const current = await this.planningRepository.findPlannedResourceById(plannedResourceId, serviceOrderId);
+    if (!current) {
+      throw serviceOrdersPlannedResourceNotFound();
+    }
+
+    try {
+      const nextWindow = resolvePlannedOperationalWindow(current, input);
+      assertPlannedOperationalWindow(nextWindow.start, nextWindow.end);
+    } catch (error) {
+      if (error instanceof Error && ['PLANNED_WINDOW_INCOMPLETE', 'PLANNED_WINDOW_INVALID'].includes(error.message)) {
+        throw serviceOrdersValidationFailed();
+      }
+      throw error;
+    }
+
     const updated = await this.planningRepository.updatePlannedResource({
       plannedResourceId,
       serviceOrderId,
@@ -141,6 +215,12 @@ export class ServiceOrderPlanningAccessService {
     });
     if (updated === 'VERSION_CONFLICT') {
       throw serviceOrdersVersionConflict('Resource was modified by another request.');
+    }
+    if (updated === 'ALLOCATION_OUTSIDE_WINDOW') {
+      throw serviceOrdersAllocationOutsideWindow();
+    }
+    if (updated === 'VALIDATION_FAILED') {
+      throw serviceOrdersValidationFailed();
     }
     if (updated === 'INVALID_STATE') {
       throw serviceOrdersInvalidState('Operation is not allowed in the current state.');
@@ -191,11 +271,49 @@ export class ServiceOrderPlanningAccessService {
     const order = await this.requirePlanningOrder(actor, serviceOrderId, AUTHZ_ACTIONS.ServiceOrdersResourceAllocate);
 
     const planned = await this.planningRepository.findPlannedResourceById(input.plannedResourceId, serviceOrderId);
-    if (!planned || planned.requirement_kind !== PLANNED_RESOURCE_KINDS.PhysicalResource) {
+    if (!planned) {
+      throw serviceOrdersPlannedResourceNotFound();
+    }
+    if (planned.requirement_kind === PLANNED_RESOURCE_KINDS.Labor) {
+      throw serviceOrdersLaborAllocationNotSupported();
+    }
+    if (planned.requirement_kind !== PLANNED_RESOURCE_KINDS.PhysicalResource) {
       throw serviceOrdersPlannedResourceNotFound();
     }
     if (!planned.resource_type_code) {
       throw serviceOrdersInvalidState('Operation is not allowed in the current state.');
+    }
+
+    if (isRentalServiceOrder(readServiceOrderArchetypeSnapshot(order.service_snapshot))) {
+      try {
+        assertRentalContractedPeriodPresent({
+          operationalStart: planned.operational_start,
+          operationalEnd: planned.operational_end,
+        });
+      } catch (error) {
+        if (error instanceof Error && error.message === 'RENTAL_CONTRACTED_PERIOD_REQUIRED') {
+          throw serviceOrdersValidationFailed();
+        }
+        throw error;
+      }
+    }
+
+    if (isTransportServiceOrder(readServiceOrderArchetypeSnapshot(order.service_snapshot))) {
+      try {
+        assertTransportRoutePresent(order.location);
+        assertTransportScheduledWindowPresent({
+          operationalStart: planned.operational_start,
+          operationalEnd: planned.operational_end,
+        });
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          ['TRANSPORT_ROUTE_REQUIRED', 'TRANSPORT_SCHEDULED_WINDOW_REQUIRED'].includes(error.message)
+        ) {
+          throw serviceOrdersValidationFailed();
+        }
+        throw error;
+      }
     }
 
     const start = new Date(input.operationalStart);
@@ -259,7 +377,16 @@ export class ServiceOrderPlanningAccessService {
     if (!isHalfOpenIntervalValid(start, end)) {
       throw serviceOrdersValidationFailed();
     }
+    const planned = current.planned_resource_id
+      ? await this.planningRepository.findPlannedResourceById(current.planned_resource_id, serviceOrderId)
+      : null;
     try {
+      assertIntervalWithinParent(
+        start,
+        end,
+        planned?.operational_start ? new Date(planned.operational_start) : null,
+        planned?.operational_end ? new Date(planned.operational_end) : null,
+      );
       assertResourceTypeMatchesRequirement(
         order.service_snapshot,
         current.resource_type_code,
@@ -268,6 +395,9 @@ export class ServiceOrderPlanningAccessService {
     } catch (error) {
       if (error instanceof ResourceCompatibilityError) {
         throw mapResourceCompatibilityError(error);
+      }
+      if (error instanceof Error && error.message === 'ALLOCATION_OUTSIDE_PLANNED_WINDOW') {
+        throw serviceOrdersAllocationOutsideWindow();
       }
       throw error;
     }

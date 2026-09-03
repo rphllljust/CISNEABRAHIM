@@ -20,7 +20,9 @@ import { CatalogValidationError } from '../../catalog/domain/service-catalog.val
 import { PHYSICAL_RESOURCE_TYPE_STATUSES } from '../domain/physical-resource-type';
 import {
   ASSET_LIFECYCLE_STATUSES,
+  ASSET_OPERATIONAL_AVAILABILITIES,
   VEHICLE_CLASSIFICATION,
+  type AssetOperationalAvailability,
 } from '../domain/physical-asset';
 import type {
   CreatePhysicalAssetInput,
@@ -28,10 +30,12 @@ import type {
 } from '../dto/physical-assets.dto';
 import { ASSET_ERROR_CODES } from '../errors/asset-error-codes';
 import { AssetHttpException } from '../errors/asset-http.exception';
-import { PhysicalAssetsRepository } from '../repositories/physical-assets.repository';
+import { PhysicalAssetsRepository, activeAllocationExistsClause, appendPhysicalAssetSearchClause } from '../repositories/physical-assets.repository';
 import { PhysicalResourceTypesRepository } from '../repositories/physical-resource-types.repository';
 import {
   toPhysicalAssetResponse,
+  toPhysicalAssetListSummaryResponse,
+  type PhysicalAssetListSummaryResponse,
   type PhysicalAssetResponse,
 } from '../serializers/physical-assets-response.serializer';
 
@@ -149,9 +153,53 @@ export class PhysicalAssetsAccessService {
       offset: number;
       lifecycleStatus?: 'ACTIVE' | 'INACTIVE';
       allocationStatus?: 'AVAILABLE' | 'ALLOCATED';
+      availability?: AssetOperationalAvailability;
       resourceTypeId?: string;
+      classification?: typeof VEHICLE_CLASSIFICATION;
+      q?: string;
     },
-  ): Promise<{ items: PhysicalAssetResponse[]; limit: number; offset: number }> {
+  ): Promise<{ items: PhysicalAssetResponse[]; limit: number; offset: number; total: number }> {
+    const { whereClause, params } = await this.buildListScope(actor, query);
+
+    const [rows, total] = await Promise.all([
+      this.assetsRepository.list(whereClause, params, query.limit, query.offset),
+      this.assetsRepository.count(whereClause, params),
+    ]);
+
+    return {
+      items: rows.map(toPhysicalAssetResponse),
+      limit: query.limit,
+      offset: query.offset,
+      total,
+    };
+  }
+
+  async summary(
+    actor: IdentityAuthzContext,
+    query: {
+      resourceTypeId?: string;
+      classification?: typeof VEHICLE_CLASSIFICATION;
+    },
+  ): Promise<PhysicalAssetListSummaryResponse> {
+    const { whereClause, params } = await this.buildListScope(actor, {
+      resourceTypeId: query.resourceTypeId,
+      classification: query.classification,
+    });
+    const counts = await this.assetsRepository.countSummary(whereClause, params);
+    return toPhysicalAssetListSummaryResponse(counts);
+  }
+
+  private async buildListScope(
+    actor: IdentityAuthzContext,
+    query: {
+      lifecycleStatus?: 'ACTIVE' | 'INACTIVE';
+      allocationStatus?: 'AVAILABLE' | 'ALLOCATED';
+      availability?: AssetOperationalAvailability;
+      resourceTypeId?: string;
+      classification?: typeof VEHICLE_CLASSIFICATION;
+      q?: string;
+    },
+  ): Promise<{ whereClause: string; params: unknown[] }> {
     const grants = await this.authorizationRepository.findActiveGrants(
       actor.identityId,
       AUTHZ_ACTIONS.ResourcesAssetList,
@@ -174,26 +222,40 @@ export class PhysicalAssetsAccessService {
       params.push(query.lifecycleStatus);
     }
     if (query.allocationStatus) {
-      clauses.push(`a.allocation_status = $${params.length + 1}::ast.asset_allocation_status`);
-      params.push(query.allocationStatus);
+      if (query.allocationStatus === 'AVAILABLE') {
+        clauses.push(`NOT (${activeAllocationExistsClause()})`);
+      } else {
+        clauses.push(activeAllocationExistsClause());
+      }
+    }
+    if (query.availability) {
+      if (query.availability === ASSET_OPERATIONAL_AVAILABILITIES.Available) {
+        clauses.push(`a.lifecycle_status = $${params.length + 1}::ast.asset_lifecycle_status`);
+        params.push(ASSET_LIFECYCLE_STATUSES.Active);
+        clauses.push(`NOT (${activeAllocationExistsClause()})`);
+      } else if (query.availability === ASSET_OPERATIONAL_AVAILABILITIES.Allocated) {
+        clauses.push(activeAllocationExistsClause());
+      } else if (query.availability === ASSET_OPERATIONAL_AVAILABILITIES.Unavailable) {
+        clauses.push(`a.lifecycle_status = $${params.length + 1}::ast.asset_lifecycle_status`);
+        params.push(ASSET_LIFECYCLE_STATUSES.Inactive);
+      }
     }
     if (query.resourceTypeId) {
       clauses.push(`a.physical_resource_type_id = $${params.length + 1}::uuid`);
       params.push(query.resourceTypeId);
     }
+    if (query.classification) {
+      clauses.push(`rt.classification = $${params.length + 1}::cat.physical_resource_classification`);
+      params.push(query.classification);
+    }
+    if (query.q) {
+      const searchClause = appendPhysicalAssetSearchClause(query.q, params);
+      if (searchClause) {
+        clauses.push(searchClause);
+      }
+    }
 
-    const rows = await this.assetsRepository.list(
-      clauses.join(' AND '),
-      params,
-      query.limit,
-      query.offset,
-    );
-
-    return {
-      items: rows.map(toPhysicalAssetResponse),
-      limit: query.limit,
-      offset: query.offset,
-    };
+    return { whereClause: clauses.join(' AND '), params };
   }
 
   async update(
@@ -294,6 +356,13 @@ export class PhysicalAssetsAccessService {
         'Asset is already inactive.',
       );
     }
+    if (updated === 'HAS_ACTIVE_ALLOCATIONS') {
+      throw new AssetHttpException(
+        HttpStatus.CONFLICT,
+        ASSET_ERROR_CODES.INVALID_STATE,
+        'Asset cannot be deactivated while it has active allocations.',
+      );
+    }
 
     await this.securityAudit.record({
       actorIdentityId: actor.identityId,
@@ -349,6 +418,13 @@ export class PhysicalAssetsAccessService {
         HttpStatus.CONFLICT,
         ASSET_ERROR_CODES.INVALID_STATE,
         'Asset is already active.',
+      );
+    }
+    if (updated === 'HAS_ACTIVE_ALLOCATIONS') {
+      throw new AssetHttpException(
+        HttpStatus.CONFLICT,
+        ASSET_ERROR_CODES.INVALID_STATE,
+        'Asset cannot be activated due to an allocation conflict.',
       );
     }
 

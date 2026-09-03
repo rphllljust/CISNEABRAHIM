@@ -6,6 +6,9 @@ import {
   normalizeAssetCode,
   normalizePlate,
   ASSET_LIFECYCLE_STATUSES,
+  ASSET_OPERATIONAL_AVAILABILITIES,
+  type AssetOperationalAvailability,
+  VEHICLE_CLASSIFICATION,
 } from '../domain/physical-asset';
 import { ASSET_ERROR_CODES } from '../errors/asset-error-codes';
 import { AssetHttpException } from '../errors/asset-http.exception';
@@ -193,13 +196,19 @@ export function parseListPhysicalAssetsQuery(query: Record<string, unknown>): {
   offset: number;
   lifecycleStatus?: 'ACTIVE' | 'INACTIVE';
   allocationStatus?: 'AVAILABLE' | 'ALLOCATED';
+  availability?: AssetOperationalAvailability;
   resourceTypeId?: string;
+  classification?: typeof VEHICLE_CLASSIFICATION;
+  q?: string;
 } {
   const limitRaw = query['limit'];
   const offsetRaw = query['offset'];
   const lifecycleStatusRaw = query['lifecycleStatus'];
   const allocationStatusRaw = query['allocationStatus'];
+  const availabilityRaw = query['availability'];
   const resourceTypeIdRaw = query['resourceTypeId'];
+  const classificationRaw = query['classification'];
+  const qRaw = query['q'];
 
   let limit = 50;
   if (limitRaw !== undefined) {
@@ -254,6 +263,22 @@ export function parseListPhysicalAssetsQuery(query: Record<string, unknown>): {
     allocationStatus = allocationStatusRaw;
   }
 
+  let availability: AssetOperationalAvailability | undefined;
+  if (availabilityRaw !== undefined) {
+    const allowed = Object.values(ASSET_OPERATIONAL_AVAILABILITIES);
+    if (
+      typeof availabilityRaw !== 'string' ||
+      !allowed.includes(availabilityRaw as AssetOperationalAvailability)
+    ) {
+      throw new AssetHttpException(
+        HttpStatus.BAD_REQUEST,
+        ASSET_ERROR_CODES.VALIDATION_FAILED,
+        'Invalid query parameters.',
+      );
+    }
+    availability = availabilityRaw as AssetOperationalAvailability;
+  }
+
   let resourceTypeId: string | undefined;
   if (resourceTypeIdRaw !== undefined) {
     if (typeof resourceTypeIdRaw !== 'string' || resourceTypeIdRaw.trim().length === 0) {
@@ -266,5 +291,66 @@ export function parseListPhysicalAssetsQuery(query: Record<string, unknown>): {
     resourceTypeId = resourceTypeIdRaw.trim();
   }
 
-  return { limit, offset, lifecycleStatus, allocationStatus, resourceTypeId };
+  let classification: typeof VEHICLE_CLASSIFICATION | undefined;
+  if (classificationRaw !== undefined) {
+    if (classificationRaw !== VEHICLE_CLASSIFICATION) {
+      throw new AssetHttpException(
+        HttpStatus.BAD_REQUEST,
+        ASSET_ERROR_CODES.VALIDATION_FAILED,
+        'Invalid query parameters.',
+      );
+    }
+    classification = VEHICLE_CLASSIFICATION;
+  }
+
+  let q: string | undefined;
+  if (qRaw !== undefined) {
+    if (typeof qRaw !== 'string') {
+      throw new AssetHttpException(
+        HttpStatus.BAD_REQUEST,
+        ASSET_ERROR_CODES.VALIDATION_FAILED,
+        'Invalid query parameters.',
+      );
+    }
+    const trimmed = qRaw.trim();
+    if (trimmed.length > 0) {
+      q = trimmed;
+    }
+  }
+
+  return { limit, offset, lifecycleStatus, allocationStatus, availability, resourceTypeId, classification, q };
+}
+
+export function parsePhysicalAssetSummaryQuery(query: Record<string, unknown>): {
+  resourceTypeId?: string;
+  classification?: typeof VEHICLE_CLASSIFICATION;
+} {
+  const resourceTypeIdRaw = query['resourceTypeId'];
+  const classificationRaw = query['classification'];
+
+  let resourceTypeId: string | undefined;
+  if (resourceTypeIdRaw !== undefined) {
+    if (typeof resourceTypeIdRaw !== 'string' || resourceTypeIdRaw.trim().length === 0) {
+      throw new AssetHttpException(
+        HttpStatus.BAD_REQUEST,
+        ASSET_ERROR_CODES.VALIDATION_FAILED,
+        'Invalid query parameters.',
+      );
+    }
+    resourceTypeId = resourceTypeIdRaw.trim();
+  }
+
+  let classification: typeof VEHICLE_CLASSIFICATION | undefined;
+  if (classificationRaw !== undefined) {
+    if (classificationRaw !== VEHICLE_CLASSIFICATION) {
+      throw new AssetHttpException(
+        HttpStatus.BAD_REQUEST,
+        ASSET_ERROR_CODES.VALIDATION_FAILED,
+        'Invalid query parameters.',
+      );
+    }
+    classification = VEHICLE_CLASSIFICATION;
+  }
+
+  return { resourceTypeId, classification };
 }

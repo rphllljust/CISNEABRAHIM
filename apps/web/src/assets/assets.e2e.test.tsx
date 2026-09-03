@@ -34,13 +34,15 @@ describe('physical assets administrative flow e2e (frontend)', () => {
     });
     expect(screen.getByRole('link', { name: 'TRK-DEMO' })).toBeInTheDocument();
     expect(screen.getByLabelText(/status de cadastro: ativo/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/status de aloca.*dispon/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/disponibilidade operacional: dispon/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole('link', { name: 'TRK-DEMO' }));
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'TRK-DEMO' })).toBeInTheDocument();
     });
-    expect(screen.getByText(/cadastro \(ativo\/inativo\) e aloca.*operacional.*independentes/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/cadastro \(ativo\/inativo\) e disponibilidade operacional são independentes/i),
+    ).toBeInTheDocument();
 
     await user.click(screen.getByRole('link', { name: /^editar$/i }));
     await waitFor(() => {

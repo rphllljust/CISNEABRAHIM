@@ -2,6 +2,7 @@ import { HttpStatus } from '@nestjs/common';
 import type { ServiceOrderMutabilityError } from '../domain/service-order-mutability';
 import type { ServiceOrderReleaseError } from '../domain/service-order-release';
 import type { ServiceOrderExecutionError } from '../domain/service-order-execution';
+import type { OperationalCostError } from '../domain/operational-cost';
 import type { ResourceCompatibilityError } from '../domain/resource-compatibility';
 import { SERVICE_ORDERS_ERROR_CODES } from '../errors/service-orders-error-codes';
 import { ServiceOrdersHttpException } from '../errors/service-orders-http.exception';
@@ -164,6 +165,14 @@ export function serviceOrdersAllocationOutsideWindow(): ServiceOrdersHttpExcepti
   );
 }
 
+export function serviceOrdersLaborAllocationNotSupported(): ServiceOrdersHttpException {
+  return new ServiceOrdersHttpException(
+    HttpStatus.CONFLICT,
+    SERVICE_ORDERS_ERROR_CODES.LABOR_ALLOCATION_NOT_SUPPORTED,
+    'Workforce allocation is not supported yet; only physical assets can be allocated.',
+  );
+}
+
 export function serviceOrdersResourceTypeMismatch(): ServiceOrdersHttpException {
   return new ServiceOrdersHttpException(
     HttpStatus.CONFLICT,
@@ -262,5 +271,37 @@ export function mapResourceCompatibilityError(error: ResourceCompatibilityError)
       );
     default:
       return serviceOrdersInvalidState('Operation is not allowed in the current state.');
+  }
+}
+
+export function mapOperationalCostError(error: OperationalCostError): ServiceOrdersHttpException {
+  switch (error.code) {
+    case 'EXECUTION_ENTRY_NOT_FOUND':
+      return new ServiceOrdersHttpException(
+        HttpStatus.NOT_FOUND,
+        SERVICE_ORDERS_ERROR_CODES.OPERATIONAL_COST_EXECUTION_ENTRY_NOT_FOUND,
+        'Execution entry not found for this service order.',
+      );
+    case 'EXECUTION_ENTRY_REQUIRED':
+    case 'EXECUTION_ENTRY_MISMATCH':
+    case 'INVALID_ORIGIN':
+      return new ServiceOrdersHttpException(
+        HttpStatus.BAD_REQUEST,
+        SERVICE_ORDERS_ERROR_CODES.OPERATIONAL_COST_INVALID_ORIGIN,
+        'Operational cost origin is inconsistent with execution linkage.',
+      );
+    case 'DUPLICATE_COST_ENTRY':
+      return new ServiceOrdersHttpException(
+        HttpStatus.CONFLICT,
+        SERVICE_ORDERS_ERROR_CODES.OPERATIONAL_COST_DUPLICATE,
+        'Operational cost entry already exists for this origin.',
+      );
+    case 'INVALID_CATEGORY':
+    case 'INVALID_COST_KIND':
+    case 'AMOUNT_REQUIRED':
+      return serviceOrdersValidationFailed();
+    case 'INVALID_STATE':
+    default:
+      return serviceOrdersInvalidState('Service order is not in a valid state for operational cost recording.');
   }
 }

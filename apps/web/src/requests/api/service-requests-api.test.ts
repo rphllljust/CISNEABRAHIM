@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { buildListServiceRequestsQuery } from './service-requests-api';
+import {
+  buildListServiceRequestsQuery,
+  buildServiceRequestSummaryQuery,
+} from './service-requests-api';
 import { SERVICE_REQUEST_STATUSES } from '../types/service-request.types';
 
 describe('service-requests-api', () => {
@@ -14,5 +17,11 @@ describe('service-requests-api', () => {
     expect(query).toContain('offset=40');
     expect(query).toContain('status=SUBMITTED');
     expect(query).toContain('unitId=unit-a');
+  });
+
+  it('builds summary query with scoped filters', () => {
+    const query = buildServiceRequestSummaryQuery({ unitId: 'unit-a', clientId: 'client-a' });
+    expect(query).toContain('unitId=unit-a');
+    expect(query).toContain('clientId=client-a');
   });
 });

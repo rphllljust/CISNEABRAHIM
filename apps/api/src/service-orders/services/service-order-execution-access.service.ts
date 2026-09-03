@@ -13,6 +13,7 @@ import { FAULT_HOOKS } from '../../platform/fault-injection/fault-hook.ids';
 import { FAULT_INJECTION_PORT, type FaultInjectionPort } from '../../platform/fault-injection/fault-injection.port';
 import { maybeInjectFault } from '../../platform/fault-injection/fault-injection.util';
 import type { ClientStatus } from '../../clients/domain/client-status';
+import { buildExecutionFactsComparison } from '../domain/execution-facts';
 import {
   assertEvidenceKindInSnapshot,
   assertExecutionCompletePreconditions,
@@ -49,6 +50,7 @@ import type {
   ExecutionEvidenceRow,
   ExecutionOccurrenceRow,
 } from '../repositories/service-order-execution.repository.types';
+import { ResourcePlanningRepository } from '../repositories/resource-planning.repository';
 import { ServiceOrdersRepository } from '../repositories/service-orders.repository';
 import type { ServiceOrderRow } from '../repositories/service-orders.repository.types';
 import {
@@ -74,6 +76,7 @@ export class ServiceOrderExecutionAccessService {
   constructor(
     private readonly serviceOrdersRepository: ServiceOrdersRepository,
     private readonly executionRepository: ServiceOrderExecutionRepository,
+    private readonly planningRepository: ResourcePlanningRepository,
     private readonly authz: ServiceOrdersAccessAuthz,
     private readonly securityAudit: SecurityAuditService,
     @Optional() @Inject(FAULT_INJECTION_PORT) private readonly faultInjection?: FaultInjectionPort,
@@ -84,12 +87,43 @@ export class ServiceOrderExecutionAccessService {
     serviceOrderId: string,
   ): Promise<ExecutionBundleResponse> {
     const order = await this.requireServiceOrder(actor, serviceOrderId, AUTHZ_ACTIONS.ServiceOrdersExecutionRead);
-    const [entries, evidence, occurrences] = await Promise.all([
+    const [entries, evidence, occurrences, planned, allocations] = await Promise.all([
       this.executionRepository.listEntries(serviceOrderId),
       this.executionRepository.listEvidence(serviceOrderId),
       this.executionRepository.listOccurrences(serviceOrderId),
+      this.planningRepository.listPlannedResources(serviceOrderId),
+      this.planningRepository.listAllocations(serviceOrderId),
     ]);
-    return toExecutionBundleResponse(order, entries, evidence, occurrences);
+    const comparison = buildExecutionFactsComparison({
+      snapshot: order.service_snapshot,
+      plannedResources: planned.map((item) => ({
+        id: item.id,
+        requirementKind: item.requirement_kind,
+        resourceTypeCode: item.resource_type_code,
+        laborTypeCode: item.labor_type_code,
+        plannedQuantity: item.planned_quantity,
+        operationalStart: item.operational_start,
+        operationalEnd: item.operational_end,
+        status: item.status,
+      })),
+      allocations: allocations.map((item) => ({
+        plannedResourceId: item.planned_resource_id,
+        resourceTypeCode: item.resource_type_code,
+        operationalStart: item.operational_start,
+        operationalEnd: item.operational_end,
+        status: item.status,
+      })),
+      entries: entries.map((item) => ({
+        entryType: item.entry_type,
+        quantityValue: item.quantity_value,
+        quantityUnitCode: item.quantity_unit_code,
+      })),
+      occurrenceCount: occurrences.length,
+      startedAt: order.started_at,
+      completedAt: order.completed_at,
+      pausedAt: order.paused_at,
+    });
+    return toExecutionBundleResponse(order, entries, evidence, occurrences, comparison);
   }
 
   async start(actor: IdentityAuthzContext, serviceOrderId: string, input: RowVersionCommandInput) {
@@ -152,7 +186,15 @@ export class ServiceOrderExecutionAccessService {
       throw error;
     }
 
-    const nextStatus = assertTransition(order.status as typeof SERVICE_ORDER_STATUSES.Released, 'complete');
+    let nextStatus: string;
+    try {
+      nextStatus = assertTransition(order.status as typeof SERVICE_ORDER_STATUSES.Released, 'complete');
+    } catch (error) {
+      if (error instanceof ServiceOrderStateError) {
+        throw serviceOrdersInvalidState('Service order is not in a valid state for this operation.');
+      }
+      throw error;
+    }
     await maybeInjectFault(this.faultInjection, FAULT_HOOKS.ExecutionCompleteAfterValidationBeforeMutation);
     const result = await this.executionRepository.transitionExecution({
       serviceOrderId,

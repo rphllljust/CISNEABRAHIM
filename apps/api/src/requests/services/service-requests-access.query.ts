@@ -4,6 +4,7 @@ import type { AuthzAction } from '../../authorization/types/authz-actions';
 import { AUTHZ_ACTIONS } from '../../authorization/types/authz-actions';
 import type { IdentityAuthzContext } from '../../authorization/types/authz-decision';
 import { isServiceRequestStatus } from '../domain/service-request';
+import type { ServiceRequestListSummaryCounts } from '../repositories/service-requests.repository';
 import type { ServiceRequestRow } from '../repositories/service-requests.repository.types';
 import {
   toServiceRequestDetailResponse,
@@ -15,6 +16,52 @@ import { serviceRequestsAccessNotFound, serviceRequestsValidationFailed } from '
 import { assertValidServiceRequestId } from './service-requests-input-resolution';
 import { ServiceRequestsAccessPersistence } from './service-requests-access.persistence';
 
+export type ServiceRequestListSummaryResponse = {
+  total: number;
+  pending: number;
+  underReview: number;
+  converted: number;
+  cancelled: number;
+};
+
+function toServiceRequestListSummaryResponse(
+  counts: ServiceRequestListSummaryCounts,
+): ServiceRequestListSummaryResponse {
+  return {
+    total: counts.total,
+    pending: counts.pending,
+    underReview: counts.underReview,
+    converted: counts.converted,
+    cancelled: counts.cancelled,
+  };
+}
+
+function buildServiceRequestListWhere(
+  scopeFilter: ReturnType<ScopeEnforcementService['buildServiceRequestListFilter']>,
+  query: { clientId?: string; unitId?: string; status?: string },
+): { clause: string; params: unknown[] } {
+  const clauses = [scopeFilter.clause];
+  const params = [...scopeFilter.params];
+
+  if (query.clientId) {
+    params.push(query.clientId);
+    clauses.push(`client_id = $${params.length}::uuid`);
+  }
+  if (query.unitId) {
+    params.push(query.unitId);
+    clauses.push(`unit_id = $${params.length}`);
+  }
+  if (query.status) {
+    if (!isServiceRequestStatus(query.status)) {
+      throw serviceRequestsValidationFailed();
+    }
+    params.push(query.status);
+    clauses.push(`status = $${params.length}::sr.service_request_status`);
+  }
+
+  return { clause: clauses.join(' AND '), params };
+}
+
 @Injectable()
 export class ServiceRequestsAccessQuery {
   constructor(
@@ -24,8 +71,11 @@ export class ServiceRequestsAccessQuery {
   ) {}
 
   async toDetail(row: ServiceRequestRow): Promise<ServiceRequestDetailResponse> {
-    const links = await this.persistence.listDocumentLinks(row.id);
-    return toServiceRequestDetailResponse(row, links);
+    const [links, historyEvents] = await Promise.all([
+      this.persistence.listDocumentLinks(row.id),
+      this.persistence.listHistoryEvents(row.id),
+    ]);
+    return toServiceRequestDetailResponse(row, links, historyEvents);
   }
 
   async requireRecord(
@@ -53,36 +103,25 @@ export class ServiceRequestsAccessQuery {
   ): Promise<{ items: ReturnType<typeof toServiceRequestResponse>[]; limit: number; offset: number }> {
     const grants = await this.authz.findListGrants(actor);
     const scopeFilter = this.scopeEnforcement.buildServiceRequestListFilter(grants);
+    const { clause, params } = buildServiceRequestListWhere(scopeFilter, query);
 
-    const clauses = [scopeFilter.clause];
-    const params = [...scopeFilter.params];
-    if (query.clientId) {
-      params.push(query.clientId);
-      clauses.push(`client_id = $${params.length}::uuid`);
-    }
-    if (query.unitId) {
-      params.push(query.unitId);
-      clauses.push(`unit_id = $${params.length}`);
-    }
-    if (query.status) {
-      if (!isServiceRequestStatus(query.status)) {
-        throw serviceRequestsValidationFailed();
-      }
-      params.push(query.status);
-      clauses.push(`status = $${params.length}::sr.service_request_status`);
-    }
-
-    const rows = await this.persistence.listServiceRequests(
-      clauses.join(' AND '),
-      params,
-      query.limit,
-      query.offset,
-    );
+    const rows = await this.persistence.listServiceRequests(clause, params, query.limit, query.offset);
 
     return {
       items: rows.map(toServiceRequestResponse),
       limit: query.limit,
       offset: query.offset,
     };
+  }
+
+  async summary(
+    actor: IdentityAuthzContext,
+    query: { clientId?: string; unitId?: string },
+  ): Promise<ServiceRequestListSummaryResponse> {
+    const grants = await this.authz.findListGrants(actor);
+    const scopeFilter = this.scopeEnforcement.buildServiceRequestListFilter(grants);
+    const { clause, params } = buildServiceRequestListWhere(scopeFilter, query);
+    const counts = await this.persistence.countListSummary(clause, params);
+    return toServiceRequestListSummaryResponse(counts);
   }
 }

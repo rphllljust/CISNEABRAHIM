@@ -7,13 +7,16 @@ import { FAULT_INJECTION_PORT, type FaultInjectionPort } from '../../platform/fa
 import { maybeInjectFault } from '../../platform/fault-injection/fault-injection.util';
 import { OutboxDomainEventWriter } from '../../platform/outbox/services/outbox-domain-event.writer';
 import { SERVICE_REQUEST_STATUSES } from '../../requests/domain/service-request';
+import {
+  lockServiceRequestForConversion,
+  markServiceRequestConverted,
+} from '../../requests/application/service-request-conversion.persistence';
 import { SERVICE_ORDER_STATUSES } from '../domain/service-order';
 import type { ServiceOrderListSqlParts } from '../domain/service-order-list.query';
 import type {
   ConvertServiceRequestPersistenceInput,
   ConvertServiceRequestPersistenceResult,
   CreateServiceOrderPersistenceInput,
-  LockedServiceRequestRow,
   ServiceOrderHistoryEventRow,
   ServiceOrderRow,
   TransitionServiceOrderPersistenceInput,
@@ -76,6 +79,8 @@ export class ServiceOrdersRepository {
     client_id: string | null;
     proposal_id: string | null;
     purchase_order_id: string | null;
+    origin_source: string;
+    external_origin_reference: string | null;
   } | null> {
     const result = await this.pool().query<{
       service_definition_id: string | null;
@@ -83,8 +88,11 @@ export class ServiceOrdersRepository {
       client_id: string | null;
       proposal_id: string | null;
       purchase_order_id: string | null;
+      origin_source: string;
+      external_origin_reference: string | null;
     }>(
-      `SELECT service_definition_id, service_definition_version_id, client_id, proposal_id, purchase_order_id
+      `SELECT service_definition_id, service_definition_version_id, client_id, proposal_id, purchase_order_id,
+              origin_source::text AS origin_source, external_origin_reference
        FROM sr.service_requests WHERE id = $1`,
       [serviceRequestId],
     );
@@ -147,7 +155,7 @@ export class ServiceOrdersRepository {
       status: string;
     }>(
       `SELECT id, legal_name, trade_name, normalized_tax_id, status::text AS status
-       FROM pty.clients WHERE id = $1`,
+       FROM rpt.read_clients WHERE id = $1`,
       [clientId],
     );
     return result.rows[0] ?? null;
@@ -161,6 +169,11 @@ export class ServiceOrdersRepository {
     status: string;
     client_id: string;
     unit_id: string;
+    pricing_structure: string | null;
+    currency_code: string | null;
+    global_sale_price_amount: string | null;
+    global_internal_cost_amount: string | null;
+    commercial_terms: Record<string, unknown> | null;
   } | null> {
     const result = await this.pool().query<{
       id: string;
@@ -168,15 +181,25 @@ export class ServiceOrdersRepository {
       status: string;
       client_id: string;
       unit_id: string;
+      pricing_structure: string | null;
+      currency_code: string | null;
+      global_sale_price_amount: string | null;
+      global_internal_cost_amount: string | null;
+      commercial_terms: Record<string, unknown> | null;
     }>(
       `SELECT
          p.id,
          p.proposal_code,
          COALESCE(pv.status::text, 'DRAFT') AS status,
          p.client_id,
-         p.unit_id
-       FROM com.proposals p
-       LEFT JOIN com.proposal_versions pv
+         p.unit_id,
+         pv.pricing_structure::text AS pricing_structure,
+         pv.currency_code,
+         pv.global_sale_price_amount::text AS global_sale_price_amount,
+         pv.global_internal_cost_amount::text AS global_internal_cost_amount,
+         pv.commercial_terms
+       FROM rpt.read_proposals p
+       LEFT JOIN rpt.read_proposal_versions pv
          ON pv.proposal_id = p.id
         AND pv.version_number = p.current_version_number
        WHERE p.id = $1`,
@@ -194,6 +217,10 @@ export class ServiceOrdersRepository {
     status: string;
     client_id: string;
     unit_id: string;
+    payment_terms: string | null;
+    pricing_structure: string | null;
+    total_amount: string | null;
+    currency_code: string | null;
   } | null> {
     const result = await this.pool().query<{
       id: string;
@@ -202,9 +229,15 @@ export class ServiceOrdersRepository {
       status: string;
       client_id: string;
       unit_id: string;
+      payment_terms: string | null;
+      pricing_structure: string | null;
+      total_amount: string | null;
+      currency_code: string | null;
     }>(
-      `SELECT id, po_number, rc_number, status::text AS status, client_id, unit_id
-       FROM com.purchase_orders WHERE id = $1`,
+      `SELECT id, po_number, rc_number, status::text AS status, client_id, unit_id,
+              payment_terms, pricing_structure::text AS pricing_structure,
+              total_amount::text AS total_amount, currency_code
+       FROM rpt.read_purchase_orders WHERE id = $1`,
       [purchaseOrderId],
     );
     return result.rows[0] ?? null;
@@ -313,18 +346,7 @@ export class ServiceOrdersRepository {
     try {
       await client.query('BEGIN');
 
-      const locked = await client.query<LockedServiceRequestRow>(
-        `SELECT
-           id, request_code, unit_id, status::text AS status, client_id,
-           service_definition_id, service_definition_version_id, description, location,
-           priority::text AS priority, operational_notes, proposal_id, purchase_order_id,
-           row_version, converted_service_order_id
-         FROM sr.service_requests
-         WHERE id = $1
-         FOR UPDATE`,
-        [input.serviceRequestId],
-      );
-      const request = locked.rows[0];
+      const request = await lockServiceRequestForConversion(client, input.serviceRequestId);
       if (!request) {
         await client.query('ROLLBACK');
         return { outcome: 'version_conflict' };
@@ -369,35 +391,22 @@ export class ServiceOrdersRepository {
         purchaseOrderId: request.purchase_order_id,
         purchaseOrderSnapshot: input.purchaseOrderSnapshot,
         rcNumber: input.rcNumber,
+        contractId: input.contractId ?? null,
+        contractReference: input.contractReference ?? null,
+        contractSnapshot: input.contractSnapshot ?? null,
         actorIdentityId: input.actorIdentityId,
         historyEventType: 'CONVERTED_FROM_SERVICE_REQUEST',
         historyPayload: { serviceRequestId: request.id, requestCode: request.request_code },
       });
 
       await maybeInjectFault(this.faultInjection, FAULT_HOOKS.ServiceRequestConvertAfterOsInsert);
-      const updated = await client.query(
-        `UPDATE sr.service_requests
-         SET
-           status = $3::sr.service_request_status,
-           converted_at = NOW(),
-           converted_by_identity_id = $4,
-           converted_service_order_id = $5,
-           updated_by_identity_id = $4,
-           updated_at = NOW(),
-           row_version = row_version + 1
-         WHERE id = $1
-           AND row_version = $2
-           AND status = $6::sr.service_request_status`,
-        [
-          input.serviceRequestId,
-          input.rowVersion,
-          SERVICE_REQUEST_STATUSES.Converted,
-          input.actorIdentityId,
-          serviceOrder.id,
-          SERVICE_REQUEST_STATUSES.Approved,
-        ],
-      );
-      if ((updated.rowCount ?? 0) === 0) {
+      const updated = await markServiceRequestConverted(client, {
+        serviceRequestId: input.serviceRequestId,
+        rowVersion: input.rowVersion,
+        actorIdentityId: input.actorIdentityId,
+        serviceOrderId: serviceOrder.id,
+      });
+      if (!updated) {
         await client.query('ROLLBACK');
         return { outcome: 'version_conflict' };
       }
@@ -428,7 +437,7 @@ export class ServiceOrdersRepository {
          client_id, client_snapshot, service_definition_id, service_definition_version_id,
          service_snapshot, description, location, priority, operational_notes,
          service_request_id, proposal_id, proposal_snapshot, purchase_order_id, purchase_order_snapshot,
-         rc_number, contract_reference, contract_snapshot,
+         rc_number, contract_id, contract_reference, contract_snapshot,
          created_by_identity_id, updated_by_identity_id
        )
        VALUES (
@@ -436,8 +445,8 @@ export class ServiceOrdersRepository {
          $6, $7::jsonb, $8, $9,
          $10::jsonb, $11, $12::jsonb, $13, $14,
          $15, $16, $17::jsonb, $18, $19::jsonb,
-         $20, $21, $22::jsonb,
-         $23, $23
+         $20, $21, $22, $23::jsonb,
+         $24, $24
        )
        RETURNING ${SERVICE_ORDER_RETURNING}`,
       [
@@ -461,6 +470,7 @@ export class ServiceOrdersRepository {
         input.purchaseOrderId ?? null,
         input.purchaseOrderSnapshot ? JSON.stringify(input.purchaseOrderSnapshot) : null,
         input.rcNumber ?? null,
+        input.contractId ?? null,
         input.contractReference ?? null,
         input.contractSnapshot ? JSON.stringify(input.contractSnapshot) : null,
         input.actorIdentityId,

@@ -60,6 +60,7 @@ export type CommercialPricingLineSnapshot = {
   salePrice: string | null;
   internalCost: string | null;
   currencyCode: string;
+  unitCode?: string | null;
 };
 
 export type MeasurementCommercialReferenceSnapshot = {
@@ -69,6 +70,12 @@ export type MeasurementCommercialReferenceSnapshot = {
   pricingLines: CommercialPricingLineSnapshot[];
   proposalId?: string | null;
   purchaseOrderId?: string | null;
+  contractReference?: string | null;
+  contractSnapshot?: Record<string, unknown> | null;
+  servicePeriod?: {
+    startedAt: string | null;
+    completedAt: string | null;
+  };
 };
 
 export type MeasurementItemOrigin = {

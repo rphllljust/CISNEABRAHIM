@@ -11,8 +11,8 @@ import {
   mapAssetErrorToMessage,
   VERSION_CONFLICT_MESSAGE,
 } from '../api/asset-error-messages';
-import { AssetAllocationStatusBadge } from '../components/AssetAllocationStatusBadge';
 import { AssetLifecycleStatusBadge } from '../components/AssetLifecycleStatusBadge';
+import { AssetOperationalStatusCell } from '../components/AssetOperationalStatusCell';
 import { AssetVersionConflictNotice } from '../components/AssetVersionConflictNotice';
 import { ConfirmDialog } from '../../clients/components/ConfirmDialog';
 import { useAssetCapabilities } from '../hooks/useAssetCapabilities';
@@ -212,8 +212,8 @@ export function PhysicalAssetDetailPage() {
       <section className="assets-section" aria-labelledby="asset-status-heading">
         <h2 id="asset-status-heading">Status</h2>
         <p className="form-hint">
-          Cadastro (ativo/inativo) e alocação operacional são independentes. Um ativo ativo pode
-          estar alocado.
+          Cadastro (ativo/inativo) e disponibilidade operacional são independentes. Um ativo ativo
+          pode estar indisponível por alocação em ordem de serviço.
         </p>
         <dl className="assets-details">
           <div>
@@ -223,9 +223,9 @@ export function PhysicalAssetDetailPage() {
             </dd>
           </div>
           <div>
-            <dt>Alocação</dt>
+            <dt>Disponibilidade operacional</dt>
             <dd>
-              <AssetAllocationStatusBadge status={asset.allocationStatus} />
+              <AssetOperationalStatusCell asset={asset} />
             </dd>
           </div>
           <div>

@@ -1,17 +1,25 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { mapAssetErrorToMessage } from '../api/asset-error-messages';
-import { AssetsApiError, listPhysicalAssets } from '../api/physical-assets-api';
-import { AssetAllocationStatusBadge } from '../components/AssetAllocationStatusBadge';
+import {
+  AssetsApiError,
+  getPhysicalAssetSummary,
+  listPhysicalAssets,
+} from '../api/physical-assets-api';
 import { AssetLifecycleStatusBadge } from '../components/AssetLifecycleStatusBadge';
+import { AssetOperationalStatusCell } from '../components/AssetOperationalStatusCell';
+import { AssetRowActions } from '../components/AssetRowActions';
+import { AssetSummaryStrip } from '../components/AssetSummaryStrip';
 import { useAssetCapabilities, useAssetResourceTypes } from '../hooks/useAssetCapabilities';
 import {
-  ASSET_ALLOCATION_STATUSES,
   ASSET_LIFECYCLE_STATUSES,
-  type AssetAllocationStatus,
+  ASSET_OPERATIONAL_AVAILABILITIES,
   type AssetLifecycleStatus,
+  type AssetOperationalAvailability,
   type PhysicalAsset,
+  type PhysicalAssetListSummary,
 } from '../types/physical-asset.types';
-import { filterAssetsBySearch } from '../utils/asset-form-state';
+import { formatAssetPaginationRange } from '../utils/asset-operational-status';
 import {
   FilterCard,
   ModuleDeniedState,
@@ -31,6 +39,7 @@ import {
   moduleTableHeaderCellClass,
   moduleTableRowClass,
 } from '../../ui/module-layout';
+import { cn } from '../../ui/utils/cn';
 
 const PAGE_SIZE = 20;
 
@@ -38,36 +47,70 @@ type ListState =
   | { phase: 'loading' }
   | { phase: 'denied' }
   | { phase: 'error'; message: string; retryable: boolean }
-  | { phase: 'ready'; items: PhysicalAsset[]; offset: number; hasMore: boolean };
+  | {
+      phase: 'ready';
+      items: PhysicalAsset[];
+      offset: number;
+      total: number;
+      hasMore: boolean;
+    };
+
+function hasActiveFilters(input: {
+  lifecycleFilter: '' | AssetLifecycleStatus;
+  availabilityFilter: '' | AssetOperationalAvailability;
+  resourceTypeFilter: string;
+  search: string;
+}): boolean {
+  return Boolean(
+    input.lifecycleFilter ||
+      input.availabilityFilter ||
+      input.resourceTypeFilter ||
+      input.search.trim(),
+  );
+}
 
 export function PhysicalAssetsListPage() {
+  const navigate = useNavigate();
   const { capabilities } = useAssetCapabilities();
   const { resourceTypes } = useAssetResourceTypes();
   const [lifecycleFilter, setLifecycleFilter] = useState<'' | AssetLifecycleStatus>('');
-  const [allocationFilter, setAllocationFilter] = useState<'' | AssetAllocationStatus>('');
+  const [availabilityFilter, setAvailabilityFilter] = useState<'' | AssetOperationalAvailability>(
+    '',
+  );
   const [resourceTypeFilter, setResourceTypeFilter] = useState('');
   const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [listState, setListState] = useState<ListState>({ phase: 'loading' });
+  const [summary, setSummary] = useState<PhysicalAssetListSummary | null>(null);
 
   const loadPage = useCallback(
     async (offset: number, signal?: AbortSignal) => {
       setListState({ phase: 'loading' });
       try {
-        const response = await listPhysicalAssets(
-          {
-            limit: PAGE_SIZE,
-            offset,
-            lifecycleStatus: lifecycleFilter || undefined,
-            allocationStatus: allocationFilter || undefined,
-            resourceTypeId: resourceTypeFilter || undefined,
-          },
-          signal,
-        );
+        const scopedFilters = {
+          resourceTypeId: resourceTypeFilter || undefined,
+        };
+        const [response, summaryResponse] = await Promise.all([
+          listPhysicalAssets(
+            {
+              limit: PAGE_SIZE,
+              offset,
+              lifecycleStatus: lifecycleFilter || undefined,
+              availability: availabilityFilter || undefined,
+              resourceTypeId: resourceTypeFilter || undefined,
+              q: search.trim() || undefined,
+            },
+            signal,
+          ),
+          getPhysicalAssetSummary(scopedFilters, signal),
+        ]);
+        setSummary(summaryResponse);
         setListState({
           phase: 'ready',
           items: response.items,
           offset: response.offset,
-          hasMore: response.items.length === response.limit,
+          total: response.total,
+          hasMore: response.offset + response.items.length < response.total,
         });
       } catch (error) {
         if (error instanceof AssetsApiError) {
@@ -89,7 +132,7 @@ export function PhysicalAssetsListPage() {
         });
       }
     },
-    [allocationFilter, lifecycleFilter, resourceTypeFilter],
+    [availabilityFilter, lifecycleFilter, resourceTypeFilter, search],
   );
 
   useEffect(() => {
@@ -98,14 +141,14 @@ export function PhysicalAssetsListPage() {
     return () => controller.abort();
   }, [loadPage]);
 
-  const filteredItems = useMemo(() => {
-    if (listState.phase !== 'ready') {
-      return [];
-    }
-    return filterAssetsBySearch(listState.items, search);
-  }, [listState, search]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setSearch(searchInput);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [searchInput]);
 
-  if (listState.phase === 'loading') {
+  if (listState.phase === 'loading' && summary === null) {
     return <ModuleLoadingState title="Ativos físicos" message="Carregando ativos…" />;
   }
 
@@ -129,8 +172,20 @@ export function PhysicalAssetsListPage() {
     );
   }
 
-  const { offset, hasMore } = listState;
-  const pageNumber = Math.floor(offset / PAGE_SIZE) + 1;
+  const readyState =
+    listState.phase === 'ready'
+      ? listState
+      : { items: [], offset: 0, total: 0, hasMore: false };
+  const { items, offset, total, hasMore } = readyState;
+  const filtersActive = hasActiveFilters({
+    lifecycleFilter,
+    availabilityFilter,
+    resourceTypeFilter,
+    search,
+  });
+  const isEmptyList = total === 0 && !filtersActive;
+  const isEmptyFiltered = total === 0 && filtersActive;
+  const rangeLabel = formatAssetPaginationRange(offset, PAGE_SIZE, items.length, total);
 
   return (
     <ModulePage>
@@ -143,6 +198,12 @@ export function PhysicalAssetsListPage() {
         }
       />
 
+      <AssetSummaryStrip
+        summary={summary}
+        activeAvailabilityFilter={availabilityFilter}
+        onSelectAvailability={setAvailabilityFilter}
+      />
+
       <FilterCard>
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           <div className="sm:col-span-2 lg:col-span-1">
@@ -153,14 +214,14 @@ export function PhysicalAssetsListPage() {
               id="asset-search"
               type="search"
               className={filterControlClass}
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
               placeholder="Código, nome ou placa"
             />
           </div>
           <div>
             <label className={filterLabelClass} htmlFor="asset-lifecycle-filter">
-              Cadastro
+              Status cadastral
             </label>
             <select
               id="asset-lifecycle-filter"
@@ -171,25 +232,26 @@ export function PhysicalAssetsListPage() {
               }
             >
               <option value="">Todos</option>
-              <option value={ASSET_LIFECYCLE_STATUSES.Active}>Ativos</option>
-              <option value={ASSET_LIFECYCLE_STATUSES.Inactive}>Inativos</option>
+              <option value={ASSET_LIFECYCLE_STATUSES.Active}>Ativo</option>
+              <option value={ASSET_LIFECYCLE_STATUSES.Inactive}>Inativo</option>
             </select>
           </div>
           <div>
-            <label className={filterLabelClass} htmlFor="asset-allocation-filter">
-              Alocação
+            <label className={filterLabelClass} htmlFor="asset-availability-filter">
+              Disponibilidade
             </label>
             <select
-              id="asset-allocation-filter"
+              id="asset-availability-filter"
               className={filterControlClass}
-              value={allocationFilter}
+              value={availabilityFilter}
               onChange={(event) =>
-                setAllocationFilter(event.target.value as '' | AssetAllocationStatus)
+                setAvailabilityFilter(event.target.value as '' | AssetOperationalAvailability)
               }
             >
               <option value="">Todas</option>
-              <option value={ASSET_ALLOCATION_STATUSES.Available}>Disponíveis</option>
-              <option value={ASSET_ALLOCATION_STATUSES.Allocated}>Alocados</option>
+              <option value={ASSET_OPERATIONAL_AVAILABILITIES.Available}>Disponível</option>
+              <option value={ASSET_OPERATIONAL_AVAILABILITIES.Allocated}>Alocado</option>
+              <option value={ASSET_OPERATIONAL_AVAILABILITIES.Unavailable}>Indisponível</option>
             </select>
           </div>
           <div>
@@ -213,11 +275,25 @@ export function PhysicalAssetsListPage() {
         </div>
       </FilterCard>
 
-      {filteredItems.length === 0 ? (
+      {listState.phase === 'loading' ? (
+        <p className="text-sm text-gray-500" aria-busy="true" aria-live="polite">
+          Atualizando listagem…
+        </p>
+      ) : null}
+
+      {isEmptyList ? (
+        <p className="text-sm text-gray-500" role="status">
+          Nenhum ativo cadastrado.
+        </p>
+      ) : null}
+
+      {isEmptyFiltered ? (
         <p className="text-sm text-gray-500" role="status">
           Nenhum ativo encontrado para os filtros selecionados.
         </p>
-      ) : (
+      ) : null}
+
+      {items.length > 0 ? (
         <ModuleTableCard>
           <table className={moduleTableClass} aria-label="Lista de ativos físicos">
             <thead className={moduleTableHeadClass}>
@@ -232,18 +308,40 @@ export function PhysicalAssetsListPage() {
                   Tipo
                 </th>
                 <th scope="col" className={moduleTableHeaderCellClass}>
-                  Cadastro
+                  Status
                 </th>
                 <th scope="col" className={moduleTableHeaderCellClass}>
-                  Alocação
+                  Disponibilidade
+                </th>
+                <th scope="col" className={cn(moduleTableHeaderCellClass, 'w-16 text-right')}>
+                  Ações
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredItems.map((asset) => (
-                <tr key={asset.id} className={moduleTableRowClass}>
+              {items.map((asset) => {
+                const openDetail = () => {
+                  void navigate(`/app/assets/${asset.id}`);
+                };
+
+                return (
+                <tr
+                  key={asset.id}
+                  className={cn(moduleTableRowClass, 'cursor-pointer')}
+                  tabIndex={0}
+                  onClick={openDetail}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      openDetail();
+                    }
+                  }}
+                >
                   <td className={moduleTableCellClass}>
-                    <ModuleTableLink to={`/app/assets/${asset.id}`}>
+                    <ModuleTableLink
+                      to={`/app/assets/${asset.id}`}
+                      onClick={(event) => event.stopPropagation()}
+                    >
                       {asset.assetCode}
                     </ModuleTableLink>
                   </td>
@@ -253,22 +351,37 @@ export function PhysicalAssetsListPage() {
                     <AssetLifecycleStatusBadge status={asset.lifecycleStatus} />
                   </td>
                   <td className={moduleTableCellClass}>
-                    <AssetAllocationStatusBadge status={asset.allocationStatus} />
+                    <AssetOperationalStatusCell asset={asset} />
+                  </td>
+                  <td
+                    className={cn(moduleTableCellClass, 'text-right')}
+                    onClick={(event) => event.stopPropagation()}
+                    onKeyDown={(event) => event.stopPropagation()}
+                  >
+                    <AssetRowActions
+                      asset={asset}
+                      canRead={capabilities.canRead}
+                      canUpdate={capabilities.canUpdate}
+                    />
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </ModuleTableCard>
-      )}
+      ) : null}
 
-      <ModulePagination
-        pageNumber={pageNumber}
-        previousDisabled={offset === 0}
-        nextDisabled={!hasMore}
-        onPrevious={() => void loadPage(Math.max(0, offset - PAGE_SIZE))}
-        onNext={() => void loadPage(offset + PAGE_SIZE)}
-      />
+      {total > 0 ? (
+        <ModulePagination
+          pageNumber={Math.floor(offset / PAGE_SIZE) + 1}
+          rangeLabel={rangeLabel}
+          previousDisabled={offset === 0 || listState.phase === 'loading'}
+          nextDisabled={!hasMore || listState.phase === 'loading'}
+          onPrevious={() => void loadPage(Math.max(0, offset - PAGE_SIZE))}
+          onNext={() => void loadPage(offset + PAGE_SIZE)}
+        />
+      ) : null}
     </ModulePage>
   );
 }

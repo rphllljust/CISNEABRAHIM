@@ -2,6 +2,7 @@ import type {
   AssetAllocationStatus,
   AssetLifecycleStatus,
 } from '../domain/physical-asset';
+import { resolveAllocationStatusFromCurrentAllocation } from '../domain/physical-asset';
 
 export type VehicleProfileRow = {
   plate_display: string;
@@ -25,8 +26,21 @@ export type PhysicalAssetRow = {
   deactivated_at: string | null;
 };
 
+export type PhysicalAssetCurrentAllocation = {
+  service_order_id: string;
+  order_number: string;
+};
+
 export type PhysicalAssetDetail = PhysicalAssetRow & {
   vehicle: VehicleProfileRow | null;
+  current_allocation?: PhysicalAssetCurrentAllocation | null;
+};
+
+export type PhysicalAssetListSummaryCounts = {
+  total: number;
+  available: number;
+  allocated: number;
+  unavailable: number;
 };
 
 export type PhysicalAssetResponse = {
@@ -48,6 +62,24 @@ export type PhysicalAssetResponse = {
     chassis: string | null;
     model: string | null;
   } | null;
+  currentAllocation: {
+    serviceOrderId: string;
+    orderNumber: string;
+  } | null;
+};
+
+export type PhysicalAssetListResponse = {
+  items: PhysicalAssetResponse[];
+  limit: number;
+  offset: number;
+  total: number;
+};
+
+export type PhysicalAssetListSummaryResponse = {
+  total: number;
+  available: number;
+  allocated: number;
+  unavailable: number;
 };
 
 export function toPhysicalAssetResponse(detail: PhysicalAssetDetail): PhysicalAssetResponse {
@@ -59,7 +91,7 @@ export function toPhysicalAssetResponse(detail: PhysicalAssetDetail): PhysicalAs
     resourceTypeClassification: detail.resource_type_classification,
     name: detail.name,
     lifecycleStatus: detail.lifecycle_status,
-    allocationStatus: detail.allocation_status,
+    allocationStatus: resolveAllocationStatusFromCurrentAllocation(detail.current_allocation),
     unitId: detail.unit_id,
     version: detail.version,
     createdAt: detail.created_at,
@@ -72,5 +104,22 @@ export function toPhysicalAssetResponse(detail: PhysicalAssetDetail): PhysicalAs
           model: detail.vehicle.model,
         }
       : null,
+    currentAllocation: detail.current_allocation
+      ? {
+          serviceOrderId: detail.current_allocation.service_order_id,
+          orderNumber: detail.current_allocation.order_number,
+        }
+      : null,
+  };
+}
+
+export function toPhysicalAssetListSummaryResponse(
+  counts: PhysicalAssetListSummaryCounts,
+): PhysicalAssetListSummaryResponse {
+  return {
+    total: counts.total,
+    available: counts.available,
+    allocated: counts.allocated,
+    unavailable: counts.unavailable,
   };
 }

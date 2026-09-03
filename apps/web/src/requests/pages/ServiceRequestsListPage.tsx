@@ -1,11 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
-import { listServiceRequests, ServiceRequestsApiError } from '../api/service-requests-api';
+import {
+  getServiceRequestSummary,
+  listServiceRequests,
+  ServiceRequestsApiError,
+} from '../api/service-requests-api';
 import { mapRequestErrorToMessage } from '../api/request-error-messages';
 import { ServiceRequestStatusBadge } from '../components/ServiceRequestStatusBadge';
+import { ServiceRequestSummaryCards } from '../components/ServiceRequestSummaryCards';
 import { useServiceRequestCapabilities } from '../hooks/useServiceRequestCapabilities';
 import {
   SERVICE_REQUEST_STATUSES,
   type ServiceRequest,
+  type ServiceRequestListSummary,
   type ServiceRequestStatus,
 } from '../types/service-request.types';
 import {
@@ -46,20 +52,28 @@ export function ServiceRequestsListPage() {
   const [statusFilter, setStatusFilter] = useState<'' | ServiceRequestStatus>('');
   const [unitFilter, setUnitFilter] = useState('');
   const [listState, setListState] = useState<ListState>({ phase: 'loading' });
+  const [summary, setSummary] = useState<ServiceRequestListSummary | null>(null);
 
   const loadPage = useCallback(
     async (offset: number, signal?: AbortSignal) => {
       setListState({ phase: 'loading' });
       try {
-        const response = await listServiceRequests(
-          {
-            limit: PAGE_SIZE,
-            offset,
-            status: statusFilter || undefined,
-            unitId: unitFilter.trim() || undefined,
-          },
-          signal,
-        );
+        const scopedFilters = {
+          unitId: unitFilter.trim() || undefined,
+        };
+        const [response, summaryResponse] = await Promise.all([
+          listServiceRequests(
+            {
+              limit: PAGE_SIZE,
+              offset,
+              status: statusFilter || undefined,
+              ...scopedFilters,
+            },
+            signal,
+          ),
+          getServiceRequestSummary(scopedFilters, signal),
+        ]);
+        setSummary(summaryResponse);
         setListState({
           phase: 'ready',
           items: response.items,
@@ -133,6 +147,12 @@ export function ServiceRequestsListPage() {
             <ModulePrimaryLink to="/app/requests/new">Nova solicitação</ModulePrimaryLink>
           ) : null
         }
+      />
+
+      <ServiceRequestSummaryCards
+        summary={summary}
+        activeStatusFilter={statusFilter}
+        onSelectStatus={setStatusFilter}
       />
 
       <FilterCard>

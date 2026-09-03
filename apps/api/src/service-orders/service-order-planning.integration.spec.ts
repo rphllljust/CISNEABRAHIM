@@ -37,15 +37,17 @@ import { ClientAccessService } from '../clients/services/client-access.service';
 import { ResourcesModule } from '../resources/resources.module';
 import { PhysicalAssetsAccessService } from '../resources/services/physical-assets-access.service';
 import { PhysicalResourceTypesAccessService } from '../resources/services/physical-resource-types-access.service';
-import { SERVICE_ORDER_ORIGINS } from './domain/service-order';
+import { SERVICE_ORDER_ORIGINS, SERVICE_ORDER_STATUSES } from './domain/service-order';
 import { PLANNED_RESOURCE_KINDS } from './domain/resource-planning';
 import { SERVICE_ORDERS_ERROR_CODES } from './errors/service-orders-error-codes';
 import { ServiceOrdersModule } from './service-orders.module';
+import { ServiceOrderExecutionAccessService } from './services/service-order-execution-access.service';
 import { ServiceOrdersAccessService } from './services/service-orders-access.service';
 import { ServiceOrderPlanningAccessService } from './services/service-order-planning-access.service';
 
 const UNIT_A = 'unit-plan-a';
 const TEST_CNPJ = '11222333000181';
+const TEST_CNPJ_ALT = '11897171000181';
 
 const SAMPLE_RESOURCE_REQUIREMENTS = [
   {
@@ -71,6 +73,7 @@ async function grantPlanningAdmin(pool: Pool, identityId: string, grantedBy: str
     AUTHZ_ACTIONS.ServiceOrdersServiceOrderRead,
     AUTHZ_ACTIONS.ServiceOrdersServiceOrderPrepare,
     AUTHZ_ACTIONS.ServiceOrdersServiceOrderRelease,
+    AUTHZ_ACTIONS.ServiceOrdersServiceOrderCancel,
     AUTHZ_ACTIONS.ServiceOrdersPlannedResourcePlan,
     AUTHZ_ACTIONS.ServiceOrdersPlannedResourceRead,
     AUTHZ_ACTIONS.ServiceOrdersPlannedResourceUpdate,
@@ -86,9 +89,15 @@ async function grantPlanningAdmin(pool: Pool, identityId: string, grantedBy: str
     AUTHZ_ACTIONS.CatalogServicePublish,
     AUTHZ_ACTIONS.ResourcesAssetCreate,
     AUTHZ_ACTIONS.ResourcesAssetRead,
+    AUTHZ_ACTIONS.ResourcesAssetList,
     AUTHZ_ACTIONS.ResourcesAssetDeactivate,
     AUTHZ_ACTIONS.ResourcesResourceTypeRead,
     AUTHZ_ACTIONS.ResourcesResourceTypeList,
+    AUTHZ_ACTIONS.ServiceOrdersExecutionRead,
+    AUTHZ_ACTIONS.ServiceOrdersExecutionStart,
+    AUTHZ_ACTIONS.ServiceOrdersExecutionPause,
+    AUTHZ_ACTIONS.ServiceOrdersExecutionRecord,
+    AUTHZ_ACTIONS.ServiceOrdersExecutionComplete,
   ];
 
   for (const action of actions) {
@@ -118,6 +127,7 @@ describe('Service order planning and allocation PostgreSQL integration', () => {
   let pool: Pool;
   let serviceOrdersAccess: ServiceOrdersAccessService;
   let planningAccess: ServiceOrderPlanningAccessService;
+  let executionAccess: ServiceOrderExecutionAccessService;
   let clientAccess: ClientAccessService;
   let catalogAccess: ServiceCatalogAccessService;
   let assetsAccess: PhysicalAssetsAccessService;
@@ -147,6 +157,7 @@ describe('Service order planning and allocation PostgreSQL integration', () => {
 
     serviceOrdersAccess = module.get(ServiceOrdersAccessService);
     planningAccess = module.get(ServiceOrderPlanningAccessService);
+    executionAccess = module.get(ServiceOrderExecutionAccessService);
     clientAccess = module.get(ClientAccessService);
     catalogAccess = module.get(ServiceCatalogAccessService);
     assetsAccess = module.get(PhysicalAssetsAccessService);
@@ -182,11 +193,14 @@ describe('Service order planning and allocation PostgreSQL integration', () => {
     return { identityId, actor: { identityId, sessionId: 'sid' } };
   }
 
-  async function seedReleasedOrder(actor: { identityId: string; sessionId: string }) {
+  async function seedReleasedOrder(
+    actor: { identityId: string; sessionId: string },
+    taxId: string = TEST_CNPJ,
+  ) {
     const client = await clientAccess.create(actor, {
       legalName: `Cliente Plan ${crypto.randomUUID()}`,
       tradeName: 'Cliente Plan',
-      taxId: TEST_CNPJ,
+      taxId,
       contacts: [
         {
           name: 'Contato',
@@ -214,7 +228,9 @@ describe('Service order planning and allocation PostgreSQL integration', () => {
       ],
       resourceRequirements: SAMPLE_RESOURCE_REQUIREMENTS,
       laborRequirements: SAMPLE_LABOR_REQUIREMENTS,
-      executionRequirements: [],
+      executionRequirements: [
+        { requirementType: 'OBSERVATION' as const, requirementLevel: 'REQUIRED' as const },
+      ],
     });
     const definition = await catalogAccess.getDefinition(actor, draft.serviceDefinitionId);
     const published = await catalogAccess.publishVersion(actor, draft.serviceDefinitionId, 1, definition.version);
@@ -235,6 +251,22 @@ describe('Service order planning and allocation PostgreSQL integration', () => {
     });
 
     return { client, published, released };
+  }
+
+  async function seedReleasedOrderWithPlanning(actor: { identityId: string; sessionId: string }) {
+    const { released } = await seedReleasedOrder(actor, TEST_CNPJ_ALT);
+    await planningAccess.planResource(actor, released.id, {
+      requirementKind: PLANNED_RESOURCE_KINDS.PhysicalResource,
+      resourceTypeCode: 'WATER_TRUCK',
+      plannedQuantity: '2',
+    });
+    await planningAccess.planResource(actor, released.id, {
+      requirementKind: PLANNED_RESOURCE_KINDS.Labor,
+      laborTypeCode: 'DRIVER',
+      plannedQuantity: '2',
+    });
+    const refreshed = await serviceOrdersAccess.getById(actor, released.id);
+    return { released: refreshed };
   }
 
   async function waterTruckTypeId(actor: { identityId: string; sessionId: string }) {
@@ -532,5 +564,425 @@ describe('Service order planning and allocation PostgreSQL integration', () => {
       [allocated.id],
     );
     expect(Number(history.rows[0]?.count ?? '0')).toBeGreaterThanOrEqual(2);
+  });
+
+  it('replans quantity and window while active allocations remain valid', async () => {
+    const { actor } = await seedActor();
+    const { released } = await seedReleasedOrder(actor);
+    const asset = await createWaterTruck(actor, `WT-${crypto.randomUUID().slice(0, 6)}`);
+    const planned = await planningAccess.planResource(actor, released.id, {
+      requirementKind: PLANNED_RESOURCE_KINDS.PhysicalResource,
+      resourceTypeCode: 'WATER_TRUCK',
+      plannedQuantity: '1',
+      operationalStart: '2026-06-01T08:00:00.000Z',
+      operationalEnd: '2026-06-01T14:00:00.000Z',
+    });
+    const allocated = await planningAccess.allocateResource(actor, released.id, {
+      plannedResourceId: planned.id,
+      physicalAssetId: asset.id,
+      operationalStart: '2026-06-01T08:00:00.000Z',
+      operationalEnd: '2026-06-01T10:00:00.000Z',
+    });
+
+    const replanned = await planningAccess.updatePlannedResource(actor, released.id, planned.id, {
+      rowVersion: planned.rowVersion,
+      plannedQuantity: '2',
+      operationalEnd: '2026-06-01T16:00:00.000Z',
+    });
+
+    expect(replanned.plannedQuantity).toBe('2.0000');
+    const stillAllocated = await planningAccess.listAllocations(actor, released.id);
+    expect(stillAllocated.some((item) => item.id === allocated.id && item.status === 'ACTIVE')).toBe(
+      true,
+    );
+  });
+
+  it('rejects shrinking planned window when active allocations would fall outside', async () => {
+    const { actor } = await seedActor();
+    const { released } = await seedReleasedOrder(actor);
+    const asset = await createWaterTruck(actor, `WT-${crypto.randomUUID().slice(0, 6)}`);
+    const planned = await planningAccess.planResource(actor, released.id, {
+      requirementKind: PLANNED_RESOURCE_KINDS.PhysicalResource,
+      resourceTypeCode: 'WATER_TRUCK',
+      plannedQuantity: '1',
+      operationalStart: '2026-06-01T08:00:00.000Z',
+      operationalEnd: '2026-06-01T14:00:00.000Z',
+    });
+    await planningAccess.allocateResource(actor, released.id, {
+      plannedResourceId: planned.id,
+      physicalAssetId: asset.id,
+      operationalStart: '2026-06-01T08:00:00.000Z',
+      operationalEnd: '2026-06-01T10:00:00.000Z',
+    });
+
+    await expect(
+      planningAccess.updatePlannedResource(actor, released.id, planned.id, {
+        rowVersion: planned.rowVersion,
+        operationalEnd: '2026-06-01T09:00:00.000Z',
+      }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.ALLOCATION_OUTSIDE_WINDOW });
+  });
+
+  it('reallocates asset within planned window and preserves prior allocation history', async () => {
+    const { actor } = await seedActor();
+    const { released } = await seedReleasedOrder(actor);
+    const assetA = await createWaterTruck(actor, `WT-A-${crypto.randomUUID().slice(0, 4)}`);
+    const assetB = await createWaterTruck(actor, `WT-B-${crypto.randomUUID().slice(0, 4)}`);
+    const planned = await planningAccess.planResource(actor, released.id, {
+      requirementKind: PLANNED_RESOURCE_KINDS.PhysicalResource,
+      resourceTypeCode: 'WATER_TRUCK',
+      plannedQuantity: '1',
+      operationalStart: '2026-06-01T08:00:00.000Z',
+      operationalEnd: '2026-06-01T14:00:00.000Z',
+    });
+    const allocated = await planningAccess.allocateResource(actor, released.id, {
+      plannedResourceId: planned.id,
+      physicalAssetId: assetA.id,
+      operationalStart: '2026-06-01T08:00:00.000Z',
+      operationalEnd: '2026-06-01T10:00:00.000Z',
+    });
+
+    const reallocated = await planningAccess.reallocateResource(actor, released.id, allocated.id, {
+      rowVersion: allocated.rowVersion,
+      physicalAssetId: assetB.id,
+      operationalStart: '2026-06-01T10:00:00.000Z',
+      operationalEnd: '2026-06-01T12:00:00.000Z',
+    });
+
+    expect(reallocated.physicalAssetId).toBe(assetB.id);
+    expect(reallocated.historyEvents.some((event) => event.eventType === 'REALLOCATE_RESOURCE')).toBe(
+      true,
+    );
+
+    const priorHistory = await pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count
+       FROM res.resource_allocation_history_events
+       WHERE resource_allocation_id = $1`,
+      [allocated.id],
+    );
+    expect(Number(priorHistory.rows[0]?.count ?? '0')).toBeGreaterThanOrEqual(1);
+
+    const audit = await pool.query<{ action: string }>(
+      `SELECT action FROM audit.security_audit_events WHERE resource_id = $1`,
+      [released.id],
+    );
+    expect(audit.rows.map((row) => row.action)).toContain(
+      SECURITY_AUDIT_ACTIONS.ServiceOrdersResourceReallocate,
+    );
+  });
+
+  it('rejects reallocation outside planned operational window', async () => {
+    const { actor } = await seedActor();
+    const { released } = await seedReleasedOrder(actor);
+    const assetA = await createWaterTruck(actor, `WT-A-${crypto.randomUUID().slice(0, 4)}`);
+    const assetB = await createWaterTruck(actor, `WT-B-${crypto.randomUUID().slice(0, 4)}`);
+    const planned = await planningAccess.planResource(actor, released.id, {
+      requirementKind: PLANNED_RESOURCE_KINDS.PhysicalResource,
+      resourceTypeCode: 'WATER_TRUCK',
+      plannedQuantity: '1',
+      operationalStart: '2026-06-01T08:00:00.000Z',
+      operationalEnd: '2026-06-01T12:00:00.000Z',
+    });
+    const allocated = await planningAccess.allocateResource(actor, released.id, {
+      plannedResourceId: planned.id,
+      physicalAssetId: assetA.id,
+      operationalStart: '2026-06-01T08:00:00.000Z',
+      operationalEnd: '2026-06-01T10:00:00.000Z',
+    });
+
+    await expect(
+      planningAccess.reallocateResource(actor, released.id, allocated.id, {
+        rowVersion: allocated.rowVersion,
+        physicalAssetId: assetB.id,
+        operationalStart: '2026-06-01T11:00:00.000Z',
+        operationalEnd: '2026-06-01T13:00:00.000Z',
+      }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.ALLOCATION_OUTSIDE_WINDOW });
+  });
+
+  it('rejects planning mutations in incompatible service order states', async () => {
+    const { actor } = await seedActor();
+    const { released } = await seedReleasedOrder(actor);
+    const created = await serviceOrdersAccess.create(actor, {
+      origin: SERVICE_ORDER_ORIGINS.AuthorizedDirect,
+      unitId: UNIT_A,
+      description: 'Rascunho sem planejamento',
+    });
+
+    await expect(
+      planningAccess.planResource(actor, created.id, {
+        requirementKind: PLANNED_RESOURCE_KINDS.PhysicalResource,
+        resourceTypeCode: 'WATER_TRUCK',
+        plannedQuantity: '1',
+      }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.INVALID_STATE });
+
+    const { released: plannedReleased } = await seedReleasedOrderWithPlanning(actor);
+    const started = await executionAccess.start(actor, plannedReleased.id, {
+      rowVersion: plannedReleased.rowVersion,
+    });
+    const paused = await executionAccess.pause(actor, started.id, { rowVersion: started.rowVersion });
+    expect(paused.status).toBe(SERVICE_ORDER_STATUSES.Paused);
+
+    await expect(
+      planningAccess.planResource(actor, paused.id, {
+        requirementKind: PLANNED_RESOURCE_KINDS.PhysicalResource,
+        resourceTypeCode: 'WATER_TRUCK',
+        plannedQuantity: '1',
+      }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.INVALID_STATE });
+
+    const cancelled = await serviceOrdersAccess.cancel(actor, released.id, {
+      rowVersion: released.rowVersion,
+      cancellationReason: 'Cancelada para teste',
+    });
+    expect(cancelled.status).toBe(SERVICE_ORDER_STATUSES.Cancelled);
+    await expect(
+      planningAccess.planResource(actor, cancelled.id, {
+        requirementKind: PLANNED_RESOURCE_KINDS.PhysicalResource,
+        resourceTypeCode: 'WATER_TRUCK',
+        plannedQuantity: '1',
+      }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.INVALID_STATE });
+  });
+
+  it('allows replanning during IN_EXECUTION without overwriting execution facts', async () => {
+    const { actor } = await seedActor();
+    const { released } = await seedReleasedOrderWithPlanning(actor);
+    const started = await executionAccess.start(actor, released.id, { rowVersion: released.rowVersion });
+
+    await executionAccess.recordObservation(actor, started.id, {
+      rowVersion: started.rowVersion,
+      text: 'Execução iniciada com planejamento vigente.',
+    });
+    const afterRecord = await serviceOrdersAccess.getById(actor, started.id);
+    const entriesBefore = await pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM so.execution_entries WHERE service_order_id = $1`,
+      [started.id],
+    );
+
+    const labor = (await planningAccess.listPlannedResources(actor, started.id)).find(
+      (item) => item.laborTypeCode === 'DRIVER',
+    );
+    expect(labor).toBeDefined();
+    await planningAccess.updatePlannedResource(actor, started.id, labor!.id, {
+      rowVersion: labor!.rowVersion,
+      plannedQuantity: '3',
+      notes: 'Reforço operacional',
+    });
+
+    const entriesAfter = await pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM so.execution_entries WHERE service_order_id = $1`,
+      [started.id],
+    );
+    expect(entriesAfter.rows[0]?.count).toBe(entriesBefore.rows[0]?.count);
+
+    const execution = await executionAccess.getExecution(actor, afterRecord.id);
+    expect(execution.entries).toHaveLength(1);
+    expect(execution.entries[0]?.entryType).toBe('OBSERVATION');
+  });
+
+  it('blocks removing planned resource with active allocations', async () => {
+    const { actor } = await seedActor();
+    const { released } = await seedReleasedOrder(actor);
+    const asset = await createWaterTruck(actor, `WT-${crypto.randomUUID().slice(0, 6)}`);
+    const planned = await planningAccess.planResource(actor, released.id, {
+      requirementKind: PLANNED_RESOURCE_KINDS.PhysicalResource,
+      resourceTypeCode: 'WATER_TRUCK',
+      plannedQuantity: '1',
+    });
+    await planningAccess.allocateResource(actor, released.id, {
+      plannedResourceId: planned.id,
+      physicalAssetId: asset.id,
+      operationalStart: '2026-06-01T08:00:00.000Z',
+      operationalEnd: '2026-06-01T10:00:00.000Z',
+    });
+
+    await expect(
+      planningAccess.removePlannedResource(actor, released.id, planned.id, {
+        rowVersion: planned.rowVersion,
+      }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.INVALID_STATE });
+  });
+
+  it('resolves concurrent planned resource updates deterministically', async () => {
+    const { actor } = await seedActor();
+    const { released } = await seedReleasedOrder(actor);
+    const planned = await planningAccess.planResource(actor, released.id, {
+      requirementKind: PLANNED_RESOURCE_KINDS.Labor,
+      laborTypeCode: 'DRIVER',
+      plannedQuantity: '1',
+    });
+
+    const results = await Promise.allSettled([
+      planningAccess.updatePlannedResource(actor, released.id, planned.id, {
+        rowVersion: planned.rowVersion,
+        plannedQuantity: '2',
+      }),
+      planningAccess.updatePlannedResource(actor, released.id, planned.id, {
+        rowVersion: planned.rowVersion,
+        plannedQuantity: '3',
+      }),
+    ]);
+
+    const fulfilled = results.filter((result) => result.status === 'fulfilled');
+    const rejected = results.filter((result) => result.status === 'rejected');
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+  });
+
+  it('reflects service order allocation in physical asset operational availability', async () => {
+    const { actor } = await seedActor();
+    const { released } = await seedReleasedOrder(actor);
+    const asset = await createWaterTruck(actor, `WT-${crypto.randomUUID().slice(0, 6)}`);
+    const planned = await planningAccess.planResource(actor, released.id, {
+      requirementKind: PLANNED_RESOURCE_KINDS.PhysicalResource,
+      resourceTypeCode: 'WATER_TRUCK',
+      plannedQuantity: '1',
+    });
+
+    const before = await assetsAccess.getById(actor, asset.id);
+    expect(before.allocationStatus).toBe('AVAILABLE');
+    expect(before.currentAllocation).toBeNull();
+
+    await planningAccess.allocateResource(actor, released.id, {
+      plannedResourceId: planned.id,
+      physicalAssetId: asset.id,
+      operationalStart: '2026-06-01T08:00:00.000Z',
+      operationalEnd: '2026-06-01T10:00:00.000Z',
+    });
+
+    const after = await assetsAccess.getById(actor, asset.id);
+    expect(after.lifecycleStatus).toBe('ACTIVE');
+    expect(after.allocationStatus).toBe('ALLOCATED');
+    expect(after.currentAllocation?.serviceOrderId).toBe(released.id);
+
+    const summary = await assetsAccess.summary(actor, {});
+    expect(summary.allocated).toBeGreaterThanOrEqual(1);
+
+    const allocatedList = await assetsAccess.list(actor, {
+      limit: 20,
+      offset: 0,
+      availability: 'ALLOCATED',
+    });
+    expect(allocatedList.items.some((item) => item.id === asset.id)).toBe(true);
+  });
+
+  it('rejects workforce (labor) allocation until dedicated support exists', async () => {
+    const { actor } = await seedActor();
+    const { released } = await seedReleasedOrder(actor);
+    const asset = await createWaterTruck(actor, `WT-${crypto.randomUUID().slice(0, 6)}`);
+    const labor = await planningAccess.planResource(actor, released.id, {
+      requirementKind: PLANNED_RESOURCE_KINDS.Labor,
+      laborTypeCode: 'DRIVER',
+      plannedQuantity: '1',
+    });
+
+    await expect(
+      planningAccess.allocateResource(actor, released.id, {
+        plannedResourceId: labor.id,
+        physicalAssetId: asset.id,
+        operationalStart: '2026-06-01T08:00:00.000Z',
+        operationalEnd: '2026-06-01T10:00:00.000Z',
+      }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.LABOR_ALLOCATION_NOT_SUPPORTED });
+  });
+
+  it('records allocation history with resource, service order, period and actor', async () => {
+    const { actor } = await seedActor();
+    const { released } = await seedReleasedOrder(actor);
+    const asset = await createWaterTruck(actor, `WT-${crypto.randomUUID().slice(0, 6)}`);
+    const planned = await planningAccess.planResource(actor, released.id, {
+      requirementKind: PLANNED_RESOURCE_KINDS.PhysicalResource,
+      resourceTypeCode: 'WATER_TRUCK',
+      plannedQuantity: '1',
+    });
+
+    const allocated = await planningAccess.allocateResource(actor, released.id, {
+      plannedResourceId: planned.id,
+      physicalAssetId: asset.id,
+      operationalStart: '2026-06-01T08:00:00.000Z',
+      operationalEnd: '2026-06-01T10:00:00.000Z',
+    });
+
+    const allocateEvent = allocated.historyEvents.find((event) => event.eventType === 'ALLOCATE_RESOURCE');
+    expect(allocateEvent).toBeDefined();
+    expect(allocateEvent?.payload).toMatchObject({
+      serviceOrderId: released.id,
+      plannedResourceId: planned.id,
+      physicalAssetId: asset.id,
+      resourceTypeCode: 'WATER_TRUCK',
+      operationalStart: '2026-06-01T08:00:00.000Z',
+      operationalEnd: '2026-06-01T10:00:00.000Z',
+    });
+    expect(allocateEvent?.actorIdentityId).toBe(actor.identityId);
+
+    const removed = await planningAccess.removeAllocation(actor, released.id, allocated.id, {
+      rowVersion: allocated.rowVersion,
+    });
+    const removeEvent = removed.historyEvents.find((event) => event.eventType === 'REMOVE_ALLOCATION');
+    expect(removeEvent?.payload).toMatchObject({
+      serviceOrderId: released.id,
+      physicalAssetId: asset.id,
+      operationalStart: '2026-06-01T08:00:00.000Z',
+      operationalEnd: '2026-06-01T10:00:00.000Z',
+    });
+    expect(removeEvent?.actorIdentityId).toBe(actor.identityId);
+  });
+
+  it('prevents concurrent overlapping allocation across different service orders', async () => {
+    const { actor } = await seedActor();
+    const { released: orderA } = await seedReleasedOrder(actor, TEST_CNPJ);
+    const { released: orderB } = await seedReleasedOrder(actor, TEST_CNPJ_ALT);
+    const asset = await createWaterTruck(actor, `WT-${crypto.randomUUID().slice(0, 6)}`);
+
+    const plannedA = await planningAccess.planResource(actor, orderA.id, {
+      requirementKind: PLANNED_RESOURCE_KINDS.PhysicalResource,
+      resourceTypeCode: 'WATER_TRUCK',
+      plannedQuantity: '1',
+    });
+    const plannedB = await planningAccess.planResource(actor, orderB.id, {
+      requirementKind: PLANNED_RESOURCE_KINDS.PhysicalResource,
+      resourceTypeCode: 'WATER_TRUCK',
+      plannedQuantity: '1',
+    });
+
+    const payload = {
+      physicalAssetId: asset.id,
+      operationalStart: '2026-06-01T08:00:00.000Z',
+      operationalEnd: '2026-06-01T10:00:00.000Z',
+    };
+
+    const results = await Promise.allSettled([
+      planningAccess.allocateResource(actor, orderA.id, {
+        plannedResourceId: plannedA.id,
+        ...payload,
+      }),
+      planningAccess.allocateResource(actor, orderB.id, {
+        plannedResourceId: plannedB.id,
+        ...payload,
+      }),
+    ]);
+
+    const fulfilled = results.filter((result) => result.status === 'fulfilled');
+    const rejected = results.filter((result) => result.status === 'rejected');
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+    expect(
+      rejected.every(
+        (result) =>
+          result.status === 'rejected' &&
+          'code' in (result.reason as { code?: string }) &&
+          (result.reason as { code: string }).code === SERVICE_ORDERS_ERROR_CODES.ALLOCATION_CONFLICT,
+      ),
+    ).toBe(true);
+
+    const active = await pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count
+       FROM res.resource_allocations
+       WHERE physical_asset_id = $1 AND status = 'ACTIVE'`,
+      [asset.id],
+    );
+    expect(active.rows[0]?.count).toBe('1');
   });
 });

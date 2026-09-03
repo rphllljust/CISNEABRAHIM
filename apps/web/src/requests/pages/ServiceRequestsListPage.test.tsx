@@ -21,6 +21,8 @@ describe('ServiceRequestsListPage', () => {
     await waitFor(() => {
       expect(screen.getByRole('link', { name: 'SR-2026-DEMO01' })).toBeInTheDocument();
     });
+    expect(screen.getByRole('region', { name: /resumo de solicitações/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /filtrar todas as solicitações/i })).toHaveTextContent('1');
     expect(screen.getByRole('table', { name: /lista de solicitações/i })).toBeInTheDocument();
   });
 
@@ -57,5 +59,26 @@ describe('ServiceRequestsListPage', () => {
         expect.anything(),
       );
     });
+  });
+
+  it('filters by summary card selection', async () => {
+    const fetchMock = createRequestsFetchMock();
+    vi.stubGlobal('fetch', fetchMock);
+    const user = userEvent.setup();
+    renderWithProviders(<ServiceRequestsListPage />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: 'SR-2026-DEMO01' })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: /filtrar solicitações pendentes/i }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('status=SUBMITTED'),
+        expect.anything(),
+      );
+    });
+    expect(screen.getByLabelText('Status')).toHaveValue(SERVICE_REQUEST_STATUSES.Submitted);
   });
 });

@@ -4,6 +4,7 @@ import type {
   ExecutionOccurrenceRow,
 } from '../repositories/service-order-execution.repository.types';
 import type { ServiceOrderRow } from '../repositories/service-orders.repository.types';
+import type { ExecutionFactsComparison } from '../domain/execution-facts';
 
 export type ExecutionEntryResponse = {
   id: string;
@@ -44,6 +45,7 @@ export type ExecutionBundleResponse = {
   entries: ExecutionEntryResponse[];
   evidence: ExecutionEvidenceResponse[];
   occurrences: ExecutionOccurrenceResponse[];
+  comparison: ExecutionFactsComparison;
 };
 
 export function toExecutionEntryResponse(row: ExecutionEntryRow): ExecutionEntryResponse {
@@ -90,6 +92,7 @@ export function toExecutionBundleResponse(
   entries: ExecutionEntryRow[],
   evidence: ExecutionEvidenceRow[],
   occurrences: ExecutionOccurrenceRow[],
+  comparison: ExecutionFactsComparison,
 ): ExecutionBundleResponse {
   return {
     serviceOrderId: order.id,
@@ -97,5 +100,6 @@ export function toExecutionBundleResponse(
     entries: entries.map(toExecutionEntryResponse),
     evidence: evidence.map(toExecutionEvidenceResponse),
     occurrences: occurrences.map(toExecutionOccurrenceResponse),
+    comparison,
   };
 }

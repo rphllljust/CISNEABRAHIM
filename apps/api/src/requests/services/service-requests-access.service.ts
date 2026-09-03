@@ -98,4 +98,11 @@ export class ServiceRequestsAccessService {
   ): Promise<{ items: ReturnType<typeof toServiceRequestResponse>[]; limit: number; offset: number }> {
     return this.query.list(actor, query);
   }
+
+  summary(
+    actor: IdentityAuthzContext,
+    query: { clientId?: string; unitId?: string },
+  ) {
+    return this.query.summary(actor, query);
+  }
 }

@@ -14,6 +14,36 @@ export const ASSET_ALLOCATION_STATUSES = {
 export type AssetAllocationStatus =
   (typeof ASSET_ALLOCATION_STATUSES)[keyof typeof ASSET_ALLOCATION_STATUSES];
 
+export const ASSET_OPERATIONAL_AVAILABILITIES = {
+  Available: 'AVAILABLE',
+  Allocated: 'ALLOCATED',
+  Unavailable: 'UNAVAILABLE',
+} as const;
+
+export type AssetOperationalAvailability =
+  (typeof ASSET_OPERATIONAL_AVAILABILITIES)[keyof typeof ASSET_OPERATIONAL_AVAILABILITIES];
+
+export function resolveAllocationStatusFromCurrentAllocation(
+  currentAllocation: { service_order_id: string } | null | undefined,
+): AssetAllocationStatus {
+  return currentAllocation
+    ? ASSET_ALLOCATION_STATUSES.Allocated
+    : ASSET_ALLOCATION_STATUSES.Available;
+}
+
+export function resolveOperationalAvailability(
+  lifecycleStatus: AssetLifecycleStatus,
+  currentAllocation: { service_order_id: string } | null | undefined,
+): AssetOperationalAvailability {
+  if (lifecycleStatus === ASSET_LIFECYCLE_STATUSES.Inactive) {
+    return ASSET_OPERATIONAL_AVAILABILITIES.Unavailable;
+  }
+  if (currentAllocation) {
+    return ASSET_OPERATIONAL_AVAILABILITIES.Allocated;
+  }
+  return ASSET_OPERATIONAL_AVAILABILITIES.Available;
+}
+
 export const VEHICLE_CLASSIFICATION = 'VEHICLE';
 
 const ASSET_CODE_PATTERN = /^[A-Z0-9][A-Z0-9_-]{1,63}$/;

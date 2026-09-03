@@ -44,6 +44,19 @@ export const SERVICE_REQUEST_DOCUMENT_LINK_PURPOSES = {
 export type ServiceRequestDocumentLinkPurpose =
   (typeof SERVICE_REQUEST_DOCUMENT_LINK_PURPOSES)[keyof typeof SERVICE_REQUEST_DOCUMENT_LINK_PURPOSES];
 
+export const SERVICE_REQUEST_HISTORY_EVENTS = {
+  Created: 'CREATED',
+  Submitted: 'SUBMITTED',
+  ReviewStarted: 'REVIEW_STARTED',
+  Approved: 'APPROVED',
+  Rejected: 'REJECTED',
+  Cancelled: 'CANCELLED',
+  Converted: 'CONVERTED',
+} as const;
+
+export type ServiceRequestHistoryEventType =
+  (typeof SERVICE_REQUEST_HISTORY_EVENTS)[keyof typeof SERVICE_REQUEST_HISTORY_EVENTS];
+
 const STATUS_SET = new Set<string>(Object.values(SERVICE_REQUEST_STATUSES));
 const ORIGIN_SET = new Set<string>(Object.values(SERVICE_REQUEST_ORIGINS));
 const PRIORITY_SET = new Set<string>(Object.values(SERVICE_REQUEST_PRIORITIES));

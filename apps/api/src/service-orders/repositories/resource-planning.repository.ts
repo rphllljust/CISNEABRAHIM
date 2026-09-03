@@ -6,9 +6,14 @@ import { FAULT_INJECTION_PORT, type FaultInjectionPort } from '../../platform/fa
 import { maybeInjectFault } from '../../platform/fault-injection/fault-injection.util';
 import { OutboxDomainEventWriter } from '../../platform/outbox/services/outbox-domain-event.writer';
 import { ASSET_LIFECYCLE_STATUSES } from '../../resources/domain/physical-asset';
+import { lockPhysicalAssetForAllocation } from '../../resources/repositories/physical-asset-allocation.persistence';
 import {
   ALLOCATION_HISTORY_EVENTS,
+  assertAllocationsWithinPlannedWindow,
+  assertPlannedOperationalWindow,
+  buildAllocationHistoryPayload,
   PLANNED_RESOURCE_STATUSES,
+  resolvePlannedOperationalWindow,
   RESOURCE_ALLOCATION_STATUSES,
 } from '../domain/resource-planning';
 import type {
@@ -143,7 +148,13 @@ export class ResourcePlanningRepository {
 
   async updatePlannedResource(
     input: UpdatePlannedResourcePersistenceInput,
-  ): Promise<PlannedResourceRow | 'VERSION_CONFLICT' | 'INVALID_STATE'> {
+  ): Promise<
+    | PlannedResourceRow
+    | 'VERSION_CONFLICT'
+    | 'INVALID_STATE'
+    | 'ALLOCATION_OUTSIDE_WINDOW'
+    | 'VALIDATION_FAILED'
+  > {
     const client = await this.pool().connect();
     try {
       await client.query('BEGIN');
@@ -159,6 +170,36 @@ export class ResourcePlanningRepository {
       if (current.row_version !== input.rowVersion) {
         await client.query('ROLLBACK');
         return 'VERSION_CONFLICT';
+      }
+
+      try {
+        const nextWindow = resolvePlannedOperationalWindow(current, input);
+        assertPlannedOperationalWindow(nextWindow.start, nextWindow.end);
+        const activeAllocations = await client.query<{
+          operational_start: string;
+          operational_end: string;
+        }>(
+          `SELECT operational_start, operational_end
+           FROM res.resource_allocations
+           WHERE planned_resource_id = $1 AND status = $2::res.resource_allocation_status`,
+          [input.plannedResourceId, RESOURCE_ALLOCATION_STATUSES.Active],
+        );
+        assertAllocationsWithinPlannedWindow(
+          activeAllocations.rows,
+          nextWindow.start,
+          nextWindow.end,
+        );
+      } catch (error) {
+        await client.query('ROLLBACK');
+        if (error instanceof Error) {
+          if (error.message === 'ALLOCATION_OUTSIDE_PLANNED_WINDOW') {
+            return 'ALLOCATION_OUTSIDE_WINDOW';
+          }
+          if (['PLANNED_WINDOW_INCOMPLETE', 'PLANNED_WINDOW_INVALID'].includes(error.message)) {
+            return 'VALIDATION_FAILED';
+          }
+        }
+        throw error;
       }
 
       const result = await client.query<PlannedResourceRow>(
@@ -313,10 +354,14 @@ export class ResourcePlanningRepository {
         operationalEnd: input.operationalEnd,
         actorIdentityId: input.actorIdentityId,
         historyEventType: ALLOCATION_HISTORY_EVENTS.AllocateResource,
-        historyPayload: {
+        historyPayload: buildAllocationHistoryPayload({
+          serviceOrderId: input.serviceOrderId,
           plannedResourceId: input.plannedResourceId,
           physicalAssetId: input.physicalAssetId,
-        },
+          resourceTypeCode: input.resourceTypeCode,
+          operationalStart: input.operationalStart,
+          operationalEnd: input.operationalEnd,
+        }),
       });
       if (!inserted) {
         await client.query('ROLLBACK');
@@ -385,6 +430,98 @@ export class ResourcePlanningRepository {
         return { outcome: 'invalid_state' };
       }
 
+      const samePhysicalAsset = input.newPhysicalAssetId === current.physical_asset_id;
+
+      if (samePhysicalAsset) {
+        const demoted = await client.query<ResourceAllocationRow>(
+          `UPDATE res.resource_allocations
+           SET status = $3::res.resource_allocation_status,
+               removed_at = NOW(),
+               removed_by_identity_id = $4,
+               updated_at = NOW(),
+               row_version = row_version + 1
+           WHERE id = $1 AND service_order_id = $2 AND status = $5::res.resource_allocation_status
+           RETURNING ${ALLOCATION_RETURNING}`,
+          [
+            input.allocationId,
+            input.serviceOrderId,
+            RESOURCE_ALLOCATION_STATUSES.Reallocated,
+            input.actorIdentityId,
+            RESOURCE_ALLOCATION_STATUSES.Active,
+          ],
+        );
+        if (!demoted.rows[0]) {
+          await client.query('ROLLBACK');
+          return { outcome: 'version_conflict' };
+        }
+
+        const newAllocation = await this.insertAllocation(client, {
+          serviceOrderId: input.serviceOrderId,
+          plannedResourceId: current.planned_resource_id,
+          physicalAssetId: input.newPhysicalAssetId,
+          resourceTypeCode: input.resourceTypeCode,
+          operationalStart: input.operationalStart,
+          operationalEnd: input.operationalEnd,
+          actorIdentityId: input.actorIdentityId,
+          historyEventType: ALLOCATION_HISTORY_EVENTS.ReallocateResource,
+          historyPayload: buildAllocationHistoryPayload(
+            {
+              serviceOrderId: input.serviceOrderId,
+              plannedResourceId: current.planned_resource_id,
+              physicalAssetId: input.newPhysicalAssetId,
+              resourceTypeCode: input.resourceTypeCode,
+              operationalStart: input.operationalStart,
+              operationalEnd: input.operationalEnd,
+            },
+            { fromAllocationId: input.allocationId },
+          ),
+        });
+        if (!newAllocation) {
+          await client.query('ROLLBACK');
+          return { outcome: 'allocation_conflict' };
+        }
+
+        await client.query(
+          `UPDATE res.resource_allocations
+           SET reallocated_to_allocation_id = $3, updated_at = NOW()
+           WHERE id = $1 AND service_order_id = $2`,
+          [input.allocationId, input.serviceOrderId, newAllocation.id],
+        );
+
+        await insertResourceAllocationHistory(client, {
+          allocationId: input.allocationId,
+          eventType: ALLOCATION_HISTORY_EVENTS.ReallocateResource,
+          payload: buildAllocationHistoryPayload(
+            {
+              serviceOrderId: input.serviceOrderId,
+              plannedResourceId: current.planned_resource_id,
+              physicalAssetId: current.physical_asset_id,
+              resourceTypeCode: current.resource_type_code,
+              operationalStart: current.operational_start,
+              operationalEnd: current.operational_end,
+            },
+            { toAllocationId: newAllocation.id },
+          ),
+          actorIdentityId: input.actorIdentityId,
+        });
+
+        const order = await client.query<{ unit_id: string }>(
+          `SELECT unit_id FROM so.service_orders WHERE id = $1`,
+          [input.serviceOrderId],
+        );
+        await this.outboxWriter.appendServiceOrderAssigned(client, {
+          serviceOrderId: input.serviceOrderId,
+          unitId: order.rows[0]?.unit_id ?? '',
+          allocationId: newAllocation.id,
+          physicalAssetId: newAllocation.physical_asset_id,
+          resourceTypeCode: newAllocation.resource_type_code,
+          assignedAt: newAllocation.created_at,
+        });
+
+        await client.query('COMMIT');
+        return { outcome: 'allocated', allocation: newAllocation };
+      }
+
       const newAllocation = await this.insertAllocation(client, {
         serviceOrderId: input.serviceOrderId,
         plannedResourceId: current.planned_resource_id,
@@ -394,10 +531,17 @@ export class ResourcePlanningRepository {
         operationalEnd: input.operationalEnd,
         actorIdentityId: input.actorIdentityId,
         historyEventType: ALLOCATION_HISTORY_EVENTS.ReallocateResource,
-        historyPayload: {
-          fromAllocationId: input.allocationId,
-          physicalAssetId: input.newPhysicalAssetId,
-        },
+        historyPayload: buildAllocationHistoryPayload(
+          {
+            serviceOrderId: input.serviceOrderId,
+            plannedResourceId: current.planned_resource_id,
+            physicalAssetId: input.newPhysicalAssetId,
+            resourceTypeCode: input.resourceTypeCode,
+            operationalStart: input.operationalStart,
+            operationalEnd: input.operationalEnd,
+          },
+          { fromAllocationId: input.allocationId },
+        ),
       });
       if (!newAllocation) {
         await client.query('ROLLBACK');
@@ -431,7 +575,17 @@ export class ResourcePlanningRepository {
       await insertResourceAllocationHistory(client, {
         allocationId: input.allocationId,
         eventType: ALLOCATION_HISTORY_EVENTS.ReallocateResource,
-        payload: { toAllocationId: newAllocation.id },
+        payload: buildAllocationHistoryPayload(
+          {
+            serviceOrderId: input.serviceOrderId,
+            plannedResourceId: current.planned_resource_id,
+            physicalAssetId: current.physical_asset_id,
+            resourceTypeCode: current.resource_type_code,
+            operationalStart: current.operational_start,
+            operationalEnd: current.operational_end,
+          },
+          { toAllocationId: newAllocation.id },
+        ),
         actorIdentityId: input.actorIdentityId,
       });
 
@@ -507,7 +661,14 @@ export class ResourcePlanningRepository {
       await insertResourceAllocationHistory(client, {
         allocationId: updated.id,
         eventType: ALLOCATION_HISTORY_EVENTS.RemoveAllocation,
-        payload: {},
+        payload: buildAllocationHistoryPayload({
+          serviceOrderId: updated.service_order_id,
+          plannedResourceId: updated.planned_resource_id,
+          physicalAssetId: updated.physical_asset_id,
+          resourceTypeCode: updated.resource_type_code,
+          operationalStart: updated.operational_start,
+          operationalEnd: updated.operational_end,
+        }),
         actorIdentityId: input.actorIdentityId,
       });
 
@@ -551,20 +712,7 @@ export class ResourcePlanningRepository {
     client: PoolClient,
     assetId: string,
   ): Promise<PhysicalAssetAllocationContext | null> {
-    const result = await client.query<PhysicalAssetAllocationContext>(
-      `SELECT
-         a.id,
-         a.asset_code,
-         rt.code AS resource_type_code,
-         a.lifecycle_status::text AS lifecycle_status,
-         a.unit_id
-       FROM ast.physical_assets a
-       INNER JOIN cat.physical_resource_types rt ON rt.id = a.physical_resource_type_id
-       WHERE a.id = $1
-       FOR UPDATE`,
-      [assetId],
-    );
-    return result.rows[0] ?? null;
+    return lockPhysicalAssetForAllocation(client, assetId);
   }
 
   private async insertAllocation(

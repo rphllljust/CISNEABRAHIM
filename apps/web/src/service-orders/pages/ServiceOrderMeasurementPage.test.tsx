@@ -205,7 +205,7 @@ describe('ServiceOrderMeasurementPage', () => {
     renderServiceOrderRoutes(measurementPath);
 
     await waitFor(() => {
-      expect(document.getElementById('main-content')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /OS-2026-DEMO01/i })).toBeInTheDocument();
     });
 
     expect(screen.getByRole('navigation', { name: /atalhos da ordem de serviço/i })).toBeInTheDocument();

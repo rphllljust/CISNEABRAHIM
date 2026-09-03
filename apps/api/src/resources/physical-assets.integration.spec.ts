@@ -24,6 +24,7 @@ import { AUTHZ_SCOPES } from '../authorization/types/authz-scopes';
 import type { IdentityAuthzContext } from '../authorization/types/authz-decision';
 import { SECURITY_AUDIT_ACTIONS } from '../audit/types/security-audit.types';
 import { ASSET_ERROR_CODES } from './errors/asset-error-codes';
+import { VEHICLE_CLASSIFICATION } from './domain/physical-asset';
 import { ResourcesModule } from './resources.module';
 import { PhysicalAssetsAccessService } from './services/physical-assets-access.service';
 import { PhysicalResourceTypesAccessService } from './services/physical-resource-types-access.service';
@@ -387,5 +388,390 @@ describe('Physical assets PostgreSQL integration', () => {
     expect(serialized).not.toContain('created_by');
     expect(serialized).not.toContain('updated_by');
     expect(created.vehicle?.plate).toBe('DTO-9999');
+    expect(created.currentAllocation).toBeNull();
+  });
+
+  it('returns scoped summary counts and list total for operational availability', async () => {
+    const { identityId } = await seedActor();
+    const actor = { identityId, sessionId: 'sid' };
+    const truckTypeId = await vehicleTypeId(actor);
+
+    const available = await assetsAccess.create(actor, {
+      assetCode: 'SUM-AVL',
+      resourceTypeId: truckTypeId,
+      name: 'Disponível',
+      unitId: UNIT_A,
+      vehicle: {
+        plate: 'SUM-0001',
+        normalizedPlate: 'SUM0001',
+        plateDisplay: 'SUM-0001',
+      },
+    });
+
+    const inactive = await assetsAccess.create(actor, {
+      assetCode: 'SUM-INA',
+      resourceTypeId: truckTypeId,
+      name: 'Inativo',
+      unitId: UNIT_A,
+      vehicle: {
+        plate: 'SUM-0002',
+        normalizedPlate: 'SUM0002',
+        plateDisplay: 'SUM-0002',
+      },
+    });
+    await assetsAccess.deactivate(actor, inactive.id, inactive.version);
+
+    const summary = await assetsAccess.summary(actor, {});
+    expect(summary.total).toBeGreaterThanOrEqual(2);
+    expect(summary.available).toBeGreaterThanOrEqual(1);
+    expect(summary.unavailable).toBeGreaterThanOrEqual(1);
+
+    const listed = await assetsAccess.list(actor, {
+      limit: 10,
+      offset: 0,
+      availability: 'UNAVAILABLE',
+    });
+    expect(listed.total).toBeGreaterThanOrEqual(1);
+    expect(listed.items.every((item) => item.lifecycleStatus === 'INACTIVE')).toBe(true);
+    expect(listed.items.map((item) => item.id)).toContain(inactive.id);
+    expect(listed.items.map((item) => item.id)).not.toContain(available.id);
+  });
+
+  it('returns exact summary counts and supports search and availability filters', async () => {
+    const { identityId } = await seedActor();
+    const actor = { identityId, sessionId: 'sid' };
+    const truckTypeId = await vehicleTypeId(actor);
+
+    const available = await assetsAccess.create(actor, {
+      assetCode: 'FLT-AVL',
+      resourceTypeId: truckTypeId,
+      name: 'Disponivel operacional',
+      unitId: UNIT_A,
+      vehicle: {
+        plate: 'FLT-0001',
+        normalizedPlate: 'FLT0001',
+        plateDisplay: 'FLT-0001',
+      },
+    });
+
+    const allocated = await assetsAccess.create(actor, {
+      assetCode: 'FLT-ALC',
+      resourceTypeId: truckTypeId,
+      name: 'Alocado operacional',
+      unitId: UNIT_A,
+      vehicle: {
+        plate: 'FLT-0002',
+        normalizedPlate: 'FLT0002',
+        plateDisplay: 'FLT-0002',
+      },
+    });
+
+    const inactive = await assetsAccess.create(actor, {
+      assetCode: 'FLT-INA',
+      resourceTypeId: truckTypeId,
+      name: 'Inativo operacional',
+      unitId: UNIT_A,
+      vehicle: {
+        plate: 'FLT-0003',
+        normalizedPlate: 'FLT0003',
+        plateDisplay: 'FLT-0003',
+      },
+    });
+    await assetsAccess.deactivate(actor, inactive.id, inactive.version);
+
+    const orderNumber = 'OS-FLT-0001';
+    const serviceOrderId = (
+      await pool.query<{ id: string }>(
+        `INSERT INTO so.service_orders (
+           internal_code, order_number, unit_id, status, origin, service_snapshot,
+           row_version, created_by_identity_id, updated_by_identity_id
+         ) VALUES ($1, $2, $3, 'PREPARED', 'AUTHORIZED_DIRECT', '{}'::jsonb, 1, $4, $4)
+         RETURNING id`,
+        [`SO-INT-${crypto.randomUUID()}`, orderNumber, UNIT_A, identityId],
+      )
+    ).rows[0]!.id;
+
+    await pool.query(
+      `INSERT INTO res.resource_allocations (
+         service_order_id, physical_asset_id, resource_type_code,
+         operational_start, operational_end, allocated_by_identity_id
+       ) VALUES ($1, $2, 'TRUCK', now(), now() + interval '1 day', $3)`,
+      [serviceOrderId, allocated.id, identityId],
+    );
+
+    const summary = await assetsAccess.summary(actor, {});
+    expect(summary).toEqual({
+      total: 3,
+      available: 1,
+      allocated: 1,
+      unavailable: 1,
+    });
+
+    const byPlate = await assetsAccess.list(actor, { limit: 10, offset: 0, q: 'flt-0002' });
+    expect(byPlate.total).toBe(1);
+    expect(byPlate.items[0]?.id).toBe(allocated.id);
+    expect(byPlate.items[0]?.currentAllocation).toEqual({
+      serviceOrderId,
+      orderNumber,
+    });
+
+    const availableOnly = await assetsAccess.list(actor, {
+      limit: 10,
+      offset: 0,
+      availability: 'AVAILABLE',
+    });
+    expect(availableOnly.total).toBe(1);
+    expect(availableOnly.items[0]?.id).toBe(available.id);
+
+    const allocatedOnly = await assetsAccess.list(actor, {
+      limit: 10,
+      offset: 0,
+      availability: 'ALLOCATED',
+    });
+    expect(allocatedOnly.total).toBe(1);
+    expect(allocatedOnly.items[0]?.id).toBe(allocated.id);
+    expect(allocatedOnly.items[0]?.allocationStatus).toBe('ALLOCATED');
+
+    const byName = await assetsAccess.list(actor, { limit: 10, offset: 0, q: 'inativo oper' });
+    expect(byName.total).toBe(1);
+    expect(byName.items[0]?.id).toBe(inactive.id);
+  });
+
+  it('ignores stale allocation_status column when deriving operational availability', async () => {
+    const { identityId } = await seedActor();
+    const actor = { identityId, sessionId: 'sid' };
+    const truckTypeId = await vehicleTypeId(actor);
+
+    const asset = await assetsAccess.create(actor, {
+      assetCode: 'STALE-FLAG',
+      resourceTypeId: truckTypeId,
+      name: 'Flag obsoleta',
+      unitId: UNIT_A,
+      vehicle: {
+        plate: 'STL-1234',
+        normalizedPlate: 'STL1234',
+        plateDisplay: 'STL-1234',
+      },
+    });
+
+    await pool.query(
+      `UPDATE ast.physical_assets
+       SET allocation_status = 'ALLOCATED'::ast.asset_allocation_status
+       WHERE id = $1`,
+      [asset.id],
+    );
+
+    const loaded = await assetsAccess.getById(actor, asset.id);
+    expect(loaded.allocationStatus).toBe('AVAILABLE');
+    expect(loaded.currentAllocation).toBeNull();
+  });
+
+  it('blocks deactivation while asset has active service order allocation', async () => {
+    const { identityId } = await seedActor();
+    const actor = { identityId, sessionId: 'sid' };
+    const truckTypeId = await vehicleTypeId(actor);
+
+    const asset = await assetsAccess.create(actor, {
+      assetCode: 'BLK-DEACT',
+      resourceTypeId: truckTypeId,
+      name: 'Bloqueado',
+      unitId: UNIT_A,
+      vehicle: {
+        plate: 'BLK-1234',
+        normalizedPlate: 'BLK1234',
+        plateDisplay: 'BLK-1234',
+      },
+    });
+
+    const serviceOrderId = (
+      await pool.query<{ id: string }>(
+        `INSERT INTO so.service_orders (
+           internal_code, order_number, unit_id, status, origin, service_snapshot,
+           row_version, created_by_identity_id, updated_by_identity_id
+         ) VALUES ($1, $2, $3, 'PREPARED', 'AUTHORIZED_DIRECT', '{}'::jsonb, 1, $4, $4)
+         RETURNING id`,
+        [`SO-INT-${crypto.randomUUID()}`, `OS-${crypto.randomUUID().slice(0, 8)}`, UNIT_A, identityId],
+      )
+    ).rows[0]!.id;
+
+    await pool.query(
+      `INSERT INTO res.resource_allocations (
+         service_order_id, physical_asset_id, resource_type_code,
+         operational_start, operational_end, allocated_by_identity_id
+       ) VALUES ($1, $2, 'TRUCK', now(), now() + interval '1 day', $3)`,
+      [serviceOrderId, asset.id, identityId],
+    );
+
+    await expect(assetsAccess.deactivate(actor, asset.id, asset.version)).rejects.toMatchObject({
+      code: ASSET_ERROR_CODES.INVALID_STATE,
+    });
+
+    const audit = await pool.query<{ action: string }>(
+      `SELECT action FROM audit.security_audit_events WHERE resource_id = $1`,
+      [asset.id],
+    );
+    expect(audit.rows.map((row) => row.action)).not.toContain(
+      SECURITY_AUDIT_ACTIONS.ResourcesAssetDeactivate,
+    );
+  });
+
+  it('blocks activation when resource type is inactive and records deactivate audit', async () => {
+    const { identityId } = await seedActor();
+    const actor = { identityId, sessionId: 'sid' };
+    const listed = await resourceTypesAccess.list(actor, { limit: 50, offset: 0 });
+    const truck = listed.items.find((item) => item.code === 'TRUCK')!;
+
+    const asset = await assetsAccess.create(actor, {
+      assetCode: 'TYPE-OFF',
+      resourceTypeId: truck.id,
+      name: 'Tipo inativo',
+      unitId: UNIT_A,
+      vehicle: {
+        plate: 'TYP-1234',
+        normalizedPlate: 'TYP1234',
+        plateDisplay: 'TYP-1234',
+      },
+    });
+
+    const deactivated = await assetsAccess.deactivate(actor, asset.id, asset.version);
+    await resourceTypesAccess.deactivate(actor, truck.id, truck.version);
+
+    await expect(
+      assetsAccess.activate(actor, deactivated.id, deactivated.version),
+    ).rejects.toMatchObject({
+      code: ASSET_ERROR_CODES.INACTIVE_RESOURCE_TYPE,
+    });
+
+    const deactivateAudit = await pool.query<{ action: string }>(
+      `SELECT action FROM audit.security_audit_events WHERE resource_id = $1`,
+      [asset.id],
+    );
+    expect(deactivateAudit.rows.map((row) => row.action)).toContain(
+      SECURITY_AUDIT_ACTIONS.ResourcesAssetDeactivate,
+    );
+  });
+
+  it('scopes fleet list and summary to vehicle classification only', async () => {
+    const { identityId } = await seedActor();
+    const actor = { identityId, sessionId: 'sid' };
+    const truckTypeId = await vehicleTypeId(actor);
+    const excavatorTypeId = await machineTypeId(actor);
+
+    const truck = await assetsAccess.create(actor, {
+      assetCode: 'FLT-TRK',
+      resourceTypeId: truckTypeId,
+      name: 'Caminhão frota',
+      unitId: UNIT_A,
+      vehicle: {
+        plate: 'FLT-1234',
+        normalizedPlate: 'FLT1234',
+        plateDisplay: 'FLT-1234',
+      },
+    });
+    await assetsAccess.create(actor, {
+      assetCode: 'FLT-EXC',
+      resourceTypeId: excavatorTypeId,
+      name: 'Escavadeira',
+      unitId: UNIT_A,
+    });
+
+    const fleet = await assetsAccess.list(actor, {
+      limit: 20,
+      offset: 0,
+      classification: VEHICLE_CLASSIFICATION,
+    });
+
+    expect(fleet.total).toBe(1);
+    expect(fleet.items[0]?.id).toBe(truck.id);
+    expect(fleet.items[0]?.vehicle?.plate).toBe('FLT-1234');
+    expect(fleet.items.every((item) => item.resourceTypeClassification === 'VEHICLE')).toBe(true);
+
+    const inactiveTruck = await assetsAccess.create(actor, {
+      assetCode: 'FLT-INA',
+      resourceTypeId: truckTypeId,
+      name: 'Veículo inativo',
+      unitId: UNIT_A,
+      vehicle: {
+        plate: 'INA-1234',
+        normalizedPlate: 'INA1234',
+        plateDisplay: 'INA-1234',
+      },
+    });
+    await assetsAccess.deactivate(actor, inactiveTruck.id, inactiveTruck.version);
+
+    const fleetSummary = await assetsAccess.summary(actor, { classification: VEHICLE_CLASSIFICATION });
+    expect(fleetSummary.total).toBe(2);
+    expect(fleetSummary.available).toBe(1);
+    expect(fleetSummary.unavailable).toBe(1);
+  });
+
+  it('prevents concurrent overlapping allocation on the same vehicle asset', async () => {
+    const { identityId } = await seedActor();
+    const actor = { identityId, sessionId: 'sid' };
+    const truckTypeId = await vehicleTypeId(actor);
+    const vehicle = await assetsAccess.create(actor, {
+      assetCode: 'FLT-RACE',
+      resourceTypeId: truckTypeId,
+      name: 'Veículo concorrente',
+      unitId: UNIT_A,
+      vehicle: {
+        plate: 'RAC-1234',
+        normalizedPlate: 'RAC1234',
+        plateDisplay: 'RAC-1234',
+      },
+    });
+
+    const serviceOrderA = (
+      await pool.query<{ id: string }>(
+        `INSERT INTO so.service_orders (
+           internal_code, order_number, unit_id, status, origin, service_snapshot,
+           row_version, created_by_identity_id, updated_by_identity_id
+         ) VALUES ($1, $2, $3, 'PREPARED', 'AUTHORIZED_DIRECT', '{}'::jsonb, 1, $4, $4)
+         RETURNING id`,
+        [`SO-INT-${crypto.randomUUID()}`, `OS-A-${crypto.randomUUID().slice(0, 6)}`, UNIT_A, identityId],
+      )
+    ).rows[0]!.id;
+    const serviceOrderB = (
+      await pool.query<{ id: string }>(
+        `INSERT INTO so.service_orders (
+           internal_code, order_number, unit_id, status, origin, service_snapshot,
+           row_version, created_by_identity_id, updated_by_identity_id
+         ) VALUES ($1, $2, $3, 'PREPARED', 'AUTHORIZED_DIRECT', '{}'::jsonb, 1, $4, $4)
+         RETURNING id`,
+        [`SO-INT-${crypto.randomUUID()}`, `OS-B-${crypto.randomUUID().slice(0, 6)}`, UNIT_A, identityId],
+      )
+    ).rows[0]!.id;
+
+    const payload = {
+      physicalAssetId: vehicle.id,
+      operationalStart: '2026-06-01T08:00:00.000Z',
+      operationalEnd: '2026-06-01T10:00:00.000Z',
+    };
+
+    const results = await Promise.allSettled([
+      pool.query(
+        `INSERT INTO res.resource_allocations (
+           service_order_id, physical_asset_id, resource_type_code,
+           operational_start, operational_end, allocated_by_identity_id
+         ) VALUES ($1, $2, 'TRUCK', $3::timestamptz, $4::timestamptz, $5)`,
+        [serviceOrderA, payload.physicalAssetId, payload.operationalStart, payload.operationalEnd, identityId],
+      ),
+      pool.query(
+        `INSERT INTO res.resource_allocations (
+           service_order_id, physical_asset_id, resource_type_code,
+           operational_start, operational_end, allocated_by_identity_id
+         ) VALUES ($1, $2, 'TRUCK', $3::timestamptz, $4::timestamptz, $5)`,
+        [serviceOrderB, payload.physicalAssetId, payload.operationalStart, payload.operationalEnd, identityId],
+      ),
+    ]);
+
+    const fulfilled = results.filter((result) => result.status === 'fulfilled');
+    const rejected = results.filter((result) => result.status === 'rejected');
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+
+    const loaded = await assetsAccess.getById(actor, vehicle.id);
+    expect(loaded.allocationStatus).toBe('ALLOCATED');
+    expect(loaded.currentAllocation).not.toBeNull();
   });
 });

@@ -48,7 +48,7 @@ function toDetail(
     createdAt: string;
   }> = [],
 ) {
-  return { serviceRequest: request, documentLinks };
+  return { serviceRequest: request, documentLinks, historyEvents: [] };
 }
 
 export function createRequestsFetchMock(options: RequestsFetchMockOptions = {}) {
@@ -143,6 +143,24 @@ export function createRequestsFetchMock(options: RequestsFetchMockOptions = {}) 
     const auth = init?.headers ? new Headers(init.headers).get('authorization') : null;
     if (!auth?.startsWith('Bearer ')) {
       return requestError('REQUESTS_DENIED', 401);
+    }
+
+    if (pathname === '/api/v1/requests/service-requests/summary' && method === 'GET') {
+      if (!listAllowed) {
+        return requestError('REQUESTS_DENIED', 403);
+      }
+      const unitId = searchParams.get('unitId');
+      let items = [...store];
+      if (unitId) {
+        items = items.filter((item) => item.unitId === unitId);
+      }
+      return jsonResponse({
+        total: items.length,
+        pending: items.filter((item) => item.status === SERVICE_REQUEST_STATUSES.Submitted).length,
+        underReview: items.filter((item) => item.status === SERVICE_REQUEST_STATUSES.UnderReview).length,
+        converted: items.filter((item) => item.status === SERVICE_REQUEST_STATUSES.Converted).length,
+        cancelled: items.filter((item) => item.status === SERVICE_REQUEST_STATUSES.Cancelled).length,
+      });
     }
 
     if (pathname === '/api/v1/requests/service-requests' && method === 'GET') {

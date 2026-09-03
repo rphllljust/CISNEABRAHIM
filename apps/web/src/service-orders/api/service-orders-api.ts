@@ -111,6 +111,7 @@ export type ServiceOrderSummary = {
   clientId: string | null;
   clientSnapshot: Record<string, unknown> | null;
   description: string | null;
+  location?: Record<string, unknown>;
   updatedAt: string;
 };
 
@@ -119,6 +120,7 @@ export async function listServiceOrders(
     limit?: number;
     offset?: number;
     status?: ServiceOrderStatus | 'active';
+    archetype?: string;
     filter?: 'overdue' | 'approaching-due';
     unitId?: string;
     clientId?: string;
@@ -134,6 +136,9 @@ export async function listServiceOrders(
   params.set('offset', String(query.offset ?? 0));
   if (query.status) {
     params.set('status', query.status);
+  }
+  if (query.archetype) {
+    params.set('archetype', query.archetype);
   }
   if (query.filter) {
     params.set('filter', query.filter);

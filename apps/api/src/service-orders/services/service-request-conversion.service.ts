@@ -1,5 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
+import { ContractsOperationalValidationService } from '../../commercial/services/contracts-operational-validation.service';
+import {
+  buildServiceOrderContractSnapshot,
+  extractPaymentTermsFromCommercialTerms,
+  resolveConversionContractReference,
+} from '../../requests/domain/service-request-contract';
 import type {
   ServiceRequestConversionInput,
   ServiceRequestConversionPort,
@@ -10,12 +16,16 @@ import {
   buildServiceOrderProposalSnapshot,
   buildServiceOrderPurchaseOrderSnapshot,
   buildServiceOrderServiceSnapshot,
+  type ServiceOrderProposalSnapshot,
 } from '../domain/service-order-snapshot';
 import { ServiceOrdersRepository } from '../repositories/service-orders.repository';
 
 @Injectable()
 export class ServiceRequestConversionService implements ServiceRequestConversionPort {
-  constructor(private readonly repository: ServiceOrdersRepository) {}
+  constructor(
+    private readonly repository: ServiceOrdersRepository,
+    private readonly contractOperationalValidation: ContractsOperationalValidationService,
+  ) {}
 
   async convert(input: ServiceRequestConversionInput): Promise<ServiceRequestConversionResult> {
     const snapshots = await this.buildSnapshots(input.serviceRequestId);
@@ -34,6 +44,9 @@ export class ServiceRequestConversionService implements ServiceRequestConversion
       proposalSnapshot: snapshots.proposalSnapshot,
       purchaseOrderSnapshot: snapshots.purchaseOrderSnapshot,
       rcNumber: snapshots.rcNumber,
+      contractReference: snapshots.contractReference,
+      contractSnapshot: snapshots.contractSnapshot,
+      contractId: snapshots.contractId,
     });
 
     switch (result.outcome) {
@@ -56,6 +69,9 @@ export class ServiceRequestConversionService implements ServiceRequestConversion
     proposalSnapshot: Record<string, unknown> | null;
     purchaseOrderSnapshot: Record<string, unknown> | null;
     rcNumber: string | null;
+    contractReference: string | null;
+    contractSnapshot: Record<string, unknown> | null;
+    contractId: string | null;
   } | null> {
     const request = await this.repository.findServiceRequestById(serviceRequestId);
     if (!request?.service_definition_id) {
@@ -87,10 +103,13 @@ export class ServiceRequestConversionService implements ServiceRequestConversion
     }
 
     let proposalSnapshot: Record<string, unknown> | null = null;
+    let proposalCommercialTerms: Record<string, unknown> | null = null;
     if (request.proposal_id) {
       const proposal = await this.repository.findProposalById(request.proposal_id);
       if (proposal) {
-        proposalSnapshot = buildServiceOrderProposalSnapshot(proposal);
+        const built = buildServiceOrderProposalSnapshot(proposal);
+        proposalSnapshot = built;
+        proposalCommercialTerms = proposal.commercial_terms;
       }
     }
 
@@ -104,12 +123,47 @@ export class ServiceRequestConversionService implements ServiceRequestConversion
       }
     }
 
+    const contractReference = resolveConversionContractReference({
+      originSource: request.origin_source,
+      externalOriginReference: request.external_origin_reference,
+      proposalCommercialTerms,
+    });
+    const proposalTerms = proposalSnapshot as ServiceOrderProposalSnapshot | null;
+
+    let contractSnapshot: Record<string, unknown> | null = null;
+    let contractId: string | null = null;
+    if (contractReference && request.client_id) {
+      const resolved = await this.contractOperationalValidation.tryResolveContractForOperationalUse(
+        request.client_id,
+        contractReference,
+      );
+      if (resolved) {
+        contractId = resolved.contract.id;
+        contractSnapshot = { ...resolved.snapshot };
+      }
+    }
+    if (!contractSnapshot && contractReference) {
+      contractSnapshot = buildServiceOrderContractSnapshot({
+        contractReference,
+        paymentTerms:
+          proposalTerms?.paymentTerms ??
+          extractPaymentTermsFromCommercialTerms(proposalCommercialTerms),
+        serviceRequestId: request.origin_source ? serviceRequestId : null,
+        originSource: request.origin_source,
+      });
+    }
+
     return {
       serviceSnapshot,
       clientSnapshot,
       proposalSnapshot,
       purchaseOrderSnapshot,
       rcNumber,
+      contractReference: contractId
+        ? (contractSnapshot as { contractNumber?: string }).contractNumber ?? contractReference
+        : contractReference,
+      contractSnapshot,
+      contractId,
     };
   }
 

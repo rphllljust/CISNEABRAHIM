@@ -53,6 +53,15 @@ export type ServiceRequestDocumentLinkRow = {
   created_at: string;
 };
 
+export type ServiceRequestHistoryEventRow = {
+  id: string;
+  service_request_id: string;
+  event_type: string;
+  occurred_at: string;
+  actor_identity_id: string;
+  payload: Record<string, unknown>;
+};
+
 export type CreateServiceRequestPersistenceInput = {
   requestCode: string;
   unitId: string;

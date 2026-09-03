@@ -182,6 +182,18 @@ export class MeasurementsRepository {
     return result.rows;
   }
 
+  async listApprovedMeasurementExecutionEntryIds(serviceOrderId: string): Promise<string[]> {
+    const result = await this.pool().query<{ source_execution_entry_id: string }>(
+      `SELECT DISTINCT mi.source_execution_entry_id
+       FROM msr.measurement_items mi
+       INNER JOIN msr.measurements m ON m.id = mi.measurement_id
+       WHERE m.service_order_id = $1
+         AND m.status = 'APPROVED'`,
+      [serviceOrderId],
+    );
+    return result.rows.map((row) => row.source_execution_entry_id);
+  }
+
   async createMeasurement(
     input: CreateMeasurementPersistenceInput,
   ): Promise<CreateMeasurementPersistenceResult> {

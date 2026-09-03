@@ -21,6 +21,7 @@ import {
   parseListServiceRequestsQuery,
   parseRejectServiceRequestInput,
   parseRowVersionBody,
+  parseServiceRequestSummaryQuery,
   parseUpdateServiceRequestDraftInput,
 } from '../dto/service-requests.dto';
 import { REQUESTS_ERROR_CODES } from '../errors/requests-error-codes';
@@ -51,6 +52,12 @@ export class ServiceRequestsController {
   list(@CurrentAuth() auth: AccessTokenClaims, @Query() query: Record<string, unknown>) {
     const parsed = parseListServiceRequestsQuery(query);
     return this.serviceRequestsAccess.list({ identityId: auth.sub, sessionId: auth.sid }, parsed);
+  }
+
+  @Get('summary')
+  summary(@CurrentAuth() auth: AccessTokenClaims, @Query() query: Record<string, unknown>) {
+    const parsed = parseServiceRequestSummaryQuery(query);
+    return this.serviceRequestsAccess.summary({ identityId: auth.sub, sessionId: auth.sid }, parsed);
   }
 
   @Get(':serviceRequestId')

@@ -1,6 +1,8 @@
 import {
   NON_CONVERTIBLE_SERVICE_REQUEST_STATUSES,
+  SERVICE_REQUEST_HISTORY_EVENTS,
   SERVICE_REQUEST_STATUSES,
+  type ServiceRequestHistoryEventType,
   type ServiceRequestStatus,
   type ServiceRequestTransition,
 } from './service-request';
@@ -67,5 +69,24 @@ export function assertConvertible(currentStatus: ServiceRequestStatus): void {
   }
   if (currentStatus !== SERVICE_REQUEST_STATUSES.Approved) {
     throw new ServiceRequestStateError('INVALID_STATE_TRANSITION');
+  }
+}
+
+export function historyEventTypeForTransition(
+  transition: Exclude<ServiceRequestTransition, 'convert'>,
+): ServiceRequestHistoryEventType {
+  switch (transition) {
+    case 'submit':
+      return SERVICE_REQUEST_HISTORY_EVENTS.Submitted;
+    case 'startReview':
+      return SERVICE_REQUEST_HISTORY_EVENTS.ReviewStarted;
+    case 'approve':
+      return SERVICE_REQUEST_HISTORY_EVENTS.Approved;
+    case 'reject':
+      return SERVICE_REQUEST_HISTORY_EVENTS.Rejected;
+    case 'cancel':
+      return SERVICE_REQUEST_HISTORY_EVENTS.Cancelled;
+    default:
+      return SERVICE_REQUEST_HISTORY_EVENTS.Submitted;
   }
 }

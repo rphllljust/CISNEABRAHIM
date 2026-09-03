@@ -159,6 +159,11 @@ export type ProposalSnapshotSource = {
   proposal_code: string;
   status: string;
   client_id: string;
+  pricing_structure?: string | null;
+  currency_code?: string | null;
+  global_sale_price_amount?: string | null;
+  global_internal_cost_amount?: string | null;
+  commercial_terms?: Record<string, unknown> | null;
 };
 
 export type ServiceOrderProposalSnapshot = {
@@ -166,17 +171,37 @@ export type ServiceOrderProposalSnapshot = {
   proposalNumber: string;
   status: string;
   clientId: string;
+  paymentTerms?: string | null;
+  contractReference?: string | null;
+  pricingStructure?: string | null;
+  globalSalePrice?: string | null;
+  globalInternalCost?: string | null;
+  currencyCode?: string | null;
   snapshottedAt: string;
 };
 
 export function buildServiceOrderProposalSnapshot(
   proposal: ProposalSnapshotSource,
 ): ServiceOrderProposalSnapshot {
+  const commercialTerms = proposal.commercial_terms ?? {};
+  const paymentTerms =
+    typeof commercialTerms.paymentTerms === 'string' ? commercialTerms.paymentTerms : null;
+  const contractReference =
+    typeof commercialTerms.contractReference === 'string'
+      ? commercialTerms.contractReference
+      : null;
+
   return {
     proposalId: proposal.id,
     proposalNumber: proposal.proposal_code,
     status: proposal.status,
     clientId: proposal.client_id,
+    paymentTerms,
+    contractReference,
+    pricingStructure: proposal.pricing_structure ?? null,
+    globalSalePrice: proposal.global_sale_price_amount ?? null,
+    globalInternalCost: proposal.global_internal_cost_amount ?? null,
+    currencyCode: proposal.currency_code ?? null,
     snapshottedAt: new Date().toISOString(),
   };
 }
@@ -187,6 +212,10 @@ export type PurchaseOrderSnapshotSource = {
   rc_number: string | null;
   status: string;
   client_id: string;
+  payment_terms?: string | null;
+  pricing_structure?: string | null;
+  total_amount?: string | null;
+  currency_code?: string | null;
 };
 
 export type ServiceOrderPurchaseOrderSnapshot = {
@@ -195,6 +224,10 @@ export type ServiceOrderPurchaseOrderSnapshot = {
   rcNumber: string | null;
   status: string;
   clientId: string;
+  paymentTerms?: string | null;
+  pricingStructure?: string | null;
+  totalAmount?: string | null;
+  currencyCode?: string | null;
   snapshottedAt: string;
 };
 
@@ -207,6 +240,10 @@ export function buildServiceOrderPurchaseOrderSnapshot(
     rcNumber: purchaseOrder.rc_number,
     status: purchaseOrder.status,
     clientId: purchaseOrder.client_id,
+    paymentTerms: purchaseOrder.payment_terms ?? null,
+    pricingStructure: purchaseOrder.pricing_structure ?? null,
+    totalAmount: purchaseOrder.total_amount ?? null,
+    currencyCode: purchaseOrder.currency_code ?? null,
     snapshottedAt: new Date().toISOString(),
   };
 }

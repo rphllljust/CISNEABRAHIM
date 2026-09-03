@@ -54,7 +54,15 @@ export class ServiceRequestsAccessPersistence {
     return this.repository.listDocumentLinks(serviceRequestId);
   }
 
+  listHistoryEvents(serviceRequestId: string) {
+    return this.repository.listHistoryEvents(serviceRequestId);
+  }
+
   listServiceRequests(whereClause: string, params: unknown[], limit: number, offset: number) {
     return this.repository.listServiceRequests(whereClause, params, limit, offset);
+  }
+
+  countListSummary(whereClause: string, params: unknown[]) {
+    return this.repository.countListSummary(whereClause, params);
   }
 }

@@ -85,7 +85,8 @@ export function computeLineAmount(input: {
   if (
     input.modelCode === 'GLOBAL_PRICE' ||
     input.modelCode === 'FIXED' ||
-    input.modelCode === 'NEGOTIATED_PO_PRICE'
+    input.modelCode === 'NEGOTIATED_PO_PRICE' ||
+    input.modelCode === 'HEADER_TOTAL'
   ) {
     return input.salePrice;
   }

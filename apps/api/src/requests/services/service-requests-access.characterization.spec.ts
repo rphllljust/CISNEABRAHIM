@@ -68,6 +68,7 @@ describe('ServiceRequestsAccessService characterization (orchestration)', () => 
   const repository = {
     findByIdempotencyKey: vi.fn(),
     listDocumentLinks: vi.fn(),
+    listHistoryEvents: vi.fn(),
     isUnitRegistered: vi.fn(),
     create: vi.fn(),
     isIdempotencyViolation: vi.fn(),
@@ -96,6 +97,7 @@ describe('ServiceRequestsAccessService characterization (orchestration)', () => 
 
   beforeEach(() => {
     vi.clearAllMocks();
+    repository.listHistoryEvents.mockResolvedValue([]);
     const persistence = new ServiceRequestsAccessPersistence(repository as never);
     const validation = new ServiceRequestsAccessValidation(referenceValidation as never);
     const query = new ServiceRequestsAccessQuery(persistence, authz as never, scopeEnforcement as never);

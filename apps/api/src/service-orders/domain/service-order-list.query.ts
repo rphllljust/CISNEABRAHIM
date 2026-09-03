@@ -29,6 +29,7 @@ export type ListServiceOrdersQuery = {
   clientId?: string;
   unitId?: string;
   status?: string;
+  archetype?: string;
   filter?: ServiceOrderListFilter;
   q?: string;
   from?: Date;
@@ -86,6 +87,7 @@ export function parseListServiceOrdersQuery(query: Record<string, unknown>): Lis
   const clientId = typeof query['clientId'] === 'string' ? query['clientId'].trim() : undefined;
   const unitId = typeof query['unitId'] === 'string' ? query['unitId'].trim() : undefined;
   const status = typeof query['status'] === 'string' ? query['status'].trim() : undefined;
+  const archetype = typeof query['archetype'] === 'string' ? query['archetype'].trim() : undefined;
   const filterRaw = typeof query['filter'] === 'string' ? query['filter'].trim() : undefined;
   const q = typeof query['q'] === 'string' ? query['q'].trim() : undefined;
   const fromRaw = typeof query['from'] === 'string' ? query['from'].trim() : undefined;
@@ -100,6 +102,9 @@ export function parseListServiceOrdersQuery(query: Record<string, unknown>): Lis
   }
   if (status && status !== SERVICE_ORDER_ACTIVE_STATUS && !isServiceOrderStatus(status)) {
     throw new ServiceOrderListQueryError('status');
+  }
+  if (archetype && archetype.length === 0) {
+    throw new ServiceOrderListQueryError('archetype');
   }
   if (filterRaw && !FILTER_SET.has(filterRaw)) {
     throw new ServiceOrderListQueryError('filter');
@@ -127,6 +132,7 @@ export function parseListServiceOrdersQuery(query: Record<string, unknown>): Lis
     clientId,
     unitId: unitId || undefined,
     status: status || undefined,
+    archetype: archetype || undefined,
     filter: filterRaw as ServiceOrderListFilter | undefined,
     q: q || undefined,
     from,
@@ -159,6 +165,10 @@ export function buildServiceOrderListSqlParts(
   } else if (query.status) {
     params.push(query.status);
     clauses.push(`so.status = $${params.length}::so.service_order_status`);
+  }
+  if (query.archetype) {
+    params.push(query.archetype);
+    clauses.push(`so.service_snapshot->>'archetype' = $${params.length}`);
   }
 
   if (query.q) {

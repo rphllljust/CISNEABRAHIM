@@ -34,6 +34,30 @@ export const ALLOCATION_HISTORY_EVENTS = {
   RemoveAllocation: 'REMOVE_ALLOCATION',
 } as const;
 
+export type AllocationHistorySnapshot = {
+  serviceOrderId: string;
+  physicalAssetId: string;
+  resourceTypeCode: string;
+  operationalStart: string;
+  operationalEnd: string;
+  plannedResourceId?: string | null;
+};
+
+export function buildAllocationHistoryPayload(
+  snapshot: AllocationHistorySnapshot,
+  change: Record<string, unknown> = {},
+): Record<string, unknown> {
+  return {
+    serviceOrderId: snapshot.serviceOrderId,
+    physicalAssetId: snapshot.physicalAssetId,
+    resourceTypeCode: snapshot.resourceTypeCode,
+    operationalStart: snapshot.operationalStart,
+    operationalEnd: snapshot.operationalEnd,
+    ...(snapshot.plannedResourceId ? { plannedResourceId: snapshot.plannedResourceId } : {}),
+    ...change,
+  };
+}
+
 export const SERVICE_ORDER_PLANNING_ALLOWED_STATUSES = new Set([
   'RELEASED',
   'IN_EXECUTION',
@@ -67,5 +91,48 @@ export function assertIntervalWithinParent(
   }
   if (childStart < parentStart || childEnd > parentEnd) {
     throw new Error('ALLOCATION_OUTSIDE_PLANNED_WINDOW');
+  }
+}
+
+export function resolvePlannedOperationalWindow(
+  current: { operational_start: string | null; operational_end: string | null },
+  update: { operationalStart?: string | null; operationalEnd?: string | null },
+): { start: Date | null; end: Date | null } {
+  const startRaw =
+    update.operationalStart !== undefined ? update.operationalStart : current.operational_start;
+  const endRaw = update.operationalEnd !== undefined ? update.operationalEnd : current.operational_end;
+  return {
+    start: startRaw ? new Date(startRaw) : null,
+    end: endRaw ? new Date(endRaw) : null,
+  };
+}
+
+export function assertPlannedOperationalWindow(start: Date | null, end: Date | null): void {
+  if ((start && !end) || (!start && end)) {
+    throw new Error('PLANNED_WINDOW_INCOMPLETE');
+  }
+  if (start && end && !isHalfOpenIntervalValid(start, end)) {
+    throw new Error('PLANNED_WINDOW_INVALID');
+  }
+}
+
+export function assertAllocationsWithinPlannedWindow(
+  allocations: Array<{ operational_start: string | Date; operational_end: string | Date }>,
+  plannedStart: Date | null,
+  plannedEnd: Date | null,
+): void {
+  if (!plannedStart || !plannedEnd) {
+    return;
+  }
+  for (const allocation of allocations) {
+    const allocStart =
+      allocation.operational_start instanceof Date
+        ? allocation.operational_start
+        : new Date(allocation.operational_start);
+    const allocEnd =
+      allocation.operational_end instanceof Date
+        ? allocation.operational_end
+        : new Date(allocation.operational_end);
+    assertIntervalWithinParent(allocStart, allocEnd, plannedStart, plannedEnd);
   }
 }

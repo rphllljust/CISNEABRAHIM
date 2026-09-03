@@ -23,6 +23,9 @@ import {
   type ExecutionRequirementInput,
   type NormalizedExecutionRequirementInput,
 } from './execution-requirement';
+import { REQUIREMENT_LEVELS, type RequirementLevel } from './requirement-level';
+
+export { REQUIREMENT_LEVELS, type RequirementLevel } from './requirement-level';
 
 export class CatalogValidationError extends Error {
   constructor(readonly code: string) {
@@ -98,9 +101,6 @@ export function assertAllowedUnits(units: AllowedUnitInput[]): AllowedUnitInput[
   }
   return normalized;
 }
-
-export const REQUIREMENT_LEVELS = ['REQUIRED', 'OPTIONAL', 'CONDITIONAL'] as const;
-export type RequirementLevel = (typeof REQUIREMENT_LEVELS)[number];
 
 export type ResourceRequirementInput = {
   resourceTypeCode: string;

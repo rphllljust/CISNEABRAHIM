@@ -31,12 +31,26 @@ export const ASSET_ALLOCATION_STATUSES = {
 export type AssetAllocationStatus =
   (typeof ASSET_ALLOCATION_STATUSES)[keyof typeof ASSET_ALLOCATION_STATUSES];
 
+export const ASSET_OPERATIONAL_AVAILABILITIES = {
+  Available: 'AVAILABLE',
+  Allocated: 'ALLOCATED',
+  Unavailable: 'UNAVAILABLE',
+} as const;
+
+export type AssetOperationalAvailability =
+  (typeof ASSET_OPERATIONAL_AVAILABILITIES)[keyof typeof ASSET_OPERATIONAL_AVAILABILITIES];
+
 export const VEHICLE_CLASSIFICATION = 'VEHICLE';
 
 export type VehicleProfile = {
   plate: string;
   chassis: string | null;
   model: string | null;
+};
+
+export type PhysicalAssetCurrentAllocation = {
+  serviceOrderId: string;
+  orderNumber: string;
 };
 
 export type PhysicalAsset = {
@@ -54,12 +68,21 @@ export type PhysicalAsset = {
   updatedAt: string;
   deactivatedAt: string | null;
   vehicle: VehicleProfile | null;
+  currentAllocation: PhysicalAssetCurrentAllocation | null;
 };
 
 export type PhysicalAssetListResponse = {
   items: PhysicalAsset[];
   limit: number;
   offset: number;
+  total: number;
+};
+
+export type PhysicalAssetListSummary = {
+  total: number;
+  available: number;
+  allocated: number;
+  unavailable: number;
 };
 
 export type CreatePhysicalAssetPayload = {

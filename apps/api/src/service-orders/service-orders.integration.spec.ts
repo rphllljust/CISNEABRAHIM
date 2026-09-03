@@ -51,6 +51,7 @@ import { ServiceOrdersAccessService } from './services/service-orders-access.ser
 
 const UNIT_A = 'unit-so-a';
 const TEST_CNPJ = '11222333000181';
+const TEST_CNPJ_ALT = '11897171000181';
 
 async function grantServiceOrderAdmin(pool: Pool, identityId: string, grantedBy: string): Promise<void> {
   const actions = [
@@ -175,11 +176,14 @@ describe('Service orders PostgreSQL integration', () => {
     return { identityId, actor: { identityId, sessionId: 'sid' } };
   }
 
-  async function seedClient(actor: { identityId: string; sessionId: string }) {
+  async function seedClient(
+    actor: { identityId: string; sessionId: string },
+    taxId: string = TEST_CNPJ,
+  ) {
     return clientAccess.create(actor, {
       legalName: `Cliente SO ${crypto.randomUUID()}`,
       tradeName: 'Cliente SO',
-      taxId: TEST_CNPJ,
+      taxId,
       contacts: [
         {
           name: 'Contato',
@@ -470,8 +474,11 @@ describe('Service orders PostgreSQL integration', () => {
     ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.DENIED });
   });
 
-  async function createDraftWithService(actor: { identityId: string; sessionId: string }) {
-    const client = await seedClient(actor);
+  async function createDraftWithService(
+    actor: { identityId: string; sessionId: string },
+    taxId: string = TEST_CNPJ,
+  ) {
+    const client = await seedClient(actor, taxId);
     const publishedService = await seedPublishedService(actor);
     const created = await serviceOrdersAccess.create(actor, {
       origin: SERVICE_ORDER_ORIGINS.AuthorizedDirect,
@@ -732,6 +739,137 @@ describe('Service orders PostgreSQL integration', () => {
 
     await expect(
       serviceOrdersAccess.list({ identityId: otherId, sessionId: 'sid' }, { limit: 20, offset: 0 }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.DENIED });
+  });
+
+  it('records prepare transition with history and security audit', async () => {
+    const { actor } = await seedActor();
+    const { created } = await createDraftWithService(actor);
+
+    const prepared = await serviceOrdersAccess.prepare(actor, created.id, {
+      rowVersion: created.rowVersion,
+    });
+
+    expect(prepared.status).toBe(SERVICE_ORDER_STATUSES.Prepared);
+    expect(prepared.preparedAt).not.toBeNull();
+    expect(prepared.historyEvents.map((event) => event.eventType)).toEqual(
+      expect.arrayContaining(['CREATED', 'PREPARED']),
+    );
+
+    const audit = await pool.query<{ action: string }>(
+      `SELECT action FROM audit.security_audit_events WHERE resource_id = $1`,
+      [prepared.id],
+    );
+    expect(audit.rows.map((row) => row.action)).toContain(
+      SECURITY_AUDIT_ACTIONS.ServiceOrdersServiceOrderPrepare,
+    );
+  });
+
+  it('cancels from DRAFT and RELEASED with history and security audit', async () => {
+    const { actor } = await seedActor();
+    const { created } = await createDraftWithService(actor);
+
+    const cancelledFromDraft = await serviceOrdersAccess.cancel(actor, created.id, {
+      rowVersion: created.rowVersion,
+      cancellationReason: 'Desistência operacional',
+    });
+    expect(cancelledFromDraft.status).toBe(SERVICE_ORDER_STATUSES.Cancelled);
+    expect(cancelledFromDraft.cancelledAt).not.toBeNull();
+    expect(cancelledFromDraft.historyEvents.map((event) => event.eventType)).toContain('CANCELLED');
+
+    let audit = await pool.query<{ action: string }>(
+      `SELECT action FROM audit.security_audit_events WHERE resource_id = $1`,
+      [created.id],
+    );
+    expect(audit.rows.map((row) => row.action)).toContain(
+      SECURITY_AUDIT_ACTIONS.ServiceOrdersServiceOrderCancel,
+    );
+
+    const { created: second } = await createDraftWithService(actor, TEST_CNPJ_ALT);
+    const prepared = await serviceOrdersAccess.prepare(actor, second.id, {
+      rowVersion: second.rowVersion,
+    });
+    const released = await serviceOrdersAccess.release(actor, prepared.id, {
+      rowVersion: prepared.rowVersion,
+    });
+    const cancelledFromReleased = await serviceOrdersAccess.cancel(actor, released.id, {
+      rowVersion: released.rowVersion,
+      cancellationReason: 'Liberação revertida',
+    });
+    expect(cancelledFromReleased.status).toBe(SERVICE_ORDER_STATUSES.Cancelled);
+
+    audit = await pool.query<{ action: string }>(
+      `SELECT action FROM audit.security_audit_events WHERE resource_id = $1`,
+      [released.id],
+    );
+    expect(audit.rows.map((row) => row.action)).toContain(
+      SECURITY_AUDIT_ACTIONS.ServiceOrdersServiceOrderCancel,
+    );
+  });
+
+  it('rejects invalid lifecycle transitions from wrong states', async () => {
+    const { actor } = await seedActor();
+    const { created } = await createDraftWithService(actor);
+
+    await expect(
+      serviceOrdersAccess.release(actor, created.id, { rowVersion: created.rowVersion }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.INVALID_STATE });
+
+    const prepared = await serviceOrdersAccess.prepare(actor, created.id, {
+      rowVersion: created.rowVersion,
+    });
+    await expect(
+      serviceOrdersAccess.prepare(actor, prepared.id, { rowVersion: prepared.rowVersion }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.INVALID_STATE });
+
+    const released = await serviceOrdersAccess.release(actor, prepared.id, {
+      rowVersion: prepared.rowVersion,
+    });
+    const cancelled = await serviceOrdersAccess.cancel(actor, released.id, {
+      rowVersion: released.rowVersion,
+      cancellationReason: 'Cancelada',
+    });
+    await expect(
+      serviceOrdersAccess.cancel(actor, cancelled.id, {
+        rowVersion: cancelled.rowVersion,
+        cancellationReason: 'Duplicada',
+      }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.INVALID_STATE });
+  });
+
+  it('returns VERSION_CONFLICT on stale prepare rowVersion', async () => {
+    const { actor } = await seedActor();
+    const { created } = await createDraftWithService(actor);
+    await serviceOrdersAccess.update(actor, created.id, {
+      rowVersion: created.rowVersion,
+      description: 'Atualizada antes de preparar',
+    });
+
+    await expect(
+      serviceOrdersAccess.prepare(actor, created.id, { rowVersion: created.rowVersion }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.VERSION_CONFLICT });
+  });
+
+  it('denies unauthorized prepare and cancel', async () => {
+    const { actor } = await seedActor();
+    const { created } = await createDraftWithService(actor);
+    const otherLogin = normalizeLoginIdentifier(`so-transition-deny-${crypto.randomUUID()}@cisne.invalid`);
+    const passwordHash = await hashPassword(AUTH_TEST_PASSWORD);
+    const { identityId: otherId } = await insertIdentity(pool, otherLogin, passwordHash);
+    const otherActor = { identityId: otherId, sessionId: 'sid' };
+
+    await expect(
+      serviceOrdersAccess.prepare(otherActor, created.id, { rowVersion: created.rowVersion }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.DENIED });
+
+    const prepared = await serviceOrdersAccess.prepare(actor, created.id, {
+      rowVersion: created.rowVersion,
+    });
+    await expect(
+      serviceOrdersAccess.cancel(otherActor, prepared.id, {
+        rowVersion: prepared.rowVersion,
+        cancellationReason: 'Sem permissão',
+      }),
     ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.DENIED });
   });
 });

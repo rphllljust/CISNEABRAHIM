@@ -501,6 +501,46 @@ describe('Service requests PostgreSQL integration', () => {
     ).rejects.toMatchObject({ code: REQUESTS_ERROR_CODES.INVALID_STATE });
   });
 
+  it('propagates contract reference and snapshot when converting CONTRACT-origin request', async () => {
+    const { actor } = await seedActor();
+    const client = await seedClient(actor);
+    const publishedService = await seedPublishedService(actor);
+    const created = await serviceRequestsAccess.create(actor, {
+      unitId: UNIT_A,
+      originSource: SERVICE_REQUEST_ORIGINS.Contract,
+      externalOriginReference: 'CT-FLOW-2026',
+      clientId: client.id,
+      serviceDefinitionId: publishedService.serviceDefinitionId,
+      serviceDefinitionVersionId: publishedService.id,
+      description: 'Contrato operacional',
+    });
+    const submitted = await serviceRequestsAccess.submit(actor, created.serviceRequest.id, {
+      rowVersion: created.serviceRequest.rowVersion,
+    });
+    const underReview = await serviceRequestsAccess.startReview(actor, created.serviceRequest.id, {
+      rowVersion: submitted.serviceRequest.rowVersion,
+    });
+    const approved = await serviceRequestsAccess.approve(actor, created.serviceRequest.id, {
+      rowVersion: underReview.serviceRequest.rowVersion,
+    });
+    const converted = await serviceRequestsAccess.convert(actor, created.serviceRequest.id, {
+      rowVersion: approved.serviceRequest.rowVersion,
+    });
+
+    const order = await pool.query<{
+      contract_reference: string | null;
+      contract_snapshot: Record<string, unknown> | null;
+    }>(
+      `SELECT contract_reference, contract_snapshot
+       FROM so.service_orders
+       WHERE id = $1`,
+      [converted.serviceRequest.convertedServiceOrderId],
+    );
+    expect(order.rows[0]?.contract_reference).toBe('CT-FLOW-2026');
+    expect(order.rows[0]?.contract_snapshot?.['contractReference']).toBe('CT-FLOW-2026');
+    expect(order.rows[0]?.contract_snapshot?.['serviceRequestId']).toBe(created.serviceRequest.id);
+  });
+
   it('records audit events on create and submit', async () => {
     const { actor } = await seedActor();
     const created = await serviceRequestsAccess.create(actor, {
@@ -621,5 +661,197 @@ describe('Service requests PostgreSQL integration', () => {
     ).rejects.toMatchObject({
       code: COMMERCIAL_ERROR_CODES.PURCHASE_ORDER_IN_USE,
     } satisfies Partial<CommercialHttpException>);
+  });
+
+  it('returns scoped list summary counts by operational category', async () => {
+    const { actor } = await seedActor();
+    const client = await seedClient(actor);
+
+    const submittedOnly = await serviceRequestsAccess.create(actor, {
+      unitId: UNIT_A,
+      originSource: SERVICE_REQUEST_ORIGINS.Email,
+      clientId: client.id,
+      description: 'Aguardando triagem',
+    });
+    await serviceRequestsAccess.submit(actor, submittedOnly.serviceRequest.id, {
+      rowVersion: submittedOnly.serviceRequest.rowVersion,
+    });
+
+    const reviewFlow = await serviceRequestsAccess.create(actor, {
+      unitId: UNIT_A,
+      originSource: SERVICE_REQUEST_ORIGINS.Phone,
+      clientId: client.id,
+      description: 'Em análise operacional',
+    });
+    const reviewSubmitted = await serviceRequestsAccess.submit(actor, reviewFlow.serviceRequest.id, {
+      rowVersion: reviewFlow.serviceRequest.rowVersion,
+    });
+    await serviceRequestsAccess.startReview(actor, reviewFlow.serviceRequest.id, {
+      rowVersion: reviewSubmitted.serviceRequest.rowVersion,
+    });
+
+    const publishedService = await seedPublishedService(actor);
+    const convertedFlow = await serviceRequestsAccess.create(actor, {
+      unitId: UNIT_A,
+      originSource: SERVICE_REQUEST_ORIGINS.DirectRequest,
+      clientId: client.id,
+      serviceDefinitionId: publishedService.serviceDefinitionId,
+      serviceDefinitionVersionId: publishedService.id,
+      description: 'Convertida em OS',
+    });
+    const convertedSubmitted = await serviceRequestsAccess.submit(actor, convertedFlow.serviceRequest.id, {
+      rowVersion: convertedFlow.serviceRequest.rowVersion,
+    });
+    const convertedReview = await serviceRequestsAccess.startReview(actor, convertedFlow.serviceRequest.id, {
+      rowVersion: convertedSubmitted.serviceRequest.rowVersion,
+    });
+    const convertedApproved = await serviceRequestsAccess.approve(actor, convertedFlow.serviceRequest.id, {
+      rowVersion: convertedReview.serviceRequest.rowVersion,
+    });
+    await serviceRequestsAccess.convert(actor, convertedFlow.serviceRequest.id, {
+      rowVersion: convertedApproved.serviceRequest.rowVersion,
+    });
+
+    const cancelledFlow = await serviceRequestsAccess.create(actor, {
+      unitId: UNIT_A,
+      originSource: SERVICE_REQUEST_ORIGINS.Other,
+      clientId: client.id,
+      description: 'Cancelada',
+    });
+    await serviceRequestsAccess.cancel(actor, cancelledFlow.serviceRequest.id, {
+      rowVersion: cancelledFlow.serviceRequest.rowVersion,
+      cancellationReason: 'Sem interesse',
+    });
+
+    await serviceRequestsAccess.create(actor, {
+      unitId: UNIT_B,
+      originSource: SERVICE_REQUEST_ORIGINS.Email,
+      clientId: client.id,
+      description: 'Outra unidade',
+    });
+
+    const summary = await serviceRequestsAccess.summary(actor, { unitId: UNIT_A });
+
+    expect(summary.total).toBe(4);
+    expect(summary.pending).toBe(1);
+    expect(summary.underReview).toBe(1);
+    expect(summary.converted).toBe(1);
+    expect(summary.cancelled).toBe(1);
+  });
+
+  it('records append-only transition history with actor and timestamps', async () => {
+    const { actor, identityId } = await seedActor();
+    const client = await seedClient(actor);
+    const publishedService = await seedPublishedService(actor);
+
+    const created = await serviceRequestsAccess.create(actor, {
+      unitId: UNIT_A,
+      originSource: SERVICE_REQUEST_ORIGINS.Contract,
+      clientId: client.id,
+      serviceDefinitionId: publishedService.serviceDefinitionId,
+      serviceDefinitionVersionId: publishedService.id,
+      description: 'Com histórico',
+    });
+
+    const submitted = await serviceRequestsAccess.submit(actor, created.serviceRequest.id, {
+      rowVersion: created.serviceRequest.rowVersion,
+    });
+    const reviewed = await serviceRequestsAccess.startReview(actor, created.serviceRequest.id, {
+      rowVersion: submitted.serviceRequest.rowVersion,
+    });
+    const approved = await serviceRequestsAccess.approve(actor, created.serviceRequest.id, {
+      rowVersion: reviewed.serviceRequest.rowVersion,
+      priority: SERVICE_REQUEST_PRIORITIES.High,
+    });
+    const converted = await serviceRequestsAccess.convert(actor, created.serviceRequest.id, {
+      rowVersion: approved.serviceRequest.rowVersion,
+    });
+
+    const eventTypes = converted.historyEvents.map((event) => event.eventType);
+    expect(eventTypes).toEqual([
+      'CREATED',
+      'SUBMITTED',
+      'REVIEW_STARTED',
+      'APPROVED',
+      'CONVERTED',
+    ]);
+    expect(converted.historyEvents.every((event) => event.actorIdentityId === identityId)).toBe(true);
+    expect(converted.historyEvents.every((event) => event.occurredAt)).toBeTruthy();
+
+    const approvedEvent = converted.historyEvents.find((event) => event.eventType === 'APPROVED');
+    expect(approvedEvent?.payload).toMatchObject({
+      fromStatus: SERVICE_REQUEST_STATUSES.UnderReview,
+      toStatus: SERVICE_REQUEST_STATUSES.Approved,
+      priority: SERVICE_REQUEST_PRIORITIES.High,
+    });
+  });
+
+  it('rejects invalid state transitions across the lifecycle', async () => {
+    const { actor } = await seedActor();
+    const created = await serviceRequestsAccess.create(actor, {
+      unitId: UNIT_A,
+      originSource: SERVICE_REQUEST_ORIGINS.Email,
+      externalContact: { name: 'Ana' },
+      description: 'Transições inválidas',
+    });
+
+    await expect(
+      serviceRequestsAccess.approve(actor, created.serviceRequest.id, {
+        rowVersion: created.serviceRequest.rowVersion,
+      }),
+    ).rejects.toMatchObject({ code: REQUESTS_ERROR_CODES.INVALID_STATE });
+
+    const submitted = await serviceRequestsAccess.submit(actor, created.serviceRequest.id, {
+      rowVersion: created.serviceRequest.rowVersion,
+    });
+
+    await expect(
+      serviceRequestsAccess.convert(actor, created.serviceRequest.id, {
+        rowVersion: submitted.serviceRequest.rowVersion,
+      }),
+    ).rejects.toMatchObject({ code: REQUESTS_ERROR_CODES.INVALID_STATE });
+
+    const reviewed = await serviceRequestsAccess.startReview(actor, created.serviceRequest.id, {
+      rowVersion: submitted.serviceRequest.rowVersion,
+    });
+    const approved = await serviceRequestsAccess.approve(actor, created.serviceRequest.id, {
+      rowVersion: reviewed.serviceRequest.rowVersion,
+    });
+
+    await expect(
+      serviceRequestsAccess.submit(actor, created.serviceRequest.id, {
+        rowVersion: approved.serviceRequest.rowVersion,
+      }),
+    ).rejects.toMatchObject({ code: REQUESTS_ERROR_CODES.INVALID_STATE });
+  });
+
+  it('does not reserve physical assets during service request intake', async () => {
+    const { actor } = await seedActor();
+    const client = await seedClient(actor);
+    const created = await serviceRequestsAccess.create(actor, {
+      unitId: UNIT_A,
+      originSource: SERVICE_REQUEST_ORIGINS.Whatsapp,
+      clientId: client.id,
+      externalContact: { phone: '69999990001', name: 'Cliente' },
+      description: 'Sem reserva antecipada',
+    });
+    const submitted = await serviceRequestsAccess.submit(actor, created.serviceRequest.id, {
+      rowVersion: created.serviceRequest.rowVersion,
+    });
+    const reviewed = await serviceRequestsAccess.startReview(actor, created.serviceRequest.id, {
+      rowVersion: submitted.serviceRequest.rowVersion,
+    });
+    await serviceRequestsAccess.approve(actor, created.serviceRequest.id, {
+      rowVersion: reviewed.serviceRequest.rowVersion,
+    });
+
+    const allocationCount = await pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count
+       FROM res.resource_allocations ra
+       INNER JOIN so.service_orders so ON so.id = ra.service_order_id
+       WHERE so.service_request_id = $1`,
+      [created.serviceRequest.id],
+    );
+    expect(allocationCount.rows[0]?.count).toBe('0');
   });
 });
