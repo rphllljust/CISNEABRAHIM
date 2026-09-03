@@ -397,3 +397,15 @@ Classificação: **correção de engenharia e de evidência de teste**. Nenhuma 
 | ADR-TECH-007 | Vitest protege regras; ESLint/TypeScript compõem o gate | narrowing nativo de `error.code` no teste de posting | lint e typecheck API | PASS |
 
 Evidência unitária consolidada: API 736/736, database 21/21 e web 349/349; total 1.106/1.106. A suíte de integração PostgreSQL em execução separada não integra esta evidência unitária.
+
+## Validação cirúrgica de integração — 2026-09-02
+
+Classificação: **evidência de engenharia**, sem alteração de implementação e sem nova confirmação empresarial.
+
+| ESCOPO VALIDADO | TESTE / GATE | RESULTADO |
+| --------------- | ------------ | --------- |
+| Integridade empresarial, forecast de caixa, tesouraria e infraestrutura PostgreSQL | 4 arquivos de integração, 17 cenários | 17/17 PASS |
+| Regras unitárias de tesouraria | `treasury.spec.ts` | 6/6 PASS |
+| Nove arquivos pendentes da correção de integração | ESLint direcionado; typecheck API; `git diff --check` | PASS |
+
+As nove alterações de implementação já existentes foram apenas inspecionadas e preservadas; esta validação não as classifica como nova regra empresarial.
