@@ -46,6 +46,17 @@ const ALLOWED_TECHNICAL_TABLES = new Set([
 
 const ALLOWED_SCHEMAS = new Set(['infrastructure', 'identity', 'authorization', 'audit', 'pty']);
 
+/** Party masters live in `pty` (clients + suppliers). Other business schemas are out of this probe. */
+const ALLOWED_PTY_TABLES = new Set([
+  'clients',
+  'client_contacts',
+  'client_addresses',
+  'suppliers',
+  'supplier_contacts',
+  'supplier_addresses',
+  'supplier_history_events',
+]);
+
 describe('PostgreSQL integration', () => {
   let pool: Pool;
   const testDatabaseUrl = process.env['TEST_DATABASE_URL'];
@@ -105,7 +116,7 @@ describe('PostgreSQL integration', () => {
       }
       expect(ALLOWED_SCHEMAS.has(row.schemaname)).toBe(true);
       if (row.schemaname === 'pty') {
-        expect(['clients', 'client_contacts', 'client_addresses']).toContain(tableName);
+        expect(ALLOWED_PTY_TABLES.has(tableName)).toBe(true);
         continue;
       }
       if (row.schemaname === 'public') {

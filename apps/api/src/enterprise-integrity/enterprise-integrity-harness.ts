@@ -134,6 +134,7 @@ export type EnterpriseIntegrityServices = UatVerticalServices & {
 
 export type EnterpriseIntegrityContext = {
   pool: Pool;
+  module: TestingModule;
   services: EnterpriseIntegrityServices;
   fiscalGateway: ScriptedFiscalGateway;
   seedAdminActor: () => Promise<UatActor>;
@@ -257,5 +258,5 @@ export async function createEnterpriseIntegrityContext(): Promise<EnterpriseInte
 
   await resetDatabase();
 
-  return { pool, services, fiscalGateway, seedAdminActor, seedOperationalActor, resetDatabase };
+  return { pool, module, services, fiscalGateway, seedAdminActor, seedOperationalActor, resetDatabase };
 }

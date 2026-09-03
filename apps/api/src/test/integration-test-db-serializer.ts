@@ -13,9 +13,18 @@ if (!testDatabaseUrl) {
 
 process.env['DATABASE_POOL_MAX'] ??= '1';
 
-const serializerPool = new Pool({ connectionString: testDatabaseUrl, max: 1 });
+let serializerPool = new Pool({ connectionString: testDatabaseUrl, max: 1 });
+let serializerPoolEnded = false;
 let serializerClient: PoolClient | undefined;
 let lockHeld = false;
+
+function getSerializerPool(): Pool {
+  if (serializerPoolEnded) {
+    serializerPool = new Pool({ connectionString: testDatabaseUrl, max: 1 });
+    serializerPoolEnded = false;
+  }
+  return serializerPool;
+}
 
 function releaseSerializerClient(destroy = false): void {
   if (!serializerClient) {
@@ -53,24 +62,15 @@ async function releaseSerializerLock(): Promise<void> {
 async function shutdownSerializerPool(): Promise<void> {
   await releaseSerializerLock();
   releaseSerializerClient(true);
+  if (serializerPoolEnded) {
+    return;
+  }
+  serializerPoolEnded = true;
   await serializerPool.end();
 }
 
-let shutdownRegistered = false;
-function registerSerializerShutdown(): void {
-  if (shutdownRegistered) {
-    return;
-  }
-  shutdownRegistered = true;
-  process.once('beforeExit', () => {
-    void shutdownSerializerPool();
-  });
-}
-
-registerSerializerShutdown();
-
 beforeAll(async () => {
-  serializerClient = await serializerPool.connect();
+  serializerClient = await getSerializerPool().connect();
   try {
     await acquireAdvisoryLockWithTimeout(serializerClient, INTEGRATION_TEST_DB_LOCK_KEY, 180_000);
     lockHeld = true;
@@ -81,9 +81,5 @@ beforeAll(async () => {
 }, 180_000);
 
 afterAll(async () => {
-  try {
-    await releaseSerializerLock();
-  } finally {
-    releaseSerializerClient();
-  }
+  await shutdownSerializerPool();
 }, 180_000);

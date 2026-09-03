@@ -38,6 +38,7 @@ describe('Enterprise financial integrity gate', () => {
   });
 
   afterAll(async () => {
+    await ctx.module.close();
     await ctx.pool.end();
   });
 

@@ -9692,3 +9692,50 @@ COMMIT: THIS_COMMIT
 WORKING TREE: DIRTY (9 alterações preexistentes preservadas)
 NEXT: STOP
 ```
+
+
+```text
+PROMPT: SURGICAL CASH FLOW DEBUG
+TITLE: Remover vazamento de parâmetro de teste no contrato de tesouraria
+STARTED_AT: 2026-09-02T23:07:58-04:00
+FINISHED_AT: 2026-09-02T23:09:57-04:00
+STATUS: PASS
+FILES_CREATED: (nenhum)
+FILES_CHANGED:
+  apps/api/src/enterprise-integrity/enterprise-integrity-harness.ts
+  apps/api/src/enterprise-integrity/enterprise-integrity.integration.spec.ts
+  apps/api/src/finance/cash-flow-forecast.integration.spec.ts
+  apps/api/src/infrastructure/database/database.integration.spec.ts
+  apps/api/src/test/integration-test-db-serializer.ts
+  docs/01-foundation/requirements-traceability.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: NO
+NEXT_PROMPT_EXECUTED: NO
+
+ROOT CAUSE:
+  O forecast fixo em 2026-09-01 precisava de um crédito realizado até o asOf. A correção intermediária adicionava openingOccurredAt ao input de abertura de conta, alcançável pelo controller HTTP e sem regra documentada.
+
+SURGICAL FIX:
+  - Removida integralmente a ampliação openingOccurredAt dos quatro arquivos funcionais de tesouraria
+  - Fixture usa o comando existente postMovement, com autorização FinanceTreasuryPost, origem MANUAL_AUTHORIZED e timestamp determinístico
+  - Teardown de TestingModule/pool e whitelist pty permanecem somente em teste/harness
+
+QUALITY GATES:
+  integration após correção (cash-flow forecast + treasury): 2 arquivos, 11/11 PASS
+  integration relacionada já validada (enterprise integrity + database): 2 arquivos, 6/6 PASS
+  unit (cash-flow forecast + treasury): 2 arquivos, 9/9 PASS
+  lint direcionado: PASS
+  typecheck (api): PASS
+  git diff --check: PASS
+  functional finance diff: 0 arquivos
+
+NOTES:
+  Nenhuma regra empresarial, endpoint, tipo de entrada produtivo ou persistência foi ampliado.
+  Nenhuma refatoração fora do erro foi executada.
+  Os testes confirmam saldo realizado derivado, idempotência, concorrência, autorização e rollback.
+
+COMMIT: THIS_COMMIT
+WORKING TREE: expected clean after this commit
+NEXT: STOP
+```

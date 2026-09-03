@@ -409,3 +409,15 @@ Classificação: **evidência de engenharia**, sem alteração de implementaçã
 | Nove arquivos pendentes da correção de integração | ESLint direcionado; typecheck API; `git diff --check` | PASS |
 
 As nove alterações de implementação já existentes foram apenas inspecionadas e preservadas; esta validação não as classifica como nova regra empresarial.
+
+## Debug cirúrgico do forecast — 2026-09-02
+
+Classificação: **correção de engenharia de teste**. O contrato produtivo de abertura de conta foi preservado; nenhuma regra empresarial nova foi criada.
+
+| ORIGEM | CAUSA | CORREÇÃO | TESTE / GATE | RESULTADO |
+| ------ | ----- | -------- | ------------ | --------- |
+| ADR-003; registro `CASH FLOW FORECAST` | fixture precisava de movimento realizado anterior ao `asOf`, mas a tentativa inicial ampliava a entrada pública de abertura de conta com `openingOccurredAt` | fixture passou a usar `postMovement` com origem `MANUAL_AUTHORIZED` e `occurredAt`, contrato já existente | forecast + treasury integration | 11/11 PASS |
+| ADR-TECH-007 | pools e módulos de testes precisavam encerrar entre arquivos serializados | teardown explícito no harness/serializer, sem alteração funcional | enterprise integrity + database integration | 6/6 PASS |
+| Estratégia L1/L3 | regressão de domínio financeiro | unit forecast + treasury; lint; typecheck; diff check | 9/9 PASS; gates PASS |
+
+Resultado estrutural: zero arquivo funcional alterado em `apps/api/src/finance`; somente teste e harness permanecem no diff desta correção.

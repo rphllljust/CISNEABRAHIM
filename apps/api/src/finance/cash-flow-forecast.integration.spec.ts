@@ -17,7 +17,11 @@ import { AUTHZ_ACTIONS } from '../authorization/types/authz-actions';
 import { AUTHZ_RESOURCE_TYPES } from '../authorization/types/authz-resources';
 import { AUTHZ_SCOPES } from '../authorization/types/authz-scopes';
 import { CASH_FLOW_KINDS, CASH_FORECAST_SOURCES, CASH_FORECAST_STATUSES } from './domain/cash-flow-forecast';
-import { FINANCIAL_ACCOUNT_KINDS } from './domain/treasury';
+import {
+  FINANCIAL_ACCOUNT_KINDS,
+  FINANCIAL_DIRECTIONS,
+  TREASURY_ORIGIN_KINDS,
+} from './domain/treasury';
 import { PAYABLE_ORIGIN_KINDS } from './domain/payable';
 import { FINANCE_ERROR_CODES } from './errors/finance-error-codes';
 import { FinanceModule } from './finance.module';
@@ -41,6 +45,7 @@ async function grantAll(pool: Pool, identityId: string): Promise<void> {
     { action: AUTHZ_ACTIONS.FinanceExpenseCategoryCreate, resourceType: AUTHZ_RESOURCE_TYPES.FinancePayable },
     { action: AUTHZ_ACTIONS.FinanceTreasuryAccountOpen, resourceType: AUTHZ_RESOURCE_TYPES.FinanceTreasury },
     { action: AUTHZ_ACTIONS.FinanceTreasuryRead, resourceType: AUTHZ_RESOURCE_TYPES.FinanceTreasury },
+    { action: AUTHZ_ACTIONS.FinanceTreasuryPost, resourceType: AUTHZ_RESOURCE_TYPES.FinanceTreasury },
   ];
   for (const grant of grants) {
     await insertGrant(pool, {
@@ -173,14 +178,24 @@ describe('Finance cash flow forecast PostgreSQL integration', () => {
 
   it('projects due dates, installments, overdue, cancellations, partials and reconciles without false realized', async () => {
     const actor = await seedActor();
-    await treasury.openAccount(actor, {
+    const account = await treasury.openAccount(actor, {
       unitId: UNIT,
       kind: FINANCIAL_ACCOUNT_KINDS.Bank,
       code: `BAN-${crypto.randomUUID().slice(0, 8)}`,
       name: 'Conta operacional',
       currencyCode: 'BRL',
-      openingAmount: '500.0000',
       bank: { bankCode: '001', agency: '1234', accountNumber: '0001-9' },
+    });
+    await treasury.postMovement(actor, account.id, {
+      direction: FINANCIAL_DIRECTIONS.Credit,
+      amount: '500.0000',
+      rowVersion: account.rowVersion,
+      idempotencyKey: `cash-forecast-opening-${crypto.randomUUID()}`,
+      reference: 'CASH_FORECAST_FIXTURE',
+      originKind: TREASURY_ORIGIN_KINDS.ManualAuthorized,
+      originId: actor.identityId,
+      originReference: 'CASH_FORECAST_FIXTURE',
+      occurredAt: '2026-09-01T00:00:00.000Z',
     });
 
     const receivable = await openReceivable(actor, {
