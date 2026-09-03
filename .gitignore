@@ -81,11 +81,17 @@ tmp/
 temp/
 uploads/tmp/
 *.tmp
+scripts/_write-summary-domain.mjs
 
 # Test artifacts
 playwright-report/
 test-results/
 artifacts/ci/
+
+# Local readiness-gate scratch (source of truth is docs/19-operations/readiness-evidence.json)
+gate-output.json
+gate-output-fresh.json
+apps/api/gate-output.json
 
 # Backup artifacts (local / CI scratch)
 .backup/
