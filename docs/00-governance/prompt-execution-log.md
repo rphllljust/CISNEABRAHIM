@@ -9607,3 +9607,49 @@ COMMIT: THIS_DOCS_COMMIT
 WORKING TREE: expected clean after docs commit
 NEXT: STOP
 ```
+
+
+```text
+PROMPT: UNIT TEST SUITES BUGFIX
+TITLE: Correção rápida das suítes unitárias e dos gates estáticos
+STARTED_AT: 2026-09-02T22:33:30-04:00
+FINISHED_AT: 2026-09-02T22:47:24-04:00
+STATUS: PASS
+FILES_CREATED: (nenhum)
+FILES_CHANGED:
+  apps/web/src/billing/billing.e2e.test.tsx
+  apps/web/src/release-scope/feature-flags.ts
+  apps/api/src/accounting/accounting-posting.integration.spec.ts
+  docs/01-foundation/requirements-traceability.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: NO
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - Isolar a falha observada na suíte web
+  - Corrigir asserções e narrowings obsoletos sem mudar regra empresarial
+  - Validar todas as suítes unitárias e os gates de lint/typecheck dos pacotes afetados
+  - Preservar as alterações preexistentes da suíte de integração
+
+QUALITY GATES:
+  unit (api): 180 arquivos, 736/736 PASS
+  unit (database): 5 arquivos, 21/21 PASS
+  unit (web): 90 arquivos, 349/349 PASS
+  unit total: 275 arquivos, 1106/1106 PASS
+  targeted (billing + feature flags): 7/7 PASS após as correções
+  lint (api + web + database): PASS
+  typecheck (api + web + database): PASS
+  git diff --check: PASS
+
+NOTES:
+  A asserção de billing procurava o título antigo "Faturamento"; foi alinhada ao título "Faturamento interno" exigido pela distinção DDP-023/R1-SCOPE-001.
+  As remoções de type assertions em feature flags e accounting posting são correções estáticas sem mudança de comportamento.
+  O comando raiz via Corepack/Turborepo não localizou o binário físico do package manager nesta sessão; os três scripts de pacote foram executados diretamente e passaram.
+  A suíte de integração PostgreSQL já iniciada por outro processo contém 79 arquivos e aproximadamente 609 cenários serializados; permaneceu ativa e não foi declarada PASS neste registro.
+  Onze alterações preexistentes de integração/tesouraria/database foram preservadas e não são atribuídas a este prompt.
+
+COMMIT: THIS_COMMIT
+WORKING TREE: DIRTY (alterações preexistentes preservadas)
+NEXT: STOP
+```

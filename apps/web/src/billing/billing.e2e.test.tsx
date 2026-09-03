@@ -29,7 +29,7 @@ describe('billing administration e2e (frontend)', () => {
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /^faturamento$/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /^faturamento interno$/i })).toBeInTheDocument();
     });
   });
 
@@ -46,9 +46,12 @@ describe('billing administration e2e (frontend)', () => {
     window.history.pushState({}, '', '/app/billing');
     render(<App />);
 
-    await waitFor(() => {
-      expect(screen.getByRole('link', { name: /OS-2026-DEMO01/i })).toBeInTheDocument();
-    }, { timeout: 5000 });
+    await waitFor(
+      () => {
+        expect(screen.getByRole('link', { name: /OS-2026-DEMO01/i })).toBeInTheDocument();
+      },
+      { timeout: 5000 },
+    );
 
     await user.click(screen.getByRole('link', { name: /OS-2026-DEMO01/i }));
 

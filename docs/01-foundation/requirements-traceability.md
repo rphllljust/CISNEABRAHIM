@@ -385,3 +385,15 @@ ADR-TECH-004/005 → Docker PG → Drizzle migrate → health + integração →
 | DDP-023                        | BillingDocument ≠ FiscalDocument              | — (distinção)        | faturamento interno; fiscal flag off   | billing-document-preview; feature-flags   | copy e 403 fiscal                   |
 
 Registro: [`release-1-closed-scope.md`](release-1-closed-scope.md). ED-005. Não amplia FR/UC.
+
+## Correção das suítes unitárias — 2026-09-02
+
+Classificação: **correção de engenharia e de evidência de teste**. Nenhuma regra empresarial nova foi criada ou confirmada.
+
+| ORIGEM | DISTINÇÃO / DECISÃO | IMPLEMENTAÇÃO AFETADA | TESTE / GATE | RESULTADO |
+| ------ | ------------------- | --------------------- | ------------ | --------- |
+| DDP-023; R1-SCOPE-001 | `BillingDocument` interno ≠ documento fiscal oficial | título `Faturamento interno` e asserção E2E correspondente | `billing.e2e.test.tsx`; regressão web | 349/349 PASS |
+| ED-005 | Flags de módulos fora da Release 1 permanecem fail-closed | remoção de type assertion redundante, sem mudança de lógica | `feature-flags.test.ts`; lint e typecheck web | PASS |
+| ADR-TECH-007 | Vitest protege regras; ESLint/TypeScript compõem o gate | narrowing nativo de `error.code` no teste de posting | lint e typecheck API | PASS |
+
+Evidência unitária consolidada: API 736/736, database 21/21 e web 349/349; total 1.106/1.106. A suíte de integração PostgreSQL em execução separada não integra esta evidência unitária.

@@ -63,9 +63,10 @@ async function grantPostingAdmin(pool: Pool, identityId: string): Promise<void> 
     AUTHZ_ACTIONS.FinancePayablePay,
     AUTHZ_ACTIONS.FinanceExpenseCategoryCreate,
   ]) {
-    const resourceType = action.startsWith('finance:payable') || action.startsWith('finance:expense')
-      ? AUTHZ_RESOURCE_TYPES.FinancePayable
-      : AUTHZ_RESOURCE_TYPES.FinanceReceivable;
+    const resourceType =
+      action.startsWith('finance:payable') || action.startsWith('finance:expense')
+        ? AUTHZ_RESOURCE_TYPES.FinancePayable
+        : AUTHZ_RESOURCE_TYPES.FinanceReceivable;
     await insertGrant(pool, {
       identityId,
       action,
@@ -376,9 +377,10 @@ describe('Automated accounting posting PostgreSQL integration', () => {
       rowVersion: draft.rowVersion,
     });
     await expect(
-      pool.query(`UPDATE acc.accounting_posting_rule_versions SET source_reference = 'mutated' WHERE id = $1`, [
-        published.id,
-      ]),
+      pool.query(
+        `UPDATE acc.accounting_posting_rule_versions SET source_reference = 'mutated' WHERE id = $1`,
+        [published.id],
+      ),
     ).rejects.toBeTruthy();
   });
 
@@ -386,7 +388,10 @@ describe('Automated accounting posting PostgreSQL integration', () => {
     const actor = await seedActor();
     const { debit, credit, period } = await seedLedger(actor);
     await publishRule(actor, POSTING_EVENTS.ReceivableRecognized, debit.id, credit.id);
-    await accounting.closePeriod(actor, period.id, { rowVersion: period.rowVersion, reason: 'close' });
+    await accounting.closePeriod(actor, period.id, {
+      rowVersion: period.rowVersion,
+      reason: 'close',
+    });
     try {
       await accounting.postConfirmedEvent({
         originKind: POSTING_ORIGINS.Finance,
@@ -401,9 +406,7 @@ describe('Automated accounting posting PostgreSQL integration', () => {
       throw new Error('expected posting to fail after period close');
     } catch (error) {
       const code =
-        typeof error === 'object' && error !== null && 'code' in error
-          ? String((error as { code: unknown }).code)
-          : '';
+        typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : '';
       expect([
         ACCOUNTING_ERROR_CODES.PERIOD_NOT_FOUND,
         ACCOUNTING_ERROR_CODES.PERIOD_CLOSED,
