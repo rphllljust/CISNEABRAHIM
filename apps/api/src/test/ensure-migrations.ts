@@ -306,6 +306,327 @@ export default async function ensureMigrations(): Promise<void> {
     if (!hasPoConsumedAmount) {
       await applySqlFile(pool, '0037_purchase_order_balance.sql');
     }
+
+    const hasContracts = await tableExists(pool, 'com.contracts');
+    if (!hasContracts) {
+      await applySqlFile(pool, '0038_commercial_contracts_baseline.sql');
+    }
+
+    const hasServiceRequestHistory = await tableExists(pool, 'sr.service_request_history_events');
+    if (!hasServiceRequestHistory) {
+      await applySqlFile(pool, '0039_service_request_history_events.sql');
+    }
+
+    const hasProposalCommercialSnapshot = await columnExists(
+      pool,
+      'com',
+      'proposal_items',
+      'commercial_snapshot',
+    );
+    if (!hasProposalCommercialSnapshot) {
+      await applySqlFile(pool, '0040_proposal_commercial_snapshots.sql');
+    }
+
+    const hasPurchaseOrderCommercialSnapshot = await columnExists(
+      pool,
+      'com',
+      'purchase_order_items',
+      'commercial_snapshot',
+    );
+    if (!hasPurchaseOrderCommercialSnapshot) {
+      await applySqlFile(pool, '0041_purchase_order_commercial_snapshots.sql');
+    }
+
+    const hasOperationalCosts = await tableExists(pool, 'so.operational_cost_entries');
+    if (!hasOperationalCosts) {
+      await applySqlFile(pool, '0042_operational_costs_baseline.sql');
+    }
+
+    const hasCrossContextReadContracts = await tableExists(pool, 'rpt.read_service_orders');
+    if (!hasCrossContextReadContracts) {
+      await applySqlFile(pool, '0043_cross_context_read_contracts.sql');
+    }
+
+    const hasReceivables = await tableExists(pool, 'fin.receivables');
+    if (!hasReceivables) {
+      await applySqlFile(pool, '0044_finance_receivables.sql');
+    }
+
+    const hasPayables = await tableExists(pool, 'fin.payables');
+    if (!hasPayables) {
+      await applySqlFile(pool, '0045_finance_payables.sql');
+    }
+
+    const hasTreasury = await tableExists(pool, 'fin.financial_accounts');
+    if (!hasTreasury) {
+      await applySqlFile(pool, '0046_finance_treasury.sql');
+    }
+
+    const hasAccounting = await tableExists(pool, 'acc.journal_entries');
+    if (!hasAccounting) {
+      await applySqlFile(pool, '0047_accounting_ledger.sql');
+    }
+
+    const hasPostedJournalLines = await tableExists(pool, 'acc.posted_journal_lines');
+    if (!hasPostedJournalLines) {
+      await applySqlFile(pool, '0048_accounting_reporting.sql');
+    }
+
+    const hasFiscalDocuments = await tableExists(pool, 'fis.fiscal_documents');
+    if (!hasFiscalDocuments) {
+      await applySqlFile(pool, '0049_fiscal_core.sql');
+    }
+
+    const hasTaxRules = await tableExists(pool, 'fis.tax_rules');
+    if (!hasTaxRules) {
+      await applySqlFile(pool, '0050_tax_engine.sql');
+    }
+
+    const hasInventoryItems = await tableExists(pool, 'inv.inventory_items');
+    const hasStockBalances = await tableExists(pool, 'inv.stock_balances');
+    if (!hasInventoryItems || !hasStockBalances) {
+      await applySqlFile(pool, '0051_inventory_core.sql');
+    }
+
+    const hasEmploymentContracts = await tableExists(pool, 'pay.employment_contracts');
+    if (!hasEmploymentContracts) {
+      await applySqlFile(pool, '0052_payroll_foundation.sql');
+    }
+
+    const hasBankStatements = await tableExists(pool, 'fin.bank_statements');
+    if (!hasBankStatements) {
+      await applySqlFile(pool, '0053_bank_reconciliation.sql');
+    } else {
+      await pool.query(`
+        CREATE OR REPLACE FUNCTION fin.forbid_confirmed_reconciliation_mutation()
+        RETURNS trigger
+        LANGUAGE plpgsql
+        AS $$
+        BEGIN
+          IF TG_OP = 'DELETE' THEN
+            IF OLD.status = 'CONFIRMED' THEN
+              RAISE EXCEPTION 'BANK_RECONCILIATION_CONFIRMED_IMMUTABLE' USING ERRCODE = 'restrict_violation';
+            END IF;
+            RETURN OLD;
+          END IF;
+          IF OLD.status = 'CONFIRMED' THEN
+            IF NEW.status = 'UNRECONCILED' AND NEW.unreconciled_at IS NOT NULL THEN
+              RETURN NEW;
+            END IF;
+            RAISE EXCEPTION 'BANK_RECONCILIATION_CONFIRMED_IMMUTABLE' USING ERRCODE = 'restrict_violation';
+          END IF;
+          RETURN NEW;
+        END;
+        $$;
+      `);
+    }
+
+    const hasPostingRules = await tableExists(pool, 'acc.accounting_posting_rules');
+    if (!hasPostingRules) {
+      await applySqlFile(pool, '0054_accounting_posting.sql');
+    } else {
+      await pool.query(`
+        CREATE OR REPLACE FUNCTION acc.forbid_published_posting_rule_version_mutation()
+        RETURNS trigger
+        LANGUAGE plpgsql
+        AS $$
+        BEGIN
+          IF TG_OP = 'DELETE' THEN
+            IF OLD.status = 'PUBLISHED' THEN
+              RAISE EXCEPTION 'ACCOUNTING_RULE_VERSION_IMMUTABLE' USING ERRCODE = 'restrict_violation';
+            END IF;
+            RETURN OLD;
+          END IF;
+          IF OLD.status = 'PUBLISHED' THEN
+            RAISE EXCEPTION 'ACCOUNTING_RULE_VERSION_IMMUTABLE' USING ERRCODE = 'restrict_violation';
+          END IF;
+          RETURN NEW;
+        END;
+        $$;
+      `);
+    }
+
+    const hasTaxCalculationEvent = await pool.query<{ exists: boolean }>(
+      `SELECT EXISTS (
+         SELECT 1
+         FROM pg_enum e
+         INNER JOIN pg_type t ON t.oid = e.enumtypid
+         INNER JOIN pg_namespace n ON n.oid = t.typnamespace
+         WHERE n.nspname = 'acc'
+           AND t.typname = 'posting_event_kind'
+           AND e.enumlabel = 'TAX_CALCULATION_CONFIRMED'
+       ) AS exists`,
+    );
+    if (!hasTaxCalculationEvent.rows[0]?.exists) {
+      await applySqlFile(pool, '0055_fiscal_accounting_events.sql');
+    }
+
+    const hasCostingRules = await tableExists(pool, 'inv.costing_rules');
+    if (!hasCostingRules) {
+      await applySqlFile(pool, '0056_inventory_costing.sql');
+    } else {
+      await pool.query(`
+        CREATE OR REPLACE FUNCTION inv.forbid_published_costing_rule_version_mutation()
+        RETURNS trigger
+        LANGUAGE plpgsql
+        AS $$
+        BEGIN
+          IF TG_OP = 'DELETE' THEN
+            IF OLD.status = 'PUBLISHED' THEN
+              RAISE EXCEPTION 'INVENTORY_COSTING_VERSION_IMMUTABLE' USING ERRCODE = 'restrict_violation';
+            END IF;
+            RETURN OLD;
+          END IF;
+          IF OLD.status = 'PUBLISHED' THEN
+            RAISE EXCEPTION 'INVENTORY_COSTING_VERSION_IMMUTABLE' USING ERRCODE = 'restrict_violation';
+          END IF;
+          RETURN NEW;
+        END;
+        $$;
+      `);
+    }
+
+    const hasPayrollReopenedEvent = await pool.query<{ exists: boolean }>(
+      `SELECT EXISTS (
+         SELECT 1
+         FROM pg_enum e
+         INNER JOIN pg_type t ON t.oid = e.enumtypid
+         INNER JOIN pg_namespace n ON n.oid = t.typnamespace
+         WHERE n.nspname = 'acc'
+           AND t.typname = 'posting_event_kind'
+           AND e.enumlabel = 'PAYROLL_REOPENED'
+       ) AS exists`,
+    );
+    if (!hasPayrollReopenedEvent.rows[0]?.exists) {
+      await applySqlFile(pool, '0057_payroll_accounting_events.sql');
+    }
+
+    const hasBankStatementImports = await tableExists(pool, 'fin.bank_statement_imports');
+    if (!hasBankStatementImports) {
+      await applySqlFile(pool, '0058_bank_statement_import.sql');
+    }
+
+    const hasPeriodClosePolicies = await tableExists(pool, 'acc.period_close_policies');
+    if (!hasPeriodClosePolicies) {
+      await applySqlFile(pool, '0059_period_close_controls.sql');
+    }
+
+    const hasTaxAssessments = await tableExists(pool, 'fis.tax_assessments');
+    if (!hasTaxAssessments) {
+      await applySqlFile(pool, '0060_tax_assessment_obligation.sql');
+    }
+
+    const hasFiscalPeriods = await tableExists(pool, 'fis.fiscal_periods');
+    if (!hasFiscalPeriods) {
+      await applySqlFile(pool, '0061_fiscal_period_close.sql');
+    } else {
+      await pool.query(`
+CREATE OR REPLACE FUNCTION fis.reject_ordinary_write_on_closed_period()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  competence_key text;
+  target_unit text;
+  closed_exists boolean;
+BEGIN
+  IF TG_TABLE_NAME = 'fiscal_documents' THEN
+    target_unit := COALESCE(NEW.unit_id, OLD.unit_id);
+    competence_key := to_char(COALESCE(NEW.issued_on, OLD.issued_on)::date, 'YYYY-MM');
+    IF TG_OP = 'UPDATE' AND NEW.status = 'CANCELLED' AND OLD.status IS DISTINCT FROM 'CANCELLED' THEN
+      RETURN NEW;
+    END IF;
+  ELSIF TG_TABLE_NAME = 'tax_assessments' THEN
+    target_unit := COALESCE(NEW.unit_id, OLD.unit_id);
+    competence_key := COALESCE(NEW.period_key, OLD.period_key);
+    IF NEW.supersedes_assessment_id IS NOT NULL THEN
+      RETURN NEW;
+    END IF;
+    IF TG_OP = 'UPDATE' AND NEW.status IN ('ADJUSTED', 'CANCELLED') THEN
+      RETURN NEW;
+    END IF;
+  ELSE
+    RETURN NEW;
+  END IF;
+
+  SELECT EXISTS (
+    SELECT 1
+    FROM fis.fiscal_periods p
+    WHERE p.unit_id = target_unit
+      AND p.period_key = competence_key
+      AND p.status = 'CLOSED'
+  ) INTO closed_exists;
+
+  IF closed_exists THEN
+    RAISE EXCEPTION 'FISCAL_PERIOD_CLOSED'
+      USING ERRCODE = 'P0001';
+  END IF;
+      RETURN NEW;
+END;
+$$;`);
+    }
+
+    const hasFixedAssetRegisters = await tableExists(pool, 'acc.fixed_asset_registers');
+    if (!hasFixedAssetRegisters) {
+      await applySqlFile(pool, '0062_fixed_asset_accounting.sql');
+    }
+
+    const hasBudgets = await tableExists(pool, 'fin.budgets');
+    if (!hasBudgets) {
+      await applySqlFile(pool, '0063_budget_management.sql');
+    }
+
+    const hasSuppliers = await tableExists(pool, 'pty.suppliers');
+    if (!hasSuppliers) {
+      await applySqlFile(pool, '0064_supplier_master.sql');
+    }
+
+    const hasPurchaseRequests = await tableExists(pool, 'prc.purchase_requests');
+    if (!hasPurchaseRequests) {
+      await applySqlFile(pool, '0065_procurement_core.sql');
+    }
+
+    const hasSupplierInvoices = await tableExists(pool, 'prc.supplier_invoices');
+    if (!hasSupplierInvoices) {
+      await applySqlFile(pool, '0066_supplier_invoice.sql');
+    }
+
+    const hasThreeWayMatches = await tableExists(pool, 'prc.three_way_matches');
+    if (!hasThreeWayMatches) {
+      await applySqlFile(pool, '0067_three_way_match.sql');
+    }
+
+    const hasApprovalMatrices = await tableExists(pool, 'authorization.approval_matrices');
+    if (!hasApprovalMatrices) {
+      await applySqlFile(pool, '0068_financial_approval_matrix.sql');
+    }
+
+    const hasExpenses = await tableExists(pool, 'fin.expenses');
+    if (!hasExpenses) {
+      await applySqlFile(pool, '0069_expense_management.sql');
+    }
+
+    const hasReceivableCollections = await tableExists(pool, 'fin.receivable_collections');
+    if (!hasReceivableCollections) {
+      await applySqlFile(pool, '0070_receivable_collections.sql');
+    }
+
+    const hasOnePublishedIndex = await pool.query<{ exists: boolean }>(
+      `SELECT EXISTS (
+         SELECT 1
+         FROM pg_class c
+         INNER JOIN pg_namespace n ON n.oid = c.relnamespace
+         WHERE n.nspname = 'authorization'
+           AND c.relname = 'approval_matrix_versions_one_published_uidx'
+       ) AS exists`,
+    );
+    if (!hasOnePublishedIndex.rows[0]?.exists) {
+      await pool.query(`
+        CREATE UNIQUE INDEX IF NOT EXISTS approval_matrix_versions_one_published_uidx
+        ON "authorization".approval_matrix_versions (matrix_id)
+        WHERE status = 'PUBLISHED'
+      `);
+    }
   } finally {
     await pool.end();
   }

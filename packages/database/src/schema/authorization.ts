@@ -5,10 +5,12 @@ import {
   index,
   integer,
   jsonb,
+  numeric,
   pgSchema,
   primaryKey,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
 import { identities } from './identity';
@@ -175,4 +177,75 @@ export const scopedRecords = authorizationSchema.table(
     index('scoped_records_assigned_identity_id_idx').on(table.assignedIdentityId),
     index('scoped_records_owner_identity_id_idx').on(table.ownerIdentityId),
   ],
+);
+
+export const approvalMatrixStatusEnum = authorizationSchema.enum('approval_matrix_status', [
+  'DRAFT',
+  'PUBLISHED',
+  'SUPERSEDED',
+]);
+
+export const approvalOperationEnum = authorizationSchema.enum('approval_operation', [
+  'PURCHASE',
+  'PAYMENT',
+  'EXPENSE',
+  'ADJUSTMENT',
+  'REOPEN',
+  'BUDGET',
+]);
+
+export const approvalMatrices = authorizationSchema.table('approval_matrices', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  code: text('code').notNull(),
+  currencyCode: text('currency_code').notNull().default('BRL'),
+  publishedVersion: integer('published_version'),
+  draftVersion: integer('draft_version').notNull().default(1),
+  version: integer('version').notNull().default(1),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const approvalMatrixVersions = authorizationSchema.table('approval_matrix_versions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  matrixId: uuid('matrix_id')
+    .notNull()
+    .references(() => approvalMatrices.id),
+  version: integer('version').notNull(),
+  status: approvalMatrixStatusEnum('status').notNull().default('DRAFT'),
+  createdByIdentityId: uuid('created_by_identity_id')
+    .notNull()
+    .references(() => identities.id),
+  publishedByIdentityId: uuid('published_by_identity_id').references(() => identities.id),
+  publishedAt: timestamp('published_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const approvalMatrixRules = authorizationSchema.table('approval_matrix_rules', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  versionId: uuid('version_id')
+    .notNull()
+    .references(() => approvalMatrixVersions.id),
+  operation: approvalOperationEnum('operation').notNull(),
+  roleCode: text('role_code').notNull(),
+  capability: text('capability').notNull(),
+  scopeType: authzScopeTypeEnum('scope_type').notNull(),
+  scopeAnchor: text('scope_anchor'),
+  amountLimit: numeric('amount_limit', { precision: 18, scale: 4 }).notNull(),
+  lineNumber: integer('line_number').notNull(),
+});
+
+export const approvalRoleAssignments = authorizationSchema.table(
+  'approval_role_assignments',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    identityId: uuid('identity_id')
+      .notNull()
+      .references(() => identities.id),
+    roleCode: text('role_code').notNull(),
+    scopeType: authzScopeTypeEnum('scope_type').notNull(),
+    scopeAnchor: text('scope_anchor'),
+    version: integer('version').notNull().default(1),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex('approval_role_assignments_identity_role_idx').on(table.identityId, table.roleCode)],
 );

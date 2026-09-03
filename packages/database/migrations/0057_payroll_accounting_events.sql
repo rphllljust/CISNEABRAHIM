@@ -1,0 +1,1 @@
+ALTER TYPE acc.posting_event_kind ADD VALUE IF NOT EXISTS 'PAYROLL_REOPENED';

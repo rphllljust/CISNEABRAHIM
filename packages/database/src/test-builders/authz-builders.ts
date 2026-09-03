@@ -119,6 +119,10 @@ export async function insertGrant(client: DbClient, input: InsertGrantInput): Pr
 export async function truncateAuthorizationTables(client: DbClient): Promise<void> {
   await client.query(`
     TRUNCATE TABLE
+      "authorization".approval_matrix_rules,
+      "authorization".approval_matrix_versions,
+      "authorization".approval_matrices,
+      "authorization".approval_role_assignments,
       "authorization".decision_audits,
       "authorization".scoped_records,
       "authorization".grants,
@@ -131,6 +135,10 @@ export async function truncateIdentityAndAuthorizationTables(client: DbClient): 
   await client.query(`
     TRUNCATE TABLE
       audit.security_audit_events,
+      "authorization".approval_matrix_rules,
+      "authorization".approval_matrix_versions,
+      "authorization".approval_matrices,
+      "authorization".approval_role_assignments,
       "authorization".decision_audits,
       "authorization".scoped_records,
       "authorization".grants,
