@@ -1,0 +1,611 @@
+import { Inject, Injectable } from '@nestjs/common';
+import {
+  SECURITY_AUDIT_ACTIONS,
+  SECURITY_AUDIT_CLASSIFICATIONS,
+  SECURITY_AUDIT_OUTCOMES,
+  SECURITY_AUDIT_RESOURCE_TYPES,
+} from '../../audit/types/security-audit.types';
+import { SecurityAuditService } from '../../audit/services/security-audit.service';
+import { AUTHZ_ACTIONS } from '../../authorization/types/authz-actions';
+import type { IdentityAuthzContext } from '../../authorization/types/authz-decision';
+import type {
+  CommercialSupplierPort,
+  FinancePayablePort,
+  OpenPayableFromProcurementReceiptInput,
+  OpenPayableFromSupplierInvoiceInput,
+  OpenPayableFromTaxObligationInput,
+  TaxObligationPayableView,
+} from '../../platform/bounded-contexts/enterprise-core-ports';
+import { ENTERPRISE_CORE_PORT } from '../../platform/bounded-contexts/enterprise-core-ports';
+import { assertUuid } from '../../platform/kernel/uuid';
+import { PAYABLE_LIFECYCLES, PAYABLE_ORIGIN_KINDS, PayableError, summarizePayableAging, type PostedPayment } from '../domain/payable';
+import {
+  validateCancelPayableInput,
+  validateCreateExpenseCategoryInput,
+  validateOpenPayableInput,
+  validatePayPayableInput,
+  validateReversePaymentInput,
+  type CancelPayableInput,
+  type CreateExpenseCategoryInput,
+  type OpenPayableInput,
+  type PayPayableInput,
+  type ReversePaymentInput,
+} from '../domain/payable.validation';
+import { PayablesRepository } from '../repositories/payables.repository';
+import type { PayableRow } from '../repositories/payables.repository.types';
+import {
+  toExpenseCategoryResponse,
+  toPayableDetailResponse,
+  type ExpenseCategoryResponse,
+  type PayableDetailResponse,
+} from '../serializers/payables-response.serializer';
+import { PayablesAccessAuthz } from './payables-access.authz';
+import { mapPayableDomainError, payableNotFound } from './payables-access.errors';
+
+@Injectable()
+export class PayablesAccessService implements FinancePayablePort {
+  constructor(
+    private readonly repository: PayablesRepository,
+    private readonly authz: PayablesAccessAuthz,
+    private readonly securityAudit: SecurityAuditService,
+    @Inject(ENTERPRISE_CORE_PORT.CommercialSupplier)
+    private readonly suppliers: CommercialSupplierPort,
+  ) {}
+
+  async createExpenseCategory(
+    actor: IdentityAuthzContext,
+    input: CreateExpenseCategoryInput,
+  ): Promise<ExpenseCategoryResponse> {
+    await this.authz.assertPayableAction(actor, AUTHZ_ACTIONS.FinanceExpenseCategoryCreate, {
+      id: actor.identityId,
+      unitId: 'global',
+    });
+    try {
+      const validated = validateCreateExpenseCategoryInput(input);
+      const row = await this.repository.createExpenseCategory({
+        ...validated,
+        actorIdentityId: actor.identityId,
+      });
+      await this.securityAudit.record({
+        actorIdentityId: actor.identityId,
+        actorSessionId: actor.sessionId,
+        action: SECURITY_AUDIT_ACTIONS.FinanceExpenseCategoryCreate,
+        resourceType: SECURITY_AUDIT_RESOURCE_TYPES.FinancePayable,
+        resourceId: row.id,
+        outcome: SECURITY_AUDIT_OUTCOMES.Success,
+        classification: SECURITY_AUDIT_CLASSIFICATIONS.Standard,
+        metadata: { code: row.code },
+      });
+      return toExpenseCategoryResponse(row);
+    } catch (error) {
+      throw mapPayableDomainError(error);
+    }
+  }
+
+  async open(actor: IdentityAuthzContext, input: OpenPayableInput): Promise<PayableDetailResponse> {
+    let validated: ReturnType<typeof validateOpenPayableInput>;
+    try {
+      validated = validateOpenPayableInput(input);
+    } catch (error) {
+      throw mapPayableDomainError(error);
+    }
+    await this.authz.assertPayableAction(actor, AUTHZ_ACTIONS.FinancePayableOpen, {
+      id: validated.originId,
+      unitId: validated.unitId,
+    });
+    try {
+      if (validated.supplierId) {
+        await this.suppliers.requireActive(validated.supplierId);
+      } else {
+        await this.suppliers.assertNotInactive(validated.counterpartyId);
+      }
+      const opened = await this.repository.open({
+        unitId: validated.unitId,
+        counterpartyId: validated.counterpartyId,
+        originKind: validated.originKind,
+        originId: validated.originId,
+        originReference: validated.originReference,
+        expenseCategoryId: validated.expenseCategoryId,
+        costCenterId: validated.costCenterId,
+        costCenterCode: validated.costCenterCode,
+        principal: validated.principal,
+        currencyCode: validated.currencyCode,
+        dueDate: validated.dueDate,
+        paymentTerms: validated.paymentTerms,
+        externalReference: validated.externalReference ?? null,
+        actorIdentityId: actor.identityId,
+        installments: validated.installments ?? [],
+      });
+      if (!opened.idempotent) {
+        await this.securityAudit.record({
+          actorIdentityId: actor.identityId,
+          actorSessionId: actor.sessionId,
+          action: SECURITY_AUDIT_ACTIONS.FinancePayableOpen,
+          resourceType: SECURITY_AUDIT_RESOURCE_TYPES.FinancePayable,
+          resourceId: opened.payable.id,
+          outcome: SECURITY_AUDIT_OUTCOMES.Success,
+          classification: SECURITY_AUDIT_CLASSIFICATIONS.Standard,
+          metadata: {
+            originKind: validated.originKind,
+            originId: validated.originId,
+            originReference: validated.originReference,
+            principal: validated.principal,
+          },
+        });
+      }
+      return this.toDetail(opened.payable);
+    } catch (error) {
+      throw mapPayableDomainError(error);
+    }
+  }
+
+  async list(actor: IdentityAuthzContext): Promise<PayableDetailResponse[]> {
+    const rows = await this.repository.listAll();
+    const details: PayableDetailResponse[] = [];
+    for (const row of rows) {
+      try {
+        await this.authz.assertPayableAction(actor, AUTHZ_ACTIONS.FinancePayableList, {
+          id: row.id,
+          unitId: row.unit_id,
+        });
+      } catch {
+        continue;
+      }
+      details.push(await this.toDetail(row));
+    }
+    return details;
+  }
+
+  async aging(actor: IdentityAuthzContext, asOf?: Date) {
+    const details = await this.list(actor);
+    const items = details.map((item) => ({
+      lifecycle: item.lifecycle,
+      principal: item.principal,
+      dueDate: item.dueDate,
+      payments: item.payments.map(
+        (payment): PostedPayment => ({
+          kind: payment.kind,
+          amount: payment.amount,
+          installmentId: payment.installmentId,
+          reversesPaymentId: payment.reversesPaymentId,
+        }),
+      ),
+    }));
+    return {
+      asOf: (asOf ?? new Date()).toISOString(),
+      buckets: summarizePayableAging(items, asOf),
+    };
+  }
+
+  async getById(actor: IdentityAuthzContext, payableId: string): Promise<PayableDetailResponse> {
+    assertUuid(payableId, 'payableId');
+    const row = await this.repository.findById(payableId);
+    if (!row) {
+      throw payableNotFound();
+    }
+    await this.authz.assertPayableAction(actor, AUTHZ_ACTIONS.FinancePayableRead, {
+      id: row.id,
+      unitId: row.unit_id,
+    });
+    await this.securityAudit.record({
+      actorIdentityId: actor.identityId,
+      actorSessionId: actor.sessionId,
+      action: SECURITY_AUDIT_ACTIONS.FinancePayableRead,
+      resourceType: SECURITY_AUDIT_RESOURCE_TYPES.FinancePayable,
+      resourceId: row.id,
+      outcome: SECURITY_AUDIT_OUTCOMES.Success,
+      classification: SECURITY_AUDIT_CLASSIFICATIONS.Standard,
+    });
+    return this.toDetail(row);
+  }
+
+  async pay(
+    actor: IdentityAuthzContext,
+    payableId: string,
+    input: PayPayableInput,
+  ): Promise<PayableDetailResponse> {
+    assertUuid(payableId, 'payableId');
+    const row = await this.repository.findById(payableId);
+    if (!row) {
+      throw payableNotFound();
+    }
+    await this.authz.assertPayableAction(actor, AUTHZ_ACTIONS.FinancePayablePay, {
+      id: row.id,
+      unitId: row.unit_id,
+    });
+    try {
+      const validated = validatePayPayableInput(input);
+      const paid = await this.repository.pay({
+        payableId,
+        amount: validated.amount,
+        currencyCode: row.currency_code,
+        rowVersion: validated.rowVersion,
+        idempotencyKey: validated.idempotencyKey,
+        paymentReference: validated.paymentReference,
+        installmentId: validated.installmentId,
+        paidAt: validated.paidAt ?? new Date().toISOString(),
+        actorIdentityId: actor.identityId,
+      });
+      await this.securityAudit.record({
+        actorIdentityId: actor.identityId,
+        actorSessionId: actor.sessionId,
+        action: SECURITY_AUDIT_ACTIONS.FinancePayablePay,
+        resourceType: SECURITY_AUDIT_RESOURCE_TYPES.FinancePayable,
+        resourceId: payableId,
+        outcome: SECURITY_AUDIT_OUTCOMES.Success,
+        classification: SECURITY_AUDIT_CLASSIFICATIONS.Standard,
+        metadata: {
+          amount: validated.amount,
+          paymentReference: validated.paymentReference,
+          paymentId: paid.payment.id,
+          originKind: paid.payment.origin_kind,
+          originId: paid.payment.origin_id,
+        },
+      });
+      return this.toDetail(paid.payable);
+    } catch (error) {
+      throw mapPayableDomainError(error);
+    }
+  }
+
+  async reverse(
+    actor: IdentityAuthzContext,
+    payableId: string,
+    paymentId: string,
+    input: ReversePaymentInput,
+  ): Promise<PayableDetailResponse> {
+    assertUuid(payableId, 'payableId');
+    assertUuid(paymentId, 'paymentId');
+    const row = await this.repository.findById(payableId);
+    if (!row) {
+      throw payableNotFound();
+    }
+    await this.authz.assertPayableAction(actor, AUTHZ_ACTIONS.FinancePayableReverse, {
+      id: row.id,
+      unitId: row.unit_id,
+    });
+    try {
+      const validated = validateReversePaymentInput(input);
+      const reversed = await this.repository.reverse({
+        payableId,
+        paymentId,
+        amount: validated.amount,
+        rowVersion: validated.rowVersion,
+        idempotencyKey: validated.idempotencyKey,
+        paymentReference: validated.paymentReference,
+        reason: validated.reason,
+        actorIdentityId: actor.identityId,
+      });
+      await this.securityAudit.record({
+        actorIdentityId: actor.identityId,
+        actorSessionId: actor.sessionId,
+        action: SECURITY_AUDIT_ACTIONS.FinancePayableReverse,
+        resourceType: SECURITY_AUDIT_RESOURCE_TYPES.FinancePayable,
+        resourceId: payableId,
+        outcome: SECURITY_AUDIT_OUTCOMES.Success,
+        classification: SECURITY_AUDIT_CLASSIFICATIONS.Standard,
+        metadata: {
+          paymentId,
+          reversalId: reversed.payment.id,
+          amount: reversed.payment.amount,
+          paymentReference: validated.paymentReference,
+          reason: validated.reason,
+        },
+      });
+      return this.toDetail(reversed.payable);
+    } catch (error) {
+      throw mapPayableDomainError(error);
+    }
+  }
+
+  async cancel(
+    actor: IdentityAuthzContext,
+    payableId: string,
+    input: CancelPayableInput,
+  ): Promise<PayableDetailResponse> {
+    assertUuid(payableId, 'payableId');
+    const row = await this.repository.findById(payableId);
+    if (!row) {
+      throw payableNotFound();
+    }
+    await this.authz.assertPayableAction(actor, AUTHZ_ACTIONS.FinancePayableCancel, {
+      id: row.id,
+      unitId: row.unit_id,
+    });
+    try {
+      const validated = validateCancelPayableInput(input);
+      const cancelled = await this.repository.cancel({
+        payableId,
+        rowVersion: validated.rowVersion,
+        cancelReason: validated.cancelReason,
+        actorIdentityId: actor.identityId,
+      });
+      await this.securityAudit.record({
+        actorIdentityId: actor.identityId,
+        actorSessionId: actor.sessionId,
+        action: SECURITY_AUDIT_ACTIONS.FinancePayableCancel,
+        resourceType: SECURITY_AUDIT_RESOURCE_TYPES.FinancePayable,
+        resourceId: cancelled.payable.id,
+        outcome: SECURITY_AUDIT_OUTCOMES.Success,
+        classification: SECURITY_AUDIT_CLASSIFICATIONS.Standard,
+      });
+      return this.toDetail(cancelled.payable);
+    } catch (error) {
+      throw mapPayableDomainError(error);
+    }
+  }
+
+  async openFromTaxObligation(
+    input: OpenPayableFromTaxObligationInput,
+  ): Promise<{ payableId: string; principal: string; currencyCode: string; idempotent: boolean }> {
+    try {
+      const validated = validateOpenPayableInput({
+        unitId: input.unitId,
+        counterpartyId: input.counterpartyId,
+        originKind: PAYABLE_ORIGIN_KINDS.TaxObligation,
+        originId: input.taxObligationId,
+        originReference: input.originReference,
+        expenseCategoryId: input.expenseCategoryId,
+        costCenterId: input.costCenterId,
+        costCenterCode: input.costCenterCode,
+        principal: input.principal,
+        currencyCode: input.currencyCode,
+        dueDate: input.dueDate,
+        paymentTerms: input.paymentTerms,
+        externalReference: input.externalReference ?? input.taxAssessmentId,
+      });
+      const opened = await this.repository.open({
+        unitId: validated.unitId,
+        counterpartyId: validated.counterpartyId,
+        originKind: validated.originKind,
+        originId: validated.originId,
+        originReference: validated.originReference,
+        expenseCategoryId: validated.expenseCategoryId,
+        costCenterId: validated.costCenterId,
+        costCenterCode: validated.costCenterCode,
+        principal: validated.principal,
+        currencyCode: validated.currencyCode,
+        dueDate: validated.dueDate,
+        paymentTerms: validated.paymentTerms,
+        externalReference: validated.externalReference ?? null,
+        actorIdentityId: input.actorIdentityId,
+        installments: validated.installments ?? [],
+      });
+      if (!opened.idempotent) {
+        await this.securityAudit.record({
+          actorIdentityId: input.actorIdentityId,
+          action: SECURITY_AUDIT_ACTIONS.FinancePayableOpen,
+          resourceType: SECURITY_AUDIT_RESOURCE_TYPES.FinancePayable,
+          resourceId: opened.payable.id,
+          outcome: SECURITY_AUDIT_OUTCOMES.Success,
+          classification: SECURITY_AUDIT_CLASSIFICATIONS.Standard,
+          metadata: {
+            originKind: PAYABLE_ORIGIN_KINDS.TaxObligation,
+            originId: input.taxObligationId,
+            taxAssessmentId: input.taxAssessmentId,
+            principal: validated.principal,
+          },
+        });
+      }
+      return {
+        payableId: opened.payable.id,
+        principal: opened.payable.principal,
+        currencyCode: opened.payable.currency_code,
+        idempotent: opened.idempotent,
+      };
+    } catch (error) {
+      throw mapPayableDomainError(error);
+    }
+  }
+
+  async cancelFromTaxObligation(input: {
+    taxObligationId: string;
+    actorIdentityId: string;
+    reason: string;
+  }): Promise<void> {
+    try {
+      const row = await this.repository.findByOrigin(PAYABLE_ORIGIN_KINDS.TaxObligation, input.taxObligationId);
+      if (!row) {
+        return;
+      }
+      if (row.lifecycle === PAYABLE_LIFECYCLES.Cancelled) {
+        return;
+      }
+      await this.repository.cancel({
+        payableId: row.id,
+        rowVersion: row.row_version,
+        cancelReason: input.reason,
+        actorIdentityId: input.actorIdentityId,
+      });
+    } catch (error) {
+      if (error instanceof PayableError && error.code === 'PAYABLE_NOT_FOUND') {
+        return;
+      }
+      throw mapPayableDomainError(error);
+    }
+  }
+
+  async openFromProcurementReceipt(
+    input: OpenPayableFromProcurementReceiptInput,
+  ): Promise<{ payableId: string; principal: string; currencyCode: string; idempotent: boolean }> {
+    try {
+      const validated = validateOpenPayableInput({
+        unitId: input.unitId,
+        supplierId: input.supplierId,
+        originKind: PAYABLE_ORIGIN_KINDS.Purchase,
+        originId: input.receiptId,
+        originReference: input.originReference,
+        expenseCategoryId: input.expenseCategoryId,
+        costCenterId: input.costCenterId,
+        costCenterCode: input.costCenterCode,
+        principal: input.principal,
+        currencyCode: input.currencyCode,
+        dueDate: input.dueDate,
+        paymentTerms: input.paymentTerms,
+        externalReference: input.supplierPurchaseOrderId,
+      });
+      if (validated.supplierId) {
+        await this.suppliers.requireActive(validated.supplierId);
+      }
+      const opened = await this.repository.open({
+        unitId: validated.unitId,
+        counterpartyId: validated.counterpartyId,
+        originKind: validated.originKind,
+        originId: validated.originId,
+        originReference: validated.originReference,
+        expenseCategoryId: validated.expenseCategoryId,
+        costCenterId: validated.costCenterId,
+        costCenterCode: validated.costCenterCode,
+        principal: validated.principal,
+        currencyCode: validated.currencyCode,
+        dueDate: validated.dueDate,
+        paymentTerms: validated.paymentTerms,
+        externalReference: validated.externalReference ?? null,
+        actorIdentityId: input.actorIdentityId,
+        installments: validated.installments ?? [],
+      });
+      if (!opened.idempotent) {
+        await this.securityAudit.record({
+          actorIdentityId: input.actorIdentityId,
+          action: SECURITY_AUDIT_ACTIONS.FinancePayableOpen,
+          resourceType: SECURITY_AUDIT_RESOURCE_TYPES.FinancePayable,
+          resourceId: opened.payable.id,
+          outcome: SECURITY_AUDIT_OUTCOMES.Success,
+          classification: SECURITY_AUDIT_CLASSIFICATIONS.Standard,
+          metadata: {
+            originKind: PAYABLE_ORIGIN_KINDS.Purchase,
+            originId: input.receiptId,
+            supplierPurchaseOrderId: input.supplierPurchaseOrderId,
+            principal: validated.principal,
+          },
+        });
+      }
+      return {
+        payableId: opened.payable.id,
+        principal: opened.payable.principal,
+        currencyCode: opened.payable.currency_code,
+        idempotent: opened.idempotent,
+      };
+    } catch (error) {
+      throw mapPayableDomainError(error);
+    }
+  }
+
+  async findByProcurementReceipt(receiptId: string): Promise<TaxObligationPayableView | null> {
+    const row = await this.repository.findByOrigin(PAYABLE_ORIGIN_KINDS.Purchase, receiptId);
+    if (!row) {
+      return null;
+    }
+    return {
+      payableId: row.id,
+      principal: row.principal,
+      currencyCode: row.currency_code,
+      originKind: row.origin_kind,
+      originId: row.origin_id,
+      lifecycle: row.lifecycle,
+    };
+  }
+
+  async openFromSupplierInvoice(
+    input: OpenPayableFromSupplierInvoiceInput,
+  ): Promise<{ payableId: string; principal: string; currencyCode: string; idempotent: boolean }> {
+    try {
+      const validated = validateOpenPayableInput({
+        unitId: input.unitId,
+        supplierId: input.supplierId,
+        originKind: PAYABLE_ORIGIN_KINDS.SupplierInvoice,
+        originId: input.invoiceId,
+        originReference: input.originReference,
+        expenseCategoryId: input.expenseCategoryId,
+        costCenterId: input.costCenterId,
+        costCenterCode: input.costCenterCode,
+        principal: input.principal,
+        currencyCode: input.currencyCode,
+        dueDate: input.dueDate,
+        paymentTerms: input.paymentTerms,
+        externalReference: input.externalReference ?? null,
+      });
+      if (validated.supplierId) {
+        await this.suppliers.requireActive(validated.supplierId);
+      }
+      const opened = await this.repository.open({
+        unitId: validated.unitId,
+        counterpartyId: validated.counterpartyId,
+        originKind: validated.originKind,
+        originId: validated.originId,
+        originReference: validated.originReference,
+        expenseCategoryId: validated.expenseCategoryId,
+        costCenterId: validated.costCenterId,
+        costCenterCode: validated.costCenterCode,
+        principal: validated.principal,
+        currencyCode: validated.currencyCode,
+        dueDate: validated.dueDate,
+        paymentTerms: validated.paymentTerms,
+        externalReference: validated.externalReference ?? null,
+        actorIdentityId: input.actorIdentityId,
+        installments: validated.installments ?? [],
+      });
+      if (!opened.idempotent) {
+        await this.securityAudit.record({
+          actorIdentityId: input.actorIdentityId,
+          action: SECURITY_AUDIT_ACTIONS.FinancePayableOpen,
+          resourceType: SECURITY_AUDIT_RESOURCE_TYPES.FinancePayable,
+          resourceId: opened.payable.id,
+          outcome: SECURITY_AUDIT_OUTCOMES.Success,
+          classification: SECURITY_AUDIT_CLASSIFICATIONS.Standard,
+          metadata: {
+            originKind: PAYABLE_ORIGIN_KINDS.SupplierInvoice,
+            originId: input.invoiceId,
+            principal: validated.principal,
+          },
+        });
+      }
+      return {
+        payableId: opened.payable.id,
+        principal: opened.payable.principal,
+        currencyCode: opened.payable.currency_code,
+        idempotent: opened.idempotent,
+      };
+    } catch (error) {
+      throw mapPayableDomainError(error);
+    }
+  }
+
+  async findBySupplierInvoice(invoiceId: string): Promise<TaxObligationPayableView | null> {
+    const row = await this.repository.findByOrigin(PAYABLE_ORIGIN_KINDS.SupplierInvoice, invoiceId);
+    if (!row) {
+      return null;
+    }
+    return {
+      payableId: row.id,
+      principal: row.principal,
+      currencyCode: row.currency_code,
+      originKind: row.origin_kind,
+      originId: row.origin_id,
+      lifecycle: row.lifecycle,
+    };
+  }
+
+  async findByTaxObligation(taxObligationId: string): Promise<TaxObligationPayableView | null> {
+    const row = await this.repository.findByOrigin(PAYABLE_ORIGIN_KINDS.TaxObligation, taxObligationId);
+    if (!row) {
+      return null;
+    }
+    return {
+      payableId: row.id,
+      principal: row.principal,
+      currencyCode: row.currency_code,
+      originKind: row.origin_kind,
+      originId: row.origin_id,
+      lifecycle: row.lifecycle,
+    };
+  }
+
+  private async toDetail(row: PayableRow): Promise<PayableDetailResponse> {
+    const [installments, payments] = await Promise.all([
+      this.repository.listInstallments(row.id),
+      this.repository.listPayments(row.id),
+    ]);
+    return toPayableDetailResponse(row, installments, payments);
+  }
+}
