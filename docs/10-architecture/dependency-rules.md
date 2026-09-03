@@ -28,20 +28,36 @@ PRESENTATION → APPLICATION → DOMAIN ← INFRASTRUCTURE
 | DR-007 | Shared kernel mínimo — apenas tipos/IDs estáveis                | Utils dumping ground                    |
 | DR-008 | Reporting (BC-016) só leitura; sem write em outros BCs          | Update via relatório                    |
 
+## Bounded contexts (realinhamento 2026-09-01)
+
+```text
+OPERATIONS → COMMERCIAL, DOCUMENTS, PLATFORM
+COMMERCIAL → PLATFORM
+FINANCE → OPERATIONS, COMMERCIAL, DOCUMENTS, PLATFORM
+FISCAL → COMMERCIAL, OPERATIONS, PLATFORM              (futuro)
+ACCOUNTING → FINANCE, FISCAL, INVENTORY, PAYROLL, PLATFORM
+INVENTORY → PLATFORM                                   (futuro)
+PAYROLL → PLATFORM                                     (futuro)
+```
+
+Proibições: OPERATIONS ↛ ACCOUNTING; ACCOUNTING não modifica ServiceOrder; FISCAL não é interno à OS; PAYROLL ≠ LaborAssignment; Asset ≠ InventoryItem.
+
+Implementação: `apps/api/src/platform/bounded-contexts/module-boundary-rules.ts`.
+
 ## Dependências entre módulos (direção candidata)
 
 ```text
 Service Request (005) → Service Order (006)
 Service Order (006) → Allocation (007), Execution (008), Notification (015)
 Execution (008) → Measurement (010), Evidence (009)
-Measurement (010) → Billing (011) → Invoice (012) → Payment (013)
+Measurement (010) → Billing (011) → [evento] → Finance/Receivable (futuro)
 Commercial (003) → Service Order (006) [referência]
-Integration (018) → Commercial (003), Party (002) [ACL inbound]
+Integration (018) → Commercial (003), Party (002) [ACL inbound — gateway opcional]
 Identity (001) → todos [auth only — interface]
 Audit (017) ← todos [append events]
 ```
 
-Setas = dependência de **aplicação** ou leitura de contrato — não de persistência compartilhada.
+Setas = dependência de **aplicação** ou leitura de contrato — não de persistência compartilhada. Billing ≠ Finance; PO ≠ Payable.
 
 ## Anti-padrões
 

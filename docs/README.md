@@ -28,6 +28,8 @@
 
 Agentes devem seguir [`../AGENTS.md`](../AGENTS.md) e o protocolo em [`00-governance/execution-protocol.md`](00-governance/execution-protocol.md).
 
+Documento de funcionalidade real e justificativa de investimento (sem valores monetários), para leitura comercial: [`proposta-valor-funcionalidade.md`](proposta-valor-funcionalidade.md).
+
 ## 00-governance
 
 | Arquivo                                                              | Conteúdo                          |
@@ -50,6 +52,7 @@ Agentes devem seguir [`../AGENTS.md`](../AGENTS.md) e o protocolo em [`00-govern
 | [source-registry.md](01-foundation/source-registry.md)                               | Registro de fontes              |
 | [business-context.md](01-foundation/business-context.md)                             | Contexto empresarial preliminar |
 | [scope-register.md](01-foundation/scope-register.md)                                 | Registro de escopo              |
+| [release-1-closed-scope.md](01-foundation/release-1-closed-scope.md)                 | Escopo fechado da Release 1     |
 | [stakeholders-register.md](01-foundation/stakeholders-register.md)                   | Partes interessadas             |
 | [business-rules-register.md](01-foundation/business-rules-register.md)               | Regras de negócio               |
 | [domain-decisions-pending.md](01-foundation/domain-decisions-pending.md)             | Decisões de domínio pendentes   |

@@ -3,29 +3,64 @@
 | Campo       | Valor                                   |
 | ----------- | --------------------------------------- |
 | Document ID | Source of Truth por contexto e artefato |
-| Fonte       | SRC-001, DDP-020                        |
-| Prompt      | 05                                      |
+| Fonte       | SRC-001, DDP-020, realinhamento 2026-09-01 |
+| Prompt      | 05 (atualizado realinhamento arquitetural) |
 
-| Artefato                  | SoT candidato                    | BC write owner         | Réplica permitida              | DDP     |
-| ------------------------- | -------------------------------- | ---------------------- | ------------------------------ | ------- |
-| Solicitação               | Sistema CISNE (futuro)           | BC-CAND-005            | BC-CAND-016 read               | —       |
-| OS e histórico            | Sistema CISNE                    | BC-CAND-006            | BC-CAND-016                    | —       |
-| Cliente cadastro          | **Sistema CISNE** (master operacional; ERP opcional réplica futura) | BC-CAND-002            | BC-CAND-003 via `externalErpId` | DDP-020 **CLIENT_SCOPE ANSWERED** |
-| Contrato / proposta       | ERP ou interno                   | BC-CAND-003 / externo  | BC-CAND-006                    | DDP-030 |
-| Purchase Order            | **Cliente / ERP candidato**      | BC-CAND-004 ou externo | BC-CAND-006                    | DDP-009 |
-| Saldo PO                  | Mesmo SoT do PO                  | BC-CAND-004            | BC-CAND-003                    | DDP-009 |
-| Preço comercial publicado | ERP candidato                    | Externo via BC-018     | BC-CAND-003                    | DDP-020 |
-| Custo interno             | Sistema CISNE                    | BC-CAND-003            | —                              | DDP-030 |
-| Alocação recurso          | Sistema CISNE                    | BC-CAND-007            | —                              | —       |
-| Execução / realizado      | Sistema CISNE                    | BC-CAND-008            | —                              | —       |
-| Medição                   | Sistema CISNE                    | BC-CAND-010            | —                              | DDP-010 |
-| Preparação faturamento    | Sistema CISNE                    | BC-CAND-011            | —                              | DDP-011 |
-| Nota fiscal emitida       | **Sistema fiscal externo**       | Externo                | BC-CAND-012 registro informado | DDP-023 |
-| Pagamento                 | **Financeiro externo candidato** | Externo                | BC-CAND-013 tracking           | DDP-012 |
-| Documento / versão        | Sistema CISNE                    | BC-CAND-014            | —                              | DDP-013 |
-| AUDIT_TRAIL               | Sistema CISNE                    | BC-CAND-017            | —                              | DDP-015 |
-| Identidade login          | IdP futuro                       | BC-CAND-001 / externo  | —                              | DDP-015 |
+## Decisão empresarial (2026-09-01)
 
-**Regra:** quando SoT é externo, BC interno atua como **réplica** ou **registro informado**, nunca como emissor autoritativo sem decisão (DDP-020).
+**CISNE e o sistema empresarial principal.** Nao havera ERP externo como autoridade necessaria para financeiro, fiscal ou contabilidade. Modulos nativos serao implementados futuramente dentro do monolito modular.
 
-Nenhum SoT inventado além do evidenciado ou explicitamente pendente.
+Integracoes ACL (ERP, fiscal, banco, rastreio) permanecem como **gateways opcionais** para sistemas externos — nunca como pre-requisito de autoridade interna.
+
+| Classificacao | Conteudo |
+| ------------- | -------- |
+| Decisao empresarial | CISNE = SoT principal; ERP externo nao obrigatorio |
+| Interpretacao de engenharia | ACL preservada para sync/gateway; adapters existentes nao removidos |
+
+## Bounded contexts conceituais
+
+| Contexto    | SoT futuro/atual | Status implementacao |
+| ----------- | ---------------- | -------------------- |
+| OPERATIONS  | Sistema CISNE    | IMPLEMENTED          |
+| COMMERCIAL  | Sistema CISNE    | IMPLEMENTED          |
+| DOCUMENTS   | Sistema CISNE    | IMPLEMENTED          |
+| FINANCE     | Sistema CISNE    | IMPLEMENTED          |
+| FISCAL      | Sistema CISNE    | IMPLEMENTED          |
+| ACCOUNTING  | Sistema CISNE    | IMPLEMENTED          |
+| INVENTORY   | Sistema CISNE    | IMPLEMENTED          |
+| PAYROLL     | Sistema CISNE    | IMPLEMENTED          |
+| PLATFORM    | Sistema CISNE    | IMPLEMENTED          |
+
+Codigo de referencia: `apps/api/src/platform/bounded-contexts/`.
+
+## SoT por artefato (operacional + fronteiras futuras)
+
+| Artefato                  | SoT                              | BC write owner         | Notas |
+| ------------------------- | -------------------------------- | ---------------------- | ----- |
+| Solicitacao               | Sistema CISNE                    | OPERATIONS             | —     |
+| OS e historico            | Sistema CISNE                    | OPERATIONS             | —     |
+| Cliente cadastro          | Sistema CISNE                    | COMMERCIAL             | `externalErpId` opcional, nunca PK |
+| Contrato / proposta       | Sistema CISNE                    | COMMERCIAL             | —     |
+| Purchase Order            | Sistema CISNE                    | COMMERCIAL             | PO comercial ≠ Payable (FINANCE futuro) |
+| Saldo PO                  | Sistema CISNE                    | COMMERCIAL             | —     |
+| Preço comercial           | Sistema CISNE                    | COMMERCIAL             | —     |
+| Custo interno operacional | Sistema CISNE                    | OPERATIONS             | Nao contabil oficial |
+| Alocacao recurso / Asset  | Sistema CISNE                    | OPERATIONS             | Asset ≠ InventoryItem |
+| Execucao / realizado      | Sistema CISNE                    | OPERATIONS             | —     |
+| Medicao                   | Sistema CISNE                    | OPERATIONS             | ≠ Billing |
+| Preparacao faturamento    | Sistema CISNE                    | OPERATIONS (Billing)   | BillingDocument interno ≠ NF oficial |
+| Recebivel / Pagavel       | Sistema CISNE                    | FINANCE                | Saldo derivado; tesouraria em `fin.*` |
+| Extrato / conciliacao     | Sistema CISNE                    | FINANCE                | BankStatementLine ≠ FinancialTransaction; auto-match so exact |
+| Documento fiscal oficial  | Sistema CISNE                    | FISCAL                 | AUTHORIZED imutavel; gateway/certificado so via port; tributacao TBD |
+| Lancamento contabil       | Sistema CISNE                    | ACCOUNTING             | POSTED imutavel; SUM(DEBIT)=SUM(CREDIT) |
+| Item de estoque / saldo   | Sistema CISNE                    | INVENTORY              | Saldo derivado de movimentações; ≠ Asset |
+| Folha / contrato trabalho | Sistema CISNE                    | PAYROLL                | ≠ LaborAssignment; fórmulas legais UNDECIDED |
+| Documento / versao        | Sistema CISNE                    | DOCUMENTS              | —     |
+| AUDIT_TRAIL               | Sistema CISNE                    | PLATFORM               | —     |
+| Identidade login          | IdP futuro                       | PLATFORM               | DDP-015 |
+
+**Regra historica preservada:** integracao externa (quando configurada) pode replicar ou receber dados via ACL/Inbox — nunca como unica fonte de verdade obrigatoria.
+
+**Distincoes obrigatorias:** ServiceOrder ≠ Measurement ≠ Billing ≠ Receivable ≠ FiscalDocument ≠ AccountingEntry; PurchaseOrder ≠ Payable; Asset ≠ InventoryItem; Employee ≠ PayrollContract.
+
+Nenhum SoT inventado alem do evidenciado ou explicitamente pendente de legislacao/regulacao (fiscal, tributario, contabil).

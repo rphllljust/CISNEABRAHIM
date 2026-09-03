@@ -4,7 +4,7 @@
 | ------------ | ------------------------------------------------------------------------------------ |
 | Document ID  | RTM-001                                                                              |
 | Policy       | [`../00-governance/traceability-policy.md`](../00-governance/traceability-policy.md) |
-| Last updated | 2026-08-28 (Prompt 11)                                                               |
+| Last updated | 2026-09-02 (Release 1 closed scope)                                                  |
 | Rule         | Colunas inaplicáveis = `TBD`. Proibido inventar para completar.                      |
 
 Cadeia:
@@ -375,3 +375,13 @@ Cadeia Prompt 17:
 ```text
 ADR-TECH-004/005 → Docker PG → Drizzle migrate → health + integração → (sem domínio)
 ```
+
+## Release 1 — escopo fechado (2026-09-02)
+
+| SOURCE                         | EVIDENCE                                      | BUSINESS RULE        | IMPLEMENTATION                         | TEST                                      | ACCEPTANCE                          |
+| ------------------------------ | --------------------------------------------- | -------------------- | -------------------------------------- | ----------------------------------------- | ----------------------------------- |
+| Prompt autorizado 2026-09-02   | R1-SCOPE-001; DDP-026 ANSWERED (fatia R1)     | BR-026 (clientes PJ) | flags fail-closed + guard API + nav    | feature-flags.spec; release-scope.guard   | módulos R1 visíveis; demais 403     |
+| SRC-002 Q01                    | Clientes PJ no R1                             | BR-026 CONFIRMED     | clientes permanece IN_RELEASE_1        | suítes clientes existentes                | sem CRM/ERP                         |
+| DDP-023                        | BillingDocument ≠ FiscalDocument              | — (distinção)        | faturamento interno; fiscal flag off   | billing-document-preview; feature-flags   | copy e 403 fiscal                   |
+
+Registro: [`release-1-closed-scope.md`](release-1-closed-scope.md). ED-005. Não amplia FR/UC.

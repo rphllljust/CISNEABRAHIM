@@ -4,7 +4,7 @@
 | ------------ | ------------------------------------------- |
 | Document ID  | SCOPE-001                                   |
 | Source       | SRC-000; **atualizado** SRC-001 (Prompt 01) |
-| Last updated | 2026-08-28 (Prompt 01)                      |
+| Last updated | 2026-09-02 (Release 1 closed scope)         |
 
 Separação rigorosa. Não declarar MVP funcional.
 
@@ -45,18 +45,30 @@ Candidatos derivados do contexto preliminar (SRC-000, detalhado SRC-001). Não p
 
 **Nota Prompt 01:** A vertical de locação aparece como `FUTURE_SCOPE_CANDIDATE` com **prioridade candidata** informada pelo patrocinador. Confirmação da direção necessária (DDP-026). Não mover para `IN_SCOPE_CONFIRMED` sem fonte e decisão.
 
+## RELEASE_1_CLOSED_SCOPE (2026-09-02)
+
+Escopo operacional fechado da Release 1 — registro canônico: [`release-1-closed-scope.md`](release-1-closed-scope.md).
+
+**IN_RELEASE_1:** autenticação; clientes PJ; solicitações; propostas e PO de cliente; catálogo; ativos/frota; OS; planejamento; execução; medição; faturamento interno (`BillingDocument`).
+
+**OUT_OF_RELEASE_1 (fail-closed):** financeiro; emissão fiscal oficial; contabilidade; estoque; folha; suprimentos; fornecedores; contratos; pessoas (módulo); verticais dedicadas locação/transporte; alertas; relatórios; matriz de aprovação financeira; rentabilidade operacional.
+
+Isto **não** move fiscal/contábil/ERP para `OUT_OF_SCOPE_CONFIRMED` permanente. São `OUT_OF_RELEASE_1` + `FUTURE_SCOPE_CANDIDATE`.
+
+Faturamento interno da Release 1 **não** é emissão fiscal oficial (DDP-023).
+
 ## UNDECIDED_SCOPE
 
 Tudo que não está em `IN_SCOPE_CONFIRMED`, incluindo:
 
 - substituição ou convivência com ERP;
-- fiscal, contábil e jurídico;
+- fiscal, contábil e jurídico (permanecem fora da Release 1; ver `OUT_OF_RELEASE_1`);
 - mobile / offline;
 - quais tipos de OS existem;
 - quais papéis existem;
 - quais documentos são obrigatórios;
 - qualquer volume, SLA, RPO, RTO;
-- primeiro release / MVP.
+- verticais dedicadas de locação e transporte como produto (DDP-026).
 
 ## Instruções de preenchimento
 

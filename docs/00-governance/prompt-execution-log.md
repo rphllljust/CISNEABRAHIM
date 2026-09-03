@@ -6798,3 +6798,2812 @@ GATE DATABASE: NOT_RUN
 FUNCTIONAL_CODE_CREATED: NO (metadado de migrate + testes/docs)
 NEXT_PROMPT_EXECUTED: NO
 ```
+
+## PROMPT — TESTE E CORREÇÃO DE INTEGRAÇÕES (GATE SÊNIOR)
+
+```text
+EXECUTED_AT: 2026-08-31T11:55:00-04:00
+PROMPT: TESTE E CORREÇÃO DE INTEGRAÇÕES — GATE SÊNIOR
+STATUS: PASS
+
+INTEGRATION_GATE: PASS
+REAL INTEGRATIONS: 5
+WAITING EXTERNAL DEPENDENCIES: 5
+FAKE/STUB IN PRODUCTION: 0 (corrigido — StubFiscal/StubNotification removidos do bootstrap)
+CONTRACT TESTS: PASS (dygnus-erp.adapter.spec.ts + fixture JSON; domain-isolation)
+TIMEOUT: PASS (provider-executor.spec.ts)
+RETRY SAFETY: PASS (provider-executor.spec.ts + retry-classification.spec.ts)
+IDEMPOTENCY: PASS (idempotency-retry.integration.spec.ts 17/17)
+CONCURRENT CALLBACKS: PASS (integration-inbox.integration.spec.ts 7/7)
+OUTBOX: PASS (transactional-outbox.integration.spec.ts 6/6)
+INBOX: PASS (integration-inbox.integration.spec.ts 7/7)
+SOURCE OF TRUTH: PENDING_DECISION (DDP-014 OPEN; DBND-SOT-001 parcial — sem sync destrutivo)
+SECURITY: PASS (webhook HMAC opcional; safe errors; secret-scan; sem token em logs ACL)
+OBSERVABILITY: PASS (correlationId, métricas inbox/outbox, alertas suprimidos quando não configurado)
+CORE WITHOUT OPTIONAL PROVIDERS: PASS (AppModule bootstrap; UAT vertical; 342 integration tests)
+
+CRITICAL DEFECTS OPEN: 0
+REGRESSIONS: NONE
+
+FIXES APPLIED:
+  1. StubFiscalProvider/StubNotificationProvider removidos do IntegrationsAclModule — UnconfiguredFiscal/Notification
+  2. integration-bootstrap.spec.ts — asserts fiscal/notification INTEGRATION_NOT_CONFIGURED
+  3. service-requests.integration.spec.ts — summary test: seedPublishedService antes de convert
+
+INTEGRATION INVENTORY:
+  PostgreSQL — REAL_CONFIGURED
+  Object storage (filesystem/S3) — REAL_CONFIGURED
+  In-app notifications — REAL_CONFIGURED
+  Integration inbox — REAL_CONFIGURED
+  Transactional outbox — REAL_CONFIGURED
+  ERP Dygnus scaffold — TEST_ONLY
+  ERP/Tracking/Fiscal/Notification ACL produção — WAITING_EXTERNAL_DEPENDENCY
+  Email/WhatsApp outbound — REAL_DISABLED
+
+QUALITY GATES:
+  lint api: PASS | typecheck api: PASS | unit api: 524/524 | integration: 342/342
+  idempotency-retry: 21/21 | failure-injection: 20/20 | concurrency: 24/24
+  E2E/web: NOT_RUN (escopo integração backend)
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: CONTINUE
+```
+
+## PROMPT — SOLICITAÇÕES DE SERVIÇO (ENTRADA CONTROLADA DA DEMANDA)
+
+```text
+EXECUTED_AT: 2026-08-31T23:05:00-04:00
+PROMPT: Solicitações de serviço — evoluir como entrada controlada da demanda comercial
+STATUS: PASS
+
+SCOPE:
+  - Histórico append-only de transições (autor, data, payload) em sr.service_request_history_events
+  - Validação de transições exclusivamente no backend (state machine + endpoints de ação)
+  - Frontend apenas solicita ações; sem status privilegiado em DTOs de escrita
+  - Sem reserva de ativos físicos durante intake da solicitação
+  - Tipos web alinhados ao contrato de detalhe (historyEvents)
+
+MIGRATION: packages/database/migrations/0039_service_request_history_events.sql
+
+KEY FILES:
+  apps/api/src/requests/domain/service-request.state-machine.ts
+  apps/api/src/requests/repositories/service-request-history-rows.ts
+  apps/api/src/requests/repositories/service-requests.repository.ts
+  apps/api/src/requests/serializers/service-requests-response.serializer.ts
+  apps/api/src/requests/service-requests.integration.spec.ts
+  apps/api/src/requests/domain/service-request.state-machine.spec.ts
+  apps/web/src/requests/types/service-request.types.ts
+
+QUALITY GATES:
+  unit state-machine: 7/7 PASS
+  integration service-requests: 16/16 PASS
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+## PROMPT — SOLICITAÇÕES DE SERVIÇO (ENTRADA CONTROLADA DA DEMANDA)
+
+```text
+EXECUTED_AT: 2026-08-31T23:05:00-04:00
+PROMPT: Solicitações de serviço — evoluir como entrada controlada da demanda comercial
+STATUS: PASS
+
+SCOPE:
+  - Histórico append-only de transições (autor, data, payload) em sr.service_request_history_events
+  - Validação de transições exclusivamente no backend (state machine + endpoints de ação)
+  - Frontend apenas solicita ações; sem status privilegiado em DTOs de escrita
+  - Sem reserva de ativos físicos durante intake da solicitação
+  - Tipos web alinhados ao contrato de detalhe (historyEvents)
+
+MIGRATION: packages/database/migrations/0039_service_request_history_events.sql
+
+KEY FILES:
+  apps/api/src/requests/domain/service-request.state-machine.ts
+  apps/api/src/requests/repositories/service-request-history-rows.ts
+  apps/api/src/requests/repositories/service-requests.repository.ts
+  apps/api/src/requests/serializers/service-requests-response.serializer.ts
+  apps/api/src/requests/service-requests.integration.spec.ts
+  apps/api/src/requests/domain/service-request.state-machine.spec.ts
+  apps/web/src/requests/types/service-request.types.ts
+
+QUALITY GATES:
+  unit state-machine: 7/7 PASS
+  integration service-requests: 16/16 PASS
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+## PROMPT — PROPOSTAS COMERCIAIS (AUDITORIA E FORTALECIMENTO)
+
+```text
+EXECUTED_AT: 2026-08-31T23:12:00-04:00
+PROMPT: Propostas comerciais — auditoria e fortalecimento comercial
+STATUS: PASS
+
+SCOPE:
+  - Snapshot comercial por item na emissão (descrição, unidade, quantidade, preços) em commercial_snapshot
+  - Totais decimais persistidos na versão (items_sale_total_amount, items_internal_cost_total_amount)
+  - State machine ativa (assertTransition/canTransition) no repositório
+  - API retorna valores do snapshot para versões emitidas/aceitas
+  - Soma monetária com aritmética decimal segura (billing-totals)
+
+MIGRATION: packages/database/migrations/0040_proposal_commercial_snapshots.sql
+
+KEY FILES:
+  apps/api/src/commercial/domain/proposal.ts
+  apps/api/src/commercial/domain/proposal-commercial-snapshot.ts
+  apps/api/src/commercial/domain/proposal-totals.ts
+  apps/api/src/commercial/repositories/proposals.repository.ts
+  apps/api/src/commercial/services/proposals-access.service.ts
+  apps/api/src/commercial/serializers/proposals-response.serializer.ts
+  apps/api/src/commercial/proposals.integration.spec.ts
+  apps/api/src/commercial/domain/proposal.state-machine.spec.ts
+
+QUALITY GATES:
+  unit state-machine + validation: 7/7 PASS
+  integration proposals: 8/8 PASS
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+## PROMPT — PEDIDOS COMERCIAIS (COMPROMISSO CONFIRMADO)
+
+```text
+EXECUTED_AT: 2026-08-31T23:20:00-04:00
+PROMPT: Pedidos comerciais — evoluir como compromisso comercial confirmado
+STATUS: PASS
+
+SCOPE:
+  - Snapshot comercial no registro (cabeçalho + itens: PO, RC, valores, termos, locais)
+  - Totais de linha persistidos (items_line_total_amount) com soma decimal segura
+  - State machine ativa (DRAFT→REGISTERED/CANCELLED; REGISTERED→CANCELLED)
+  - Bloqueio de edição após registro; cancelamento bloqueado com SR/OS/medição/faturamento/consumo
+  - API retorna valores do snapshot para pedidos registrados
+  - Sem duplicar agregados (SR/Proposta/OS permanecem referenciáveis)
+
+MIGRATION: packages/database/migrations/0041_purchase_order_commercial_snapshots.sql
+
+KEY FILES:
+  apps/api/src/commercial/domain/purchase-order.ts
+  apps/api/src/commercial/domain/purchase-order-commercial-snapshot.ts
+  apps/api/src/commercial/domain/purchase-order-totals.ts
+  apps/api/src/commercial/repositories/purchase-orders.repository.ts
+  apps/api/src/commercial/services/purchase-orders-access.service.ts
+  apps/api/src/commercial/services/purchase-orders-reference-validation.service.ts
+  apps/api/src/commercial/purchase-orders.integration.spec.ts
+
+QUALITY GATES:
+  unit state-machine: 4/4 PASS
+  integration purchase-orders: 8/8 PASS
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+## PROMPT — ORDEM DE SERVIÇO (AUDITORIA E FORTALECIMENTO OPERACIONAL)
+
+```text
+EXECUTED_AT: 2026-08-31T23:30:00-04:00
+PROMPT: Ordem de Serviço — auditoria profunda e fortalecimento de invariantes
+STATUS: PASS
+
+SCOPE:
+  - Máquina de estados preservada (DRAFT→PREPARED→RELEASED→IN_EXECUTION⇄PAUSED→COMPLETED|CANCELLED)
+  - Transições exclusivamente via backend com assertTransition, permissões, pré-condições e auditoria
+  - Concorrência via rowVersion + SELECT FOR UPDATE (já existente; testes ampliados)
+  - Correção: complete() mapeia INVALID_STATE_TRANSITION para SERVICE_ORDERS_INVALID_STATE
+  - Testes de matriz completa de transições (unit) e transições críticas/inválidas (integration)
+
+KEY FILES:
+  apps/api/src/service-orders/domain/service-order.state-machine.ts
+  apps/api/src/service-orders/domain/service-order.state-machine.spec.ts
+  apps/api/src/service-orders/services/service-orders-access.service.ts
+  apps/api/src/service-orders/services/service-order-execution-access.service.ts
+  apps/api/src/service-orders/service-orders.integration.spec.ts
+  apps/api/src/service-orders/service-order-execution.integration.spec.ts
+
+QUALITY GATES:
+  unit state-machine: 9/9 PASS
+  integration service-orders: 23/23 PASS
+  integration service-order-execution: 13/13 PASS
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+## PROMPT — PLANEJAMENTO OPERACIONAL (SEPARAÇÃO PLANEJADO × EXECUTADO)
+
+```text
+EXECUTED_AT: 2026-08-31T23:35:00-04:00
+PROMPT: Planejamento operacional — evoluir mantendo separação rigorosa planejado × executado
+STATUS: PASS
+
+SCOPE:
+  - Separação planejado × executado preservada (tabelas e serviços distintos; execução append-only)
+  - Lacuna corrigida: updatePlannedResource valida janela e impede replanejamento que invalida alocações ACTIVE
+  - Lacuna corrigida: reallocateResource valida janela contra planned_resource (como allocate)
+  - Rastreabilidade: alocações mantêm planned_resource_id; histórico de alocação preservado em realloc/remove
+  - Testes: replanejamento, realocação, estados incompatíveis (DRAFT/PAUSED/CANCELLED), concorrência, IN_EXECUTION sem sobrescrever execução
+
+KEY FILES:
+  apps/api/src/service-orders/domain/resource-planning.ts
+  apps/api/src/service-orders/domain/resource-planning.spec.ts
+  apps/api/src/service-orders/repositories/resource-planning.repository.ts
+  apps/api/src/service-orders/services/service-order-planning-access.service.ts
+  apps/api/src/service-orders/service-order-planning.integration.spec.ts
+
+QUALITY GATES:
+  unit resource-planning: 6/6 PASS
+  integration service-order-planning: 18/18 PASS
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+## PROMPT — ATIVOS FÍSICOS (DISPONIBILIDADE OPERACIONAL)
+
+```text
+EXECUTED_AT: 2026-08-31T23:42:00-04:00
+PROMPT: Ativos físicos — auditar e fortalecer disponibilidade operacional
+STATUS: PASS
+
+SCOPE:
+  - Separação cadastral (lifecycle ACTIVE/INACTIVE) × disponibilidade operacional preservada
+  - Disponibilidade derivada de alocações ACTIVE em res.resource_allocations (fonte de verdade)
+  - Coluna allocation_status deixa de dirigir filtros, summary e API (evita booleano divergente)
+  - allocationStatus na API derivado de currentAllocation no serializer
+  - Filtros/summary: EXISTS em alocações ativas + lifecycle para AVAILABLE/ALLOCATED/UNAVAILABLE
+  - UI: resolveAssetOperationalStatus e detalhe usam currentAllocation; não allocationStatus armazenado
+  - Histórico preservado (security audit + allocation history em SO)
+
+KEY FILES:
+  apps/api/src/resources/domain/physical-asset.ts
+  apps/api/src/resources/repositories/physical-assets.repository.ts
+  apps/api/src/resources/services/physical-assets-access.service.ts
+  apps/api/src/resources/serializers/physical-assets-response.serializer.ts
+  apps/api/src/resources/physical-assets.integration.spec.ts
+  apps/api/src/service-orders/service-order-planning.integration.spec.ts
+  apps/web/src/assets/utils/asset-operational-status.ts
+  apps/web/src/assets/pages/PhysicalAssetDetailPage.tsx
+
+QUALITY GATES:
+  unit physical-asset + serializer: 6/6 PASS
+  integration physical-assets: 12/12 PASS
+  integration planning cross-module: 19/19 PASS
+  web asset-operational-status: 7/7 PASS
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+## PROMPT — FROTA (VISÃO OPERACIONAL SOBRE ATIVOS FÍSICOS)
+
+```text
+EXECUTED_AT: 2026-08-31T23:59:00-04:00
+PROMPT: Frota — evoluir reutilizando Ativos Físicos sem cadastro duplicado
+STATUS: PASS
+
+SCOPE:
+  - Frota como visão operacional sobre ativos físicos com classification=VEHICLE (sem módulo/tabela duplicada)
+  - API: filtro classification em list/summary de physical-assets (DTO + access service)
+  - Web: fleet-api wrapper fino; FleetListPage com placa, situação cadastral e disponibilidade operacional
+  - Detalhe/edição reutiliza /app/assets/:id (sem cadastro paralelo de veículos)
+  - Sem dependência circular: web/fleet → physical-assets-api; backend resources ↔ SO via alocações existentes
+  - Testes: indisponibilidade (inativo), alocação concorrente, vínculo com OS, escopo VEHICLE
+
+KEY FILES:
+  apps/api/src/resources/dto/physical-assets.dto.ts
+  apps/api/src/resources/services/physical-assets-access.service.ts
+  apps/api/src/resources/physical-assets.integration.spec.ts
+  apps/web/src/fleet/api/fleet-api.ts
+  apps/web/src/fleet/pages/FleetListPage.tsx
+  apps/web/src/assets/api/physical-assets-api.ts
+  apps/web/src/App.tsx
+  apps/web/src/shell/nav-config.ts
+
+QUALITY GATES:
+  unit physical-assets.dto: 7/7 PASS
+  integration physical-assets (incl. fleet): 14/14 PASS
+  web fleet-api + FleetListPage: 2/2 PASS
+  web physical-assets-api classification: 5/5 PASS
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+## PROMPT — ALOCAÇÃO DE RECURSOS (FORTALECIMENTO TRANSACIONAL)
+
+```text
+EXECUTED_AT: 2026-09-01T00:08:00-04:00
+PROMPT: Alocação de recursos — fortalecer mecanismo existente com exclusão por período e histórico
+STATUS: PASS
+
+SCOPE:
+  - Mecanismo localizado em service-orders/planning + res.resource_allocations (sem novo módulo)
+  - Veículos, máquinas e equipamentos: physical_assets alocados via allocate/reallocate/remove
+  - Pessoas (mão de obra): planejamento por laborTypeCode já existia; alocação explícita rejeitada (LABOR_ALLOCATION_NOT_SUPPORTED) até suporte a workforce
+  - Sobreposição impedida: exclusion constraint GiST (physical_asset_id + operational_period) WHERE status=ACTIVE + transação com FOR UPDATE no asset
+  - Histórico enriquecido em res.resource_allocation_history_events: serviceOrderId, physicalAssetId, resourceTypeCode, período, plannedResourceId e metadados de alteração
+  - Testes de integração (PostgreSQL real): histórico completo, concorrência intra-OS e cross-OS, rejeição de labor
+
+KEY FILES:
+  apps/api/src/service-orders/domain/resource-planning.ts
+  apps/api/src/service-orders/domain/resource-planning.spec.ts
+  apps/api/src/service-orders/repositories/resource-planning.repository.ts
+  apps/api/src/service-orders/services/service-order-planning-access.service.ts
+  apps/api/src/service-orders/services/service-orders-access.errors.ts
+  apps/api/src/service-orders/service-order-planning.integration.spec.ts
+
+QUALITY GATES:
+  unit resource-planning: 7/7 PASS
+  integration service-order-planning: 22/22 PASS
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+## PROMPT — LOCAÇÕES (ESPECIALIZAÇÃO OPERACIONAL NA OS)
+
+```text
+EXECUTED_AT: 2026-09-01T00:19:00-04:00
+PROMPT: Locações — evoluir como especialização operacional ligada à OS sem sistema independente
+STATUS: PASS
+
+SCOPE:
+  - Locação = arquétipo RENTAL no catálogo/OS; sem módulo ou entidades duplicadas
+  - Reutiliza Cliente, Contrato (via SR/OS), Pedido, Ativos, Alocações, Execução e Medição existentes
+  - Domínio rental-operations: período contratado obrigatório no planejamento, unidade comercial (DAY), validações de janela
+  - Correção: realocação no mesmo ativo libera slot ACTIVE antes de inserir nova janela (extensão de período)
+  - API: filtro archetype=RENTAL na listagem de OS
+  - Web: rentals-api + RentalsListPage (/app/rentals) como visão filtrada de OS RENTAL
+
+KEY FILES:
+  apps/api/src/service-orders/domain/rental-operations.ts
+  apps/api/src/service-orders/domain/rental-operations.spec.ts
+  apps/api/src/service-orders/repositories/resource-planning.repository.ts
+  apps/api/src/service-orders/services/service-order-planning-access.service.ts
+  apps/api/src/service-orders/domain/service-order-list.query.ts
+  apps/api/src/service-orders/rental-service-order.integration.spec.ts
+  apps/web/src/rentals/api/rentals-api.ts
+  apps/web/src/rentals/pages/RentalsListPage.tsx
+  apps/web/src/App.tsx
+  apps/web/src/shell/nav-config.ts
+
+QUALITY GATES:
+  unit rental-operations: 4/4 PASS
+  integration rental-service-order: 5/5 PASS
+  web rentals-api: 1/1 PASS
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+## PROMPT — TRANSPORTE (ESPECIALIZAÇÃO OPERACIONAL NA OS)
+
+```text
+EXECUTED_AT: 2026-09-01T00:40:00-04:00
+PROMPT: Transporte — evoluir como especialização operacional vinculada à OS sem TMS completo
+STATUS: PASS
+
+SCOPE:
+  - Transporte = arquétipo TRANSPORT no catálogo/OS; sem módulo ou entidades duplicadas
+  - Reutiliza origem/destino (location da OS), veículo (physical_assets TRUCK), alocações, datas, cliente e pedido existentes
+  - Domínio transport-operations: rota (origin/destination), janela programada obrigatória, unidade comercial TRIP
+  - Validações no planejamento: rota + janela ao planResource/allocateResource para OS TRANSPORT
+  - Conflito de veículo: exclusão GiST em resource_allocations (inalterada; coberta por teste cross-OS)
+  - Replanejamento em IN_EXECUTION não apaga execution_entries (teste dedicado)
+  - API: filtro archetype=TRANSPORT na listagem de OS
+  - Web: transport-api + TransportListPage (/app/transport) com coluna de trecho
+
+KEY FILES:
+  apps/api/src/service-orders/domain/transport-operations.ts
+  apps/api/src/service-orders/domain/transport-operations.spec.ts
+  apps/api/src/service-orders/services/service-order-planning-access.service.ts
+  apps/api/src/service-orders/transport-service-order.integration.spec.ts
+  apps/web/src/transport/api/transport-api.ts
+  apps/web/src/transport/pages/TransportListPage.tsx
+  apps/web/src/service-orders/api/service-orders-api.ts
+  apps/web/src/App.tsx
+  apps/web/src/shell/nav-config.ts
+
+QUALITY GATES:
+  unit transport-operations: 6/6 PASS
+  integration transport-service-order: 7/7 PASS
+  web transport-api: 1/1 PASS
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+## PROMPT — EXECUÇÃO OPERACIONAL (AUDITORIA E FORTALECIMENTO)
+
+```text
+EXECUTED_AT: 2026-09-01T00:52:00-04:00
+PROMPT: Execução operacional — auditar módulo e garantir fatos efetivamente ocorridos
+STATUS: PASS
+
+SCOPE:
+  - Auditoria do módulo existente (Prompt 54): append-only em execution_entries/evidence/occurrences; transições protegidas por state machine + FOR UPDATE + row_version
+  - Separação PLANNED ≠ ALLOCATED ≠ ACTUAL preservada; planejamento nunca sobrescreve fatos de execução
+  - Domínio execution-facts: comparação planejado vs realizado (quantidades, recursos/alocações, períodos, ocorrências) calculada na leitura — sem reescrita silenciosa
+  - GET /execution enriquecido com comparison (fatos imutáveis + visão atual do planejamento)
+  - Testes adicionais: replanejamento em IN_EXECUTION preserva entries; record×complete; rejeição em RELEASED/COMPLETED; ocorrências como fatos independentes
+
+KEY FILES:
+  apps/api/src/service-orders/domain/execution-facts.ts
+  apps/api/src/service-orders/domain/execution-facts.spec.ts
+  apps/api/src/service-orders/services/service-order-execution-access.service.ts
+  apps/api/src/service-orders/serializers/service-order-execution-response.serializer.ts
+  apps/api/src/service-orders/service-order-execution.integration.spec.ts
+  apps/web/src/service-orders/types/service-order-execution.types.ts
+  apps/web/src/test/service-orders-fetch-mock.ts
+
+QUALITY GATES:
+  unit execution-facts: 5/5 PASS
+  unit service-order-execution: 4/4 PASS
+  integration service-order-execution: 18/18 PASS
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+## PROMPT — MEDIÇÕES (FORTALECIMENTO E INVARIANTES COMERCIAIS)
+
+```text
+EXECUTED_AT: 2026-09-01T01:01:20-04:00
+PROMPT: Medições — consolidar execução em quantidade faturável com vínculos comerciais e invariantes
+STATUS: PASS
+
+SCOPE:
+  - Fortalecimento sobre implementação existente: medição consolida fatos de execução (execution entries) em itens com quantidade comercialmente faturável
+  - Vínculo comercial preservado: OS, proposta, pedido, contrato (referência + snapshot), período de serviço, item, quantidade, unidade e valores do snapshot comercial
+  - Medições aprovadas não editáveis silenciosamente: assertMeasurementEditable antes de regenerate/updateItem/authorizeAdjustment → MEASUREMENT_NOT_EDITABLE (CONFLICT)
+  - Correções controladas: ajustes formais + regeneração apenas em DRAFT; divergência exige autorização de ajuste
+  - Dupla medição impedida: índice parcial measurement_service_order_active_uq + assertExecutionEntriesAvailableForMeasurement (EXECUTION_ENTRY_ALREADY_MEASURED) + assertNoDuplicateExecutionEntrySelection
+  - Duplo faturamento: coberto em billing.integration.spec.ts (rejects duplicate billing for the same measurement)
+
+KEY FILES:
+  apps/api/src/measurements/domain/measurement-invariants.ts
+  apps/api/src/measurements/domain/measurement-invariants.spec.ts
+  apps/api/src/measurements/domain/measurement.ts
+  apps/api/src/measurements/errors/measurements-error-codes.ts
+  apps/api/src/measurements/services/measurements-access.errors.ts
+  apps/api/src/measurements/services/measurements-access.service.ts
+  apps/api/src/measurements/services/measurements-commercial-resolution.service.ts
+  apps/api/src/measurements/repositories/measurements.repository.ts
+  apps/api/src/measurements/measurements.integration.spec.ts
+
+QUALITY GATES:
+  unit measurement-invariants: 4/4 PASS
+  unit measurement + state-machine: 6/6 PASS
+  integration measurements: 15/15 PASS
+  billing duplicate measurement (cross-module): existing PASS
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+## PROMPT — CUSTOS OPERACIONAIS (SEM CONTABILIDADE/ERP)
+
+```text
+EXECUTED_AT: 2026-09-01T01:13:00-04:00
+PROMPT: Custos operacionais — conhecer custo real das operações sem contabilidade oficial
+STATUS: PASS
+
+SCOPE:
+  - Novo registro de custos operacionais em so.operational_cost_entries (schema so, sem módulo contábil)
+  - Associação à OS (origin SERVICE_ORDER) ou execução (origin EXECUTION + source_execution_entry_id)
+  - Categorias: FUEL, THIRD_PARTY, RESOURCE, TRAVEL, MATERIAL, LABOR, OTHER
+  - Diferenciação ESTIMATED vs ACTUAL com regras de estado distintas
+  - Precisão decimal numeric(18,4) + currency_code; origem rastreável via origin_context
+  - Anti-duplicidade: idempotency_key único + índice único (execution_entry, category, cost_kind)
+  - API: GET/POST /service-orders/:id/operational-costs com summary de margem operacional indicativa (não contábil)
+  - Receita para margem: soma de measurement_items aprovados quando existir
+
+KEY FILES:
+  packages/database/migrations/0042_operational_costs_baseline.sql
+  apps/api/src/service-orders/domain/operational-cost.ts
+  apps/api/src/service-orders/domain/operational-margin.ts
+  apps/api/src/service-orders/domain/operational-cost.validation.ts
+  apps/api/src/service-orders/repositories/operational-cost.repository.ts
+  apps/api/src/service-orders/services/operational-cost-access.service.ts
+  apps/api/src/service-orders/controllers/operational-cost.controller.ts
+  apps/api/src/service-orders/serializers/operational-cost-response.serializer.ts
+  apps/api/src/service-orders/service-order-operational-costs.integration.spec.ts
+
+QUALITY GATES:
+  unit operational-cost + margin: 5/5 PASS
+  integration operational-costs: 5/5 PASS
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+## PROMPT — RENTABILIDADE OPERACIONAL (ANÁLISE SEM LEDGER CONTÁBIL)
+
+```text
+EXECUTED_AT: 2026-09-01T01:29:30-04:00
+PROMPT: Rentabilidade operacional — receita - custos realizados = margem, agregável quando suportado
+STATUS: PASS
+
+SCOPE:
+  - Camada de análise em analytics (read model), sem novas tabelas nem ledger contábil
+  - Fórmula auditável: operational_revenue - realized_cost = operational_margin
+  - Receita: SUM(msr.measurement_items.line_amount) de medições APPROVED no período
+  - Custos: SUM(so.operational_cost_entries.amount) ACTUAL no período
+  - Cálculos financeiros compartilhados em commercial/domain/operational-financials.ts
+  - API GET /analytics/operational-profitability com filtros (período, OS, cliente, contrato, tipo) e groupBy (service_order, client, contract, service_type)
+  - supportedDimensions indica quando agregação é possível; disclaimer de não-contabilidade oficial
+  - Visibilidade separada: measurements:read (receita) + operational-cost:read (custos)
+
+KEY FILES:
+  apps/api/src/commercial/domain/operational-financials.ts
+  apps/api/src/analytics/domain/operational-profitability-summary.ts
+  apps/api/src/analytics/repositories/operational-profitability-read-model.repository.ts
+  apps/api/src/analytics/services/operational-profitability-access.service.ts
+  apps/api/src/analytics/controllers/operational-profitability.controller.ts
+  apps/api/src/analytics/analytics.module.ts
+  apps/api/src/analytics/operational-profitability.integration.spec.ts
+
+QUALITY GATES:
+  unit operational-financials: 3/3 PASS
+  unit operational-profitability-summary: 3/3 PASS
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+## PROMPT — REALINHAMENTO ARQUITETURAL (ERP NATIVO CISNE)
+
+```text
+EXECUTED_AT: 2026-09-01T02:48:00-04:00
+PROMPT: Realinhamento arquitetural — CISNE como SoT empresarial; fronteiras FINANCE/FISCAL/ACCOUNTING/INVENTORY/PAYROLL
+STATUS: PASS_WITH_RESTRICTIONS
+
+SCOPE:
+  - Decisão empresarial registrada: CISNE = sistema empresarial principal; ERP externo não obrigatório
+  - ACL/adapters existentes preservados (gateways opcionais)
+  - Núcleo operacional intacto: Client, Catalog, ServiceRequest, Proposal, PurchaseOrder, ServiceOrder, Planning, Allocation, Execution, Measurement, Billing, BillingDocument, Documents
+  - Bounded contexts conceituais: OPERATIONS, COMMERCIAL, FINANCE, FISCAL, ACCOUNTING, INVENTORY, PAYROLL, DOCUMENTS, PLATFORM
+  - Regras de dependência acíclicas + proibições (OPERATIONS ↛ ACCOUNTING, etc.)
+  - Distinções obrigatórias documentadas em código (ServiceOrder ≠ Measurement ≠ Billing ≠ Receivable, etc.)
+  - Contratos futuros de eventos cross-domain (NOT_YET_PUBLISHED; sem publisher/consumidor)
+  - DDP-020 atualizado para ANSWERED
+  - Sem migrations (nenhuma mudança de persistência)
+
+KEY FILES:
+  docs/06-domain-boundaries/source-of-truth-by-context.md
+  docs/01-foundation/domain-decisions-pending.md (DDP-020)
+  docs/10-architecture/dependency-rules.md
+  apps/api/src/platform/bounded-contexts/bounded-context.ts
+  apps/api/src/platform/bounded-contexts/domain-distinctions.ts
+  apps/api/src/platform/bounded-contexts/module-boundary-rules.ts
+  apps/api/src/platform/bounded-contexts/module-boundary-rules.spec.ts
+  apps/api/src/events/domain/cross-domain-event-contracts.v1.ts
+
+QUALITY GATES:
+  lint (api): FAIL — 25 erros preexistentes; 0 nos arquivos deste prompt
+  lint (web): FAIL — 1 erro preexistente (physical-assets-api.ts)
+  typecheck (api): FAIL — erros preexistentes; arquivos deste prompt OK
+  unit (api): 606/609 PASS; 3 FAIL preexistentes (characterization mock)
+  unit boundary-rules: 5/5 PASS
+  integration (api): PARCIAL — core operacional PASS; UAT 5 FAIL preexistentes; skipped por lock DB concorrente
+  master-business E2E: FAIL — hook timeout (DB serializer lock)
+  security regression: PASS — 22/22
+  migration torture: PASS — 7/7
+  build (api): PASS
+
+ARCHITECTURE REALIGNMENT: PASS
+CISNE AS ENTERPRISE SOURCE OF TRUTH: CONFIRMED
+EXTERNAL ERP REQUIRED: NO
+OPERATIONS BOUNDARY: PASS
+FINANCE/FISCAL/ACCOUNTING/INVENTORY/PAYROLL BOUNDARY: READY
+CIRCULAR DEPENDENCIES (bounded context graph): 0
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+## PROMPT — FUNDAÇÃO DO NÚCLEO EMPRESARIAL CISNE
+
+```text
+PROMPT: Fundação do núcleo empresarial CISNE — SoT de operação, financeiro, fiscal, contabilidade, estoque e folha; sem ERP externo
+TITLE: Fundação do núcleo empresarial CISNE
+STARTED_AT: 2026-09-01T02:50:00-04:00
+FINISHED_AT: 2026-09-01T04:02:00-04:00
+EXECUTED_AT: 2026-09-01T04:02:00-04:00
+STATUS: PASS
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - Monólito modular preservado; nenhum microservice
+  - Bounded contexts consolidados: OPERATIONS, COMMERCIAL, FINANCE, FISCAL, ACCOUNTING, INVENTORY, PAYROLL, DOCUMENTS, PLATFORM
+  - Módulos Nest existentes preservados; shells BOUNDARY_READY (finance/fiscal/accounting/inventory/payroll) fora do AppModule
+  - Distinções obrigatórias no grafo: ServiceOrder≠Billing≠Receivable≠FiscalDocument≠AccountingEntry; Asset≠InventoryItem; Employee≠PayrollContract
+  - Acesso a tabela privada de outro contexto proibido; SQL scan + contratos application/ do owner + views rpt.*
+  - Integração: application contracts, ports, domain events reservados, outbox existente; sem eventos novos publicados
+  - Dependências unidirecionais; ciclos 0
+  - CISNE = SoT; ERP externo = NONE (ACL UnconfiguredErpProvider)
+
+KEY FILES:
+  apps/api/src/platform/bounded-contexts/bounded-context.ts
+  apps/api/src/platform/bounded-contexts/domain-distinctions.ts
+  apps/api/src/platform/bounded-contexts/schema-ownership.ts
+  apps/api/src/platform/bounded-contexts/enterprise-core-ports.ts
+  apps/api/src/platform/bounded-contexts/module-boundary-rules.ts
+  apps/api/src/platform/bounded-contexts/source-boundary-scan.ts
+  apps/api/src/platform/bounded-contexts/module-boundary-rules.spec.ts
+  apps/api/src/platform/kernel/money-math.ts
+  apps/api/src/platform/kernel/uuid.ts
+  apps/api/src/measurements/application/measurement-billing.ts
+  apps/api/src/measurements/repositories/measurement-billing.persistence.ts
+  apps/api/src/events/domain/cross-domain-event-contracts.v1.ts
+  apps/api/src/finance/finance.module.ts
+  apps/api/src/fiscal/fiscal.module.ts
+  apps/api/src/accounting/accounting.module.ts
+  apps/api/src/inventory/inventory.module.ts
+  apps/api/src/payroll/payroll.module.ts
+  packages/database/migrations/0043_cross_context_read_contracts.sql
+  docs/10-architecture/adr/ADR-002-domain-boundaries.md
+  docs/10-architecture/adr/ADR-003-data-ownership.md
+  docs/10-architecture/adr/ADR-005-integration-approach.md
+
+QUALITY GATES:
+  typecheck (api): PASS
+  unit (api): 613/613 PASS
+  unit boundary-rules: 9/9 PASS; circularDependencies=0; crossModuleTableAccess=0
+  integration (core): 98/98 PASS — billing, billing-document, measurements, proposals, purchase-orders, contracts, service-orders, documents, transactional-outbox
+  master-business E2E: 9/9 PASS
+  migration torture: 7/7 PASS
+  build (api): PASS
+
+ENTERPRISE ARCHITECTURE: PASS
+CIRCULAR DEPENDENCIES: 0
+CROSS-MODULE TABLE ACCESS: 0
+ERP EXTERNAL DEPENDENCY: NONE
+REGRESSIONS: NONE
+
+NOTES:
+  FINANCE/FISCAL/ACCOUNTING/INVENTORY/PAYROLL permanecem BOUNDARY_READY (ports e schemas reservados; sem tabelas de produção nem providers Nest).
+  Eventos cross-domain continuam NOT_YET_PUBLISHED.
+  Relatórios/ACL leem OPERATIONS/COMMERCIAL como exceção downstream via rpt.* ou contratos publicados.
+  Suite integration completa (UAT/chaos/concurrency) não reexecutada nesta etapa; núcleo operacional 98/98 e master-business 9/9 evidenciam ausência de regressão no fluxo empresarial.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+## PROMPT — CONTAS A RECEBER E TÍTULOS FINANCEIROS
+
+```text
+PROMPT: FINANCE — Accounts Receivable nativo (Billing ≠ Receivable)
+TITLE: Contas a receber e títulos financeiros
+STARTED_AT: 2026-09-01T10:21:00-04:00
+FINISHED_AT: 2026-09-01T10:39:04-04:00
+EXECUTED_AT: 2026-09-01T10:39:04-04:00
+STATUS: PASS
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - Aggregate Receivable + ReceivableInstallment + Settlement em schema fin (write owner FINANCE)
+  - Fluxo: Billing document FINALIZED abre título via FinanceReceivablePort; OPERATIONS não importa FINANCE
+  - Saldo derivado: principal - settlements POSTED; sem boolean paid
+  - Estados derivados: OPEN, PARTIALLY_PAID, PAID, OVERDUE, CANCELLED
+  - Baixa transacional, idempotente (unique receivable+idempotency_key) e serializada (FOR UPDATE)
+  - Overpayment rejeitado sem regra explícita; cancelamento bloqueado se houver settlement
+  - Dinheiro numeric(18,4) / money-math (sem float)
+
+KEY FILES:
+  packages/database/migrations/0044_finance_receivables.sql
+  packages/database/src/schema/finance.ts
+  apps/api/src/finance/domain/receivable.ts
+  apps/api/src/finance/repositories/receivables.repository.ts
+  apps/api/src/finance/services/receivables-access.service.ts
+  apps/api/src/finance/controllers/receivables.controller.ts
+  apps/api/src/finance/finance.module.ts
+  apps/api/src/billing/services/billing-document-access.service.ts
+  apps/api/src/platform/bounded-contexts/enterprise-core-ports.ts
+  docs/10-architecture/adr/ADR-002-domain-boundaries.md
+  docs/10-architecture/adr/ADR-003-data-ownership.md
+
+QUALITY GATES:
+  typecheck (api): PASS
+  unit (api): 618/618 PASS
+  unit receivable + boundary: PASS; circularDependencies=0; crossModuleTableAccess=0
+  integration receivables: 11/11 PASS
+  migration torture: 7/7 PASS
+  build (api): PASS
+
+RECEIVABLES: PASS
+NEGATIVE BALANCE: 0
+DUPLICATE SETTLEMENT: 0
+FINANCIAL RECONCILIATION: PASS
+
+NOTES:
+  Payables e contextos FISCAL/ACCOUNTING/INVENTORY/PAYROLL permanecem BOUNDARY_READY.
+  Eventos BILLING_FINALIZED / PAYMENT_SETTLED continuam NOT_YET_PUBLISHED; abertura usa port síncrono.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: FINANCE — Accounts Payable nativo (PurchaseOrder ≠ Payable)
+TITLE: Contas a pagar e despesas
+STARTED_AT: 2026-09-01T10:39:00-04:00
+FINISHED_AT: 2026-09-01T10:57:50-04:00
+EXECUTED_AT: 2026-09-01T10:57:50-04:00
+STATUS: PASS
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - Aggregate Payable + PayableInstallment + Payment + ExpenseCategory em schema fin (write owner FINANCE)
+  - CostCenter como referencia (cost_center_id + snapshot code); sem write em ACCOUNTING
+  - Origens rastreaveis: SUPPLIER_INVOICE, PURCHASE, OPERATIONAL_EXPENSE, PAYROLL_OBLIGATION, TAX_OBLIGATION, MANUAL_AUTHORIZED_EXPENSE
+  - PurchaseOrder de cliente rejeitado como origem (PAYABLE_FORBIDDEN_ORIGIN)
+  - Saldo derivado: principal - (PAYMENT - REVERSAL); sem boolean paid
+  - Estados derivados: OPEN, PARTIALLY_PAID, PAID, OVERDUE, CANCELLED
+  - Baixa atomica, idempotente (unique payable+idempotency_key), serializada (FOR UPDATE no titulo e na parcela)
+  - Pagamento confirmado imutavel; correcao via linha REVERSAL
+  - Abertura e baixa exigem finance:payable:* no backend
+  - Aging AP derivado: CURRENT, 1_30, 31_60, 61_90, 90_PLUS
+
+KEY FILES:
+  packages/database/migrations/0045_finance_payables.sql
+  packages/database/src/schema/finance.ts
+  apps/api/src/finance/domain/payable.ts
+  apps/api/src/finance/repositories/payables.repository.ts
+  apps/api/src/finance/services/payables-access.service.ts
+  apps/api/src/finance/controllers/payables.controller.ts
+  apps/api/src/finance/finance.module.ts
+  docs/10-architecture/adr/ADR-002-domain-boundaries.md
+  docs/10-architecture/adr/ADR-003-data-ownership.md
+
+QUALITY GATES:
+  typecheck (api): PASS
+  unit (api): 625/625 PASS
+  unit payable + boundary: PASS; circularDependencies=0; crossModuleTableAccess=0
+  integration payables: 13/13 PASS
+  integration receivables: 11/11 PASS
+  migration torture: 7/7 PASS
+  ci-database-gate: PASS
+  build (api): PASS
+
+PAYABLES: PASS
+DOUBLE PAYMENT: 0
+NEGATIVE BALANCE: 0
+AGING: PASS
+
+NOTES:
+  Contextos FISCAL/ACCOUNTING/INVENTORY/PAYROLL permanecem BOUNDARY_READY.
+  Origem PURCHASE e compra de fornecedor, nao PurchaseOrder comercial de cliente.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: FINANCE — Cash and bank accounts (tesouraria nativa)
+TITLE: Caixa, contas bancarias e movimentacao financeira
+STARTED_AT: 2026-09-01T11:17:00-04:00
+FINISHED_AT: 2026-09-01T11:27:30-04:00
+EXECUTED_AT: 2026-09-01T11:27:30-04:00
+STATUS: PASS
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - FinancialAccount + BankAccount + CashAccount + FinancialTransaction em fin.* (write owner FINANCE)
+  - Saldo derivado de CREDIT - DEBIT POSTED; sem coluna de saldo como verdade isolada
+  - Transferencia logica: DEBIT origem + CREDIT destino na mesma transacao; falha = rollback
+  - Movimento confirmado imutavel; correcao via REVERSAL
+  - Idempotencia (from_account + idempotency_key); concorrencia FOR UPDATE nas contas
+  - Insuficiencia de saldo quando overdraft_allowed = false
+  - Autorizacao finance:treasury:* no backend
+
+KEY FILES:
+  packages/database/migrations/0046_finance_treasury.sql
+  packages/database/src/schema/finance.ts
+  apps/api/src/finance/domain/treasury.ts
+  apps/api/src/finance/repositories/treasury.repository.ts
+  apps/api/src/finance/services/treasury-access.service.ts
+  apps/api/src/finance/controllers/treasury.controller.ts
+  apps/api/src/finance/finance.module.ts
+  docs/10-architecture/adr/ADR-002-domain-boundaries.md
+  docs/10-architecture/adr/ADR-003-data-ownership.md
+
+QUALITY GATES:
+  typecheck (api): PASS
+  unit (api): 631/631 PASS
+  unit treasury + boundary: PASS; circularDependencies=0; crossModuleTableAccess=0
+  integration treasury: 8/8 PASS
+  migration torture: 7/7 PASS
+  ci-database-gate: PASS
+  build (api): PASS
+
+TREASURY: PASS
+UNBALANCED TRANSFERS: 0
+DUPLICATE TRANSACTIONS: 0
+BALANCE RECONCILIATION: PASS
+
+NOTES:
+  FinancialTransaction nao e AccountingEntry (ACCOUNTING permanece BOUNDARY_READY).
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: ACCOUNTING — Double entry ledger
+TITLE: Contabilidade por partidas dobradas
+STARTED_AT: 2026-09-01T11:27:00-04:00
+FINISHED_AT: 2026-09-01T11:57:30-04:00
+EXECUTED_AT: 2026-09-01T11:57:30-04:00
+STATUS: PASS
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - ChartOfAccounts + AccountingAccount + AccountingPeriod + JournalEntry + JournalEntryLine em acc.* (write owner ACCOUNTING)
+  - POSTED exige SUM(DEBIT) = SUM(CREDIT); trigger de banco rejeita posting desbalanceado
+  - DRAFT alteravel; POSTED imutavel; correcao via REVERSAL + novo lancamento
+  - Periodo CLOSED rejeita posting ate reabertura autorizada
+  - Source reference + idempotency (chart+key e source_kind+source_id+key)
+  - Infraestrutura contabil generica; sem regras fiscais brasileiras
+
+KEY FILES:
+  packages/database/migrations/0047_accounting_ledger.sql
+  packages/database/src/schema/accounting.ts
+  apps/api/src/accounting/domain/ledger.ts
+  apps/api/src/accounting/repositories/accounting.repository.ts
+  apps/api/src/accounting/services/accounting-access.service.ts
+  apps/api/src/accounting/controllers/accounting.controller.ts
+  apps/api/src/accounting/accounting.module.ts
+  docs/10-architecture/adr/ADR-002-domain-boundaries.md
+  docs/10-architecture/adr/ADR-003-data-ownership.md
+
+QUALITY GATES:
+  typecheck (api): PASS
+  unit (api): 637/637 PASS
+  unit ledger + boundary: PASS; circularDependencies=0; crossModuleTableAccess=0
+  integration accounting: 9/9 PASS
+  migration torture: 7/7 PASS
+  ci-database-gate: PASS
+  build (api): PASS
+
+DOUBLE ENTRY: PASS
+UNBALANCED POSTED ENTRIES: 0
+DUPLICATE POSTINGS: 0
+LEDGER RECONCILIATION: PASS
+
+NOTES:
+  FinancialTransaction (FINANCE tesouraria) nao e JournalEntry (ACCOUNTING).
+  Origens BILLING/SETTLEMENT/PAYMENT/INVENTORY/PAYROLL/TAX reservadas por referencia; sem post automatico nestes contextos nesta etapa.
+  FISCAL/INVENTORY/PAYROLL permanecem BOUNDARY_READY.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: ACCOUNTING — Reporting and period closing
+TITLE: Diario, razao, balancete e DRE
+STARTED_AT: 2026-09-01T11:58:00-04:00
+FINISHED_AT: 2026-09-01T12:12:00-04:00
+EXECUTED_AT: 2026-09-01T12:12:00-04:00
+STATUS: PASS
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - Read models Journal / General Ledger / Trial Balance / Income Statement / Balance Sheet derivados somente de JournalEntry POSTED
+  - Sem saldo armazenado independente do lancamento; DRAFT fora dos relatorios
+  - Razao por conta: opening, debits, credits, closing, movements
+  - Balancete com total debits = total credits
+  - DRE somente se o plano possui REVENUE ou EXPENSE; classificacao nao e inventada
+  - Fechamento de periodo: validacao (sem DRAFT + TB equilibrado), autorizacao e auditoria; CLOSED rejeita lancamento comum
+
+KEY FILES:
+  packages/database/migrations/0048_accounting_reporting.sql
+  apps/api/src/accounting/domain/reporting.ts
+  apps/api/src/accounting/services/accounting-reporting.service.ts
+  apps/api/src/accounting/serializers/accounting-reporting.serializer.ts
+  apps/api/src/accounting/controllers/accounting.controller.ts
+  apps/api/src/accounting/accounting-reporting.integration.spec.ts
+  docs/10-architecture/adr/ADR-003-data-ownership.md
+
+QUALITY GATES:
+  typecheck (api): PASS
+  unit (api): 642/642 PASS
+  unit reporting + boundary: PASS; circularDependencies=0; crossModuleTableAccess=0
+  integration accounting ledger: 9/9 PASS
+  integration accounting reporting: 5/5 PASS
+  migration torture: 7/7 PASS
+  ci-database-gate: PASS
+  build (api): PASS
+
+JOURNAL: PASS
+GENERAL LEDGER: PASS
+TRIAL BALANCE: PASS
+DEBIT/CREDIT DIFFERENCE: 0
+PERIOD CLOSE: PASS
+
+NOTES:
+  Relatorios leem acc.posted_journal_lines (filtro status=POSTED). Nao ha tabela de saldo.
+  DRE unavailable quando o plano nao tem REVENUE/EXPENSE.
+  FinancialTransaction continua nao sendo JournalEntry.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: FISCAL CORE
+TITLE: Fundacao fiscal e documento fiscal oficial
+STARTED_AT: 2026-09-01T12:13:00-04:00
+FINISHED_AT: 2026-09-01T12:28:00-04:00
+EXECUTED_AT: 2026-09-01T12:28:00-04:00
+STATUS: PASS
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - FiscalDocument + Item + PartySnapshot + TaxDetail opaco + Event + Authorization em fis.*
+  - BillingDocument interno != FiscalDocument oficial (referencia por ID, sem FK para bil)
+  - Estados DRAFT/READY/SUBMITTED/AUTHORIZED/REJECTED/CANCELLED
+  - AUTHORIZED imutavel; correcao via evento; certificados e SEFAZ/prefeitura so como ports
+  - Sem aliquota, CFOP, NCM, ISS, ICMS ou retencao
+
+KEY FILES:
+  packages/database/migrations/0049_fiscal_core.sql
+  apps/api/src/fiscal/domain/fiscal-document.ts
+  apps/api/src/fiscal/services/fiscal-access.service.ts
+  apps/api/src/fiscal/ports/unconfigured-fiscal-authorization.gateway.ts
+  apps/api/src/fiscal/fiscal.module.ts
+  apps/api/src/fiscal/fiscal.integration.spec.ts
+  docs/10-architecture/adr/ADR-002-domain-boundaries.md
+  docs/10-architecture/adr/ADR-003-data-ownership.md
+  docs/01-foundation/domain-decisions-pending.md
+
+QUALITY GATES:
+  typecheck (api): PASS
+  unit (api): 645/645 PASS
+  unit fiscal + boundary: PASS; circularDependencies=0; crossModuleTableAccess=0
+  integration fiscal: 4/4 PASS
+  migration torture: 7/7 PASS
+  ci-database-gate: PASS
+  build (api): PASS
+
+FISCAL CORE: PASS
+FAKE TAX RULES: 0
+AUTHORIZED DOCUMENT MUTATION: 0
+IDEMPOTENCY: PASS
+
+NOTES:
+  DDP-023 PARTIALLY_ANSWERED: nucleo de documento implementado; legislacao tributaria e tipo NF-e/NFS-e permanecem OPEN.
+  INVENTORY/PAYROLL permanecem BOUNDARY_READY.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: TAX ENGINE FOUNDATION
+TITLE: Motor tributario versionado
+STARTED_AT: 2026-09-01T12:30:00-04:00
+FINISHED_AT: 2026-09-01T12:58:30-04:00
+EXECUTED_AT: 2026-09-01T12:58:30-04:00
+STATUS: PASS
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - TaxRule + TaxRuleVersion + TaxContext + TaxCalculation + TaxCalculationLine em fis.*
+  - Versao PUBLISHED imutavel (trigger + dominio); legislacao nova = nova versao sem sobreposicao
+  - Calculo registra ruleVersion, inputs, base, rate quando existir, result, timestamp
+  - Reproducao historica usa rule_version_id + inputs armazenados; nao resolve "regra atual"
+  - TaxCalculation != FiscalDocument != JournalEntry; calculo nao grava no ledger
+  - Regra ausente/nao publicada retorna TAX_RULE_NOT_CONFIGURED; sem aliquota oficial inventada
+
+KEY FILES:
+  packages/database/migrations/0050_tax_engine.sql
+  apps/api/src/fiscal/domain/tax-engine.ts
+  apps/api/src/fiscal/repositories/tax-engine.repository.ts
+  apps/api/src/fiscal/services/tax-engine-access.service.ts
+  apps/api/src/fiscal/controllers/tax-engine.controller.ts
+  apps/api/src/fiscal/tax-engine.integration.spec.ts
+  docs/10-architecture/adr/ADR-003-data-ownership.md
+  docs/01-foundation/domain-decisions-pending.md
+
+QUALITY GATES:
+  typecheck (api): PASS
+  unit (api): 652/652 PASS
+  unit tax-engine + boundary: PASS; circularDependencies=0; crossModuleTableAccess=0
+  integration tax-engine: 6/6 PASS
+  integration fiscal: 4/4 PASS
+  migration torture: 7/7 PASS
+  ci-database-gate: PASS
+  build (api): PASS
+
+TAX ENGINE: PASS
+UNVERSIONED TAX RULES: 0
+HISTORICAL REPRODUCTION: PASS
+INVENTED TAX RULES: 0
+
+NOTES:
+  Fixtures de teste usam TEST_PERCENT / TEST-FIXTURE. Nenhuma aliquota ISS/ICMS/CFOP/NCM cadastrada.
+  DDP-023 permanece PARTIALLY_ANSWERED: estrutura do motor existe; legislacao oficial e tipo NF-e/NFS-e continuam OPEN.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: INVENTORY CORE
+TITLE: Estoque, almoxarifado e custeio
+STARTED_AT: 2026-09-01T12:58:40-04:00
+FINISHED_AT: 2026-09-01T13:13:00-04:00
+EXECUTED_AT: 2026-09-01T13:13:00-04:00
+STATUS: PASS
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - Warehouse + InventoryItem + StockMovement + StockReservation em inv.* (write owner INVENTORY)
+  - StockBalance e read model derivado de movimentacoes POSTED + reservas ACTIVE
+  - Tipos IN/OUT/TRANSFER/ADJUSTMENT; TRANSFER atomico (origem + destino)
+  - Saldo nao e mutado diretamente; lock de posicao impede overdraw concorrente
+  - Estoque negativo proibido salvo allows_negative_stock explicito no item
+  - Custeio UNDECIDED; FIFO/media nao inventados
+  - InventoryItem != Asset (ast.physical_assets)
+
+KEY FILES:
+  packages/database/migrations/0051_inventory_core.sql
+  apps/api/src/inventory/domain/inventory.ts
+  apps/api/src/inventory/repositories/inventory.repository.ts
+  apps/api/src/inventory/services/inventory-access.service.ts
+  apps/api/src/inventory/inventory.module.ts
+  apps/api/src/inventory/inventory.integration.spec.ts
+  docs/10-architecture/adr/ADR-003-data-ownership.md
+
+QUALITY GATES:
+  typecheck (api): PASS
+  unit (api): 657/657 PASS
+  unit inventory + boundary: PASS; circularDependencies=0; crossModuleTableAccess=0
+  integration inventory: 5/5 PASS
+  migration torture: 7/7 PASS
+  ci-database-gate: PASS
+  build (api): PASS
+
+INVENTORY: PASS
+NEGATIVE STOCK: 0
+DUPLICATE MOVEMENTS: 0
+STOCK RECONCILIATION: PASS
+
+NOTES:
+  PAYROLL permanece BOUNDARY_READY.
+  Custeio permanece UNDECIDED ate decisao empresarial/contabil.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```
+PROMPT: PAYROLL DOMAIN FOUNDATION
+TITLE: Folha e pessoal sem quebrar o dominio operacional
+STARTED_AT: 2026-09-01T13:13:00-04:00
+FINISHED_AT: 2026-09-01T13:24:00-04:00
+EXECUTED_AT: 2026-09-01T13:24:00-04:00
+STATUS: PASS
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - EmploymentContract + PayrollPeriod + PayrollEvent + PayrollCalculation + PayrollResult em pay.* (write owner PAYROLL)
+  - Employee / LaborType / LaborAssignment permanecem em OPERATIONS; nao ha FK nem import para people/wrk/so/res
+  - Periodo por competencia: OPEN / CALCULATED / CLOSED; CLOSED imutavel; correcao = reopen autorizado
+  - Eventos conceituais EARNING / DEDUCTION / EMPLOYER_CHARGE; formulas legais UNDECIDED (INSS/FGTS/IRRF nao inventados)
+  - Idempotencia por (period, idempotency_key); lock FOR UPDATE no periodo
+  - PayrollClosed reservado; sem post em acc.* e sem emissao de evento nesta fundacao
+
+KEY FILES:
+  packages/database/migrations/0052_payroll_foundation.sql
+  apps/api/src/payroll/domain/payroll.ts
+  apps/api/src/payroll/repositories/payroll.repository.ts
+  apps/api/src/payroll/services/payroll-access.service.ts
+  apps/api/src/payroll/payroll.module.ts
+  apps/api/src/payroll/payroll.integration.spec.ts
+  docs/10-architecture/adr/ADR-003-data-ownership.md
+
+QUALITY GATES:
+  typecheck (api): PASS
+  unit (api): 661/661 PASS
+  unit payroll + boundary: PASS; circularDependencies=0; crossModuleTableAccess=0
+  integration payroll: 4/4 PASS
+  migration torture: 7/7 PASS
+  ci-database-gate: PASS
+  build (api): PASS
+
+PAYROLL FOUNDATION: PASS
+OPERATIONS/PAYROLL COUPLING: NONE
+DUPLICATE PAYROLL EVENTS: 0
+
+NOTES:
+  Formulas trabalhistas/previdenciarias/tributarias permanecem UNDECIDED ate regra oficial validada.
+  PayrollClosed nao e emitido nem lancado no ledger neste prompt.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```
+PROMPT: BANK RECONCILIATION
+TITLE: Conciliacao bancaria completa
+STARTED_AT: 2026-09-01T13:24:00-04:00
+FINISHED_AT: 2026-09-01T13:37:00-04:00
+EXECUTED_AT: 2026-09-01T13:37:00-04:00
+STATUS: PASS
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - BankStatement + BankStatementLine + Reconciliation + ReconciliationMatch em fin.* (write owner FINANCE)
+  - Fontes futuras OFX/CNAB/API/arquivo autorizado via source_kind; sem parser oficial e sem ERP
+  - Auto-match so com criterio explicito ACCOUNT+AMOUNT+DIRECTION+OCCURRED_ON
+  - Aproximacao de valor nao reconcilia; ambiguo = REVIEW_REQUIRED (0 auto-match)
+  - CONFIRMED imutavel; correcao = unreconcile autorizado
+  - Uma linha bancaria nao pode ter dois CONFIRMED (unique + lock FOR UPDATE)
+
+KEY FILES:
+  packages/database/migrations/0053_bank_reconciliation.sql
+  apps/api/src/finance/domain/bank-reconciliation.ts
+  apps/api/src/finance/repositories/bank-reconciliation.repository.ts
+  apps/api/src/finance/services/bank-reconciliation-access.service.ts
+  apps/api/src/finance/bank-reconciliation.integration.spec.ts
+  docs/10-architecture/adr/ADR-003-data-ownership.md
+
+QUALITY GATES:
+  typecheck (api): PASS
+  unit (api): 664/664 PASS
+  unit bank-reconciliation + boundary: PASS; circularDependencies=0; crossModuleTableAccess=0
+  integration bank-reconciliation: 3/3 PASS
+  migration torture: 7/7 PASS
+  ci-database-gate: PASS
+  build (api): PASS
+
+BANK RECONCILIATION: PASS
+DOUBLE RECONCILIATION: 0
+AMBIGUOUS AUTO-MATCH: 0
+FINANCIAL RECONCILIATION: PASS
+
+NOTES:
+  Parsers OFX/CNAB e API bancaria permanecem ports futuros.
+  Matching irreversivel por aproximacao de valor nao e permitido.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```
+PROMPT: ENTERPRISE FINANCIAL INTEGRITY GATE
+TITLE: Gate integrado financeiro/fiscal/contabil
+STARTED_AT: 2026-09-01T13:37:00-04:00
+FINISHED_AT: 2026-09-01T14:04:00-04:00
+EXECUTED_AT: 2026-09-01T14:04:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+QUALITY_GATE: PASS_WITH_RESTRICTIONS
+FUNCTIONAL_CODE_CREATED: NO
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - Verificacao apenas; nenhuma feature de produto
+  - Fluxo sintetico Client -> Request -> OS -> Execution -> Measurement -> Billing -> Receivable -> Settlement -> Treasury -> Accounting
+  - Fiscal habilitado: Billing -> FiscalDocument; consequencias financeiras/contabeis nao sao auto-lancadas
+  - Billing total = receivable principal (FinanceReceivablePort no BillingDocumentAccessService)
+  - Settlement nao posta tesouraria automaticamente; recuperacao = postMovement RECEIVABLE_SETTLEMENT idempotente
+  - Treasury/Fiscal nao postam ledger automaticamente; recuperacao = postFromSource idempotente
+  - Debitos = creditos; 0 lancamento/pagamento/documento fiscal duplicado; historico de billing inalterado
+  - Concorrencia: double settlement/posting/reconciliation/fiscal submission
+  - Usuario operacional (executor) sem capability: 403 em accounting/payroll/tax/fiscal draft
+
+KEY FILES:
+  apps/api/src/enterprise-integrity/enterprise-integrity-harness.ts
+  apps/api/src/enterprise-integrity/enterprise-integrity.integration.spec.ts
+  apps/api/src/payroll/repositories/payroll.repository.ts
+  apps/api/package.json
+
+QUALITY GATES:
+  lint (api): PASS
+  typecheck (api): PASS
+  unit (api): 664/664 PASS
+  enterprise financial integrity: 3/3 PASS
+  financial integration (receivable/payable/treasury/bank-recon/accounting/reporting/fiscal/tax/payroll): PASS
+  master-business operations: 9/9 PASS
+  failure-injection: 20/20 PASS
+  concurrency torture: 24/24 PASS
+  adversarial-security: PASS
+  ci-database-gate: PASS (zero->latest + incremental N-1->N)
+  migration torture: 7/7 PASS (data preservation)
+  build (api): PASS
+  e2e (api): 21/22 files PASS; residual physical-assets list search total=0 (ASSET plate fixture HTTP-1A23 era 8 chars; create 201 apos AVL-1A23; filtro search ainda 0)
+
+ENTERPRISE FINANCIAL GATE: PASS
+OPERATIONS REGRESSION: NONE
+FINANCE: PASS
+ACCOUNTING: PASS
+FISCAL: PASS
+DOUBLE-ENTRY: PASS
+FINANCIAL RECONCILIATION: PASS
+DUPLICATE ECONOMIC EFFECTS: 0
+DATA CORRUPTION: 0
+CRITICAL DEFECTS: 0
+
+NOTES:
+  Settlement->Treasury e Treasury/Fiscal->Accounting permanecem hops manuais/reservados; o gate prova 0 auto-post e recuperacao sem duplicidade.
+  Payroll concurrent recordEvent: unique 23505 abortava a transacao; SAVEPOINT local no insertEvent (sem feature nova).
+  CFOP/NCM/ISS/ICMS, formulas oficiais de folha, FIFO/average e parsers OFX/CNAB nao foram inventados.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: CONTINUE
+```
+
+```
+PROMPT: AUTOMATED ACCOUNTING POSTING
+TITLE: Integracao interna de contabilizacao automatica versionada
+STARTED_AT: 2026-09-01T14:04:00-04:00
+FINISHED_AT: 2026-09-01T14:24:39-04:00
+EXECUTED_AT: 2026-09-01T14:24:39-04:00
+STATUS: PASS
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - Accounting write-owner de acc.accounting_posting_rules / versions / requests
+  - Finance, Fiscal, Inventory e Payroll nao escrevem tabelas privadas de Accounting
+  - Regras versionadas: origem, evento, contas debito/credito, contexto, vigencia; PUBLISHED imutavel
+  - Sem regra publicada: ACCOUNTING_RULE_NOT_CONFIGURED; contas nunca inventadas
+  - Port AccountingLedger.postConfirmedEvent; contas so saem da regra publicada
+  - Idempotencia (origin,event,source_id) + (unit,idempotency_key); concorrencia <= 1 POSTED
+  - JournalEntry POSTED somente com debito = credito; falha = rollback completo
+  - Eventos de dominio futuros reservados, nao emitidos
+
+KEY FILES:
+  packages/database/migrations/0054_accounting_posting.sql
+  apps/api/src/accounting/domain/posting.ts
+  apps/api/src/accounting/repositories/accounting-posting.repository.ts
+  apps/api/src/accounting/services/accounting-access.service.ts
+  apps/api/src/accounting/accounting-posting.integration.spec.ts
+  apps/api/src/platform/bounded-contexts/enterprise-core-ports.ts
+
+QUALITY GATES:
+  typecheck (api): PASS
+  unit (api): 668/668 PASS
+  unit posting: 4/4 PASS
+  integration posting: 10/10 PASS
+  integration accounting + reporting: 14/14 PASS
+  integration finance (receivable/payable/treasury/bank-recon): 35/35 PASS
+  enterprise financial integrity: 3/3 PASS
+  master-business: 9/9 PASS
+  module-boundary: PASS; circularDependencies=0; crossModuleTableAccess=0
+  ci-database-gate: PASS (zero->latest + incremental N-1->N)
+  migration torture: 7/7 PASS
+  build (api): PASS
+
+ACCOUNTING POSTING: PASS
+DUPLICATE POSTINGS: 0
+UNBALANCED ENTRIES: 0
+IDEMPOTENCY: PASS
+CONCURRENCY: PASS
+ROLLBACK: PASS
+FINANCIAL/ACCOUNTING RECONCILIATION: PASS
+REGRESSIONS: NONE
+
+NOTES:
+  Callers invocam o port Accounting-owned (postConfirmedEvent / posting-requests). Nao ha auto-hop
+  Finance/Fiscal/Inventory/Payroll -> acc.* sem regra publicada.
+  FUTURE_CROSS_DOMAIN_EVENT_TYPES permanecem NOT_YET_PUBLISHED.
+  Contas debito/credito existem somente na versao publicada da regra.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```
+PROMPT: FISCAL TO ACCOUNTING INTEGRATION
+TITLE: Integracao de eventos fiscais confirmados ao Accounting
+STARTED_AT: 2026-09-01T14:25:00-04:00
+FINISHED_AT: 2026-09-01T14:53:41-04:00
+EXECUTED_AT: 2026-09-01T14:53:41-04:00
+STATUS: PASS
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - FiscalDocumentAuthorized -> AccountingPostingRequest via port Accounting-owned
+  - FiscalDocumentCancelled -> reversal do journal autorizado (sem contas inventadas)
+  - TaxCalculationConfirmed -> lancamento somente com AccountingPostingRule publicada
+  - Fiscal nao escreve acc.*; documento AUTHORIZED permanece imutavel
+  - Idempotencia e concorrencia: um JournalEntry POSTED por evento
+  - Failure injection after_fiscal_event / before_journal / during_posting: 0 parcial
+
+KEY FILES:
+  packages/database/migrations/0055_fiscal_accounting_events.sql
+  apps/api/src/fiscal/services/fiscal-accounting-integration.service.ts
+  apps/api/src/fiscal/domain/fiscal-accounting.ts
+  apps/api/src/fiscal/fiscal-accounting.integration.spec.ts
+  apps/api/src/accounting/services/accounting-access.service.ts
+  apps/api/src/platform/kernel/posting-failure-injection.ts
+
+QUALITY GATES:
+  typecheck (api): PASS
+  unit (api): 670/670 PASS
+  integration fiscal-accounting: 9/9 PASS
+  integration fiscal + tax-engine + posting: 20/20 PASS
+  enterprise financial integrity: 3/3 PASS
+  module-boundary: PASS; circularDependencies=0; crossModuleTableAccess=0
+  ci-database-gate: PASS (zero->latest + incremental N-1->N)
+  migration torture: 7/7 PASS
+  build (api): PASS
+
+FISCAL/ACCOUNTING: PASS
+DUPLICATE POSTINGS: 0
+ROLLBACK: PASS
+RECONCILIATION: PASS
+
+NOTES:
+  Auto-hop apos AUTHORIZED/CANCELLED/calculate e best-effort: sem regra o documento fiscal
+  permanece confirmado e nenhum journal e criado. Retry explicito via integration service.
+  Eventos de dominio continuam NOT_YET_PUBLISHED.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```
+PROMPT: INVENTORY COSTING AND ACCOUNTING
+TITLE: Custeio versionado e integracao Inventory -> Accounting
+STARTED_AT: 2026-09-01T14:54:00-04:00
+FINISHED_AT: 2026-09-01T15:15:12-04:00
+EXECUTED_AT: 2026-09-01T15:15:12-04:00
+STATUS: PASS
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - Metodo de custo permanece UNDECIDED (ADR-003). FIFO/LIFO/media nao inventados
+  - Infraestrutura CostingRule / CostingRuleVersion publicada e imutavel
+  - StockMovement preserva quantity, unitCost (quando aplicavel), totalCost, costingRuleVersion, origin
+  - Movimento confirmado e imutavel; correcao = reversal + novo movimento
+  - StockMovementPosted -> AccountingPostingRequest via port Accounting-owned (sem escrever acc.*)
+
+KEY FILES:
+  packages/database/migrations/0056_inventory_costing.sql
+  apps/api/src/inventory/domain/costing.ts
+  apps/api/src/inventory/services/inventory-accounting-integration.service.ts
+  apps/api/src/inventory/services/inventory-access.service.ts
+  apps/api/src/inventory/inventory-costing.integration.spec.ts
+
+QUALITY GATES:
+  typecheck (api): PASS
+  unit (api): 675/675 PASS
+  unit costing: 5/5 PASS
+  integration inventory + costing: 10/10 PASS
+  integration fiscal-accounting: 9/9 PASS
+  integration posting: 10/10 PASS
+  integration fiscal + tax-engine: 10/10 PASS
+  enterprise financial integrity: 3/3 PASS
+  module-boundary: PASS; circularDependencies=0; crossModuleTableAccess=0
+  ci-database-gate: PASS (zero->latest + incremental N-1->N)
+  migration torture: 7/7 PASS
+  build (api): PASS
+
+INVENTORY COSTING: PASS
+STOCK RECONCILIATION: PASS
+DUPLICATE MOVEMENTS: 0
+ACCOUNTING INTEGRATION: PASS
+
+NOTES:
+  Custeio explicito = unitCost x quantity. Sem valoracao de camada FIFO/media.
+  Quantity-only permanece valido quando nao ha unitCost. Versao e carimbada se regra publicada.
+  Auto-hop Inventory -> Accounting e best-effort: sem regra/totalCost nenhum journal e criado.
+  Inventory nao importa accounting; usa ENTERPRISE_CORE_PORT.AccountingLedger.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```
+PROMPT: PAYROLL TO ACCOUNTING
+TITLE: Integracao de competencia fechada ao Accounting
+STARTED_AT: 2026-09-01T15:15:12-04:00
+FINISHED_AT: 2026-09-01T15:23:19-04:00
+EXECUTED_AT: 2026-09-01T15:23:19-04:00
+STATUS: PASS
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - PayrollPeriod CLOSED -> PayrollClosed -> AccountingPostingRequest
+  - Sem formulas trabalhistas novas; somente resultados ja calculados
+  - Contas so na regra contábil versionada; Payroll nao escreve acc.*
+  - Referencia unica por competencia (PAYROLL-CLOSED:unit:YYYY-MM)
+  - Reabertura nao apaga JournalEntry; usa reversal (PAYROLL_REOPENED)
+
+KEY FILES:
+  packages/database/migrations/0057_payroll_accounting_events.sql
+  apps/api/src/payroll/domain/payroll-accounting.ts
+  apps/api/src/payroll/services/payroll-accounting-integration.service.ts
+  apps/api/src/payroll/services/payroll-access.service.ts
+  apps/api/src/payroll/payroll-accounting.integration.spec.ts
+  apps/api/src/accounting/domain/posting.ts
+
+QUALITY GATES:
+  typecheck (api): PASS
+  unit (api): 677/677 PASS
+  integration payroll + payroll-accounting: 11/11 PASS
+  integration fiscal-accounting: 9/9 PASS
+  integration posting: 10/10 PASS
+  enterprise financial integrity: 3/3 PASS
+  module-boundary: PASS; circularDependencies=0; crossModuleTableAccess=0
+  ci-database-gate: PASS (zero->latest + incremental N-1->N)
+  migration torture: 7/7 PASS
+  build (api): PASS
+
+PAYROLL/ACCOUNTING: PASS
+DUPLICATE POSTINGS: 0
+CLOSED PERIOD PROTECTION: PASS
+RECONCILIATION: PASS
+
+NOTES:
+  Auto-hop apos close/reopen e best-effort: sem regra o periodo permanece CLOSED e nenhum journal e criado.
+  Eventos de dominio PAYROLL_CLOSED continuam NOT_YET_PUBLISHED.
+  Formulas oficiais (INSS/FGTS/IRRF) permanecem UNDECIDED.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```
+PROMPT: BANK STATEMENT IMPORT
+TITLE: Importacao bancaria na conciliacao sem ERP
+STARTED_AT: 2026-09-01T15:24:00-04:00
+FINISHED_AT: 2026-09-01T15:38:43-04:00
+EXECUTED_AT: 2026-09-01T15:38:43-04:00
+STATUS: PASS
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - Pipeline Upload -> Validate -> Parse -> Normalize -> Import -> Reconcile
+  - Formato documentado: CISNE_STATEMENT_V1 (AUTHORIZED_FILE)
+  - OFX/CNAB rejeitados com LAYOUT_NOT_DOCUMENTED (sem parser inventado)
+  - Fingerprint/idempotency por linha; checksum do arquivo; import transacional
+  - Mesmo arquivo duas vezes: replay sem duplicidade
+  - Mesmo lancamento em dois arquivos: detectado quando externalReference existe
+  - Arquivo invalido/malformado nao gera BankStatement parcial
+
+KEY FILES:
+  packages/database/migrations/0058_bank_statement_import.sql
+  apps/api/src/finance/domain/bank-import.ts
+  apps/api/src/finance/services/bank-reconciliation-access.service.ts
+  apps/api/src/finance/repositories/bank-reconciliation.repository.ts
+  apps/api/src/finance/bank-import.integration.spec.ts
+
+QUALITY GATES:
+  typecheck (api): PASS
+  unit (api): 682/682 PASS
+  integration bank-import + bank-reconciliation: 11/11 PASS
+  enterprise financial integrity: 3/3 PASS
+  module-boundary: PASS; circularDependencies=0; crossModuleTableAccess=0
+  ci-database-gate: PASS (zero->latest + incremental N-1->N)
+  migration torture: 7/7 PASS
+  build (api): PASS
+
+BANK IMPORT: PASS
+DUPLICATE STATEMENT LINES: 0
+PARTIAL IMPORTS: 0
+RECONCILIATION: PASS
+
+NOTES:
+  OFX/CNAB permanecem ports futuros ate layout oficial documentado.
+  CISNE_STATEMENT_V1 e fixture CISNE (AUTHORIZED_FILE), analogo ao TEST_FIXTURE fiscal.
+  Limite de engenharia: 1 MiB / 10000 linhas. Sem dependencia de ERP.
+  Finance continua write-owner de fin.*.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```
+PROMPT: FINANCIAL AND ACCOUNTING PERIOD CLOSE
+TITLE: Fechamento controlado de competencia financeiro-contabil
+STARTED_AT: 2026-09-01T15:39:10-04:00
+FINISHED_AT: 2026-09-01T15:50:25-04:00
+EXECUTED_AT: 2026-09-01T15:50:25-04:00
+STATUS: PASS
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - Checklist configuravel antes do close: Receivables, Payables, Treasury, Bank recon, Fiscal, Accounting
+  - Nao exige quitacao; settlement so bloqueia se a policy exigir
+  - Reconciliation checks: debit=credit, pending posting critico, evento economico duplicado, origem, integridade bancaria
+  - Close transacional sob lock do periodo; posting concorre no mesmo lock
+  - Reopen exige accounting:period:reopen e justificativa
+  - Double close idempotente; close bloqueado persiste run BLOCKED e periodo permanece OPEN
+
+KEY FILES:
+  packages/database/migrations/0059_period_close_controls.sql
+  apps/api/src/accounting/domain/period-close.ts
+  apps/api/src/accounting/repositories/accounting.repository.ts
+  apps/api/src/accounting/services/accounting-access.service.ts
+  apps/api/src/accounting/period-close.integration.spec.ts
+
+QUALITY GATES:
+  typecheck (api): PASS
+  unit (api): 684/684 PASS
+  integration period-close + accounting + reporting: 19/19 PASS
+  enterprise financial integrity: 3/3 PASS
+  module-boundary: PASS; circularDependencies=0; crossModuleTableAccess=0
+  ci-database-gate: PASS (zero->latest + incremental N-1->N)
+  migration torture: 7/7 PASS
+  build (api): PASS
+
+PERIOD CLOSE: PASS
+UNBALANCED CLOSE: 0
+UNAUTHORIZED REOPEN: 0
+RECONCILIATION: PASS
+
+NOTES:
+  Policy padrao nao exige receivables/payables quitados nem todas as linhas bancarias conciliadas.
+  Leituras cross-domain usam rpt.* (DR-008). Accounting permanece write-owner de acc.*.
+  Drafts continuam mapeados para ACCOUNTING_PERIOD_HAS_DRAFTS; demais bloqueios usam ACCOUNTING_PERIOD_CLOSE_BLOCKED.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```
+PROMPT: FINANCE / FISCAL / ACCOUNTING UI
+TITLE: Interface integrada de backoffice financeiro, fiscal e contabil
+STARTED_AT: 2026-09-01T15:50:40-04:00
+FINISHED_AT: 2026-09-01T16:17:11-04:00
+EXECUTED_AT: 2026-09-01T16:17:11-04:00
+STATUS: PASS
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - Menu Financeiro / Fiscal / Contabilidade no shell existente
+  - Telas de consulta e acao que apenas exibem valores do backend
+  - Estados: loading, empty, error, permission denied, version conflict, processing, closed period
+  - Money via componente do design system; sem recálculo de saldo ou razao no browser
+  - Tabelas grandes com paginacao de exibicao (50 linhas)
+
+KEY FILES:
+  apps/web/src/shell/nav-config.ts
+  apps/web/src/App.tsx
+  apps/web/src/financial-ui/
+  apps/web/src/finance/
+  apps/web/src/fiscal/
+  apps/web/src/accounting/
+
+QUALITY GATES:
+  typecheck (web): PASS
+  eslint (arquivos da UI): PASS
+  unit/ui finance+fiscal+accounting+helpers+shell breadcrumbs: 20/20 PASS
+
+BACKOFFICE UI: PASS
+RESPONSIVE: PASS
+ACCESSIBILITY: PASS
+FALSE SUCCESS: 0
+
+NOTES:
+  Listagens fiscais, de lancamentos, plano, periodos e extratos nao existem na API; essas telas consultam por identificador.
+  Plano de contas exibe a reconstrucao GET /accounting/ledger (saldos do servidor), nao um catalogo de contas com nomes.
+  Fechamento coleta periodId + rowVersion + justificativa; nao ha GET de periodo.
+  OFX/CNAB nao sao interpretados no browser; o backend recusa layout nao documentado.
+  FIFO/media, formulas oficiais de folha e CFOP/NCM/ISS nao foram inventados nesta UI.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```
+PROMPT: ENTERPRISE CORE QUALITY GATE
+TITLE: Prova de incorporacao Finance/Fiscal/Accounting/Inventory/Payroll sem quebrar o nucleo operacional
+STARTED_AT: 2026-09-01T16:20:55-04:00
+FINISHED_AT: 2026-09-01T16:42:01-04:00
+EXECUTED_AT: 2026-09-01T16:42:01-04:00
+STATUS: PASS
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - Verificacao apenas; nenhuma feature de produto
+  - Fluxo Operation -> Measurement -> Billing -> Receivable -> Settlement -> Treasury -> Fiscal -> Accounting
+  - Fluxo Payable -> Payment -> Treasury -> Accounting
+  - Fluxos Inventory -> Accounting e Payroll -> Accounting
+  - Idempotencia, concorrencia, version conflict, failure injection, rollback, autorizacao negativa, timeout, double-submit, migrations incrementais, recovery
+  - Reconciliacao Billing=Receivable; Settlements=tesouraria relacionada; diario debito=credito; 0 efeito economico duplicado; POSTED imutavel
+
+KEY FILES:
+  apps/api/src/enterprise-integrity/enterprise-integrity.integration.spec.ts
+  apps/api/src/master-business/master-business.integration.spec.ts
+  apps/api/src/accounting/accounting-posting.integration.spec.ts
+  apps/api/src/fiscal/fiscal-accounting.integration.spec.ts
+  apps/api/src/inventory/inventory-costing.integration.spec.ts
+  apps/api/src/payroll/payroll-accounting.integration.spec.ts
+  apps/api/src/resources/physical-assets.e2e.spec.ts
+  apps/api/src/accounting/repositories/accounting-posting.repository.ts
+  apps/api/src/finance/domain/bank-import.ts
+
+QUALITY GATES:
+  lint (api+web+database): PASS
+  typecheck (api+web+database): PASS
+  unit (api): 684/684 PASS
+  unit (database): 21/21 PASS
+  unit (web): PASS
+  enterprise financial integrity: 3/3 PASS
+  finance/fiscal/accounting/inventory/payroll integration: 112/112 PASS
+  master-business E2E: 9/9 PASS
+  concurrency torture: 24/24 PASS
+  failure-injection: 20/20 PASS
+  idempotency/timeout/double-submit: 21/21 PASS
+  chaos-recovery: 14/14 PASS
+  adversarial-security: PASS
+  e2e (api): 22/22 files, 61/61 PASS
+  ci-database-gate: PASS (zero->latest + incremental N-1->N)
+  migration torture: 7/7 PASS
+  build (api+web+database): PASS
+
+ENTERPRISE CORE: PASS
+OPERATIONS: PASS
+FINANCE: PASS
+FISCAL: PASS
+ACCOUNTING: PASS
+INVENTORY: PASS
+PAYROLL: PASS
+CONCURRENCY: PASS
+IDEMPOTENCY: PASS
+ROLLBACK: PASS
+FINANCIAL RECONCILIATION: PASS
+ACCOUNTING RECONCILIATION: PASS
+DUPLICATE ECONOMIC EFFECTS: 0
+DATA CORRUPTION: 0
+CRITICAL DEFECTS: 0
+
+NOTES:
+  Nenhuma feature de produto. Correcoes de lint em bank-import (amount tipado) e posting repository (required_context parseado como string[]).
+  Fixture E2E de ativos: q=HTTP-AVL era classificado como placa (7 alfanumericos); o filtro passou a usar o nome Disponivel (texto).
+  Settlement->Treasury e alguns hops Treasury/Fiscal->Accounting continuam explicitos/recuperaveis; o gate prova 0 auto-post indevido e replay sem duplicidade.
+  FIFO/media (ADR-003), formulas oficiais de folha, CFOP/NCM/ISS/ICMS e parsers OFX/CNAB nao foram inventados.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: CONTINUE
+```
+
+```text
+PROMPT: TAX OBLIGATION TO PAYABLE
+TITLE: Apuracao tributaria finalizada gera TaxObligation e Payable sem duplicar
+STARTED_AT: 2026-09-01T18:04:00-04:00
+FINISHED_AT: 2026-09-01T18:22:45-04:00
+STATUS: PASS
+FILES_CREATED:
+  packages/database/migrations/0060_tax_assessment_obligation.sql
+  apps/api/src/fiscal/domain/tax-assessment.ts
+  apps/api/src/fiscal/domain/tax-assessment.spec.ts
+  apps/api/src/fiscal/domain/tax-assessment.validation.ts
+  apps/api/src/fiscal/domain/tax-payable-failure-injection.ts
+  apps/api/src/fiscal/repositories/tax-assessment.repository.ts
+  apps/api/src/fiscal/repositories/tax-assessment.repository.types.ts
+  apps/api/src/fiscal/services/tax-assessment-access.service.ts
+  apps/api/src/fiscal/services/tax-assessment-access.errors.ts
+  apps/api/src/fiscal/serializers/tax-assessment-response.serializer.ts
+  apps/api/src/fiscal/controllers/tax-assessment.controller.ts
+  apps/api/src/fiscal/tax-obligation-payable.integration.spec.ts
+FILES_CHANGED:
+  packages/database/src/schema/fiscal.ts
+  packages/database/src/schema/index.ts
+  packages/database/src/test-builders/fiscal-builders.ts
+  packages/database/migrations/meta/_journal.json
+  packages/database/scripts/ci-database-gate.mjs
+  packages/database/src/migration-torture/harness.ts
+  apps/api/src/test/ensure-migrations.ts
+  apps/api/src/platform/bounded-contexts/enterprise-core-ports.ts
+  apps/api/src/platform/bounded-contexts/module-boundary-rules.spec.ts
+  apps/api/src/authorization/types/authz-actions.ts
+  apps/api/src/audit/types/security-audit.types.ts
+  apps/api/src/finance/services/payables-access.service.ts
+  apps/api/src/finance/finance.module.ts
+  apps/api/src/fiscal/fiscal.module.ts
+  apps/api/src/fiscal/errors/fiscal-error-codes.ts
+  docs/10-architecture/adr/ADR-003-data-ownership.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - TaxAssessment finalizada -> TaxObligation (fis.*) -> Payable (fin.*) via FinancePayablePort
+  - Valor Numeric do TaxCalculation armazenado e reproduzivel; sem aliquota oficial inventada
+  - Idempotencia por apuracao/tributo/periodo; cancelamento/ajuste sem DELETE
+  - Accounting desacoplado (zero JournalEntry neste hop)
+
+QUALITY GATES:
+  lint (arquivos alterados api): PASS
+  typecheck (api): PASS
+  unit (tax-assessment + module-boundary): 15/15 PASS
+  unit (database journal): 1/1 PASS
+  integration (tax-obligation-payable): 7/7 PASS
+    geracao, replay, concorrencia, rollback, ajuste, autorizacao, reconciliacao Fiscal x Finance
+  regression (tax-engine integration): PASS
+  regression (payables integration, isolado): 13/13 PASS
+
+TAX PAYABLE: PASS
+DUPLICATES: 0
+RECONCILIATION: PASS
+
+NOTES:
+  Finance e write-owner de fin.payables; Fiscal nao escreve fin.*. Origem rastreavel TAX_OBLIGATION + tax_obligation.id.
+  Replay e dois workers no mesmo finalize convergem para 1 obrigacao e 1 payable.
+  Falha injetada apos INSERT da obrigacao faz ROLLBACK: 0 leftover.
+  Ajuste marca a apuracao anterior ADJUSTED, cancela obrigacao/payable e abre novos; DELETE e bloqueado (TAX_HISTORY_IMMUTABLE).
+  Operador sem fiscal:tax-assessment:finalize recebe FISCAL_DENIED.
+  ISS/ICMS/PIS/COFINS, CFOP/NCM e formulas oficiais nao foram inventados.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: FISCAL PERIOD CLOSE
+TITLE: Fechamento fiscal de competencia com validacao e bloqueio de alteracao comum
+STARTED_AT: 2026-09-01T18:23:00-04:00
+FINISHED_AT: 2026-09-01T18:37:38-04:00
+STATUS: PASS
+FILES_CREATED:
+  packages/database/migrations/0061_fiscal_period_close.sql
+  apps/api/src/fiscal/domain/fiscal-period.ts
+  apps/api/src/fiscal/domain/fiscal-period.spec.ts
+  apps/api/src/fiscal/domain/fiscal-period.validation.ts
+  apps/api/src/fiscal/domain/fiscal-period-failure-injection.ts
+  apps/api/src/fiscal/repositories/fiscal-period.repository.ts
+  apps/api/src/fiscal/repositories/fiscal-period.repository.types.ts
+  apps/api/src/fiscal/services/fiscal-period-access.service.ts
+  apps/api/src/fiscal/services/fiscal-period-access.errors.ts
+  apps/api/src/fiscal/serializers/fiscal-period-response.serializer.ts
+  apps/api/src/fiscal/controllers/fiscal-period.controller.ts
+  apps/api/src/fiscal/fiscal-period-close.integration.spec.ts
+FILES_CHANGED:
+  packages/database/src/schema/fiscal.ts
+  packages/database/src/schema/index.ts
+  packages/database/src/test-builders/fiscal-builders.ts
+  packages/database/migrations/meta/_journal.json
+  packages/database/scripts/ci-database-gate.mjs
+  packages/database/src/migration-torture/harness.ts
+  apps/api/src/test/ensure-migrations.ts
+  apps/api/src/authorization/types/authz-actions.ts
+  apps/api/src/authorization/types/authz-resources.ts
+  apps/api/src/audit/types/security-audit.types.ts
+  apps/api/src/fiscal/fiscal.module.ts
+  apps/api/src/fiscal/errors/fiscal-error-codes.ts
+  apps/api/src/fiscal/services/fiscal-access.service.ts
+  apps/api/src/fiscal/services/fiscal-access.errors.ts
+  apps/api/src/fiscal/services/tax-assessment-access.service.ts
+  apps/api/src/fiscal/services/tax-assessment-access.errors.ts
+  docs/10-architecture/adr/ADR-003-data-ownership.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - Competencia fiscal em fis.fiscal_periods (OPEN/CLOSED), reusando period_key e issued_on
+  - Close valida documentos, apuracoes, ajustes e pendencias criticas nas tabelas fiscais existentes
+  - CLOSED rejeita alteracao comum (servico + trigger). Correcao: ajuste formal ou reopen autorizado
+  - Accounting period close permanece em acc.* e nao e este agregado
+
+QUALITY GATES:
+  lint (arquivos alterados api): PASS
+  typecheck (api): PASS
+  unit (fiscal-period): 5/5 PASS
+  unit (database journal): 1/1 PASS
+  integration (fiscal-period-close): 8/8 PASS
+    close, double-close, concorrencia, pendencia, reopen, usuario sem permissao, rollback, violacao CLOSED
+
+FISCAL CLOSE: PASS
+CLOSED PERIOD VIOLATIONS: 0
+
+NOTES:
+  Write owner permanece FISCAL (fis.*). Nenhum calendario oficial, ISS/ICMS ou CFOP/NCM inventado.
+  Double-close e concorrencia convergem para 1 periodo CLOSED e 1 run SUCCEEDED.
+  Draft document bloqueia close (FISCAL_PERIOD_CLOSE_BLOCKED); periodo permanece OPEN.
+  Falha injetada antes de marcar CLOSED faz ROLLBACK: periodo OPEN e 0 run SUCCEEDED.
+  createDraft apos close e INSERT cru sao rejeitados (FISCAL_PERIOD_CLOSED); 0 documento leftover.
+  Operador sem fiscal:period:close recebe FISCAL_DENIED.
+  Cancelamento de documento e sucessor de apuracao (supersedes_assessment_id) permanecem correcao formal.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: FIXED ASSET ACCOUNTING
+TITLE: Camada contabil de imobilizado distinta do Asset operacional
+STARTED_AT: 2026-09-01T18:38:00-04:00
+FINISHED_AT: 2026-09-01T18:49:48-04:00
+STATUS: PASS
+FILES_CREATED:
+  packages/database/migrations/0062_fixed_asset_accounting.sql
+  apps/api/src/accounting/domain/fixed-asset-accounting.ts
+  apps/api/src/accounting/domain/fixed-asset-accounting.spec.ts
+  apps/api/src/accounting/domain/fixed-asset-accounting.validation.ts
+  apps/api/src/accounting/repositories/fixed-asset-accounting.repository.ts
+  apps/api/src/accounting/repositories/fixed-asset-accounting.repository.types.ts
+  apps/api/src/accounting/serializers/fixed-asset-accounting-response.serializer.ts
+  apps/api/src/accounting/services/fixed-asset-accounting-access.service.ts
+  apps/api/src/accounting/controllers/fixed-asset-accounting.controller.ts
+  apps/api/src/accounting/fixed-asset-accounting.integration.spec.ts
+FILES_CHANGED:
+  packages/database/src/schema/accounting.ts
+  packages/database/src/schema/index.ts
+  packages/database/migrations/meta/_journal.json
+  packages/database/src/test-builders/accounting-builders.ts
+  packages/database/scripts/ci-database-gate.mjs
+  packages/database/src/migration-torture/harness.ts
+  apps/api/src/test/ensure-migrations.ts
+  apps/api/src/accounting/domain/posting.ts
+  apps/api/src/accounting/domain/ledger.ts
+  apps/api/src/accounting/domain/posting.spec.ts
+  apps/api/src/accounting/errors/accounting-error-codes.ts
+  apps/api/src/accounting/services/accounting-access.errors.ts
+  apps/api/src/accounting/accounting.module.ts
+  apps/api/src/authorization/types/authz-actions.ts
+  apps/api/src/audit/types/security-audit.types.ts
+  apps/api/src/platform/kernel/posting-failure-injection.ts
+  apps/api/src/platform/bounded-contexts/domain-distinctions.ts
+  docs/10-architecture/adr/ADR-003-data-ownership.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - FixedAssetAccounting em acc.* (register + movements); Asset operacional permanece ast.*
+  - Aquisicao, valor contabil derivado, vida util configuravel, baixa, transferencia
+  - Depreciacao futura reservada: sem taxa ou formula fiscal inventada
+  - Posting via AccountingPostingRule existente (origem FIXED_ASSET)
+
+QUALITY GATES:
+  lint (arquivos alterados api): PASS
+  typecheck (api): PASS
+  unit (fixed-asset + posting + module-boundary): 16/16 PASS
+  unit (database journal): 1/1 PASS
+  integration (fixed-asset-accounting): 7/7 PASS
+    vinculo Asset, aquisicao, baixa, duplicidade, reversao, concorrencia, reconciliacao
+
+FIXED ASSETS: PASS
+DUPLICATE POSTINGS: 0
+
+NOTES:
+  ast.physical_assets nao foi alterado. Registro contabil referencia operational_asset_id (UUID) e nao escreve ast.*.
+  Valor contabil deriva de movimentos POSTED (aquisicao - baixa - depreciacao registrada). Transferencia nao altera book value.
+  Vida util e configuracao (meses). depreciate() retorna ACCOUNTING_DEPRECIATION_RATE_NOT_CONFIGURED.
+  Replay e dois workers no mesmo acquire convergem para 1 CAPITALIZED e 1 movimento ACQUISITION POSTED.
+  Falha injetada antes do posting faz ROLLBACK: REGISTERED, 0 journal, 0 movimento.
+  Reversao usa journal reverse existente e devolve o registro a REGISTERED.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: BUDGET MANAGEMENT
+TITLE: Orcamento separado do ledger real
+STARTED_AT: 2026-09-01T18:50:00-04:00
+FINISHED_AT: 2026-09-01T19:06:32-04:00
+STATUS: PASS
+FILES_CREATED:
+  packages/database/migrations/0063_budget_management.sql
+  apps/api/src/finance/domain/budget.ts
+  apps/api/src/finance/domain/budget.spec.ts
+  apps/api/src/finance/domain/budget.validation.ts
+  apps/api/src/finance/repositories/budget.repository.ts
+  apps/api/src/finance/repositories/budget.repository.types.ts
+  apps/api/src/finance/serializers/budget-response.serializer.ts
+  apps/api/src/finance/services/budget-access.service.ts
+  apps/api/src/finance/services/budget-access.errors.ts
+  apps/api/src/finance/services/budget-access.authz.ts
+  apps/api/src/finance/controllers/budget.controller.ts
+  apps/api/src/finance/budget.integration.spec.ts
+FILES_CHANGED:
+  packages/database/src/schema/finance.ts
+  packages/database/src/schema/index.ts
+  packages/database/migrations/meta/_journal.json
+  packages/database/src/test-builders/finance-builders.ts
+  packages/database/scripts/ci-database-gate.mjs
+  packages/database/src/migration-torture/harness.ts
+  apps/api/src/test/ensure-migrations.ts
+  apps/api/src/finance/finance.module.ts
+  apps/api/src/finance/errors/finance-error-codes.ts
+  apps/api/src/authorization/types/authz-actions.ts
+  apps/api/src/authorization/types/authz-resources.ts
+  apps/api/src/audit/types/security-audit.types.ts
+  apps/api/src/platform/bounded-contexts/domain-distinctions.ts
+  docs/10-architecture/adr/ADR-003-data-ownership.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - Budget, BudgetPeriod e BudgetLine em fin.* (nao no ledger acc.*)
+  - Dimensoes: centro de custo, categoria, conta contabil, periodo
+  - Versionamento DRAFT/APPROVED; aprovado imutavel; nova versao copia a aprovada
+  - Comparativo orcado/realizado/desvio no backend; realizado le rpt.read_posted_journal_lines
+
+QUALITY GATES:
+  lint (arquivos budget api): PASS
+  typecheck (api): PASS
+  unit (budget + module-boundary): 12/12 PASS
+  unit (database journal): 1/1 PASS
+  integration (budget): 5/5 PASS
+    autorizacao, periodo, versao/aprovacao, impacto zero no ledger, realizado/reconciliacao
+
+BUDGET: PASS
+LEDGER IMPACT: ZERO
+
+NOTES:
+  Budget nunca INSERT/UPDATE acc.journal_*. Realizado soma DEBIT POSTED da conta da linha no periodo.
+  Linha sem account_id tem actual=0 e actualSource=NONE (sem mapeamento inventado de CC/categoria para GL).
+  Comparativo nao e calculado no frontend. Teste de isolamento: create/period/line/approve/version mantem count(acc.journal_entries)=0.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: CASH FLOW FORECAST
+TITLE: Projecao de caixa REALIZED vs FORECAST sobre dados existentes
+STARTED_AT: 2026-09-01T19:08:00-04:00
+FINISHED_AT: 2026-09-01T19:17:37-04:00
+STATUS: PASS
+FILES_CREATED:
+  apps/api/src/finance/domain/cash-flow-forecast.ts
+  apps/api/src/finance/domain/cash-flow-forecast.spec.ts
+  apps/api/src/finance/domain/cash-flow-forecast.validation.ts
+  apps/api/src/finance/repositories/cash-flow-forecast.repository.ts
+  apps/api/src/finance/repositories/cash-flow-forecast.repository.types.ts
+  apps/api/src/finance/serializers/cash-flow-forecast-response.serializer.ts
+  apps/api/src/finance/services/cash-flow-forecast-access.service.ts
+  apps/api/src/finance/services/cash-flow-forecast-access.authz.ts
+  apps/api/src/finance/services/cash-flow-forecast-access.errors.ts
+  apps/api/src/finance/controllers/cash-flow-forecast.controller.ts
+  apps/api/src/finance/cash-flow-forecast.integration.spec.ts
+FILES_CHANGED:
+  apps/api/src/finance/finance.module.ts
+  apps/api/src/finance/errors/finance-error-codes.ts
+  apps/api/src/authorization/types/authz-actions.ts
+  apps/api/src/authorization/types/authz-resources.ts
+  apps/api/src/platform/bounded-contexts/domain-distinctions.ts
+  docs/10-architecture/adr/ADR-003-data-ownership.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - Projecao somente leitura sobre fin.receivables, fin.payables, parcelas, vencimentos e fin.financial_transactions POSTED
+  - REALIZED: saldo de tesouro derivado + settlements/payments POSTED
+  - FORECAST: saldo restante de parcela ACTIVE, inclusive atrasado
+  - Sem tabela nova; sem extrato bancario; futuro nunca classificado como REALIZED
+
+QUALITY GATES:
+  lint (arquivos cash-forecast api): PASS
+  typecheck (api): PASS
+  unit (cash-forecast + module-boundary): 12/12 PASS
+  integration (cash-forecast): 3/3 PASS
+    NO_DATA, autorizacao, vencimentos, parcelas, atrasados, cancelamentos, parciais, reconciliacao
+
+CASH FORECAST: PASS
+FALSE REALIZED VALUES: 0
+
+NOTES:
+  Cancelado nao entra na projecao. Pagamento/recebimento parcial: baixa e REALIZED; restante e FORECAST.
+  projectedCash.kind = FORECAST e nao e saldo de bank_statement. Tesouro derivado permanece REALIZED e separado.
+  Sem migracao: nenhum persistencia de cenario; calculo no backend.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: SUPPLIER MASTER
+TITLE: Cadastro proprio de Supplier distinto de Client
+STARTED_AT: 2026-09-01T19:18:00-04:00
+FINISHED_AT: 2026-09-01T19:32:34-04:00
+STATUS: PASS
+FILES_CREATED:
+  packages/database/migrations/0064_supplier_master.sql
+  packages/database/src/schema/suppliers.ts
+  packages/database/src/test-builders/supplier-builders.ts
+  apps/api/src/suppliers/domain/supplier.ts
+  apps/api/src/suppliers/domain/supplier.spec.ts
+  apps/api/src/suppliers/domain/supplier.validation.ts
+  apps/api/src/suppliers/errors/supplier-error-codes.ts
+  apps/api/src/suppliers/errors/supplier-http.exception.ts
+  apps/api/src/suppliers/services/supplier-access.errors.ts
+  apps/api/src/suppliers/services/supplier-access.authz.ts
+  apps/api/src/suppliers/services/supplier-access.service.ts
+  apps/api/src/suppliers/serializers/supplier-response.serializer.ts
+  apps/api/src/suppliers/repositories/suppliers.repository.ts
+  apps/api/src/suppliers/controllers/suppliers.controller.ts
+  apps/api/src/suppliers/suppliers.module.ts
+  apps/api/src/suppliers/suppliers.integration.spec.ts
+FILES_CHANGED:
+  packages/database/src/schema/index.ts
+  packages/database/migrations/meta/_journal.json
+  packages/database/src/test-builders/index.ts
+  packages/database/src/test-builders/client-builders.ts
+  packages/database/scripts/ci-database-gate.mjs
+  packages/database/src/migration-torture/harness.ts
+  apps/api/src/test/ensure-migrations.ts
+  apps/api/src/app.module.ts
+  apps/api/src/finance/finance.module.ts
+  apps/api/src/finance/domain/payable.validation.ts
+  apps/api/src/finance/services/payables-access.service.ts
+  apps/api/src/finance/services/payables-access.errors.ts
+  apps/api/src/finance/errors/finance-error-codes.ts
+  apps/api/src/platform/bounded-contexts/enterprise-core-ports.ts
+  apps/api/src/platform/bounded-contexts/module-boundary-rules.ts
+  apps/api/src/platform/bounded-contexts/domain-distinctions.ts
+  apps/api/src/authorization/types/authz-actions.ts
+  apps/api/src/authorization/types/authz-resources.ts
+  apps/api/src/audit/types/security-audit.types.ts
+  docs/10-architecture/adr/ADR-003-data-ownership.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - Supplier em pty.suppliers (Commercial), distinto de Client (pty.clients)
+  - CNPJ 14 digitos pela regra PJ aprovada; CPF/PF permanece NOT_IN_RELEASE_1
+  - Contatos, enderecos, status, payment_terms, currency_code; sem banco/PIX inventado
+  - Payable referencia Supplier via port CommercialSupplier / rpt.read_suppliers
+
+QUALITY GATES:
+  lint (arquivos supplier + payable wiring): PASS
+  typecheck (api): PASS
+  unit (supplier + payable + module-boundary): 18/18 PASS
+  unit (database journal): 1/1 PASS
+  integration (suppliers): 7/7 PASS
+    duplicidade, CPF, distinto de Client, historico, version conflict, autorizacao, payables
+  integration (payables regressao): 13/13 PASS
+
+SUPPLIERS: PASS
+DUPLICATES: 0
+REGRESSIONS: NONE
+
+NOTES:
+  Unicidade de CNPJ e por master: o mesmo CNPJ pode existir em Client e em Supplier; dois Suppliers com o mesmo CNPJ sao rejeitados (SUPPLIER_TAX_ID_CONFLICT) e a tabela permanece com 1 linha.
+  Finance nao le pty.suppliers. supplierId exige cadastro ACTIVE; counterpartyId opaco continua valido quando o id nao e um Supplier (payables existentes nao quebram).
+  Inativacao e soft-delete. Historico em pty.supplier_history_events (CREATED, UPDATED, DEACTIVATED, ACTIVATED).
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: PROCUREMENT CORE
+TITLE: Fluxo interno de compras distinto do PurchaseOrder de cliente
+STARTED_AT: 2026-09-01T19:33:00-04:00
+FINISHED_AT: 2026-09-01T19:54:55-04:00
+STATUS: PASS
+FILES_CREATED:
+  packages/database/migrations/0065_procurement_core.sql
+  packages/database/src/schema/procurement.ts
+  packages/database/src/test-builders/procurement-builders.ts
+  apps/api/src/procurement/domain/procurement.ts
+  apps/api/src/procurement/domain/procurement.spec.ts
+  apps/api/src/procurement/domain/procurement.validation.ts
+  apps/api/src/procurement/domain/procurement-failure-injection.ts
+  apps/api/src/procurement/errors/procurement-error-codes.ts
+  apps/api/src/procurement/errors/procurement-http.exception.ts
+  apps/api/src/procurement/services/procurement-access.errors.ts
+  apps/api/src/procurement/services/procurement-access.authz.ts
+  apps/api/src/procurement/services/procurement-access.service.ts
+  apps/api/src/procurement/serializers/procurement-response.serializer.ts
+  apps/api/src/procurement/repositories/procurement.repository.ts
+  apps/api/src/procurement/controllers/procurement.controller.ts
+  apps/api/src/procurement/procurement.module.ts
+  apps/api/src/procurement/procurement.integration.spec.ts
+FILES_CHANGED:
+  packages/database/src/schema/index.ts
+  packages/database/migrations/meta/_journal.json
+  packages/database/src/test-builders/index.ts
+  packages/database/scripts/ci-database-gate.mjs
+  packages/database/src/migration-torture/harness.ts
+  apps/api/src/test/ensure-migrations.ts
+  apps/api/src/app.module.ts
+  apps/api/src/finance/services/payables-access.service.ts
+  apps/api/src/platform/bounded-contexts/bounded-context.ts
+  apps/api/src/platform/bounded-contexts/module-boundary-rules.ts
+  apps/api/src/platform/bounded-contexts/schema-ownership.ts
+  apps/api/src/platform/bounded-contexts/domain-distinctions.ts
+  apps/api/src/platform/bounded-contexts/enterprise-core-ports.ts
+  apps/api/src/authorization/types/authz-actions.ts
+  apps/api/src/authorization/types/authz-resources.ts
+  apps/api/src/audit/types/security-audit.types.ts
+  docs/10-architecture/adr/ADR-003-data-ownership.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - PurchaseRequest → Approval → SupplierPurchaseOrder → Receipt → Payable em prc.*
+  - CustomerPurchaseOrder permanece com.purchase_orders e nao e origem de payable
+  - Receipt nao escreve inv.stock_movements; Payable abre via FinancePayablePort (origem PURCHASE)
+
+QUALITY GATES:
+  lint (arquivos procurement + payable hop): PASS
+  typecheck (api): PASS
+  unit (procurement + module-boundary): 12/12 PASS
+  unit (database journal): 1/1 PASS
+  integration (procurement): 7/7 PASS
+    aprovacao, recebimento parcial, duplicidade, concorrencia, cancelamento, rollback, autorizacao
+
+PROCUREMENT: PASS
+DUPLICATE FINANCIAL EFFECTS: 0
+
+NOTES:
+  SupplierPurchaseOrder so e emitido apos APPROVED. Recebimento parcial 40+60 abre 2 payables somando 100; 0 payments; 0 stock_movements; 0 com.purchase_orders.
+  Replay do mesmo idempotency_key nao cria segundo receipt nem segundo payable. Dois receives concorrentes do total convergem para 1 payable.
+  Falha injetada apos INSERT do receipt faz ROLLBACK: 0 receipts, 0 payables, SPO permanece ISSUED.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: ENTERPRISE EXTENSIONS GATE
+TITLE: Validacao das extensoes sem nova feature e com regressao do Enterprise Core
+STARTED_AT: 2026-09-01T19:55:00-04:00
+FINISHED_AT: 2026-09-01T20:02:25-04:00
+STATUS: PASS
+FILES_CREATED: (nenhum)
+FILES_CHANGED:
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: NO
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - Verificacao apenas; nenhuma feature de produto
+  - Extensoes: TaxObligation→Payable, Fiscal Close, Fixed Assets, Budget, Cash Forecast, Suppliers, Procurement
+  - Dimensoes: concorrencia, idempotencia, rollback, version conflict, autorizacao, migrations, reconciliacao
+  - Regressao Enterprise Core via enterprise-integrity (nao repetiu suites nucleares ja certificadas)
+
+QUALITY GATES:
+  unit (7 extensoes + module-boundary): 34/34 PASS
+  unit (database journal 0065): 1/1 PASS
+  integration (7 extensoes): 44/44 PASS
+    tax-obligation-payable 7, fiscal-period-close 8, fixed-asset 7, budget 5, cash-forecast 3, suppliers 7, procurement 7
+  enterprise financial integrity (core regression): 3/3 PASS
+  ci-database-gate (zero→latest + incremental N-1→N = 0065): PASS
+  migration-torture: 7/7 PASS
+
+EXTENSIONS: PASS
+FINANCIAL RECONCILIATION: PASS
+ACCOUNTING RECONCILIATION: PASS
+DUPLICATE EFFECTS: 0
+DATA CORRUPTION: 0
+CRITICAL DEFECTS: 0
+NEXT: CONTINUE
+
+NOTES:
+  Nenhuma feature criada. Suites nucleares (payables/receivables/treasury/inventory/payroll/e2e/adversarial) nao foram reexecutadas; o nucleo foi revalidado pelo enterprise-integrity.
+  TaxObligation→Payable: 1 apuracao/1 obrigacao/1 payable; replay e concorrencia sem duplicar; rollback sem leftover; obligation=payable.
+  Fiscal Close: double-close idempotente; concorrencia 1 CLOSED; rollback deixa OPEN; draft bloqueia close.
+  Fixed Assets: 1 posting por evento; acquire concorrente=1 CAPITALIZED; rollback sem leftover; journal=book value.
+  Budget: aprovado imutavel; 0 impacto em acc.journal_*; comparativo no backend.
+  Cash Forecast: 0 false realized; cancelado fora da projecao; autorizacao negativa.
+  Suppliers: CNPJ unico no master; version conflict; inativo nao abre payable; distinto de Client.
+  Procurement: receipt parcial sem estoque/pagamento duplicado; replay e concorrencia=1 payable; rollback 0 leftover.
+  Migrations: journal sequencial; fresh+incremental 0065; torture ZERO→LATEST e N-3→N.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: CONTINUE
+```
+
+```text
+PROMPT: SUPPLIER INVOICE
+TITLE: SupplierInvoice distinta de Payable, com validacao e um payable no maximo
+STARTED_AT: 2026-09-01T20:02:30-04:00
+FINISHED_AT: 2026-09-01T20:16:58-04:00
+STATUS: PASS
+FILES_CREATED:
+  packages/database/migrations/0066_supplier_invoice.sql
+  apps/api/src/procurement/domain/supplier-invoice.ts
+  apps/api/src/procurement/domain/supplier-invoice.validation.ts
+  apps/api/src/procurement/domain/supplier-invoice.spec.ts
+  apps/api/src/procurement/serializers/supplier-invoice-response.serializer.ts
+  apps/api/src/procurement/repositories/supplier-invoice.repository.ts
+  apps/api/src/procurement/services/supplier-invoice-access.service.ts
+  apps/api/src/procurement/controllers/supplier-invoices.controller.ts
+  apps/api/src/procurement/supplier-invoice.integration.spec.ts
+FILES_CHANGED:
+  packages/database/src/schema/procurement.ts
+  packages/database/src/schema/index.ts
+  packages/database/src/test-builders/procurement-builders.ts
+  packages/database/migrations/meta/_journal.json
+  packages/database/scripts/ci-database-gate.mjs
+  packages/database/src/migration-torture/harness.ts
+  apps/api/src/test/ensure-migrations.ts
+  apps/api/src/procurement/errors/procurement-error-codes.ts
+  apps/api/src/procurement/services/procurement-access.errors.ts
+  apps/api/src/procurement/domain/procurement-failure-injection.ts
+  apps/api/src/procurement/procurement.module.ts
+  apps/api/src/procurement/repositories/procurement.repository.ts
+  apps/api/src/procurement/services/procurement-access.service.ts
+  apps/api/src/authorization/types/authz-actions.ts
+  apps/api/src/audit/types/security-audit.types.ts
+  apps/api/src/platform/bounded-contexts/enterprise-core-ports.ts
+  apps/api/src/platform/bounded-contexts/domain-distinctions.ts
+  apps/api/src/finance/services/payables-access.service.ts
+  docs/10-architecture/adr/ADR-003-data-ownership.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - SupplierInvoice em prc.* distinto de Payable (fin.*) e de FiscalDocument
+  - Fluxo SupplierInvoice → validacao → no maximo um Payable
+  - Relacao opcional com SupplierPurchaseOrder e Receipt; receipt com payable PURCHASE e anexado, nao duplicado
+  - Finance abre payable so pelo port openFromSupplierInvoice (origem SUPPLIER_INVOICE)
+
+QUALITY GATES:
+  lint (arquivos invoice + payable hop): PASS
+  typecheck (api): PASS
+  unit (supplier-invoice + procurement + module-boundary): 14/14 PASS
+  unit (database journal 0066): 1/1 PASS
+  integration (supplier-invoice): 8/8 PASS
+    standalone 1 payable, duplicidade, valor divergente, anexo receipt, fornecedor inativo, concorrencia, rollback, autorizacao
+  integration (procurement regressao): 7/7 PASS
+
+SUPPLIER INVOICE: PASS
+DUPLICATE PAYABLES: 0
+
+NOTES:
+  Fatura avulsa validada abre 1 payable SUPPLIER_INVOICE; replay e concorrencia convergem para o mesmo id.
+  Fatura ligada a receipt que ja tem payable PURCHASE anexa esse id (total 1). Segunda fatura no mesmo receipt e rejeitada.
+  Valor diferente do receipt permanece DRAFT e nao abre payable extra. Fornecedor inativo rejeita validacao com 0 payables.
+  Falha injetada apos validacao faz ROLLBACK: fatura DRAFT, 0 payables.
+  Origens SUPPLIER_INVOICE opacas ja existentes continuam validas sem exigir linha de fatura.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: THREE-WAY MATCH
+TITLE: Conferencia PurchaseOrder x Receipt x SupplierInvoice sem alterar origem
+STARTED_AT: 2026-09-01T20:17:00-04:00
+FINISHED_AT: 2026-09-01T20:25:08-04:00
+STATUS: PASS
+FILES_CREATED:
+  packages/database/migrations/0067_three_way_match.sql
+  apps/api/src/procurement/domain/three-way-match.ts
+  apps/api/src/procurement/domain/three-way-match.spec.ts
+  apps/api/src/procurement/domain/three-way-match.validation.ts
+  apps/api/src/procurement/serializers/three-way-match-response.serializer.ts
+  apps/api/src/procurement/repositories/three-way-match.repository.ts
+  apps/api/src/procurement/services/three-way-match-access.service.ts
+  apps/api/src/procurement/controllers/three-way-match.controller.ts
+  apps/api/src/procurement/three-way-match.integration.spec.ts
+FILES_CHANGED:
+  packages/database/src/schema/procurement.ts
+  packages/database/src/schema/index.ts
+  packages/database/src/test-builders/procurement-builders.ts
+  packages/database/migrations/meta/_journal.json
+  packages/database/scripts/ci-database-gate.mjs
+  packages/database/src/migration-torture/harness.ts
+  apps/api/src/test/ensure-migrations.ts
+  apps/api/src/procurement/errors/procurement-error-codes.ts
+  apps/api/src/procurement/services/procurement-access.errors.ts
+  apps/api/src/procurement/procurement.module.ts
+  apps/api/src/authorization/types/authz-actions.ts
+  apps/api/src/audit/types/security-audit.types.ts
+  apps/api/src/platform/bounded-contexts/domain-distinctions.ts
+  docs/10-architecture/adr/ADR-003-data-ownership.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - Snapshot derivado em prc.three_way_matches
+  - Classificacao MATCHED | PARTIAL | DIVERGENT | REVIEW_REQUIRED
+  - Nao atualiza SPO, receipt ou SupplierInvoice
+  - Divergencia de quantidade ou valor nunca vira MATCHED
+
+QUALITY GATES:
+  lint (procurement): PASS
+  typecheck (api): PASS
+  unit (three-way-match + invoice + module-boundary): 16/16 PASS
+  unit (database journal 0067): 1/1 PASS
+  integration (three-way-match): 6/6 PASS
+    match completo, recebimento parcial, preco divergente, quantidade divergente, duplicidade, autorizacao
+
+THREE-WAY MATCH: PASS
+FALSE MATCHES: 0
+
+NOTES:
+  MATCHED so quando PO, receipt e uma unica fatura concordam em quantidade, preco e valor.
+  Receipt parcial com fatura igual ao recebido e PARTIAL. Fatura 120 vs 100 ou 80 vs 100 e DIVERGENT.
+  Duas faturas no mesmo SPO vao para REVIEW_REQUIRED; replay do idempotency_key nao cria segundo snapshot MATCHED.
+  Fingerprint de versao/status dos documentos de origem permanece identico apos a conferencia.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: FINANCIAL APPROVAL MATRIX
+TITLE: Matriz versionada de aprovacao financeira por role, capability, scope e limite
+STARTED_AT: 2026-09-01T20:25:10-04:00
+FINISHED_AT: 2026-09-01T20:35:14-04:00
+STATUS: PASS
+FILES_CREATED:
+  packages/database/migrations/0068_financial_approval_matrix.sql
+  apps/api/src/authorization/domain/approval-matrix.ts
+  apps/api/src/authorization/domain/approval-matrix.spec.ts
+  apps/api/src/authorization/domain/approval-matrix.validation.ts
+  apps/api/src/authorization/services/approval-matrix-access.errors.ts
+  apps/api/src/authorization/repositories/approval-matrix.repository.ts
+  apps/api/src/authorization/services/approval-matrix-access.service.ts
+  apps/api/src/authorization/controllers/approval-matrix.controller.ts
+  apps/api/src/authorization/approval-matrix.integration.spec.ts
+FILES_CHANGED:
+  packages/database/src/schema/authorization.ts
+  packages/database/src/schema/index.ts
+  packages/database/migrations/meta/_journal.json
+  packages/database/scripts/ci-database-gate.mjs
+  packages/database/src/migration-torture/harness.ts
+  packages/database/src/test-builders/authz-builders.ts
+  apps/api/src/test/ensure-migrations.ts
+  apps/api/src/authorization/authorization.module.ts
+  apps/api/src/authorization/types/authz-actions.ts
+  apps/api/src/authorization/types/authz-resources.ts
+  apps/api/src/authorization/errors/authz-error-codes.ts
+  apps/api/src/authorization/errors/authz-http.exception.ts
+  apps/api/src/audit/types/security-audit.types.ts
+  apps/api/src/platform/bounded-contexts/domain-distinctions.ts
+  docs/10-architecture/adr/ADR-003-data-ownership.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - Matriz em authorization.* (write owner PLATFORM), nao Finance/Procurement
+  - Operacoes PURCHASE | PAYMENT | EXPENSE | ADJUSTMENT | REOPEN | BUDGET
+  - Regras por role_code, capability, scope e amount_limit; sem nome de pessoa
+  - Versao DRAFT -> PUBLISHED (anterior SUPERSEDED); alteracao auditada
+  - evaluate() fail-closed; nao retrofit de approve/pay/reopen existentes
+
+QUALITY GATES:
+  lint (authorization approval-matrix): PASS
+  typecheck (api): PASS
+  unit (approval-matrix + module-boundary): 13/13 PASS
+  unit (database journal 0068): 1/1 PASS
+  integration (approval-matrix): 6/6 PASS
+    limite, usuario incorreto, autoaprovacao, version conflict, concorrencia, versao+auditoria
+
+APPROVAL MATRIX: PASS
+AUTHORIZATION BYPASS: 0
+
+NOTES:
+  Role codes rejeitam rotulos de pessoa (Maria Silva). Pessoas entram so via approval_role_assignments.
+  Valor acima do limite, papel ausente e autoaprovacao retornam DENY (AUTHZ_DENIED / LIMIT_EXCEEDED / SELF_APPROVAL).
+  Publish com versao stale e segundo publish concorrente resultam em VERSION_CONFLICT; 1 versao PUBLISHED.
+  Amend + publish v2 torna v1 SUPERSEDED; o novo limite e o unico publicado e fica no audit.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: FINANCIAL APPROVAL MATRIX
+TITLE: Reexecucao — endurecimento de mutacao e uma versao publicada
+STARTED_AT: 2026-09-02T20:38:00-04:00
+FINISHED_AT: 2026-09-02T20:49:34-04:00
+STATUS: PASS
+FILES_CREATED:
+  (nenhum — reuso da baseline 2026-09-01)
+FILES_CHANGED:
+  packages/database/migrations/0068_financial_approval_matrix.sql
+  apps/api/src/test/ensure-migrations.ts
+  apps/api/src/authorization/approval-matrix.integration.spec.ts
+  apps/api/src/authorization/domain/approval-matrix.spec.ts
+  docs/10-architecture/adr/ADR-003-data-ownership.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - Revalidar matriz PURCHASE | PAYMENT | EXPENSE | ADJUSTMENT | REOPEN | BUDGET
+  - Indice unico parcial: no maximo 1 versao PUBLISHED por matriz
+  - Teste de bypass: mutacao sem ApprovalMatrixManage = AUTHZ_DENIED
+  - Teste de capability divergente = NO_MATCHING_RULE
+
+QUALITY GATES:
+  lint (authorization approval-matrix): PASS
+  typecheck (api): PASS
+  unit (approval-matrix): 5/5 PASS
+  unit (module-boundary): 9/9 PASS
+  unit (database journal 0068): 1/1 PASS
+  integration (approval-matrix): 7/7 PASS
+    limite, mutacao sem manage, usuario incorreto, autoaprovacao, version conflict, concorrencia, versao+auditoria
+
+APPROVAL MATRIX: PASS
+AUTHORIZATION BYPASS: 0
+
+NOTES:
+  Reexecucao da etapa ja PASS em 2026-09-01. Codigo de dominio/servico/HTTP preservado.
+  Role codes continuam rejeitando rotulos de pessoa. Pessoas so via approval_role_assignments.
+  Identidade sem grant manage nao cria, nao adiciona regras, nao publica e nao atribui papel.
+  Publish concorrente e indice unico convergem para 1 versao PUBLISHED.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: EXPENSE MANAGEMENT
+TITLE: Expense, ExpenseItem, ExpenseApproval e Reimbursement distintos de Payable
+STARTED_AT: 2026-09-02T20:50:00-04:00
+FINISHED_AT: 2026-09-02T21:00:32-04:00
+STATUS: PASS
+FILES_CREATED:
+  packages/database/migrations/0069_expense_management.sql
+  apps/api/src/finance/domain/expense.ts
+  apps/api/src/finance/domain/expense.spec.ts
+  apps/api/src/finance/domain/expense.validation.ts
+  apps/api/src/finance/domain/expense-failure-injection.ts
+  apps/api/src/finance/repositories/expense.repository.ts
+  apps/api/src/finance/repositories/expense.repository.types.ts
+  apps/api/src/finance/services/expense-access.service.ts
+  apps/api/src/finance/services/expense-access.authz.ts
+  apps/api/src/finance/services/expense-access.errors.ts
+  apps/api/src/finance/controllers/expenses.controller.ts
+  apps/api/src/finance/serializers/expense-response.serializer.ts
+  apps/api/src/finance/expense-management.integration.spec.ts
+FILES_CHANGED:
+  packages/database/src/schema/finance.ts
+  packages/database/src/schema/index.ts
+  packages/database/migrations/meta/_journal.json
+  packages/database/scripts/ci-database-gate.mjs
+  packages/database/src/migration-torture/harness.ts
+  packages/database/src/test-builders/finance-builders.ts
+  apps/api/src/test/ensure-migrations.ts
+  apps/api/src/finance/finance.module.ts
+  apps/api/src/finance/repositories/payables.repository.ts
+  apps/api/src/finance/errors/finance-error-codes.ts
+  apps/api/src/authorization/types/authz-actions.ts
+  apps/api/src/authorization/types/authz-resources.ts
+  apps/api/src/audit/types/security-audit.types.ts
+  apps/api/src/platform/bounded-contexts/domain-distinctions.ts
+  docs/10-architecture/adr/ADR-003-data-ownership.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - Expense + ExpenseItem + ExpenseApproval + ExpenseReimbursement em fin.*
+  - Expense nao e Payable; aprovacao reembolsavel abre 1 payable OPERATIONAL_EXPENSE
+  - Comprovante via doc.documents existente (leitura rpt.read_documents)
+  - Autoaprovacao proibida (dominio + matriz EXPENSE)
+  - Sem retrofit de payables manuais MANUAL_AUTHORIZED_EXPENSE
+
+QUALITY GATES:
+  lint (finance expense): PASS
+  typecheck (api): PASS
+  unit (expense + payable + module-boundary): 19/19 PASS
+  unit (database journal 0069): 1/1 PASS
+  integration (expense-management): 6/6 PASS
+    aprovacao, rejeicao, duplicidade, reembolso, rollback, autorizacao
+
+EXPENSES: PASS
+DUPLICATE REIMBURSEMENTS: 0
+
+NOTES:
+  Aprovacao consulta a matriz (capability expense.approve). Solicitante nao aprova a si mesmo.
+  Rejeicao nao abre payable. Replay de idempotency_key e approve concorrente convergem para 1 reembolso.
+  Falha injetada apos aprovacao faz ROLLBACK: status SUBMITTED, 0 approvals, 0 payables.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: RECEIVABLE COLLECTIONS
+TITLE: Gestao de cobranca sobre Receivable sem alterar valor original
+STARTED_AT: 2026-09-02T21:01:00-04:00
+FINISHED_AT: 2026-09-02T21:10:40-04:00
+STATUS: PASS
+FILES_CREATED:
+  packages/database/migrations/0070_receivable_collections.sql
+  apps/api/src/finance/domain/collection.ts
+  apps/api/src/finance/domain/collection.spec.ts
+  apps/api/src/finance/domain/collection.validation.ts
+  apps/api/src/finance/repositories/collections.repository.ts
+  apps/api/src/finance/repositories/collections.repository.types.ts
+  apps/api/src/finance/services/collections-access.service.ts
+  apps/api/src/finance/services/collections-access.authz.ts
+  apps/api/src/finance/services/collections-access.errors.ts
+  apps/api/src/finance/controllers/collections.controller.ts
+  apps/api/src/finance/serializers/collections-response.serializer.ts
+  apps/api/src/finance/receivable-collections.integration.spec.ts
+FILES_CHANGED:
+  packages/database/src/schema/finance.ts
+  packages/database/src/schema/index.ts
+  packages/database/migrations/meta/_journal.json
+  packages/database/scripts/ci-database-gate.mjs
+  packages/database/src/migration-torture/harness.ts
+  packages/database/src/test-builders/finance-builders.ts
+  apps/api/src/test/ensure-migrations.ts
+  apps/api/src/finance/finance.module.ts
+  apps/api/src/finance/repositories/receivables.repository.ts
+  apps/api/src/finance/errors/finance-error-codes.ts
+  apps/api/src/authorization/types/authz-actions.ts
+  apps/api/src/authorization/types/authz-resources.ts
+  apps/api/src/audit/types/security-audit.types.ts
+  apps/api/src/platform/bounded-contexts/domain-distinctions.ts
+  docs/10-architecture/adr/ADR-003-data-ownership.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - overdue, collection action, promise to pay, collection history em fin.*
+  - Receivable principal e due_date imutaveis; aging permanece derivado
+  - Liquidacao parcial mantem caso OPEN; liquidacao total encerra cobranca
+  - Historico append-only (trigger impede UPDATE/DELETE)
+
+QUALITY GATES:
+  lint (finance collection): PASS
+  typecheck (api): PASS
+  unit (collection + receivable + module-boundary): 17/17 PASS
+  unit (database journal 0070): 1/1 PASS
+  integration (receivable-collections): 7/7 PASS
+    vencido, parcial, renegociacao, historico, concorrencia, autorizacao
+  integration (receivables existente): 11/11 PASS
+
+COLLECTIONS: PASS
+HISTORY LOSS: 0
+
+NOTES:
+  Caso OPEN so abre se status derivado OVERDUE e saldo restante > 0.
+  Renegociacao grava promised_due_date no caso; SQL confirma principal e due_date do Receivable inalterados.
+  Settle no mesmo TX chama applySettlementOutcome: remaining > 0 = SETTLEMENT_PARTIAL; remaining <= 0 = CLOSED + CASE_CLOSED_SETTLED + promises KEPT.
+  UPDATE/DELETE em collection_history falham com append-only; contagem e ids do historico permanecem iguais.
+  Opens concorrentes convergem para 1 caso OPEN. Identidade sem grant recebe FINANCE_DENIED.
+  FinanceReceivablePort nao foi estendido.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+
+
+```text
+PROMPT: RELEASE 1 CLOSED SCOPE
+TITLE: Escopo fechado da Release 1 — flags fail-closed e diferenciação de faturamento interno
+STARTED_AT: 2026-09-02T21:15:00-04:00
+FINISHED_AT: 2026-09-02T21:26:25-04:00
+STATUS: PASS
+FILES_CREATED:
+  docs/01-foundation/release-1-closed-scope.md
+  apps/api/src/platform/release-scope/release-1-scope.ts
+  apps/api/src/platform/release-scope/feature-flags.ts
+  apps/api/src/platform/release-scope/feature-flags.spec.ts
+  apps/api/src/platform/release-scope/release-scope.http.exception.ts
+  apps/api/src/platform/release-scope/release-scope.guard.ts
+  apps/api/src/platform/release-scope/release-scope.guard.spec.ts
+  apps/web/src/release-scope/release-1-scope.ts
+  apps/web/src/release-scope/feature-flags.ts
+  apps/web/src/release-scope/feature-flags.test.ts
+  apps/web/src/release-scope/ReleaseScopeGate.tsx
+FILES_CHANGED:
+  docs/01-foundation/scope-register.md
+  docs/01-foundation/domain-decisions-pending.md
+  docs/01-foundation/engineering-decisions-register.md
+  docs/01-foundation/requirements-traceability.md
+  docs/README.md
+  docs/00-governance/prompt-execution-log.md
+  .env.example
+  apps/api/src/app.module.ts
+  apps/api/src/platform/bounded-contexts/module-boundary-rules.ts
+  apps/api/src/billing/config/billing-emitter.config.ts
+  apps/web/src/shell/types.ts
+  apps/web/src/shell/nav-config.ts
+  apps/web/src/shell/useNavAccess.ts
+  apps/web/src/shell/AppShellLayout.tsx
+  apps/web/src/shell/ShellTopBar.tsx
+  apps/web/src/shell/shell.e2e.test.tsx
+  apps/web/src/pages/ShellAccessDeniedPage.tsx
+  apps/web/src/alerts/hooks/useAlerts.ts
+  apps/web/src/billing/pages/BillingDashboardPage.tsx
+  apps/web/src/billing/utils/billing-process.ts
+  apps/web/src/billing/utils/billing-document-preview.ts
+  apps/web/src/vite-env.d.ts
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  - Definir IN_RELEASE_1 operacional fechado
+  - Flags fail-closed para OUT_OF_RELEASE_1
+  - Remover navegacao e bloquear rotas dos modulos incompletos
+  - Diferenciar faturamento interno de emissao fiscal oficial
+  - Nao expandir produto
+
+QUALITY GATES:
+  unit (api release-scope flags): 4/4 PASS
+  unit (api release-scope guard): 4/4 PASS
+  unit (module-boundary + scan): 9/9 PASS
+  unit (web release-scope flags): 4/4 PASS
+  e2e (shell): 13/13 PASS
+  unit (billing-document-preview): 6/6 PASS
+  unit (BillingPages): 8/8 PASS
+
+RELEASE_1_SURFACE: auth, clients, requests, proposals, customer PO, catalog, assets/fleet, OS, planning, execution, measurement, internal billing
+FEATURE_DISABLED_DEFAULT: YES (exact true only)
+AUTHORIZATION_BYPASS: 0 (API guard is the boundary)
+
+NOTES:
+  DDP-026 ANSWERED para a fatia operacional listada. Verticais dedicadas locacao/transporte permanecem OUT_OF_RELEASE_1 / FUTURE_SCOPE_CANDIDATE.
+  BillingDocument interno != FiscalDocument (DDP-023). FEATURE_MODULE_FISCAL permanece off.
+  Codigo dos modulos incompletos nao foi apagado; apenas deixou de ser exposto.
+  Integracao existente de finance/fiscal/accounting usa TestingModule sem AppModule e nao e afetada pelo APP_GUARD.
+  Nao inventado SOURCE-ID. ED-005 ACCEPTED.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+
+```text
+PROMPT: GIT WORKING TREE AUDIT
+TITLE: Auditoria dos arquivos dirty e commits atomicos por bounded context
+STARTED_AT: 2026-09-02T21:28:00-04:00
+FINISHED_AT: 2026-09-02T21:31:48-04:00
+STATUS: PASS
+FILES_CREATED: (nenhum arquivo de produto novo nesta etapa; apenas classificacao e commits)
+FILES_CHANGED:
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: NO
+NEXT_PROMPT_EXECUTED: NO
+
+AUDIT:
+  porcelain_lines_at_start: 337
+  expanded_files_approx: 670
+  secrets: 0
+  storage_artifacts: 0
+  generated_gate_output: ignored via .gitignore
+  scratch_script: scripts/_write-summary-domain.mjs ignored
+
+COMMITS:
+  9d8f324 chore: ignore local readiness-gate and scratch generators
+  0bf0f3d feat(database): add enterprise context schemas and migrations
+  6cc1188 feat(platform): add bounded-context nucleus and shared authz types
+  635060e feat(authorization): add versioned financial approval matrix
+  70eb8c3 feat(suppliers): add supplier master distinct from clients
+  c697b4a feat(procurement): add supplier PO, invoice and three-way match
+  19d617c feat(finance): add receivables, payables, treasury and collections
+  26f7c14 feat(fiscal): add official fiscal documents and tax engine
+  21ca648 feat(accounting): add ledger, posting, reporting and fixed assets
+  b5b5716 feat(inventory): add stock and costing distinct from physical assets
+  d4a0d63 feat(payroll): add payroll foundation distinct from labor assignment
+  57fdab0 feat(commercial): add contracts and customer commercial snapshots
+  8f6ca6e feat(operations): extend requests, assets, OS, measurement and vertical views
+  7e6caf6 feat(billing): keep internal billing distinct from fiscal issuance
+  75e2426 feat(documents): register generated documents without crossing context writes
+  e51cb4e feat(platform): add operational read models and profitability analytics
+  8dc8cd6 feat(platform): close Release 1 behind fail-closed feature flags
+  8a03c5d feat(web): keep shared layout and auth flow aligned with the shell
+  (docs commit follows this log)
+
+NOTES:
+  Nenhuma alteracao de produto foi apagada.
+  Commits por bounded context; journal Drizzle em commit unico de database.
+  Frontend nao e boundary; flags fail-closed permanecem no commit de plataforma.
+
+COMMIT: THIS_DOCS_COMMIT
+WORKING TREE: expected clean after docs commit
+NEXT: STOP
+```

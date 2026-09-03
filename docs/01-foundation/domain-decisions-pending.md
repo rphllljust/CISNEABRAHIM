@@ -3,8 +3,8 @@
 | Campo             | Valor                                                   |
 | ----------------- | ------------------------------------------------------- |
 | Document ID       | DDP-REG-001                                             |
-| Last updated      | 2026-08-29 (Prompt 29-A corretivo)                      |
-| Status of answers | **PARTIAL** — DDP-020 (CLIENT), DDP-028, DDP-041 respondidas no escopo SRC-002 |
+| Last updated      | 2026-09-02 (Release 1 closed scope)                     |
+| Status of answers | **PARTIAL** — DDP-020 (CLIENT), DDP-026 (fatia R1), DDP-028, DDP-041; demais abertas |
 
 Status típicos: `OPEN`, `BLOCKING`, `ANSWERED`, `SUPERSEDED`. Todas as entradas abaixo estão `OPEN` e `BLOCKING` para implementação do tema.
 
@@ -158,9 +158,19 @@ Prazos legais e empresariais de guarda de dados e documentos? `NOT_PROVIDED`.
 
 Para cada conceito crítico (OS, saldo de PO, medição, fatura, pagamento, cadastro), qual sistema é autoritativo?
 
-**Status:** `PARTIALLY_ANSWERED` — **escopo CLIENTE resolvido** (SRC-002 Q04, Prompt 29-A corretivo): CISNE = master operacional do Cliente; ERP/fiscal = autoridade de domínios externos quando integração existir; `externalErpId` opcional, nunca PK. Demais conceitos (OS, PO, medição, fatura, pagamento, documentos, WhatsApp) permanecem `OPEN`.
+**Status:** `ANSWERED` (realinhamento arquitetural 2026-09-01)
 
-**Bloqueia implementação de Clientes:** não (escopo CLIENTE) · **Bloqueia integrações definitivas de outros domínios:** sim
+**Decisão empresarial:** CISNE é o **sistema empresarial principal**. Não haverá ERP externo como autoridade necessária para financeiro, fiscal ou contabilidade. Módulos nativos (FINANCE, FISCAL, ACCOUNTING, INVENTORY, PAYROLL) serão implementados futuramente dentro do monolito modular.
+
+**Escopo operacional já implementado:** CISNE = SoT de Cliente, OS, PO, medição, preparação de faturamento (BillingDocument interno), documentos, execução, alocação e custos operacionais. `externalErpId` permanece opcional, nunca PK.
+
+**Integrações externas:** ACL/adapters existentes preservados como gateways opcionais (sync, importação, emissão via terceiro quando configurado) — não como pré-requisito de autoridade.
+
+**Pendências residuais (não bloqueiam fronteira):** detalhes de legislação fiscal/tributária (DDP-023), regras de pagamento/conciliação (DDP-012), canal WhatsApp (DDP-021).
+
+**Evidência:** [`source-of-truth-by-context.md`](../06-domain-boundaries/source-of-truth-by-context.md), `apps/api/src/platform/bounded-contexts/`.
+
+**Bloqueia implementação de Clientes:** não · **Bloqueia fronteiras futuras:** não (BOUNDARY_READY)
 
 ## DDP-021 — Canal WhatsApp
 
@@ -178,7 +188,9 @@ A mesma pessoa pode criar rascunho e liberar OS? Existe segregação maker-check
 
 O Sistema Cisne emitirá documento fiscal oficial, registrará documento externo, integrará ERP/fiscal/municipal ou apenas fatura/recibo não fiscal?
 
-**Status:** `OPEN` · **Bloqueia:** módulo fiscal · **Fonte:** EV-064, EV-065 · **Risco:** RISK-012
+**Status:** `PARTIALLY_ANSWERED` (prompts FISCAL CORE e TAX ENGINE FOUNDATION, 2026-09-01; Release 1 closed scope 2026-09-02) — CISNE é SoT do `FiscalDocument` oficial; SEFAZ/prefeitura apenas autorizam/transmitem via port; `BillingDocument` interno ≠ documento fiscal. A Release 1 expõe somente faturamento interno; o módulo fiscal permanece fail-closed (`FEATURE_MODULE_FISCAL`). Estrutura versionada `TaxRule`/`TaxRuleVersion`/`TaxCalculation` existe em `fis.*` sem alíquota oficial cadastrada. Tributação substantiva (alíquota legal, CFOP, NCM, código de serviço, ISS, ICMS, retenções) e tipo legal NF-e/NFS-e permanecem `OPEN` sem fonte oficial.
+
+**Bloqueia:** emissão legal específica e preenchimento de alíquota oficial · **Não bloqueia:** núcleo de documento/eventos/imutabilidade nem estrutura do motor versionado · **Fonte:** EV-064, EV-065, EV-066 · **Risco:** RISK-012
 
 ## DDP-024 — Faixas de aging
 
@@ -196,9 +208,9 @@ Existe exigência de Progressive Web App ou experiência mobile instalável?
 
 Quais verticais (locação citada como prioridade candidata em §21) entram no primeiro release? Confirmação formal da direção necessária.
 
-**Status:** `PARTIALLY_ANSWERED` — módulo **Clientes PJ** confirmado no Release 1 (SRC-002 Q01). Demais verticais permanecem `OPEN`.
+**Status:** `ANSWERED` (fatia operacional da Release 1, 2026-09-02) — superfície fechada: autenticação, clientes PJ (SRC-002 Q01), solicitações, propostas/PO de cliente, catálogo, ativos/frota, OS, planejamento, execução, medição e faturamento interno. Verticais dedicadas de locação e transporte **não** entram como módulos da Release 1 (`OUT_OF_RELEASE_1`; prioridade econômica candidata EV-080 permanece `FUTURE_SCOPE_CANDIDATE`). Registro: [`release-1-closed-scope.md`](release-1-closed-scope.md).
 
-**Bloqueia:** escopo completo de produto · **Fonte:** EV-003, EV-080–EV-082, SRC-002 · **Risco:** RISK-021
+**Bloqueia:** expansão de produto além da lista · **Não bloqueia:** operação da fatia listada · **Fonte:** EV-003, EV-080–EV-082, SRC-002, prompt autorizado 2026-09-02 · **Risco:** RISK-021
 
 ## DDP-027 — Chassi — exibição vs armazenamento
 

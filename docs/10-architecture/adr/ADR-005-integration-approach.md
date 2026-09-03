@@ -68,3 +68,7 @@ Alta — ACL extraível para serviço separado (extraction-readiness).
 
 - [bounded-context-candidates.md](../../06-domain-boundaries/bounded-context-candidates.md) BC-018
 - [integration-architecture-overview.md](../integration-architecture-overview.md)
+
+## Emenda 2026-09-01 — ERP não é autoridade
+
+BC-018 permanece ACL de borda. Não há ERP externo obrigatório para operação, financeiro, fiscal, contabilidade, estoque ou folha. Providers reais continuam `TEST_ONLY` / `UNCONFIGURED` até documentação externa `CONFIRMED`. O núcleo CISNE não espera o adapter para ser SoT.
