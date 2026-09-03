@@ -1,0 +1,7 @@
+export const INVENTORY_ACCOUNTING_ORIGIN = 'INVENTORY';
+
+export const INVENTORY_ACCOUNTING_EVENTS = {
+  MovementPosted: 'INVENTORY_MOVEMENT_POSTED',
+} as const;
+
+export const INVENTORY_ACCOUNTING_CURRENCY = 'BRL';
