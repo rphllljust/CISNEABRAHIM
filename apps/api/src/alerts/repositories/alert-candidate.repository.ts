@@ -51,18 +51,18 @@ export class AlertCandidateRepository {
          so.paused_at,
          so.updated_at,
          deadlines.deadline
-       FROM so.service_orders so
+       FROM rpt.read_service_orders so
        LEFT JOIN LATERAL (
          SELECT MIN(deadline) AS deadline
          FROM (
            SELECT pr.operational_end AS deadline
-           FROM so.planned_resources pr
+           FROM rpt.read_planned_resources pr
            WHERE pr.service_order_id = so.id
              AND pr.status = 'PLANNED'
              AND pr.operational_end IS NOT NULL
            UNION ALL
            SELECT ra.operational_end AS deadline
-           FROM res.resource_allocations ra
+           FROM rpt.read_resource_allocations ra
            WHERE ra.service_order_id = so.id
              AND ra.operational_end IS NOT NULL
          ) sources
@@ -104,8 +104,8 @@ export class AlertCandidateRepository {
          m.submitted_at,
          m.review_started_at,
          m.created_at
-       FROM msr.measurements m
-       INNER JOIN so.service_orders so ON so.id = m.service_order_id
+       FROM rpt.read_measurements m
+       INNER JOIN rpt.read_service_orders so ON so.id = m.service_order_id
        WHERE m.status IN ('SUBMITTED', 'UNDER_REVIEW')`,
     );
     return result.rows.map((row) => ({
@@ -136,12 +136,12 @@ export class AlertCandidateRepository {
          so.client_id,
          br.status,
          br.prepared_at
-       FROM bil.billing_records br
-       INNER JOIN so.service_orders so ON so.id = br.service_order_id
+       FROM rpt.read_billing_records br
+       INNER JOIN rpt.read_service_orders so ON so.id = br.service_order_id
        WHERE br.status = 'PREPARED'
          AND NOT EXISTS (
            SELECT 1
-           FROM bil.billing_documents bd
+           FROM rpt.read_billing_documents bd
            WHERE bd.billing_record_id = br.id
              AND bd.status = 'FINALIZED'
          )`,
@@ -184,9 +184,9 @@ export class AlertCandidateRepository {
          br.status AS billing_record_status,
          so.completed_at,
          br.prepared_at
-       FROM bil.billing_documents bd
-       INNER JOIN bil.billing_records br ON br.id = bd.billing_record_id
-       INNER JOIN so.service_orders so ON so.id = br.service_order_id
+       FROM rpt.read_billing_documents bd
+       INNER JOIN rpt.read_billing_records br ON br.id = bd.billing_record_id
+       INNER JOIN rpt.read_service_orders so ON so.id = br.service_order_id
        WHERE bd.status = 'FINALIZED'
          AND bd.due_date IS NOT NULL
          AND bd.due_date::date < (NOW() AT TIME ZONE $1)::date`,

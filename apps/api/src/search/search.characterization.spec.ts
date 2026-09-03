@@ -29,7 +29,7 @@ describe('Search characterization (unit)', () => {
     const query = normalizeSearchQuery('acme')!;
     const built = buildEntitySearchQuery(SEARCH_ENTITY_TYPES.Client, query, { status: 'ACTIVE' });
     expect(built).not.toBeNull();
-    expect(built?.fromClause).toBe('pty.clients c');
+    expect(built?.fromClause).toBe('rpt.read_clients c');
     expect(built?.predicate).toContain('c.status = $');
     expect(built?.params.length).toBeGreaterThan(1);
   });

@@ -53,7 +53,7 @@ export class OperationalDashboardRepository {
       visibility.serviceRequests && scopes.serviceRequestScope
         ? this.countScoped(
             `SELECT COUNT(*)::text AS count
-             FROM sr.service_requests sr
+             FROM rpt.read_service_requests sr
              WHERE ${remapScope(scopes.serviceRequestScope, 0).clause}
                AND sr.status IN ('SUBMITTED', 'UNDER_REVIEW')`,
             remapScope(scopes.serviceRequestScope, 0).params,
@@ -65,7 +65,7 @@ export class OperationalDashboardRepository {
       visibility.serviceOrders && scopes.serviceOrderScope
         ? this.countScoped(
             `SELECT COUNT(*)::text AS count
-             FROM so.service_orders so
+             FROM rpt.read_service_orders so
              WHERE ${remapScope(scopes.serviceOrderScope, 0).clause}
                AND so.status = 'PREPARED'`,
             remapScope(scopes.serviceOrderScope, 0).params,
@@ -77,7 +77,7 @@ export class OperationalDashboardRepository {
       visibility.serviceOrders && scopes.serviceOrderScope
         ? this.countScoped(
             `SELECT COUNT(*)::text AS count
-             FROM so.service_orders so
+             FROM rpt.read_service_orders so
              WHERE ${remapScope(scopes.serviceOrderScope, 0).clause}
                AND so.status = 'RELEASED'`,
             remapScope(scopes.serviceOrderScope, 0).params,
@@ -89,7 +89,7 @@ export class OperationalDashboardRepository {
       visibility.serviceOrders && scopes.serviceOrderScope
         ? this.countScoped(
             `SELECT COUNT(*)::text AS count
-             FROM so.service_orders so
+             FROM rpt.read_service_orders so
              WHERE ${remapScope(scopes.serviceOrderScope, 0).clause}
                AND so.status IN ('IN_EXECUTION', 'PAUSED')`,
             remapScope(scopes.serviceOrderScope, 0).params,
@@ -101,13 +101,13 @@ export class OperationalDashboardRepository {
       visibility.serviceOrders && scopes.serviceOrderScope
         ? this.countScoped(
             `SELECT COUNT(DISTINCT so.id)::text AS count
-             FROM so.service_orders so
+             FROM rpt.read_service_orders so
              WHERE ${remapScope(scopes.serviceOrderScope, 0).clause}
                AND so.status IN ('RELEASED', 'IN_EXECUTION', 'PAUSED')
                AND (
                  EXISTS (
                    SELECT 1
-                   FROM so.planned_resources pr
+                   FROM rpt.read_planned_resources pr
                    WHERE pr.service_order_id = so.id
                      AND pr.status = 'PLANNED'
                      AND pr.operational_end IS NOT NULL
@@ -115,7 +115,7 @@ export class OperationalDashboardRepository {
                  )
                  OR EXISTS (
                    SELECT 1
-                   FROM res.resource_allocations ra
+                   FROM rpt.read_resource_allocations ra
                    WHERE ra.service_order_id = so.id
                      AND ra.status = 'ACTIVE'
                      AND ra.operational_end < NOW()
@@ -130,8 +130,8 @@ export class OperationalDashboardRepository {
       visibility.resources && scopes.resourceScope
         ? this.countScoped(
             `SELECT COUNT(*)::text AS count
-             FROM res.resource_allocations ra
-             INNER JOIN so.service_orders so ON so.id = ra.service_order_id
+             FROM rpt.read_resource_allocations ra
+             INNER JOIN rpt.read_service_orders so ON so.id = ra.service_order_id
              WHERE ra.status = 'ACTIVE'
                AND ${remapScope(scopes.resourceScope, 0).clause}`,
             remapScope(scopes.resourceScope, 0).params,
@@ -143,8 +143,8 @@ export class OperationalDashboardRepository {
       visibility.measurements && scopes.measurementScope
         ? this.countScoped(
             `SELECT COUNT(*)::text AS count
-             FROM msr.measurements m
-             INNER JOIN so.service_orders so ON so.id = m.service_order_id
+             FROM rpt.read_measurements m
+             INNER JOIN rpt.read_service_orders so ON so.id = m.service_order_id
              WHERE m.status IN ('SUBMITTED', 'UNDER_REVIEW')
                AND ${remapScope(scopes.measurementScope, 0).clause}`,
             remapScope(scopes.measurementScope, 0).params,
@@ -156,9 +156,9 @@ export class OperationalDashboardRepository {
       visibility.billing && scopes.serviceOrderScope
         ? this.countScoped(
             `SELECT COUNT(DISTINCT so.id)::text AS count
-             FROM so.service_orders so
-             LEFT JOIN bil.billing_records br ON br.service_order_id = so.id AND br.status = 'PREPARED'
-             LEFT JOIN bil.billing_documents bd ON bd.billing_record_id = br.id AND bd.status = 'FINALIZED'
+             FROM rpt.read_service_orders so
+             LEFT JOIN rpt.read_billing_records br ON br.service_order_id = so.id AND br.status = 'PREPARED'
+             LEFT JOIN rpt.read_billing_documents bd ON bd.billing_record_id = br.id AND bd.status = 'FINALIZED'
              WHERE so.status = 'COMPLETED'
                AND ${remapScope(scopes.serviceOrderScope, 0).clause}
                AND (br.id IS NULL OR bd.id IS NULL)`,
@@ -173,7 +173,7 @@ export class OperationalDashboardRepository {
       visibility.documents && scopes.documentScope
         ? this.countScoped(
             `SELECT COUNT(*)::text AS count
-             FROM doc.documents d
+             FROM rpt.read_documents d
              WHERE d.status = 'ACTIVE'
                AND (d.current_version_number IS NULL OR d.current_version_number < 1)
                AND ${remapScope(scopes.documentScope, 0).clause}`,
@@ -209,8 +209,8 @@ export class OperationalDashboardRepository {
       tasks.push(
         this.countScoped(
           `SELECT COUNT(*)::text AS count
-           FROM msr.measurements m
-           INNER JOIN so.service_orders so ON so.id = m.service_order_id
+           FROM rpt.read_measurements m
+           INNER JOIN rpt.read_service_orders so ON so.id = m.service_order_id
            WHERE m.status = 'REJECTED' AND ${mapped.clause}`,
           mapped.params,
         ),
@@ -222,7 +222,7 @@ export class OperationalDashboardRepository {
       tasks.push(
         this.countScoped(
           `SELECT COUNT(*)::text AS count
-           FROM bil.billing_records br
+           FROM rpt.read_billing_records br
            WHERE br.status = 'VOIDED' AND ${mapped.clause}`,
           mapped.params,
         ),

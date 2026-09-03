@@ -174,18 +174,18 @@ export class ProductivityReadModelRepository {
           planned.planned_seconds,
           allocated.allocated_seconds,
           evidence.evidence_complete
-        FROM so.service_orders so
+        FROM rpt.read_service_orders so
         LEFT JOIN LATERAL (
           SELECT MIN(deadline) AS deadline
           FROM (
             SELECT pr.operational_end AS deadline
-            FROM so.planned_resources pr
+            FROM rpt.read_planned_resources pr
             WHERE pr.service_order_id = so.id
               AND pr.status = 'PLANNED'
               AND pr.operational_end IS NOT NULL
             UNION ALL
             SELECT ra.operational_end AS deadline
-            FROM res.resource_allocations ra
+            FROM rpt.read_resource_allocations ra
             WHERE ra.service_order_id = so.id
               AND ra.operational_end IS NOT NULL
           ) sources
@@ -197,7 +197,7 @@ export class ProductivityReadModelRepository {
             ),
             0
           ) AS planned_seconds
-          FROM so.planned_resources pr
+          FROM rpt.read_planned_resources pr
           WHERE pr.service_order_id = so.id
             AND pr.status = 'PLANNED'
             AND pr.operational_start IS NOT NULL
@@ -210,7 +210,7 @@ export class ProductivityReadModelRepository {
             ),
             0
           ) AS allocated_seconds
-          FROM res.resource_allocations ra
+          FROM rpt.read_resource_allocations ra
           WHERE ra.service_order_id = so.id
             AND ra.operational_start IS NOT NULL
             AND ra.operational_end IS NOT NULL
@@ -224,19 +224,19 @@ export class ProductivityReadModelRepository {
               AND NOT (
                 EXISTS (
                   SELECT 1
-                  FROM so.execution_evidence ee
+                  FROM rpt.read_execution_evidence ee
                   WHERE ee.service_order_id = so.id
                     AND ee.evidence_kind = req->>'evidenceKind'
                 )
                 OR EXISTS (
                   SELECT 1
-                  FROM so.execution_entries ent
+                  FROM rpt.read_execution_entries ent
                   WHERE ent.service_order_id = so.id
                     AND ent.evidence_kind = req->>'evidenceKind'
                 )
                 OR EXISTS (
                   SELECT 1
-                  FROM so.execution_entries ent
+                  FROM rpt.read_execution_entries ent
                   WHERE ent.service_order_id = so.id
                     AND (
                       (ent.entry_type = 'MILEAGE' AND req->>'evidenceKind' = 'MILEAGE')
@@ -299,8 +299,8 @@ export class ProductivityReadModelRepository {
          COUNT(*) FILTER (WHERE m.status = 'APPROVED')::int AS approved,
          COUNT(*) FILTER (WHERE m.status IN ('APPROVED', 'REJECTED'))::int AS decided,
          COUNT(*) FILTER (WHERE m.status = 'REJECTED')::int AS rejected
-       FROM msr.measurements m
-       INNER JOIN so.service_orders so ON so.id = m.service_order_id
+       FROM rpt.read_measurements m
+       INNER JOIN rpt.read_service_orders so ON so.id = m.service_order_id
        WHERE ${filters.join(' AND ')}
          AND m.decided_at IS NOT NULL
          AND m.decided_at >= ${fromParam}

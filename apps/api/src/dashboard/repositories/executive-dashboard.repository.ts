@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { Pool } from 'pg';
-import { sumMoneyAmounts } from '../../billing/domain/billing-totals';
+import { sumMoneyAmounts } from '../../platform/kernel/money-math';
 import type { ScopeSqlPredicate } from '../../authorization/services/scope-enforcement.service';
 import { DatabaseService } from '../../infrastructure/database/database.service';
 import { parseAgingBucketPolicyFromEnv } from '../../analytics/domain/aging-bucket.policy';
@@ -61,7 +61,7 @@ export class ExecutiveDashboardRepository {
     const mapped = remapScope(prefixScopeAlias(scope, 'so'), 0);
     const result = await this.pool().query<{ status: string; count: number }>(
       `SELECT so.status, COUNT(*)::int AS count
-       FROM so.service_orders so
+       FROM rpt.read_service_orders so
        WHERE ${mapped.clause}
          AND so.status NOT IN ('CANCELLED')
        GROUP BY so.status
@@ -97,7 +97,7 @@ export class ExecutiveDashboardRepository {
        ),
        opened AS (
          SELECT (so.created_at AT TIME ZONE ${tzParam})::date AS day, COUNT(*)::int AS count
-         FROM so.service_orders so
+         FROM rpt.read_service_orders so
          WHERE ${mapped.clause}
            AND so.created_at >= ${fromParam}
            AND so.created_at < ${toParam}
@@ -105,7 +105,7 @@ export class ExecutiveDashboardRepository {
        ),
        completed AS (
          SELECT (so.completed_at AT TIME ZONE ${tzParam})::date AS day, COUNT(*)::int AS count
-         FROM so.service_orders so
+         FROM rpt.read_service_orders so
          WHERE ${mapped.clause}
            AND so.status = 'COMPLETED'
            AND so.completed_at >= ${fromParam}
@@ -152,18 +152,18 @@ export class ExecutiveDashboardRepository {
          SELECT
            so.completed_at,
            deadlines.deadline
-         FROM so.service_orders so
+         FROM rpt.read_service_orders so
          LEFT JOIN LATERAL (
            SELECT MIN(deadline) AS deadline
            FROM (
              SELECT pr.operational_end AS deadline
-             FROM so.planned_resources pr
+             FROM rpt.read_planned_resources pr
              WHERE pr.service_order_id = so.id
                AND pr.status = 'PLANNED'
                AND pr.operational_end IS NOT NULL
              UNION ALL
              SELECT ra.operational_end AS deadline
-             FROM res.resource_allocations ra
+             FROM rpt.read_resource_allocations ra
              WHERE ra.service_order_id = so.id
                AND ra.operational_end IS NOT NULL
            ) sources
@@ -215,7 +215,7 @@ export class ExecutiveDashboardRepository {
          GREATEST(0, ((NOW() AT TIME ZONE ${tzParam})::date - bd.due_date::date))::int AS days_overdue,
          COUNT(*)::int AS count,
          COALESCE(SUM(bd.total_amount), 0)::text AS total_amount
-       FROM bil.billing_documents bd
+       FROM rpt.read_billing_documents bd
        WHERE ${mapped.clause}
          AND bd.status = 'FINALIZED'
          AND bd.due_date IS NOT NULL
@@ -256,16 +256,16 @@ export class ExecutiveDashboardRepository {
       `SELECT MAX(
          FLOOR(EXTRACT(EPOCH FROM (NOW() - deadlines.deadline)) / 86400)
        )::int AS max_delay_days
-       FROM so.service_orders so
+       FROM rpt.read_service_orders so
        INNER JOIN LATERAL (
          SELECT MIN(deadline) AS deadline
          FROM (
            SELECT pr.operational_end AS deadline
-           FROM so.planned_resources pr
+           FROM rpt.read_planned_resources pr
            WHERE pr.service_order_id = so.id AND pr.status = 'PLANNED' AND pr.operational_end IS NOT NULL
            UNION ALL
            SELECT ra.operational_end AS deadline
-           FROM res.resource_allocations ra
+           FROM rpt.read_resource_allocations ra
            WHERE ra.service_order_id = so.id AND ra.operational_end IS NOT NULL
          ) sources
        ) deadlines ON TRUE
@@ -277,16 +277,16 @@ export class ExecutiveDashboardRepository {
 
     const approaching = await this.pool().query<{ count: number }>(
       `SELECT COUNT(DISTINCT so.id)::int AS count
-       FROM so.service_orders so
+       FROM rpt.read_service_orders so
        INNER JOIN LATERAL (
          SELECT MIN(deadline) AS deadline
          FROM (
            SELECT pr.operational_end AS deadline
-           FROM so.planned_resources pr
+           FROM rpt.read_planned_resources pr
            WHERE pr.service_order_id = so.id AND pr.status = 'PLANNED' AND pr.operational_end IS NOT NULL
            UNION ALL
            SELECT ra.operational_end AS deadline
-           FROM res.resource_allocations ra
+           FROM rpt.read_resource_allocations ra
            WHERE ra.service_order_id = so.id AND ra.operational_end IS NOT NULL
          ) sources
        ) deadlines ON TRUE

@@ -219,7 +219,7 @@ export class ReportDataService {
       case REPORT_TYPES.ServiceOrdersByClient:
       case REPORT_TYPES.ServiceOrdersByService:
         return {
-          fromClause: 'so.service_orders so',
+          fromClause: 'rpt.read_service_orders so',
           selectClause: `SELECT so.order_number AS "orderNumber",
                                 so.unit_id AS "unitId",
                                 COALESCE(so.client_snapshot->>'legalName', '') AS "clientName",
@@ -238,16 +238,16 @@ export class ReportDataService {
         };
       case REPORT_TYPES.ServiceOrdersOverdue:
         return {
-          fromClause: `so.service_orders so
+          fromClause: `rpt.read_service_orders so
                        LEFT JOIN LATERAL (
                          SELECT MIN(deadline) AS deadline
                          FROM (
                            SELECT pr.operational_end AS deadline
-                           FROM so.planned_resources pr
+                           FROM rpt.read_planned_resources pr
                            WHERE pr.service_order_id = so.id AND pr.status = 'PLANNED' AND pr.operational_end IS NOT NULL
                            UNION ALL
                            SELECT ra.operational_end AS deadline
-                           FROM res.resource_allocations ra
+                           FROM rpt.read_resource_allocations ra
                            WHERE ra.service_order_id = so.id AND ra.operational_end IS NOT NULL
                          ) d
                        ) dl ON TRUE`,
@@ -262,9 +262,9 @@ export class ReportDataService {
         };
       case REPORT_TYPES.AssetUtilization:
         return {
-          fromClause: `ast.physical_assets a
-                       LEFT JOIN res.resource_allocations ra ON ra.physical_asset_id = a.id AND ra.status = 'ACTIVE'
-                       LEFT JOIN so.service_orders so ON so.id = ra.service_order_id`,
+          fromClause: `rpt.read_physical_assets a
+                       LEFT JOIN rpt.read_resource_allocations ra ON ra.physical_asset_id = a.id AND ra.status = 'ACTIVE'
+                       LEFT JOIN rpt.read_service_orders so ON so.id = ra.service_order_id`,
           selectClause: `SELECT a.asset_code AS "assetCode",
                                 a.name AS "assetName",
                                 a.unit_id AS "unitId",
@@ -276,7 +276,7 @@ export class ReportDataService {
         };
       case REPORT_TYPES.Measurements:
         return {
-          fromClause: 'msr.measurements m INNER JOIN so.service_orders so ON so.id = m.service_order_id',
+          fromClause: 'rpt.read_measurements m INNER JOIN rpt.read_service_orders so ON so.id = m.service_order_id',
           selectClause: `SELECT m.id::text AS "measurementId",
                                 so.order_number AS "orderNumber",
                                 m.status::text AS status,
@@ -288,7 +288,7 @@ export class ReportDataService {
         };
       case REPORT_TYPES.Billing:
         return {
-          fromClause: 'bil.billing_records br INNER JOIN so.service_orders so ON so.id = br.service_order_id',
+          fromClause: 'rpt.read_billing_records br INNER JOIN rpt.read_service_orders so ON so.id = br.service_order_id',
           selectClause: `SELECT br.id::text AS "billingRecordId",
                                 so.order_number AS "orderNumber",
                                 br.client_legal_name_snapshot AS "clientName",
@@ -300,7 +300,7 @@ export class ReportDataService {
         };
       case REPORT_TYPES.Receipts:
         return {
-          fromClause: 'bil.billing_documents bd',
+          fromClause: 'rpt.read_billing_documents bd',
           selectClause: `SELECT bd.document_number AS "documentNumber",
                                 bd.client_legal_name_snapshot AS "clientName",
                                 bd.status::text AS status,

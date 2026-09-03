@@ -243,7 +243,7 @@ export class BusinessAlertsRepository {
            AND ba.aggregate_type = 'SERVICE_ORDER'
            AND EXISTS (
              SELECT 1
-             FROM so.service_orders so
+             FROM rpt.read_service_orders so
              WHERE so.id = ba.aggregate_id
                AND so.status IN ('COMPLETED', 'CANCELLED')
            )

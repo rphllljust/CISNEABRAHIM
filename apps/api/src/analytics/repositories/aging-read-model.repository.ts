@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { Pool } from 'pg';
-import { sumMoneyAmounts } from '../../billing/domain/billing-totals';
+import { sumMoneyAmounts } from '../../platform/kernel/money-math';
 import type { ScopeSqlPredicate } from '../../authorization/services/scope-enforcement.service';
 import { DatabaseService } from '../../infrastructure/database/database.service';
 import { TERMINAL_SERVICE_ORDER_STATUSES } from '../../service-orders/domain/service-order.state-machine';
@@ -141,18 +141,18 @@ export class AgingReadModelRepository {
                   EXTRACT(EPOCH FROM (NOW() - deadlines.deadline)) / 86400
                 )
               )::int AS max_age_days
-       FROM so.service_orders so
+       FROM rpt.read_service_orders so
        INNER JOIN LATERAL (
          SELECT MIN(deadline) AS deadline
          FROM (
            SELECT pr.operational_end AS deadline
-           FROM so.planned_resources pr
+           FROM rpt.read_planned_resources pr
            WHERE pr.service_order_id = so.id
              AND pr.status = 'PLANNED'
              AND pr.operational_end IS NOT NULL
            UNION ALL
            SELECT ra.operational_end AS deadline
-           FROM res.resource_allocations ra
+           FROM rpt.read_resource_allocations ra
            WHERE ra.service_order_id = so.id
              AND ra.status = 'ACTIVE'
              AND ra.operational_end IS NOT NULL
@@ -182,18 +182,18 @@ export class AgingReadModelRepository {
     const result = await this.pool().query<{ count: number; max_age_days: number | null }>(
       `SELECT COUNT(DISTINCT so.id)::int AS count,
               NULL::int AS max_age_days
-       FROM so.service_orders so
+       FROM rpt.read_service_orders so
        INNER JOIN LATERAL (
          SELECT MIN(deadline) AS deadline
          FROM (
            SELECT pr.operational_end AS deadline
-           FROM so.planned_resources pr
+           FROM rpt.read_planned_resources pr
            WHERE pr.service_order_id = so.id
              AND pr.status = 'PLANNED'
              AND pr.operational_end IS NOT NULL
            UNION ALL
            SELECT ra.operational_end AS deadline
-           FROM res.resource_allocations ra
+           FROM rpt.read_resource_allocations ra
            WHERE ra.service_order_id = so.id
              AND ra.status = 'ACTIVE'
              AND ra.operational_end IS NOT NULL
@@ -227,7 +227,7 @@ export class AgingReadModelRepository {
                   ) / 86400
                 )
               )::int AS max_age_days
-       FROM so.service_orders so
+       FROM rpt.read_service_orders so
        WHERE ${mapped.clause}
          AND so.status = ${statusParam}`,
       params,
@@ -255,7 +255,7 @@ export class AgingReadModelRepository {
                   ) / 86400
                 )
               )::int AS max_age_days
-       FROM sr.service_requests sr
+       FROM rpt.read_service_requests sr
        WHERE ${mapped.clause}
          AND sr.status IN ('SUBMITTED', 'UNDER_REVIEW')`,
       mapped.params,
@@ -282,8 +282,8 @@ export class AgingReadModelRepository {
                   ) / 86400
                 )
               )::int AS max_age_days
-       FROM msr.measurements m
-       INNER JOIN so.service_orders so ON so.id = m.service_order_id
+       FROM rpt.read_measurements m
+       INNER JOIN rpt.read_service_orders so ON so.id = m.service_order_id
        WHERE ${mapped.clause}
          AND m.status IN ('SUBMITTED', 'UNDER_REVIEW')`,
       mapped.params,
@@ -298,12 +298,12 @@ export class AgingReadModelRepository {
               MAX(
                 FLOOR(EXTRACT(EPOCH FROM (NOW() - so.completed_at)) / 86400)
               )::int AS max_age_days
-       FROM so.service_orders so
+       FROM rpt.read_service_orders so
        WHERE ${mapped.clause}
          AND so.status = 'COMPLETED'
          AND NOT EXISTS (
            SELECT 1
-           FROM bil.billing_records br
+           FROM rpt.read_billing_records br
            WHERE br.service_order_id = so.id
              AND br.status = 'PREPARED'
          )`,
@@ -327,12 +327,12 @@ export class AgingReadModelRepository {
               MAX(
                 FLOOR(EXTRACT(EPOCH FROM (NOW() - so.completed_at)) / 86400)
               )::int AS max_age_days
-       FROM so.service_orders so
+       FROM rpt.read_service_orders so
        WHERE ${mapped.clause}
          AND so.status = 'COMPLETED'
          AND NOT EXISTS (
            SELECT 1
-           FROM bil.billing_records br
+           FROM rpt.read_billing_records br
            WHERE br.service_order_id = so.id
              AND br.status = 'PREPARED'
          )`,
@@ -359,12 +359,12 @@ export class AgingReadModelRepository {
               MAX(
                 FLOOR(EXTRACT(EPOCH FROM (NOW() - br.prepared_at)) / 86400)
               )::int AS max_age_days
-       FROM bil.billing_records br
+       FROM rpt.read_billing_records br
        WHERE ${mapped.clause}
          AND br.status = 'PREPARED'
          AND NOT EXISTS (
            SELECT 1
-           FROM bil.billing_documents bd
+           FROM rpt.read_billing_documents bd
            WHERE bd.billing_record_id = br.id
              AND bd.status = 'FINALIZED'
          )`,
@@ -399,7 +399,7 @@ export class AgingReadModelRepository {
                   )
                 END
               )::int AS max_days_until_due
-       FROM bil.billing_documents bd
+       FROM rpt.read_billing_documents bd
        WHERE ${mapped.clause}
          AND bd.status = 'FINALIZED'
          AND (
@@ -439,7 +439,7 @@ export class AgingReadModelRepository {
               MAX(
                 ((NOW() AT TIME ZONE ${tzParam})::date - bd.due_date::date)
               )::int AS max_days_overdue
-       FROM bil.billing_documents bd
+       FROM rpt.read_billing_documents bd
        WHERE ${mapped.clause}
          AND bd.status = 'FINALIZED'
          AND bd.due_date IS NOT NULL

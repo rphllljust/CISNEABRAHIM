@@ -227,7 +227,7 @@ function clientSearchQuery(
                           c.created_at AS occurred_at,
                           '/app/clients/' || c.id::text AS entity_href,
                           COALESCE(NULLIF(c.trade_name, ''), c.legal_name) AS highlight`,
-    fromClause: 'pty.clients c',
+    fromClause: 'rpt.read_clients c',
     predicate: `(${match.clause}) AND (${filterClause})`,
     params: [...match.params, ...filterParams],
     orderBy: 'c.created_at DESC, c.id DESC',
@@ -258,7 +258,7 @@ function serviceRequestSearchQuery(
                           sr.created_at AS occurred_at,
                           '/app/requests/' || sr.id::text AS entity_href,
                           sr.request_code AS highlight`,
-    fromClause: 'sr.service_requests sr',
+    fromClause: 'rpt.read_service_requests sr',
     predicate: `(${match.clause}) AND (${filterClause})`,
     params: [...match.params, ...filterParams],
     orderBy: 'sr.created_at DESC, sr.id DESC',
@@ -292,10 +292,10 @@ function proposalSearchQuery(
                             ELSE '/app/requests'
                           END AS entity_href,
                           p.proposal_code AS highlight`,
-    fromClause: `com.proposals p
+    fromClause: `rpt.read_proposals p
                  INNER JOIN LATERAL (
                    SELECT status, client_snapshot
-                   FROM com.proposal_versions
+                   FROM rpt.read_proposal_versions
                    WHERE proposal_id = p.id
                    ORDER BY version_number DESC
                    LIMIT 1
@@ -333,7 +333,7 @@ function purchaseOrderSearchQuery(
                             ELSE '/app/requests'
                           END AS entity_href,
                           COALESCE(po.po_number, po.internal_code) AS highlight`,
-    fromClause: 'com.purchase_orders po',
+    fromClause: 'rpt.read_purchase_orders po',
     predicate: `(${match.clause}) AND (${filterClause})`,
     params: [...match.params, ...filterParams],
     orderBy: 'po.created_at DESC, po.id DESC',
@@ -364,7 +364,7 @@ function serviceOrderSearchQuery(
                           so.created_at AS occurred_at,
                           '/app/service-orders/' || so.id::text || '/planning' AS entity_href,
                           so.order_number AS highlight`,
-    fromClause: 'so.service_orders so',
+    fromClause: 'rpt.read_service_orders so',
     predicate: `(${match.clause}) AND (${filterClause})`,
     params: [...match.params, ...filterParams],
     orderBy: 'so.created_at DESC, so.id DESC',
@@ -395,8 +395,8 @@ function assetSearchQuery(
                           a.created_at AS occurred_at,
                           '/app/assets/' || a.id::text AS entity_href,
                           a.asset_code AS highlight`,
-    fromClause: `ast.physical_assets a
-                 LEFT JOIN ast.vehicle_profiles vp ON vp.physical_asset_id = a.id`,
+    fromClause: `rpt.read_physical_assets a
+                 LEFT JOIN rpt.read_vehicle_profiles vp ON vp.physical_asset_id = a.id`,
     predicate: `(${match.clause}) AND (${filterClause})`,
     params: [...match.params, ...filterParams],
     orderBy: 'a.created_at DESC, a.id DESC',
@@ -427,11 +427,11 @@ function documentSearchQuery(
                           d.created_at AS occurred_at,
                           '/app/requests' AS entity_href,
                           d.title AS highlight`,
-    fromClause: `doc.documents d
+    fromClause: `rpt.read_documents d
                  LEFT JOIN LATERAL (
                    SELECT so.original_filename
-                   FROM doc.document_versions dv
-                   INNER JOIN doc.stored_objects so ON so.id = dv.stored_object_id
+                   FROM rpt.read_document_versions dv
+                   INNER JOIN rpt.read_stored_objects so ON so.id = dv.stored_object_id
                    WHERE dv.document_id = d.id
                    ORDER BY dv.version_number DESC
                    LIMIT 1
@@ -466,8 +466,8 @@ function measurementSearchQuery(
                           m.created_at AS occurred_at,
                           '/app/service-orders/' || m.service_order_id::text || '/measurement' AS entity_href,
                           so.order_number AS highlight`,
-    fromClause: `msr.measurements m
-                 INNER JOIN so.service_orders so ON so.id = m.service_order_id`,
+    fromClause: `rpt.read_measurements m
+                 INNER JOIN rpt.read_service_orders so ON so.id = m.service_order_id`,
     predicate: `(${match.clause}) AND (${filterClause})`,
     params: [...match.params, ...filterParams],
     orderBy: 'm.created_at DESC, m.id DESC',
@@ -498,8 +498,8 @@ function billingRecordSearchQuery(
                           br.created_at AS occurred_at,
                           '/app/service-orders/' || br.service_order_id::text || '/billing' AS entity_href,
                           COALESCE(so.order_number, br.client_legal_name_snapshot) AS highlight`,
-    fromClause: `bil.billing_records br
-                 INNER JOIN so.service_orders so ON so.id = br.service_order_id`,
+    fromClause: `rpt.read_billing_records br
+                 INNER JOIN rpt.read_service_orders so ON so.id = br.service_order_id`,
     predicate: `(${match.clause}) AND (${filterClause})`,
     params: [...match.params, ...filterParams],
     orderBy: 'br.created_at DESC, br.id DESC',

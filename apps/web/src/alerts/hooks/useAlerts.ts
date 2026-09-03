@@ -96,11 +96,16 @@ export function useAlertsCenter() {
   return { state, reload, filters, setFilters };
 }
 
-export function useAlertBadge() {
+export function useAlertBadge(enabled = true) {
   const [activeCount, setActiveCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!enabled) {
+      setActiveCount(0);
+      setLoading(false);
+      return;
+    }
     const controller = new AbortController();
     async function load() {
       try {
@@ -120,7 +125,7 @@ export function useAlertBadge() {
       controller.abort();
       window.clearInterval(timer);
     };
-  }, []);
+  }, [enabled]);
 
   return { activeCount, loading };
 }

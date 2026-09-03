@@ -29,16 +29,16 @@ export class BusinessMetricsCollectorService {
 
     const [serviceOrdersOverdue, measurementsAging, billingAging] = await Promise.all([
       this.count(pool, `SELECT COUNT(*)::text AS count
-        FROM so.service_orders
+        FROM rpt.read_service_orders
         WHERE deadline IS NOT NULL
           AND deadline < NOW()
           AND status NOT IN (${terminalStatuses})`),
       this.count(pool, `SELECT COUNT(*)::text AS count
-        FROM ms.measurements
+        FROM rpt.read_measurements
         WHERE status IN ('SUBMITTED', 'UNDER_REVIEW')
           AND submitted_at < NOW() - interval '7 days'`),
       this.count(pool, `SELECT COUNT(*)::text AS count
-        FROM bil.billing_records
+        FROM rpt.read_billing_records
         WHERE status IN ('PREPARED', 'AWAITING_PAYMENT')
           AND prepared_at < NOW() - interval '7 days'`),
     ]);
