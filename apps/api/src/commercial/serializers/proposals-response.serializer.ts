@@ -1,4 +1,5 @@
 import { formatMoneyAmountForApi } from '../domain/money';
+import { resolveCommercialItemFields } from '../domain/proposal-commercial-snapshot';
 import {
   toDocumentLinkResponse,
   type DocumentLinkResponse,
@@ -31,6 +32,8 @@ export type ProposalVersionResponse = {
   currencyCode: string;
   globalSalePrice: string | null;
   globalInternalCost: string | null;
+  itemsSaleTotal: string | null;
+  itemsInternalCostTotal: string | null;
   commercialTerms: Record<string, unknown>;
   clientSnapshot: Record<string, unknown> | null;
   validUntil: string | null;
@@ -60,6 +63,7 @@ export type ProposalItemResponse = {
   serviceDefinitionId: string | null;
   serviceDefinitionVersionId: string | null;
   serviceSnapshot: Record<string, unknown> | null;
+  commercialSnapshot: Record<string, unknown> | null;
   quantity: string | null;
   unitCode: string | null;
   unitSalePrice: string | null;
@@ -90,20 +94,22 @@ export function toProposalResponse(row: ProposalRow): ProposalResponse {
 }
 
 export function toProposalItemResponse(row: ProposalItemRow): ProposalItemResponse {
+  const commercial = resolveCommercialItemFields(row);
   return {
     id: row.id,
     lineNumber: row.line_number,
-    itemKind: row.item_kind,
-    description: row.description,
+    itemKind: commercial.itemKind,
+    description: commercial.description,
     serviceDefinitionId: row.service_definition_id,
     serviceDefinitionVersionId: row.service_definition_version_id,
     serviceSnapshot: row.service_snapshot,
-    quantity: formatMoneyAmountForApi(row.quantity),
-    unitCode: row.unit_code,
-    unitSalePrice: formatMoneyAmountForApi(row.unit_sale_price_amount),
-    unitInternalCost: formatMoneyAmountForApi(row.unit_internal_cost_amount),
-    lineSaleAmount: formatMoneyAmountForApi(row.line_sale_amount),
-    lineInternalCost: formatMoneyAmountForApi(row.line_internal_cost_amount),
+    commercialSnapshot: row.commercial_snapshot,
+    quantity: commercial.quantity,
+    unitCode: commercial.unitCode,
+    unitSalePrice: commercial.unitSalePrice,
+    unitInternalCost: commercial.unitInternalCost,
+    lineSaleAmount: commercial.lineSaleAmount,
+    lineInternalCost: commercial.lineInternalCost,
   };
 }
 
@@ -127,6 +133,8 @@ export function toProposalVersionResponse(
     currencyCode: version.currency_code,
     globalSalePrice: formatMoneyAmountForApi(version.global_sale_price_amount),
     globalInternalCost: formatMoneyAmountForApi(version.global_internal_cost_amount),
+    itemsSaleTotal: formatMoneyAmountForApi(version.items_sale_total_amount),
+    itemsInternalCostTotal: formatMoneyAmountForApi(version.items_internal_cost_total_amount),
     commercialTerms: version.commercial_terms ?? {},
     clientSnapshot: version.client_snapshot,
     validUntil: version.valid_until,

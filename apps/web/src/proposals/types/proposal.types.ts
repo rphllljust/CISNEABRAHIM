@@ -85,6 +85,7 @@ export type ProposalItem = {
   serviceDefinitionId: string | null;
   serviceDefinitionVersionId: string | null;
   serviceSnapshot: Record<string, unknown> | null;
+  commercialSnapshot: Record<string, unknown> | null;
   quantity: string | null;
   unitCode: string | null;
   unitSalePrice: string | null;
@@ -109,6 +110,8 @@ export type ProposalVersion = {
   currencyCode: string;
   globalSalePrice: string | null;
   globalInternalCost: string | null;
+  itemsSaleTotal: string | null;
+  itemsInternalCostTotal: string | null;
   commercialTerms: Record<string, unknown>;
   clientSnapshot: Record<string, unknown> | null;
   validUntil: string | null;

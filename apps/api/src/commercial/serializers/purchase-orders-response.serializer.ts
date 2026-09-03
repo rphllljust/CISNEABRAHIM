@@ -1,5 +1,9 @@
 import { formatMoneyAmountForApi } from '../domain/money';
 import {
+  resolvePurchaseOrderCommercialFields,
+  resolvePurchaseOrderItemFields,
+} from '../domain/purchase-order-commercial-snapshot';
+import {
   toDocumentLinkResponse as toSharedDocumentLinkResponse,
   type DocumentLinkResponse,
 } from '../../infrastructure/http/contracts';
@@ -22,6 +26,7 @@ export type PurchaseOrderItemResponse = {
   serviceDefinitionId: string | null;
   serviceDefinitionVersionId: string | null;
   serviceSnapshot: Record<string, unknown> | null;
+  commercialSnapshot: Record<string, unknown> | null;
   quantity: string | null;
   unitCode: string | null;
   unitPrice: string | null;
@@ -54,9 +59,11 @@ export type PurchaseOrderResponse = {
   currencyCode: string;
   pricingStructure: string;
   totalAmount: string | null;
+  itemsLineTotal: string | null;
   paymentTerms: string | null;
   paymentMethod: string | null;
   clientSnapshot: Record<string, unknown> | null;
+  commercialSnapshot: Record<string, unknown> | null;
   originalDocumentId: string | null;
   status: string;
   registeredAt: string | null;
@@ -82,18 +89,20 @@ export type PurchaseOrderDetailResponse = {
 };
 
 function toItemResponse(row: PurchaseOrderItemRow): PurchaseOrderItemResponse {
+  const commercial = resolvePurchaseOrderItemFields(row);
   return {
     id: row.id,
     lineNumber: row.line_number,
-    description: row.description,
+    description: commercial.description,
     serviceDefinitionId: row.service_definition_id,
     serviceDefinitionVersionId: row.service_definition_version_id,
     serviceSnapshot: row.service_snapshot,
-    quantity: formatMoneyAmountForApi(row.quantity),
-    unitCode: row.unit_code,
-    unitPrice: formatMoneyAmountForApi(row.unit_price_amount),
-    lineTotal: formatMoneyAmountForApi(row.line_total_amount),
-    rcLineReference: row.rc_line_reference,
+    commercialSnapshot: row.commercial_snapshot,
+    quantity: commercial.quantity,
+    unitCode: commercial.unitCode,
+    unitPrice: commercial.unitPrice,
+    lineTotal: commercial.lineTotal,
+    rcLineReference: commercial.rcLineReference,
   };
 }
 
@@ -112,24 +121,27 @@ function toDocumentLinkResponse(row: PurchaseOrderDocumentLinkRow): PurchaseOrde
 }
 
 export function toPurchaseOrderResponse(row: PurchaseOrderRow): PurchaseOrderResponse {
+  const commercial = resolvePurchaseOrderCommercialFields(row);
   return {
     id: row.id,
     internalCode: row.internal_code,
     clientId: row.client_id,
     unitId: row.unit_id,
-    poNumber: row.po_number,
-    rcNumber: row.rc_number,
-    issueDate: row.issue_date,
-    buyerContact: row.buyer_contact,
-    serviceManager: row.service_manager,
-    deliveryLocation: row.delivery_location,
-    billingLocation: row.billing_location,
-    currencyCode: row.currency_code,
-    pricingStructure: row.pricing_structure,
-    totalAmount: formatMoneyAmountForApi(row.total_amount),
-    paymentTerms: row.payment_terms,
-    paymentMethod: row.payment_method,
+    poNumber: commercial.poNumber,
+    rcNumber: commercial.rcNumber,
+    issueDate: commercial.issueDate,
+    buyerContact: commercial.buyerContact,
+    serviceManager: commercial.serviceManager,
+    deliveryLocation: commercial.deliveryLocation,
+    billingLocation: commercial.billingLocation,
+    currencyCode: commercial.currencyCode,
+    pricingStructure: commercial.pricingStructure,
+    totalAmount: commercial.totalAmount,
+    itemsLineTotal: formatMoneyAmountForApi(row.items_line_total_amount),
+    paymentTerms: commercial.paymentTerms,
+    paymentMethod: commercial.paymentMethod,
     clientSnapshot: row.client_snapshot,
+    commercialSnapshot: row.commercial_snapshot,
     originalDocumentId: row.original_document_id,
     status: row.status,
     registeredAt: row.registered_at,

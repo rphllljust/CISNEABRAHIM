@@ -1,0 +1,84 @@
+import { normalizeMoneyAmount, sumMoneyAmounts } from './money';
+
+const MONEY_SCALE_FACTOR = 10_000n;
+
+export const OPERATIONAL_PROFITABILITY_FORMULA =
+  'operational_revenue - realized_cost = operational_margin';
+
+export const OPERATIONAL_PROFITABILITY_DISCLAIMER =
+  'Operational profitability is indicative and not official accounting.';
+
+function toScaledAmount(value: string): bigint {
+  const normalized = normalizeMoneyAmount(value);
+  const parts = normalized.split('.');
+  const whole = parts[0] ?? '0';
+  const fraction = parts[1] ?? '';
+  const paddedFraction = fraction.padEnd(4, '0').slice(0, 4);
+  return BigInt(whole) * MONEY_SCALE_FACTOR + BigInt(paddedFraction);
+}
+
+function fromScaledAmount(value: bigint): string {
+  const negative = value < 0n;
+  const absolute = negative ? -value : value;
+  const whole = absolute / MONEY_SCALE_FACTOR;
+  const fraction = (absolute % MONEY_SCALE_FACTOR).toString().padStart(4, '0');
+  const trimmedFraction = fraction.replace(/0+$/, '');
+  const formatted = trimmedFraction.length > 0 ? `${whole}.${trimmedFraction}` : `${whole}`;
+  return negative ? `-${formatted}` : formatted;
+}
+
+export function subtractMoney(left: string, right: string): string {
+  return fromScaledAmount(toScaledAmount(left) - toScaledAmount(right));
+}
+
+export function sumNullableMoneyAmounts(values: Array<string | null | undefined>): string | null {
+  const present = values.filter((value): value is string => Boolean(value));
+  return present.length > 0 ? sumMoneyAmounts(present) : null;
+}
+
+export function computeOperationalMargin(
+  operationalRevenue: string | null,
+  realizedCost: string | null,
+): string | null {
+  if (operationalRevenue === null || realizedCost === null) {
+    return null;
+  }
+  return subtractMoney(operationalRevenue, realizedCost);
+}
+
+export type OperationalProfitabilityTotals = {
+  operationalRevenue: string | null;
+  realizedCost: string | null;
+  operationalMargin: string | null;
+  revenueSupportedCount: number;
+  costSupportedCount: number;
+  marginComputableCount: number;
+  serviceOrderCount: number;
+};
+
+export function aggregateOperationalProfitability(
+  rows: Array<{
+    operationalRevenue: string | null;
+    realizedCost: string | null;
+  }>,
+): OperationalProfitabilityTotals {
+  const revenueSupportedCount = rows.filter((row) => row.operationalRevenue !== null).length;
+  const costSupportedCount = rows.filter((row) => row.realizedCost !== null).length;
+  const marginComputableCount = rows.filter(
+    (row) => row.operationalRevenue !== null && row.realizedCost !== null,
+  ).length;
+
+  const operationalRevenue = sumNullableMoneyAmounts(rows.map((row) => row.operationalRevenue));
+  const realizedCost = sumNullableMoneyAmounts(rows.map((row) => row.realizedCost));
+  const operationalMargin = computeOperationalMargin(operationalRevenue, realizedCost);
+
+  return {
+    operationalRevenue,
+    realizedCost,
+    operationalMargin,
+    revenueSupportedCount,
+    costSupportedCount,
+    marginComputableCount,
+    serviceOrderCount: rows.length,
+  };
+}

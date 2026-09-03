@@ -24,6 +24,8 @@ export type ProposalVersionRow = {
   currency_code: string;
   global_sale_price_amount: string | null;
   global_internal_cost_amount: string | null;
+  items_sale_total_amount: string | null;
+  items_internal_cost_total_amount: string | null;
   commercial_terms: Record<string, unknown>;
   client_snapshot: Record<string, unknown> | null;
   valid_until: string | null;
@@ -56,6 +58,7 @@ export type ProposalItemRow = {
   service_definition_id: string | null;
   service_definition_version_id: string | null;
   service_snapshot: Record<string, unknown> | null;
+  commercial_snapshot: Record<string, unknown> | null;
   quantity: string | null;
   unit_code: string | null;
   unit_sale_price_amount: string | null;

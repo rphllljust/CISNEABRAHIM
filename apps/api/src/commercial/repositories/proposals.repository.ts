@@ -3,7 +3,14 @@ import type { Pool } from 'pg';
 import { DatabaseService } from '../../infrastructure/database/database.service';
 import { queryIsUnitRegistered } from '../../infrastructure/database/reference-lookups';
 import { orderByCreatedAtDesc } from '../../infrastructure/database/sql';
-import { PROPOSAL_VERSION_STATUSES } from '../domain/proposal';
+import {
+  PROPOSAL_VERSION_STATUSES,
+  assertTransition,
+  canCreateRevision,
+  canEditDraft,
+  isProposalVersionStatus,
+  type ProposalVersionStatus,
+} from '../domain/proposal';
 import type {
   ClientSnapshotSource,
   CreateProposalPersistenceInput,
@@ -43,6 +50,8 @@ const VERSION_SELECT = `
     currency_code,
     global_sale_price_amount::text AS global_sale_price_amount,
     global_internal_cost_amount::text AS global_internal_cost_amount,
+    items_sale_total_amount::text AS items_sale_total_amount,
+    items_internal_cost_total_amount::text AS items_internal_cost_total_amount,
     commercial_terms,
     client_snapshot,
     valid_until,
@@ -94,7 +103,7 @@ export class ProposalsRepository {
 
   async findDocumentById(documentId: string): Promise<{ id: string; unit_id: string } | null> {
     const result = await this.pool().query<{ id: string; unit_id: string }>(
-      `SELECT id, unit_id FROM doc.documents WHERE id = $1`,
+      `SELECT id, unit_id FROM rpt.read_documents WHERE id = $1`,
       [documentId],
     );
     return result.rows[0] ?? null;
@@ -112,8 +121,8 @@ export class ProposalsRepository {
          sdv.name,
          sdv.version,
          sdv.status::text AS version_status
-       FROM cat.service_definitions sd
-       INNER JOIN cat.service_definition_versions sdv ON sdv.service_definition_id = sd.id
+       FROM rpt.read_service_definitions sd
+       INNER JOIN rpt.read_service_definition_versions sdv ON sdv.service_definition_id = sd.id
        WHERE sd.id = $1
          AND ($2::uuid IS NULL OR sdv.id = $2::uuid)
        ORDER BY sdv.version DESC
@@ -191,6 +200,7 @@ export class ProposalsRepository {
          service_definition_id,
          service_definition_version_id,
          service_snapshot,
+         commercial_snapshot,
          quantity::text AS quantity,
          unit_code,
          unit_sale_price_amount::text AS unit_sale_price_amount,
@@ -324,7 +334,7 @@ export class ProposalsRepository {
         await client.query('ROLLBACK');
         return 'VERSION_CONFLICT';
       }
-      if (current.status !== PROPOSAL_VERSION_STATUSES.Draft) {
+      if (!canEditDraft(current.status as ProposalVersionStatus)) {
         await client.query('ROLLBACK');
         return 'INVALID_STATE';
       }
@@ -432,7 +442,7 @@ export class ProposalsRepository {
         [proposalId, proposalRow.current_version_number],
       );
       const source = currentVersion.rows[0];
-      if (!source || !['ISSUED', 'REJECTED', 'EXPIRED', 'CANCELLED'].includes(source.status)) {
+      if (!source || !canCreateRevision(source.status as ProposalVersionStatus)) {
         await client.query('ROLLBACK');
         return 'REVISION_NOT_ALLOWED';
       }
@@ -496,7 +506,15 @@ export class ProposalsRepository {
     rowVersion: number,
     actorIdentityId: string,
     clientSnapshot: Record<string, unknown>,
-    itemSnapshots: Array<{ itemId: string; serviceSnapshot: Record<string, unknown> | null }>,
+    itemSnapshots: Array<{
+      itemId: string;
+      serviceSnapshot: Record<string, unknown> | null;
+      commercialSnapshot: Record<string, unknown>;
+    }>,
+    versionTotals: {
+      itemsSaleTotal: string | null;
+      itemsInternalCostTotal: string | null;
+    },
   ): Promise<ProposalVersionRow | 'VERSION_CONFLICT' | 'INVALID_STATE'> {
     const client = await this.pool().connect();
     try {
@@ -517,6 +535,16 @@ export class ProposalsRepository {
         await client.query('ROLLBACK');
         return current.status !== PROPOSAL_VERSION_STATUSES.Draft ? 'INVALID_STATE' : 'VERSION_CONFLICT';
       }
+      if (!isProposalVersionStatus(current.status)) {
+        await client.query('ROLLBACK');
+        return 'INVALID_STATE';
+      }
+      try {
+        assertTransition(current.status, PROPOSAL_VERSION_STATUSES.Issued);
+      } catch {
+        await client.query('ROLLBACK');
+        return 'INVALID_STATE';
+      }
 
       await client.query(
         `UPDATE com.proposal_versions
@@ -529,14 +557,17 @@ export class ProposalsRepository {
       );
 
       for (const snapshot of itemSnapshots) {
-        if (!snapshot.serviceSnapshot) {
-          continue;
-        }
         await client.query(
           `UPDATE com.proposal_items
-           SET service_snapshot = $2::jsonb
+           SET
+             service_snapshot = COALESCE($2::jsonb, service_snapshot),
+             commercial_snapshot = $3::jsonb
            WHERE id = $1`,
-          [snapshot.itemId, JSON.stringify(snapshot.serviceSnapshot)],
+          [
+            snapshot.itemId,
+            snapshot.serviceSnapshot ? JSON.stringify(snapshot.serviceSnapshot) : null,
+            JSON.stringify(snapshot.commercialSnapshot),
+          ],
         );
       }
 
@@ -545,6 +576,8 @@ export class ProposalsRepository {
          SET
            status = 'ISSUED',
            client_snapshot = $3::jsonb,
+           items_sale_total_amount = $5::numeric,
+           items_internal_cost_total_amount = $6::numeric,
            issued_at = NOW(),
            issued_by_identity_id = $4,
            row_version = row_version + 1,
@@ -555,13 +588,22 @@ export class ProposalsRepository {
            pricing_structure::text AS pricing_structure, currency_code,
            global_sale_price_amount::text AS global_sale_price_amount,
            global_internal_cost_amount::text AS global_internal_cost_amount,
+           items_sale_total_amount::text AS items_sale_total_amount,
+           items_internal_cost_total_amount::text AS items_internal_cost_total_amount,
            commercial_terms, client_snapshot, valid_until, notes,
            issued_at, issued_by_identity_id, superseded_at,
            accepted_at, accepted_by_identity_id, acceptance_origin_code,
            acceptance_evidence_document_id, rejected_at, rejected_by_identity_id,
            rejection_reason, expired_at, cancelled_at, cancelled_by_identity_id,
            cancellation_reason, row_version, created_at, updated_at`,
-        [current.id, rowVersion, JSON.stringify(clientSnapshot), actorIdentityId],
+        [
+          current.id,
+          rowVersion,
+          JSON.stringify(clientSnapshot),
+          actorIdentityId,
+          versionTotals.itemsSaleTotal,
+          versionTotals.itemsInternalCostTotal,
+        ],
       );
 
       await client.query(
@@ -602,10 +644,13 @@ export class ProposalsRepository {
         await client.query('ROLLBACK');
         return 'VERSION_CONFLICT';
       }
-      if (
-        current.status !== PROPOSAL_VERSION_STATUSES.Draft &&
-        current.status !== PROPOSAL_VERSION_STATUSES.Issued
-      ) {
+      if (!isProposalVersionStatus(current.status)) {
+        await client.query('ROLLBACK');
+        return 'INVALID_STATE';
+      }
+      try {
+        assertTransition(current.status, PROPOSAL_VERSION_STATUSES.Cancelled);
+      } catch {
         await client.query('ROLLBACK');
         return 'INVALID_STATE';
       }
@@ -625,6 +670,8 @@ export class ProposalsRepository {
            pricing_structure::text AS pricing_structure, currency_code,
            global_sale_price_amount::text AS global_sale_price_amount,
            global_internal_cost_amount::text AS global_internal_cost_amount,
+           items_sale_total_amount::text AS items_sale_total_amount,
+           items_internal_cost_total_amount::text AS items_internal_cost_total_amount,
            commercial_terms, client_snapshot, valid_until, notes,
            issued_at, issued_by_identity_id, superseded_at,
            accepted_at, accepted_by_identity_id, acceptance_origin_code,
@@ -673,7 +720,13 @@ export class ProposalsRepository {
         await client.query('ROLLBACK');
         return 'VERSION_CONFLICT';
       }
-      if (current.status !== PROPOSAL_VERSION_STATUSES.Issued) {
+      if (!isProposalVersionStatus(current.status) || !isProposalVersionStatus(targetStatus)) {
+        await client.query('ROLLBACK');
+        return 'INVALID_STATE';
+      }
+      try {
+        assertTransition(current.status, targetStatus);
+      } catch {
         await client.query('ROLLBACK');
         return 'INVALID_STATE';
       }
@@ -701,6 +754,8 @@ export class ProposalsRepository {
            pricing_structure::text AS pricing_structure, currency_code,
            global_sale_price_amount::text AS global_sale_price_amount,
            global_internal_cost_amount::text AS global_internal_cost_amount,
+           items_sale_total_amount::text AS items_sale_total_amount,
+           items_internal_cost_total_amount::text AS items_internal_cost_total_amount,
            commercial_terms, client_snapshot, valid_until, notes,
            issued_at, issued_by_identity_id, superseded_at,
            accepted_at, accepted_by_identity_id, acceptance_origin_code,

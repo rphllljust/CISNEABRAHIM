@@ -344,4 +344,135 @@ describe('Commercial purchase orders PostgreSQL integration', () => {
     );
     expect(audit.rowCount).toBeGreaterThan(0);
   });
+
+  it('snapshots commercial commitment on register and persists line totals', async () => {
+    const { actor } = await seedActor();
+    const client = await seedClient(actor);
+
+    const created = await purchaseOrdersAccess.create(actor, {
+      clientId: client.id,
+      unitId: UNIT_A,
+      poNumber: FIXTURE_PO,
+      rcNumber: FIXTURE_RC,
+      paymentTerms: '07 DDL',
+      pricingStructure: PURCHASE_ORDER_PRICING_STRUCTURES.LineItems,
+      items: [
+        {
+          lineNumber: 1,
+          description: 'Serviço de locação',
+          quantity: '1.0000',
+          unitCode: 'UA',
+          unitPrice: '9351.0000',
+          lineTotal: '9351.0000',
+        },
+      ],
+    });
+
+    const registered = await purchaseOrdersAccess.register(actor, created.purchaseOrder.id, {
+      rowVersion: created.purchaseOrder.rowVersion,
+    });
+
+    expect(registered.purchaseOrder.itemsLineTotal).toBe('9351');
+    expect(registered.purchaseOrder.commercialSnapshot).toMatchObject({
+      poNumber: FIXTURE_PO,
+      rcNumber: FIXTURE_RC,
+      paymentTerms: '07 DDL',
+    });
+    expect(registered.items[0]?.commercialSnapshot).toMatchObject({
+      description: 'Serviço de locação',
+      lineTotal: '9351',
+    });
+  });
+
+  it('rejects draft edits after register', async () => {
+    const { actor } = await seedActor();
+    const client = await seedClient(actor);
+
+    const created = await purchaseOrdersAccess.create(actor, {
+      clientId: client.id,
+      unitId: UNIT_A,
+      poNumber: FIXTURE_PO,
+      pricingStructure: PURCHASE_ORDER_PRICING_STRUCTURES.HeaderTotal,
+      totalAmount: '9351.0000',
+    });
+    const registered = await purchaseOrdersAccess.register(actor, created.purchaseOrder.id, {
+      rowVersion: created.purchaseOrder.rowVersion,
+    });
+
+    await expect(
+      purchaseOrdersAccess.updateDraft(actor, created.purchaseOrder.id, {
+        rowVersion: registered.purchaseOrder.rowVersion,
+        paymentTerms: '15 DDL',
+      }),
+    ).rejects.toMatchObject({ code: COMMERCIAL_ERROR_CODES.PURCHASE_ORDER_INVALID_STATE });
+  });
+
+  it('returns snapshotted commercial values even if columns are mutated', async () => {
+    const { actor } = await seedActor();
+    const client = await seedClient(actor);
+
+    const created = await purchaseOrdersAccess.create(actor, {
+      clientId: client.id,
+      unitId: UNIT_A,
+      poNumber: FIXTURE_PO,
+      pricingStructure: PURCHASE_ORDER_PRICING_STRUCTURES.LineItems,
+      items: [
+        {
+          lineNumber: 1,
+          description: 'Linha original',
+          quantity: '1.0000',
+          unitCode: 'UA',
+          unitPrice: '1000.0000',
+          lineTotal: '1000.0000',
+        },
+      ],
+    });
+    await purchaseOrdersAccess.register(actor, created.purchaseOrder.id, {
+      rowVersion: created.purchaseOrder.rowVersion,
+    });
+
+    await pool.query(
+      `UPDATE com.purchase_orders SET po_number = $2, total_amount = $3::numeric WHERE id = $1`,
+      [created.purchaseOrder.id, 'PO-ADULTERADO', '9999.0000'],
+    );
+    await pool.query(
+      `UPDATE com.purchase_order_items
+       SET description = $2, line_total_amount = $3::numeric
+       WHERE purchase_order_id = $1`,
+      [created.purchaseOrder.id, 'Linha adulterada', '9999.0000'],
+    );
+
+    const detail = await purchaseOrdersAccess.getById(actor, created.purchaseOrder.id);
+    expect(detail.purchaseOrder.poNumber).toBe(FIXTURE_PO);
+    expect(detail.items[0]?.description).toBe('Linha original');
+    expect(detail.items[0]?.lineTotal).toBe('1000');
+  });
+
+  it('blocks cancel when purchase order has billing consumption', async () => {
+    const { actor } = await seedActor();
+    const client = await seedClient(actor);
+
+    const created = await purchaseOrdersAccess.create(actor, {
+      clientId: client.id,
+      unitId: UNIT_A,
+      poNumber: `PO-BAL-${crypto.randomUUID().slice(0, 8)}`,
+      pricingStructure: PURCHASE_ORDER_PRICING_STRUCTURES.HeaderTotal,
+      totalAmount: '5000.0000',
+    });
+    const registered = await purchaseOrdersAccess.register(actor, created.purchaseOrder.id, {
+      rowVersion: created.purchaseOrder.rowVersion,
+    });
+
+    await pool.query(
+      `UPDATE com.purchase_orders SET consumed_amount = 100.0000 WHERE id = $1`,
+      [created.purchaseOrder.id],
+    );
+
+    await expect(
+      purchaseOrdersAccess.cancel(actor, created.purchaseOrder.id, {
+        rowVersion: registered.purchaseOrder.rowVersion,
+        cancellationReason: 'Tentativa inválida',
+      }),
+    ).rejects.toMatchObject({ code: COMMERCIAL_ERROR_CODES.PURCHASE_ORDER_IN_USE });
+  });
 });

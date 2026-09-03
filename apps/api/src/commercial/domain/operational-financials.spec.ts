@@ -1,0 +1,35 @@
+import { describe, expect, it } from 'vitest';
+import {
+  OPERATIONAL_PROFITABILITY_FORMULA,
+  aggregateOperationalProfitability,
+  computeOperationalMargin,
+  subtractMoney,
+} from './operational-financials';
+
+describe('operational-financials', () => {
+  it('computes margin as revenue minus realized cost', () => {
+    expect(computeOperationalMargin('1000.0000', '250.5000')).toBe('749.5');
+    expect(subtractMoney('1000.0000', '250.5000')).toBe('749.5');
+  });
+
+  it('returns null margin when revenue or cost is missing', () => {
+    expect(computeOperationalMargin(null, '100.0000')).toBeNull();
+    expect(computeOperationalMargin('100.0000', null)).toBeNull();
+  });
+
+  it('aggregates profitability rows without copying ledger data', () => {
+    const totals = aggregateOperationalProfitability([
+      { operationalRevenue: '1000.0000', realizedCost: '200.0000' },
+      { operationalRevenue: '500.0000', realizedCost: null },
+      { operationalRevenue: null, realizedCost: '50.0000' },
+    ]);
+
+    expect(totals.operationalRevenue).toBe('1500');
+    expect(totals.realizedCost).toBe('250');
+    expect(totals.operationalMargin).toBe('1250');
+    expect(totals.revenueSupportedCount).toBe(2);
+    expect(totals.costSupportedCount).toBe(2);
+    expect(totals.marginComputableCount).toBe(1);
+    expect(OPERATIONAL_PROFITABILITY_FORMULA).toContain('operational_margin');
+  });
+});

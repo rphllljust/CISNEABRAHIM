@@ -3,7 +3,12 @@ import type { Pool } from 'pg';
 import { DatabaseService } from '../../infrastructure/database/database.service';
 import { queryIsUnitRegistered } from '../../infrastructure/database/reference-lookups';
 import { orderByCreatedAtDesc } from '../../infrastructure/database/sql';
-import { PURCHASE_ORDER_STATUSES } from '../domain/purchase-order';
+import {
+  PURCHASE_ORDER_STATUSES,
+  assertTransition,
+  canEditDraft,
+  type PurchaseOrderStatus,
+} from '../domain/purchase-order';
 import type {
   ClientSnapshotSource,
   CreatePurchaseOrderPersistenceInput,
@@ -37,9 +42,11 @@ const PO_SELECT = `
     pricing_structure::text AS pricing_structure,
     total_amount::text AS total_amount,
     consumed_amount::text AS consumed_amount,
+    items_line_total_amount::text AS items_line_total_amount,
     payment_terms,
     payment_method,
     client_snapshot,
+    commercial_snapshot,
     original_document_id,
     status::text AS status,
     registered_at,
@@ -80,7 +87,7 @@ export class PurchaseOrdersRepository {
 
   async findDocumentById(documentId: string): Promise<{ id: string; unit_id: string } | null> {
     const result = await this.pool().query<{ id: string; unit_id: string }>(
-      `SELECT id, unit_id FROM doc.documents WHERE id = $1`,
+      `SELECT id, unit_id FROM rpt.read_documents WHERE id = $1`,
       [documentId],
     );
     return result.rows[0] ?? null;
@@ -98,8 +105,8 @@ export class PurchaseOrdersRepository {
          sdv.name,
          sdv.version,
          sdv.status::text AS version_status
-       FROM cat.service_definitions sd
-       INNER JOIN cat.service_definition_versions sdv ON sdv.service_definition_id = sd.id
+       FROM rpt.read_service_definitions sd
+       INNER JOIN rpt.read_service_definition_versions sdv ON sdv.service_definition_id = sd.id
        WHERE sd.id = $1
          AND ($2::uuid IS NULL OR sdv.id = $2::uuid)
        ORDER BY sdv.version DESC
@@ -144,6 +151,7 @@ export class PurchaseOrdersRepository {
          service_definition_id,
          service_definition_version_id,
          service_snapshot,
+         commercial_snapshot,
          quantity::text AS quantity,
          unit_code,
          unit_price_amount::text AS unit_price_amount,
@@ -204,8 +212,10 @@ export class PurchaseOrdersRepository {
            issue_date::text AS issue_date, buyer_contact, service_manager,
            delivery_location, billing_location, currency_code,
            pricing_structure::text AS pricing_structure,
-           total_amount::text AS total_amount, consumed_amount::text AS consumed_amount, payment_terms, payment_method,
-           client_snapshot, original_document_id, status::text AS status,
+           total_amount::text AS total_amount, consumed_amount::text AS consumed_amount,
+           items_line_total_amount::text AS items_line_total_amount,
+           payment_terms, payment_method,
+           client_snapshot, commercial_snapshot, original_document_id, status::text AS status,
            registered_at, registered_by_identity_id, cancelled_at,
            cancelled_by_identity_id, cancellation_reason, row_version, created_at, updated_at`,
         [
@@ -271,7 +281,7 @@ export class PurchaseOrdersRepository {
         await client.query('ROLLBACK');
         return 'VERSION_CONFLICT';
       }
-      if (current.status !== PURCHASE_ORDER_STATUSES.Draft) {
+      if (!canEditDraft(current.status as PurchaseOrderStatus)) {
         await client.query('ROLLBACK');
         return 'INVALID_STATE';
       }
@@ -370,7 +380,7 @@ export class PurchaseOrdersRepository {
         await client.query('ROLLBACK');
         return 'VERSION_CONFLICT';
       }
-      if (current.status !== PURCHASE_ORDER_STATUSES.Draft) {
+      if (!canEditDraft(current.status as PurchaseOrderStatus)) {
         await client.query('ROLLBACK');
         return 'INVALID_STATE';
       }
@@ -378,16 +388,26 @@ export class PurchaseOrdersRepository {
         await client.query('ROLLBACK');
         return 'VERSION_CONFLICT';
       }
+      try {
+        assertTransition(current.status as PurchaseOrderStatus, PURCHASE_ORDER_STATUSES.Registered);
+      } catch {
+        await client.query('ROLLBACK');
+        return 'INVALID_STATE';
+      }
 
       for (const snapshot of input.itemSnapshots) {
-        if (!snapshot.serviceSnapshot) {
-          continue;
-        }
         await client.query(
           `UPDATE com.purchase_order_items
-           SET service_snapshot = $3::jsonb
+           SET
+             service_snapshot = COALESCE($3::jsonb, service_snapshot),
+             commercial_snapshot = $4::jsonb
            WHERE purchase_order_id = $1 AND line_number = $2`,
-          [input.purchaseOrderId, snapshot.lineNumber, JSON.stringify(snapshot.serviceSnapshot)],
+          [
+            input.purchaseOrderId,
+            snapshot.lineNumber,
+            snapshot.serviceSnapshot ? JSON.stringify(snapshot.serviceSnapshot) : null,
+            JSON.stringify(snapshot.commercialSnapshot),
+          ],
         );
       }
 
@@ -396,9 +416,11 @@ export class PurchaseOrdersRepository {
          SET
            status = 'REGISTERED'::com.purchase_order_status,
            client_snapshot = $3::jsonb,
+           commercial_snapshot = $4::jsonb,
+           items_line_total_amount = $5::numeric,
            registered_at = NOW(),
-           registered_by_identity_id = $4,
-           updated_by_identity_id = $4,
+           registered_by_identity_id = $6,
+           updated_by_identity_id = $6,
            updated_at = NOW(),
            row_version = row_version + 1
          WHERE id = $1 AND row_version = $2
@@ -407,14 +429,18 @@ export class PurchaseOrdersRepository {
            issue_date::text AS issue_date, buyer_contact, service_manager,
            delivery_location, billing_location, currency_code,
            pricing_structure::text AS pricing_structure,
-           total_amount::text AS total_amount, consumed_amount::text AS consumed_amount, payment_terms, payment_method,
-           client_snapshot, original_document_id, status::text AS status,
+           total_amount::text AS total_amount, consumed_amount::text AS consumed_amount,
+           items_line_total_amount::text AS items_line_total_amount,
+           payment_terms, payment_method,
+           client_snapshot, commercial_snapshot, original_document_id, status::text AS status,
            registered_at, registered_by_identity_id, cancelled_at,
            cancelled_by_identity_id, cancellation_reason, row_version, created_at, updated_at`,
         [
           input.purchaseOrderId,
           input.rowVersion,
           JSON.stringify(input.clientSnapshot),
+          JSON.stringify(input.commercialSnapshot),
+          input.itemsLineTotal,
           input.actorIdentityId,
         ],
       );
@@ -431,16 +457,42 @@ export class PurchaseOrdersRepository {
 
   async hasBlockingReferences(purchaseOrderId: string): Promise<boolean> {
     const result = await this.pool().query<{ blocked: boolean }>(
-      `SELECT EXISTS (
-         SELECT 1
-         FROM sr.service_requests
-         WHERE purchase_order_id = $1
-           AND status NOT IN ('CANCELLED', 'REJECTED')
-       ) OR EXISTS (
-         SELECT 1
-         FROM so.service_orders
-         WHERE purchase_order_id = $1
-           AND status <> 'CANCELLED'
+      `SELECT (
+         EXISTS (
+           SELECT 1
+           FROM rpt.read_service_requests
+           WHERE purchase_order_id = $1
+             AND status NOT IN ('CANCELLED', 'REJECTED')
+         )
+         OR EXISTS (
+           SELECT 1
+           FROM rpt.read_service_orders
+           WHERE purchase_order_id = $1
+             AND status <> 'CANCELLED'
+         )
+         OR EXISTS (
+           SELECT 1
+           FROM rpt.read_billing_records
+           WHERE purchase_order_id = $1
+             AND status = 'PREPARED'
+         )
+         OR EXISTS (
+           SELECT 1
+           FROM rpt.read_billing_documents
+           WHERE purchase_order_id = $1
+             AND status = 'FINALIZED'
+         )
+         OR EXISTS (
+           SELECT 1
+           FROM rpt.read_measurements m
+           INNER JOIN rpt.read_service_orders so ON so.id = m.service_order_id
+           WHERE so.purchase_order_id = $1
+         )
+         OR COALESCE((
+           SELECT consumed_amount
+           FROM com.purchase_orders
+           WHERE id = $1
+         ), 0) > 0
        ) AS blocked`,
       [purchaseOrderId],
     );
@@ -471,8 +523,10 @@ export class PurchaseOrdersRepository {
          issue_date::text AS issue_date, buyer_contact, service_manager,
          delivery_location, billing_location, currency_code,
          pricing_structure::text AS pricing_structure,
-         total_amount::text AS total_amount, consumed_amount::text AS consumed_amount, payment_terms, payment_method,
-         client_snapshot, original_document_id, status::text AS status,
+         total_amount::text AS total_amount, consumed_amount::text AS consumed_amount,
+         items_line_total_amount::text AS items_line_total_amount,
+         payment_terms, payment_method,
+         client_snapshot, commercial_snapshot, original_document_id, status::text AS status,
          registered_at, registered_by_identity_id, cancelled_at,
          cancelled_by_identity_id, cancellation_reason, row_version, created_at, updated_at`,
       [purchaseOrderId, rowVersion, actorIdentityId, cancellationReason ?? null],

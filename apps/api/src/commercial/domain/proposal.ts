@@ -73,19 +73,43 @@ export function isProposalDocumentLinkPurpose(value: string): value is ProposalD
   return DOCUMENT_PURPOSE_SET.has(value);
 }
 
+export class ProposalStateError extends Error {
+  constructor(readonly code: string) {
+    super(code);
+  }
+}
+
+const TRANSITIONS: Record<ProposalVersionStatus, ProposalVersionStatus[]> = {
+  [PROPOSAL_VERSION_STATUSES.Draft]: [
+    PROPOSAL_VERSION_STATUSES.Issued,
+    PROPOSAL_VERSION_STATUSES.Cancelled,
+  ],
+  [PROPOSAL_VERSION_STATUSES.Issued]: [
+    PROPOSAL_VERSION_STATUSES.Accepted,
+    PROPOSAL_VERSION_STATUSES.Rejected,
+    PROPOSAL_VERSION_STATUSES.Expired,
+    PROPOSAL_VERSION_STATUSES.Cancelled,
+  ],
+  [PROPOSAL_VERSION_STATUSES.Accepted]: [],
+  [PROPOSAL_VERSION_STATUSES.Rejected]: [],
+  [PROPOSAL_VERSION_STATUSES.Expired]: [],
+  [PROPOSAL_VERSION_STATUSES.Cancelled]: [],
+};
+
 export function assertTransition(
   from: ProposalVersionStatus,
   to: ProposalVersionStatus,
+): void {
+  if (!TRANSITIONS[from].includes(to)) {
+    throw new ProposalStateError('INVALID_STATE_TRANSITION');
+  }
+}
+
+export function canTransition(
+  from: ProposalVersionStatus,
+  to: ProposalVersionStatus,
 ): boolean {
-  const allowed: Record<ProposalVersionStatus, ProposalVersionStatus[]> = {
-    DRAFT: ['ISSUED', 'CANCELLED'],
-    ISSUED: ['ACCEPTED', 'REJECTED', 'EXPIRED', 'CANCELLED'],
-    ACCEPTED: [],
-    REJECTED: [],
-    EXPIRED: [],
-    CANCELLED: [],
-  };
-  return allowed[from].includes(to);
+  return TRANSITIONS[from].includes(to);
 }
 
 export function canCreateRevision(status: ProposalVersionStatus): boolean {

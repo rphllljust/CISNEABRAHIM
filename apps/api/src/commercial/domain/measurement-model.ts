@@ -1,5 +1,11 @@
-import type { MeasurementMode } from '../../catalog/domain/service-catalog-status';
-import { MEASUREMENT_MODES } from '../../catalog/domain/service-catalog-status';
+const COMMERCIAL_MEASUREMENT_MODES = [
+  'BY_PERIOD',
+  'BY_QUANTITY',
+  'BY_EVENT',
+  'CHECKLIST',
+] as const;
+
+export type MeasurementMode = (typeof COMMERCIAL_MEASUREMENT_MODES)[number];
 
 /**
  * Modelos de medição compatíveis com serviços (Prompt 39) — vocabulário/policies.
@@ -67,7 +73,7 @@ export function suggestedUnitsForBasis(basis: MeasurementBasis): readonly string
 }
 
 export function assertMeasurementMode(value: string): MeasurementMode {
-  if (!(MEASUREMENT_MODES as readonly string[]).includes(value)) {
+  if (!(COMMERCIAL_MEASUREMENT_MODES as readonly string[]).includes(value)) {
     throw new Error('INVALID_MEASUREMENT_MODE');
   }
   return value as MeasurementMode;

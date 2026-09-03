@@ -1,4 +1,4 @@
-import { normalizeMoneyAmount, parseOptionalMoneyAmount } from './money';
+import { normalizeMoneyAmount, parseOptionalMoneyAmount, sumMoneyAmounts } from './money';
 import {
   isProposalAcceptanceOrigin,
   isProposalDocumentLinkPurpose,
@@ -196,11 +196,5 @@ export function validateLinkProposalDocumentInput(
 }
 
 export function sumLineSaleAmounts(items: ProposalItemInput[]): string {
-  const total = items.reduce((acc, item) => {
-    if (!item.lineSaleAmount) {
-      return acc;
-    }
-    return acc + Number(item.lineSaleAmount);
-  }, 0);
-  return normalizeMoneyAmount(total.toFixed(4));
+  return sumMoneyAmounts(items.map((item) => item.lineSaleAmount));
 }

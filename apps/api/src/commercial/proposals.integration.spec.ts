@@ -411,4 +411,200 @@ describe('Commercial proposals PostgreSQL integration', () => {
     expect(actions).toContain(SECURITY_AUDIT_ACTIONS.CommercialProposalExpire);
     expect(actions).toContain(SECURITY_AUDIT_ACTIONS.CommercialProposalCancel);
   });
+
+  it('snapshots commercial line content on issue and persists decimal totals', async () => {
+    const { actor } = await seedActor();
+    const client = await seedClient(actor);
+
+    const created = await proposalsAccess.create(actor, {
+      clientId: client.id,
+      unitId: UNIT_A,
+      title: 'Itemized totals',
+      pricingStructure: PROPOSAL_PRICING_STRUCTURES.Itemized,
+      items: [
+        {
+          lineNumber: 1,
+          itemKind: PROPOSAL_ITEM_KINDS.Service,
+          description: 'Serviço A',
+          quantity: '2.0000',
+          unitCode: 'SERVICE',
+          unitSalePrice: '500.2500',
+          lineSaleAmount: '1000.5000',
+          lineInternalCost: '800.2500',
+        },
+        {
+          lineNumber: 2,
+          itemKind: PROPOSAL_ITEM_KINDS.Labor,
+          description: 'Serviço B',
+          lineSaleAmount: '250.2500',
+        },
+      ],
+    });
+
+    const issued = await proposalsAccess.issue(
+      actor,
+      created.proposal.id,
+      1,
+      created.currentVersion!.rowVersion,
+    );
+
+    expect(issued.itemsSaleTotal).toBe('1250.75');
+    expect(issued.itemsInternalCostTotal).toBe('800.25');
+    expect(issued.items[0]?.commercialSnapshot).toMatchObject({
+      description: 'Serviço A',
+      quantity: '2',
+      unitCode: 'SERVICE',
+      unitSalePrice: '500.25',
+      lineSaleAmount: '1000.5',
+    });
+  });
+
+  it('rejects draft edits after issue and after accept', async () => {
+    const { actor } = await seedActor();
+    const client = await seedClient(actor);
+    const created = await proposalsAccess.create(actor, {
+      clientId: client.id,
+      unitId: UNIT_A,
+      title: 'Immutable after issue',
+      pricingStructure: PROPOSAL_PRICING_STRUCTURES.GlobalPrice,
+      globalSalePrice: '1000.0000',
+    });
+
+    const issued = await proposalsAccess.issue(
+      actor,
+      created.proposal.id,
+      1,
+      created.currentVersion!.rowVersion,
+    );
+
+    await expect(
+      proposalsAccess.updateDraft(actor, created.proposal.id, 1, {
+        rowVersion: issued.rowVersion,
+        title: 'Tentativa inválida',
+      }),
+    ).rejects.toMatchObject({ code: COMMERCIAL_ERROR_CODES.INVALID_STATE });
+
+    const accepted = await proposalsAccess.accept(actor, created.proposal.id, 1, {
+      rowVersion: issued.rowVersion,
+      acceptanceOriginCode: PROPOSAL_ACCEPTANCE_ORIGINS.InternalApproval,
+    });
+
+    await expect(
+      proposalsAccess.updateDraft(actor, created.proposal.id, 1, {
+        rowVersion: accepted.rowVersion,
+        title: 'Tentativa após aceite',
+      }),
+    ).rejects.toMatchObject({ code: COMMERCIAL_ERROR_CODES.INVALID_STATE });
+  });
+
+  it('returns snapshotted commercial values even if item columns are mutated', async () => {
+    const { actor } = await seedActor();
+    const client = await seedClient(actor);
+    const publishedService = await seedPublishedService(actor);
+
+    const created = await proposalsAccess.create(actor, {
+      clientId: client.id,
+      unitId: UNIT_A,
+      title: 'Snapshot shield',
+      pricingStructure: PROPOSAL_PRICING_STRUCTURES.Itemized,
+      items: [
+        {
+          lineNumber: 1,
+          itemKind: PROPOSAL_ITEM_KINDS.Service,
+          description: 'Descrição original',
+          quantity: '1.0000',
+          unitCode: 'SERVICE',
+          lineSaleAmount: '1000.0000',
+          serviceDefinitionId: publishedService.serviceDefinitionId,
+          serviceDefinitionVersionId: publishedService.id,
+        },
+      ],
+    });
+
+    const issued = await proposalsAccess.issue(
+      actor,
+      created.proposal.id,
+      1,
+      created.currentVersion!.rowVersion,
+    );
+    const itemId = issued.items[0]!.id;
+
+    await pool.query(
+      `UPDATE com.proposal_items
+       SET description = $2, line_sale_amount = $3::numeric, quantity = $4::numeric
+       WHERE id = $1`,
+      [itemId, 'Descrição adulterada', '9999.0000', '99.0000'],
+    );
+
+    const detail = await proposalsAccess.getVersion(actor, created.proposal.id, 1);
+    expect(detail.items[0]?.description).toBe('Descrição original');
+    expect(detail.items[0]?.lineSaleAmount).toBe('1000');
+    expect(detail.items[0]?.quantity).toBe('1');
+    expect(detail.items[0]?.serviceSnapshot?.['name']).toBe(publishedService.name);
+  });
+
+  it('rejects invalid transitions and stale rowVersion on accept, reject and expire', async () => {
+    const { actor } = await seedActor();
+    const client = await seedClient(actor);
+    const created = await proposalsAccess.create(actor, {
+      clientId: client.id,
+      unitId: UNIT_A,
+      title: 'Transition guards',
+      pricingStructure: PROPOSAL_PRICING_STRUCTURES.GlobalPrice,
+      globalSalePrice: '3000.0000',
+    });
+
+    await expect(
+      proposalsAccess.accept(actor, created.proposal.id, 1, {
+        rowVersion: created.currentVersion!.rowVersion,
+        acceptanceOriginCode: PROPOSAL_ACCEPTANCE_ORIGINS.InternalApproval,
+      }),
+    ).rejects.toMatchObject({ code: COMMERCIAL_ERROR_CODES.INVALID_STATE });
+
+    const issued = await proposalsAccess.issue(
+      actor,
+      created.proposal.id,
+      1,
+      created.currentVersion!.rowVersion,
+    );
+
+    await expect(
+      proposalsAccess.accept(actor, created.proposal.id, 1, {
+        rowVersion: issued.rowVersion + 99,
+        acceptanceOriginCode: PROPOSAL_ACCEPTANCE_ORIGINS.InternalApproval,
+      }),
+    ).rejects.toMatchObject({ code: COMMERCIAL_ERROR_CODES.VERSION_CONFLICT });
+
+    await expect(
+      proposalsAccess.reject(actor, created.proposal.id, 1, {
+        rowVersion: issued.rowVersion + 99,
+      }),
+    ).rejects.toMatchObject({ code: COMMERCIAL_ERROR_CODES.VERSION_CONFLICT });
+
+    const rejected = await proposalsAccess.reject(actor, created.proposal.id, 1, {
+      rowVersion: issued.rowVersion,
+      rejectionReason: 'Fora do escopo',
+    });
+    expect(rejected.status).toBe(PROPOSAL_VERSION_STATUSES.Rejected);
+
+    const revision = await proposalsAccess.createRevision(actor, created.proposal.id);
+    const issuedV2 = await proposalsAccess.issue(
+      actor,
+      created.proposal.id,
+      revision.currentVersion!.versionNumber,
+      revision.currentVersion!.rowVersion,
+    );
+
+    await expect(
+      proposalsAccess.expire(actor, created.proposal.id, issuedV2.versionNumber, issuedV2.rowVersion + 99),
+    ).rejects.toMatchObject({ code: COMMERCIAL_ERROR_CODES.VERSION_CONFLICT });
+
+    const expired = await proposalsAccess.expire(
+      actor,
+      created.proposal.id,
+      issuedV2.versionNumber,
+      issuedV2.rowVersion,
+    );
+    expect(expired.status).toBe(PROPOSAL_VERSION_STATUSES.Expired);
+  });
 });

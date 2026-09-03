@@ -33,9 +33,11 @@ export type PurchaseOrderRow = {
   pricing_structure: string;
   total_amount: string | null;
   consumed_amount: string;
+  items_line_total_amount: string | null;
   payment_terms: string | null;
   payment_method: string | null;
   client_snapshot: Record<string, unknown> | null;
+  commercial_snapshot: Record<string, unknown> | null;
   original_document_id: string | null;
   status: string;
   registered_at: string | null;
@@ -56,6 +58,7 @@ export type PurchaseOrderItemRow = {
   service_definition_id: string | null;
   service_definition_version_id: string | null;
   service_snapshot: Record<string, unknown> | null;
+  commercial_snapshot: Record<string, unknown> | null;
   quantity: string | null;
   unit_code: string | null;
   unit_price_amount: string | null;
@@ -127,6 +130,12 @@ export type RegisterPurchaseOrderPersistenceInput = {
   purchaseOrderId: string;
   rowVersion: number;
   clientSnapshot: Record<string, unknown>;
-  itemSnapshots: Array<{ lineNumber: number; serviceSnapshot: Record<string, unknown> | null }>;
+  commercialSnapshot: Record<string, unknown>;
+  itemsLineTotal: string | null;
+  itemSnapshots: Array<{
+    lineNumber: number;
+    serviceSnapshot: Record<string, unknown> | null;
+    commercialSnapshot: Record<string, unknown>;
+  }>;
   actorIdentityId: string;
 };

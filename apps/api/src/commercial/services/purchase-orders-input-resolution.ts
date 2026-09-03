@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { assertUuid, CatalogValidationError } from '../../catalog/domain/service-catalog.validation';
+import { assertUuid, CommercialIdError } from '../domain/uuid';
 import {
   PurchaseOrderValidationError,
   validateCancelPurchaseOrderInput,
@@ -18,7 +18,7 @@ export function assertValidPurchaseOrderId(purchaseOrderId: string): void {
   try {
     assertUuid(purchaseOrderId);
   } catch (error) {
-    if (error instanceof CatalogValidationError) {
+    if (error instanceof CommercialIdError) {
       throw purchaseOrdersAccessNotFound();
     }
     throw error;

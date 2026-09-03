@@ -68,9 +68,11 @@ export type PurchaseOrder = {
   currencyCode: string;
   pricingStructure: PurchaseOrderPricingStructure;
   totalAmount: string | null;
+  itemsLineTotal: string | null;
   paymentTerms: string | null;
   paymentMethod: string | null;
   clientSnapshot: Record<string, unknown> | null;
+  commercialSnapshot: Record<string, unknown> | null;
   originalDocumentId: string | null;
   status: PurchaseOrderStatus;
   registeredAt: string | null;
@@ -88,6 +90,7 @@ export type PurchaseOrderItem = {
   serviceDefinitionId: string | null;
   serviceDefinitionVersionId: string | null;
   serviceSnapshot: Record<string, unknown> | null;
+  commercialSnapshot: Record<string, unknown> | null;
   quantity: string | null;
   unitCode: string | null;
   unitPrice: string | null;

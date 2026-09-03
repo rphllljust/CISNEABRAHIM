@@ -92,3 +92,38 @@ export type PurchaseOrderBillingRuleConfig = {
   recipient?: string;
   [key: string]: unknown;
 };
+
+export class PurchaseOrderStateError extends Error {
+  constructor(readonly code: string) {
+    super(code);
+  }
+}
+
+const TRANSITIONS: Record<PurchaseOrderStatus, PurchaseOrderStatus[]> = {
+  [PURCHASE_ORDER_STATUSES.Draft]: [
+    PURCHASE_ORDER_STATUSES.Registered,
+    PURCHASE_ORDER_STATUSES.Cancelled,
+  ],
+  [PURCHASE_ORDER_STATUSES.Registered]: [PURCHASE_ORDER_STATUSES.Cancelled],
+  [PURCHASE_ORDER_STATUSES.Cancelled]: [],
+};
+
+export function assertTransition(
+  from: PurchaseOrderStatus,
+  to: PurchaseOrderStatus,
+): void {
+  if (!TRANSITIONS[from].includes(to)) {
+    throw new PurchaseOrderStateError('INVALID_STATE_TRANSITION');
+  }
+}
+
+export function canTransition(
+  from: PurchaseOrderStatus,
+  to: PurchaseOrderStatus,
+): boolean {
+  return TRANSITIONS[from].includes(to);
+}
+
+export function canEditDraft(status: PurchaseOrderStatus): boolean {
+  return status === PURCHASE_ORDER_STATUSES.Draft;
+}

@@ -10,6 +10,11 @@ import { AUTHZ_ACTIONS } from '../../authorization/types/authz-actions';
 import type { AuthzAction } from '../../authorization/types/authz-actions';
 import type { IdentityAuthzContext } from '../../authorization/types/authz-decision';
 import { PROPOSAL_VERSION_STATUSES } from '../domain/proposal';
+import { buildCommercialItemSnapshot } from '../domain/proposal-commercial-snapshot';
+import {
+  sumProposalItemInternalCostAmounts,
+  sumProposalItemSaleAmounts,
+} from '../domain/proposal-totals';
 import type {
   AcceptProposalInput,
   CancelProposalInput,
@@ -193,27 +198,33 @@ export class ProposalsAccessService {
     }
 
     const items = await this.proposalsRepository.listItems(version.id);
+    const snapshottedAt = new Date().toISOString();
     const itemSnapshots = await Promise.all(
       items.map(async (item) => {
-        if (!item.service_definition_id) {
-          return { itemId: item.id, serviceSnapshot: null };
-        }
-        const snapshot = await this.proposalsRepository.findServiceSnapshot(
-          item.service_definition_id,
-          item.service_definition_version_id ?? undefined,
-        );
+        const serviceSnapshot = !item.service_definition_id
+          ? null
+          : await this.proposalsRepository
+              .findServiceSnapshot(
+                item.service_definition_id,
+                item.service_definition_version_id ?? undefined,
+              )
+              .then((snapshot) =>
+                snapshot
+                  ? {
+                      serviceDefinitionId: snapshot.service_definition_id,
+                      serviceDefinitionVersionId: snapshot.service_definition_version_id,
+                      code: snapshot.code,
+                      name: snapshot.name,
+                      version: snapshot.version,
+                      versionStatus: snapshot.version_status,
+                    }
+                  : null,
+              );
+
         return {
           itemId: item.id,
-          serviceSnapshot: snapshot
-            ? {
-                serviceDefinitionId: snapshot.service_definition_id,
-                serviceDefinitionVersionId: snapshot.service_definition_version_id,
-                code: snapshot.code,
-                name: snapshot.name,
-                version: snapshot.version,
-                versionStatus: snapshot.version_status,
-              }
-            : null,
+          serviceSnapshot,
+          commercialSnapshot: buildCommercialItemSnapshot(item, snapshottedAt),
         };
       }),
     );
@@ -231,6 +242,10 @@ export class ProposalsAccessService {
         status: client.status,
       },
       itemSnapshots,
+      {
+        itemsSaleTotal: sumProposalItemSaleAmounts(items),
+        itemsInternalCostTotal: sumProposalItemInternalCostAmounts(items),
+      },
     );
 
     if (issued === 'VERSION_CONFLICT') {

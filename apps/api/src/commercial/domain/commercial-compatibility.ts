@@ -1,11 +1,10 @@
-import type { MeasurementMode } from '../../catalog/domain/service-catalog-status';
 import {
   assertCurrencyCode,
   MoneyValidationError,
   normalizeMoneyAmount,
   parseOptionalMoneyAmount,
 } from './money';
-import type { MeasurementBasis } from './measurement-model';
+import type { MeasurementBasis, MeasurementMode } from './measurement-model';
 import {
   defaultMeasurementModeForBasis,
   isMeasurementBasis,

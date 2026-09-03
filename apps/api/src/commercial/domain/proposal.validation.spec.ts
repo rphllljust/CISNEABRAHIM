@@ -29,7 +29,7 @@ describe('proposal validation', () => {
         },
       ],
     });
-    expect(sumLineSaleAmounts(result.items)).toBe('1250.7500');
+    expect(sumLineSaleAmounts(result.items)).toBe('1250.75');
   });
 
   it('requires acceptance origin for accept input', () => {

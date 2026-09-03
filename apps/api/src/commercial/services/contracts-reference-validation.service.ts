@@ -3,28 +3,26 @@ import { PolicyDecisionPointService } from '../../authorization/services/policy-
 import type { IdentityAuthzContext } from '../../authorization/types/authz-decision';
 import { AUTHZ_ACTIONS } from '../../authorization/types/authz-actions';
 import { AUTHZ_RESOURCE_TYPES } from '../../authorization/types/authz-resources';
-import { PURCHASE_ORDER_PRICING_STRUCTURES } from '../domain/purchase-order';
-import { PurchaseOrdersRepository } from '../repositories/purchase-orders.repository';
-import type { PurchaseOrderItemInput } from '../domain/purchase-order.validation';
+import { ContractsRepository } from '../repositories/contracts.repository';
+import type { ContractItemInput } from '../domain/contract.validation';
 import { COMMERCIAL_ERROR_CODES } from '../errors/commercial-error-codes';
 import { CommercialHttpException } from '../errors/commercial-http.exception';
 import {
-  purchaseOrdersAccessDenied,
-  purchaseOrdersClientNotFound,
-  purchaseOrdersDocumentNotFound,
-  purchaseOrdersServiceNotFound,
-  purchaseOrdersValidationFailed,
-} from './purchase-orders-access.errors';
+  contractsAccessDenied,
+  contractsClientNotFound,
+  contractsDocumentNotFound,
+  contractsServiceNotFound,
+} from './contracts-access.errors';
 
 @Injectable()
-export class PurchaseOrdersReferenceValidationService {
+export class ContractsReferenceValidationService {
   constructor(
-    private readonly purchaseOrdersRepository: PurchaseOrdersRepository,
+    private readonly contractsRepository: ContractsRepository,
     private readonly policyDecisionPoint: PolicyDecisionPointService,
   ) {}
 
   async assertUnitRegistered(unitId: string): Promise<void> {
-    if (!(await this.purchaseOrdersRepository.isUnitRegistered(unitId))) {
+    if (!(await this.contractsRepository.isUnitRegistered(unitId))) {
       throw new CommercialHttpException(
         HttpStatus.BAD_REQUEST,
         COMMERCIAL_ERROR_CODES.UNIT_NOT_REGISTERED,
@@ -34,9 +32,9 @@ export class PurchaseOrdersReferenceValidationService {
   }
 
   async assertClientActive(clientId: string): Promise<void> {
-    const client = await this.purchaseOrdersRepository.findClientById(clientId);
+    const client = await this.contractsRepository.findClientById(clientId);
     if (!client) {
-      throw purchaseOrdersClientNotFound();
+      throw contractsClientNotFound();
     }
     if (client.status !== 'ACTIVE') {
       throw new CommercialHttpException(
@@ -47,17 +45,17 @@ export class PurchaseOrdersReferenceValidationService {
     }
   }
 
-  async assertServiceReferences(items: PurchaseOrderItemInput[]): Promise<void> {
+  async assertServiceReferences(items: ContractItemInput[]): Promise<void> {
     for (const item of items) {
       if (!item.serviceDefinitionId) {
         continue;
       }
-      const service = await this.purchaseOrdersRepository.findServiceSnapshot(
+      const service = await this.contractsRepository.findServiceSnapshot(
         item.serviceDefinitionId,
         item.serviceDefinitionVersionId,
       );
       if (!service) {
-        throw purchaseOrdersServiceNotFound();
+        throw contractsServiceNotFound();
       }
     }
   }
@@ -67,12 +65,12 @@ export class PurchaseOrdersReferenceValidationService {
     documentId: string,
     unitId: string,
   ): Promise<void> {
-    const document = await this.purchaseOrdersRepository.findDocumentById(documentId);
+    const document = await this.contractsRepository.findDocumentById(documentId);
     if (!document) {
-      throw purchaseOrdersDocumentNotFound();
+      throw contractsDocumentNotFound();
     }
     if (document.unit_id !== unitId) {
-      throw purchaseOrdersAccessDenied();
+      throw contractsAccessDenied();
     }
     const decision = await this.policyDecisionPoint.decide(
       actor,
@@ -84,37 +82,17 @@ export class PurchaseOrdersReferenceValidationService {
       { audit: false },
     );
     if (decision.result === 'DENY') {
-      throw purchaseOrdersAccessDenied();
+      throw contractsAccessDenied();
     }
   }
 
   async assertDocumentUnitMatch(documentId: string, unitId: string): Promise<void> {
-    const document = await this.purchaseOrdersRepository.findDocumentById(documentId);
+    const document = await this.contractsRepository.findDocumentById(documentId);
     if (!document) {
-      throw purchaseOrdersDocumentNotFound();
+      throw contractsDocumentNotFound();
     }
     if (document.unit_id !== unitId) {
-      throw purchaseOrdersAccessDenied();
-    }
-  }
-
-  async assertRegisterReady(purchaseOrder: {
-    id: string;
-    pricing_structure: string;
-    total_amount: string | null;
-  }): Promise<void> {
-    if (
-      purchaseOrder.pricing_structure === PURCHASE_ORDER_PRICING_STRUCTURES.HeaderTotal &&
-      !purchaseOrder.total_amount
-    ) {
-      throw purchaseOrdersValidationFailed();
-    }
-
-    if (purchaseOrder.pricing_structure === PURCHASE_ORDER_PRICING_STRUCTURES.LineItems) {
-      const items = await this.purchaseOrdersRepository.listItems(purchaseOrder.id);
-      if (items.length === 0 || items.some((item) => !item.line_total_amount)) {
-        throw purchaseOrdersValidationFailed();
-      }
+      throw contractsAccessDenied();
     }
   }
 }

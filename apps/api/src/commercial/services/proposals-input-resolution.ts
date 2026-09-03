@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { assertUuid, CatalogValidationError } from '../../catalog/domain/service-catalog.validation';
+import { assertUuid, CommercialIdError } from '../domain/uuid';
 import {
   ProposalValidationError,
   validateAcceptProposalInput,
@@ -21,7 +21,7 @@ export function assertValidProposalId(proposalId: string): void {
   try {
     assertUuid(proposalId);
   } catch (error) {
-    if (error instanceof CatalogValidationError) {
+    if (error instanceof CommercialIdError) {
       throw proposalsAccessNotFound();
     }
     throw error;

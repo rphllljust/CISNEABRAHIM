@@ -9,6 +9,11 @@ import { SecurityAuditService } from '../../audit/services/security-audit.servic
 import { AUTHZ_ACTIONS } from '../../authorization/types/authz-actions';
 import type { AuthzAction } from '../../authorization/types/authz-actions';
 import type { IdentityAuthzContext } from '../../authorization/types/authz-decision';
+import {
+  buildPurchaseOrderCommercialSnapshot,
+  buildPurchaseOrderItemCommercialSnapshot,
+} from '../domain/purchase-order-commercial-snapshot';
+import { sumPurchaseOrderItemLineTotals } from '../domain/purchase-order-totals';
 import type {
   CancelPurchaseOrderInput,
   CreatePurchaseOrderInput,
@@ -194,6 +199,7 @@ export class PurchaseOrdersAccessService {
     );
 
     const validated = resolveRegisterPurchaseOrderInput(input);
+    await this.referenceValidation.assertRegisterReady(purchaseOrder);
 
     const client = await this.purchaseOrdersRepository.findClientById(purchaseOrder.client_id);
     if (!client) {
@@ -201,27 +207,33 @@ export class PurchaseOrdersAccessService {
     }
 
     const items = await this.purchaseOrdersRepository.listItems(purchaseOrderId);
+    const snapshottedAt = new Date().toISOString();
     const itemSnapshots = await Promise.all(
       items.map(async (item) => {
-        if (!item.service_definition_id) {
-          return { lineNumber: item.line_number, serviceSnapshot: null };
-        }
-        const service = await this.purchaseOrdersRepository.findServiceSnapshot(
-          item.service_definition_id,
-          item.service_definition_version_id ?? undefined,
-        );
+        const serviceSnapshot = !item.service_definition_id
+          ? null
+          : await this.purchaseOrdersRepository
+              .findServiceSnapshot(
+                item.service_definition_id,
+                item.service_definition_version_id ?? undefined,
+              )
+              .then((service) =>
+                service
+                  ? {
+                      serviceDefinitionId: service.service_definition_id,
+                      serviceDefinitionVersionId: service.service_definition_version_id,
+                      code: service.code,
+                      name: service.name,
+                      version: service.version,
+                      versionStatus: service.version_status,
+                    }
+                  : null,
+              );
+
         return {
           lineNumber: item.line_number,
-          serviceSnapshot: service
-            ? {
-                serviceDefinitionId: service.service_definition_id,
-                serviceDefinitionVersionId: service.service_definition_version_id,
-                code: service.code,
-                name: service.name,
-                version: service.version,
-                versionStatus: service.version_status,
-              }
-            : null,
+          serviceSnapshot,
+          commercialSnapshot: buildPurchaseOrderItemCommercialSnapshot(item, snapshottedAt),
         };
       }),
     );
@@ -235,8 +247,10 @@ export class PurchaseOrdersAccessService {
         tradeName: client.trade_name,
         normalizedTaxId: client.normalized_tax_id,
         status: client.status,
-        snapshottedAt: new Date().toISOString(),
+        snapshottedAt,
       },
+      commercialSnapshot: buildPurchaseOrderCommercialSnapshot(purchaseOrder, snapshottedAt),
+      itemsLineTotal: sumPurchaseOrderItemLineTotals(items),
       itemSnapshots,
       actorIdentityId: actor.identityId,
     });
