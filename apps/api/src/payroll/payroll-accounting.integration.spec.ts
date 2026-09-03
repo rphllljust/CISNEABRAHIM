@@ -1,0 +1,355 @@
+import {
+  hashPassword,
+  insertGrant,
+  insertIdentity,
+  truncateAccountingTables,
+  truncateIdentityAndAuthorizationTables,
+  truncatePayrollTables,
+} from '@cisne/database';
+import { Test, TestingModule } from '@nestjs/testing';
+import { Pool } from 'pg';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { AccountingModule } from '../accounting/accounting.module';
+import { ACCOUNT_CLASSES } from '../accounting/domain/ledger';
+import { POSTING_EVENTS, POSTING_ORIGINS } from '../accounting/domain/posting';
+import { ACCOUNTING_ERROR_CODES } from '../accounting/errors/accounting-error-codes';
+import { AccountingAccessService } from '../accounting/services/accounting-access.service';
+import { AccountingRepository } from '../accounting/repositories/accounting.repository';
+import { AuditModule } from '../audit/audit.module';
+import { AuthModule } from '../auth/auth.module';
+import { AUTH_TEST_PASSWORD, applyAuthTestEnv } from '../auth/test/auth-test-env';
+import { normalizeLoginIdentifier } from '../auth/crypto/token-crypto';
+import { AuthorizationModule } from '../authorization/authorization.module';
+import { AUTHZ_ACTIONS } from '../authorization/types/authz-actions';
+import { AUTHZ_RESOURCE_TYPES } from '../authorization/types/authz-resources';
+import { AUTHZ_SCOPES } from '../authorization/types/authz-scopes';
+import {
+  POSTING_FAILURE_STAGES,
+  PostingFailureInjection,
+} from '../platform/kernel/posting-failure-injection';
+import { PAYROLL_EVENT_KINDS } from './domain/payroll';
+import { PayrollModule } from './payroll.module';
+import { PayrollAccessService } from './services/payroll-access.service';
+import { PayrollAccountingIntegrationService } from './services/payroll-accounting-integration.service';
+
+const UNIT = 'unit-pay-acc';
+
+async function grantAll(pool: Pool, identityId: string): Promise<void> {
+  for (const action of [
+    AUTHZ_ACTIONS.PayrollContractManage,
+    AUTHZ_ACTIONS.PayrollPeriodOpen,
+    AUTHZ_ACTIONS.PayrollPeriodClose,
+    AUTHZ_ACTIONS.PayrollPeriodReopen,
+    AUTHZ_ACTIONS.PayrollEventRecord,
+    AUTHZ_ACTIONS.PayrollCalculate,
+    AUTHZ_ACTIONS.PayrollRead,
+  ]) {
+    await insertGrant(pool, {
+      identityId,
+      action,
+      resourceType: AUTHZ_RESOURCE_TYPES.PayrollLedger,
+      scopeType: AUTHZ_SCOPES.Global,
+      grantedByIdentityId: identityId,
+    });
+  }
+  for (const action of [
+    AUTHZ_ACTIONS.AccountingChartManage,
+    AUTHZ_ACTIONS.AccountingPeriodOpen,
+    AUTHZ_ACTIONS.AccountingPeriodClose,
+    AUTHZ_ACTIONS.AccountingJournalDraft,
+    AUTHZ_ACTIONS.AccountingJournalPost,
+    AUTHZ_ACTIONS.AccountingJournalReverse,
+    AUTHZ_ACTIONS.AccountingJournalRead,
+    AUTHZ_ACTIONS.AccountingJournalList,
+    AUTHZ_ACTIONS.AccountingPostingRuleManage,
+    AUTHZ_ACTIONS.AccountingPostingRulePublish,
+    AUTHZ_ACTIONS.AccountingPostingRequest,
+  ]) {
+    await insertGrant(pool, {
+      identityId,
+      action,
+      resourceType: AUTHZ_RESOURCE_TYPES.AccountingLedger,
+      scopeType: AUTHZ_SCOPES.Global,
+      grantedByIdentityId: identityId,
+    });
+  }
+}
+
+describe('Payroll to accounting integration PostgreSQL', () => {
+  let pool: Pool;
+  let payroll: PayrollAccessService;
+  let accounting: AccountingAccessService;
+  let integration: PayrollAccountingIntegrationService;
+  let repository: AccountingRepository;
+  let failures: PostingFailureInjection;
+  const testDatabaseUrl = process.env['TEST_DATABASE_URL'];
+
+  beforeAll(async () => {
+    if (!testDatabaseUrl) {
+      throw new Error('TEST_DATABASE_URL is required for payroll-accounting integration tests.');
+    }
+    applyAuthTestEnv(testDatabaseUrl);
+    const module: TestingModule = await Test.createTestingModule({
+      imports: [AuthModule, AuditModule, AuthorizationModule, PayrollModule, AccountingModule],
+    }).compile();
+    payroll = module.get(PayrollAccessService);
+    accounting = module.get(AccountingAccessService);
+    integration = module.get(PayrollAccountingIntegrationService);
+    repository = module.get(AccountingRepository);
+    failures = module.get(PostingFailureInjection);
+    pool = new Pool({ connectionString: testDatabaseUrl });
+  });
+
+  beforeEach(async () => {
+    await truncatePayrollTables(pool);
+    await truncateAccountingTables(pool);
+    await truncateIdentityAndAuthorizationTables(pool);
+    failures.reset();
+  });
+
+  afterAll(async () => {
+    await pool.end();
+  });
+
+  async function seedActor(withGrant = true) {
+    const login = normalizeLoginIdentifier(`payacc-${crypto.randomUUID()}@cisne.invalid`);
+    const passwordHash = await hashPassword(AUTH_TEST_PASSWORD);
+    const { identityId } = await insertIdentity(pool, login, passwordHash);
+    if (withGrant) {
+      await grantAll(pool, identityId);
+    }
+    return { identityId, sessionId: 'test-session' };
+  }
+
+  async function seedLedger(actor: { identityId: string; sessionId: string }) {
+    const chart = await accounting.createChart(actor, {
+      unitId: UNIT,
+      code: `COA-${crypto.randomUUID().slice(0, 8)}`,
+      name: 'Payroll posting chart',
+    });
+    const debit = await accounting.createAccount(actor, chart.id, {
+      code: '5.1.10',
+      name: 'Payroll expense',
+      class: ACCOUNT_CLASSES.Expense,
+    });
+    const credit = await accounting.createAccount(actor, chart.id, {
+      code: '2.1.30',
+      name: 'Payroll payable',
+      class: ACCOUNT_CLASSES.Liability,
+    });
+    await accounting.createPeriod(actor, {
+      chartId: chart.id,
+      unitId: UNIT,
+      code: '2026-09',
+      startsOn: '2026-09-01',
+      endsOn: '2026-09-30',
+    });
+    return { chart, debit, credit };
+  }
+
+  async function publishClosedRule(
+    actor: { identityId: string; sessionId: string },
+    debitAccountId: string,
+    creditAccountId: string,
+  ) {
+    const rule = await accounting.createPostingRule(actor, {
+      unitId: UNIT,
+      code: `PAY-${crypto.randomUUID().slice(0, 6)}`,
+      name: 'Payroll closed',
+      originKind: POSTING_ORIGINS.Payroll,
+      eventKind: POSTING_EVENTS.PayrollClosed,
+    });
+    const draft = await accounting.createPostingRuleVersion(actor, rule.id, {
+      debitAccountId,
+      creditAccountId,
+      effectiveFrom: '2026-01-01',
+      effectiveTo: null,
+      sourceReference: 'TEST-PAYROLL-POSTING',
+    });
+    return accounting.publishPostingRuleVersion(actor, draft.id, { rowVersion: draft.rowVersion });
+  }
+
+  async function closeCalculatedPeriod(actor: { identityId: string; sessionId: string }) {
+    const contract = await payroll.createContract(actor, {
+      unitId: UNIT,
+      code: `CTR-${crypto.randomUUID().slice(0, 6)}`,
+      displayName: 'Payroll contract',
+      startsOn: '2026-01-01',
+    });
+    const period = await payroll.openPeriod(actor, {
+      unitId: UNIT,
+      competenceYear: 2026,
+      competenceMonth: 9,
+      startsOn: '2026-09-01',
+      endsOn: '2026-09-30',
+    });
+    await payroll.recordEvent(actor, {
+      unitId: UNIT,
+      payrollPeriodId: period.id,
+      employmentContractId: contract.id,
+      eventKind: PAYROLL_EVENT_KINDS.Earning,
+      amount: '1000.0000',
+      componentLabel: 'TEST_SALARY',
+      description: 'Calculated earning',
+      idempotencyKey: `earn-${crypto.randomUUID()}`,
+    });
+    await payroll.calculatePeriod(actor, period.id, UNIT);
+    const closed = await payroll.closePeriodAuthorized(actor, period.id, UNIT);
+    return { contract, period: closed };
+  }
+
+  async function countPosted() {
+    const result = await pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM acc.journal_entries WHERE status = 'POSTED'`,
+    );
+    return Number(result.rows[0]?.count ?? '0');
+  }
+
+  it('posts PayrollClosed through the accounting port without payroll writing acc.*', async () => {
+    const actor = await seedActor();
+    const { debit, credit } = await seedLedger(actor);
+    await publishClosedRule(actor, debit.id, credit.id);
+    const { period } = await closeCalculatedPeriod(actor);
+    expect(period.status).toBe('CLOSED');
+    expect(await countPosted()).toBe(1);
+    const posted = await integration.postClosedPeriod(actor, period.id);
+    expect(posted.idempotent).toBe(true);
+    const journal = await accounting.getJournal(actor, posted.journalEntryId);
+    expect(journal.balanced).toBe(true);
+    expect(journal.debitTotal).toBe(journal.creditTotal);
+    const requests = await pool.query<{ source_reference: string; count: string }>(
+      `SELECT source_reference, COUNT(*)::text AS count
+       FROM acc.accounting_posting_requests
+       WHERE event_kind = 'PAYROLL_CLOSED'
+       GROUP BY source_reference`,
+    );
+    expect(requests.rows).toEqual([
+      { source_reference: 'PAYROLL-CLOSED:unit-pay-acc:2026-09', count: '1' },
+    ]);
+  });
+
+  it('treats duplicate and concurrent closes as one posted journal', async () => {
+    const actor = await seedActor();
+    const { debit, credit } = await seedLedger(actor);
+    await publishClosedRule(actor, debit.id, credit.id);
+    const { period } = await closeCalculatedPeriod(actor);
+    const first = await payroll.closePeriodAuthorized(actor, period.id, UNIT);
+    const second = await payroll.closePeriodAuthorized(actor, period.id, UNIT);
+    expect(first.status).toBe('CLOSED');
+    expect(second.status).toBe('CLOSED');
+    const concurrent = await Promise.allSettled([
+      integration.postClosedPeriod(actor, period.id),
+      integration.postClosedPeriod(actor, period.id),
+    ]);
+    const fulfilled = concurrent.filter((item) => item.status === 'fulfilled');
+    expect(fulfilled.length).toBeGreaterThanOrEqual(1);
+    const ids = fulfilled.map((item) =>
+      item.status === 'fulfilled' ? item.value.journalEntryId : '',
+    );
+    expect(new Set(ids.filter(Boolean)).size).toBe(1);
+    expect(await countPosted()).toBe(1);
+  });
+
+  it('returns ACCOUNTING_RULE_NOT_CONFIGURED when the closed period has no published rule', async () => {
+    const actor = await seedActor();
+    await seedLedger(actor);
+    const { period } = await closeCalculatedPeriod(actor);
+    expect(period.status).toBe('CLOSED');
+    expect(await countPosted()).toBe(0);
+    await expect(integration.postClosedPeriod(actor, period.id)).rejects.toMatchObject({
+      code: ACCOUNTING_ERROR_CODES.RULE_NOT_CONFIGURED,
+    });
+    expect(await countPosted()).toBe(0);
+  });
+
+  it('reopens a posted competence with reversal and keeps the original journal', async () => {
+    const actor = await seedActor();
+    const { debit, credit } = await seedLedger(actor);
+    await publishClosedRule(actor, debit.id, credit.id);
+    const { contract, period } = await closeCalculatedPeriod(actor);
+    const original = await integration.postClosedPeriod(actor, period.id);
+    const reopened = await payroll.reopenPeriod(actor, period.id, UNIT);
+    expect(reopened.status).toBe('OPEN');
+    const replay = await integration.reverseReopenedPeriod(
+      actor,
+      period.id,
+      'Payroll competence reopened',
+    );
+    expect(replay.idempotent).toBe(true);
+    expect(await countPosted()).toBe(2);
+    const originalJournal = await pool.query<{ status: string }>(
+      `SELECT status::text AS status FROM acc.journal_entries WHERE id = $1`,
+      [original.journalEntryId],
+    );
+    expect(originalJournal.rows[0]?.status).toBe('POSTED');
+    const kinds = await pool.query<{ kind: string }>(
+      `SELECT kind::text AS kind FROM acc.journal_entries WHERE status = 'POSTED' ORDER BY created_at`,
+    );
+    expect(kinds.rows.map((row) => row.kind)).toEqual(['ENTRY', 'REVERSAL']);
+    await expect(
+      payroll.recordEvent(actor, {
+        unitId: UNIT,
+        payrollPeriodId: period.id,
+        employmentContractId: contract.id,
+        eventKind: PAYROLL_EVENT_KINDS.Deduction,
+        amount: '10.0000',
+        componentLabel: 'TEST_AFTER_REOPEN',
+        description: 'After reopen',
+        idempotencyKey: `adj-${crypto.randomUUID()}`,
+      }),
+    ).resolves.toMatchObject({ idempotent: false });
+  });
+
+  it('rolls back injected failures so no partial journal remains and the period stays CLOSED', async () => {
+    const actor = await seedActor();
+    const { debit, credit } = await seedLedger(actor);
+    const { period } = await closeCalculatedPeriod(actor);
+    expect(period.status).toBe('CLOSED');
+    expect(await countPosted()).toBe(0);
+    await publishClosedRule(actor, debit.id, credit.id);
+
+    failures.stage = POSTING_FAILURE_STAGES.AfterPayrollEvent;
+    await expect(integration.postClosedPeriod(actor, period.id)).rejects.toThrow(
+      /ACCOUNTING_POSTING_INJECTED_FAILURE/,
+    );
+    expect(await countPosted()).toBe(0);
+
+    failures.stage = POSTING_FAILURE_STAGES.BeforeJournal;
+    await expect(integration.postClosedPeriod(actor, period.id)).rejects.toThrow(
+      /ACCOUNTING_POSTING_INJECTED_FAILURE/,
+    );
+    expect(await countPosted()).toBe(0);
+
+    failures.stage = POSTING_FAILURE_STAGES.DuringPosting;
+    await expect(integration.postClosedPeriod(actor, period.id)).rejects.toBeTruthy();
+    expect(await countPosted()).toBe(0);
+    const leftoverRequests = await pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM acc.accounting_posting_requests`,
+    );
+    expect(leftoverRequests.rows[0]?.count).toBe('0');
+    expect((await payroll.getPeriod(actor, period.id, UNIT)).status).toBe('CLOSED');
+  });
+
+  it('denies an operational user from requesting payroll accounting posting', async () => {
+    const admin = await seedActor(true);
+    const stranger = await seedActor(false);
+    const { debit, credit } = await seedLedger(admin);
+    await publishClosedRule(admin, debit.id, credit.id);
+    const { period } = await closeCalculatedPeriod(admin);
+    await expect(integration.postClosedPeriod(stranger, period.id)).rejects.toBeTruthy();
+    expect(await countPosted()).toBe(1);
+  });
+
+  it('reconstructs the ledger as SUM(DEBIT) = SUM(CREDIT) after close and reopen reversal', async () => {
+    const actor = await seedActor();
+    const { chart, debit, credit } = await seedLedger(actor);
+    await publishClosedRule(actor, debit.id, credit.id);
+    const { period } = await closeCalculatedPeriod(actor);
+    await payroll.reopenPeriod(actor, period.id, UNIT);
+    const ledger = await accounting.reconstructLedger(actor, chart.id);
+    expect(ledger.balanced).toBe(true);
+    expect(ledger.totalDebits).toBe(ledger.totalCredits);
+    expect(await repository.countPostedUnbalanced()).toBe(0);
+    expect(await repository.countDuplicatePostings()).toBe(0);
+  });
+});
