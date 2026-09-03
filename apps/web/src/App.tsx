@@ -31,6 +31,9 @@ import { PhysicalAssetDetailPage } from './assets/pages/PhysicalAssetDetailPage'
 import { PhysicalAssetEditPage } from './assets/pages/PhysicalAssetEditPage';
 import { PhysicalAssetsListPage } from './assets/pages/PhysicalAssetsListPage';
 import { AssetsRoute } from './assets/AssetsRoute';
+import { FleetListPage } from './fleet/pages/FleetListPage';
+import { RentalsListPage } from './rentals/pages/RentalsListPage';
+import { TransportListPage } from './transport/pages/TransportListPage';
 import { RequestsRoute } from './requests/RequestsRoute';
 import { ServiceOrdersRoute } from './service-orders/ServiceOrdersRoute';
 import { ServiceOrderPlanningPage } from './service-orders/pages/ServiceOrderPlanningPage';
@@ -62,6 +65,30 @@ import { ServiceUnavailablePage } from './pages/ServiceUnavailablePage';
 import { ShellAccessDeniedPage } from './pages/ShellAccessDeniedPage';
 import { ShellNotFoundPage } from './pages/ShellNotFoundPage';
 import { SessionExpiredPage } from './pages/SessionExpiredPage';
+import { FinanceRoute } from './finance/FinanceRoute';
+import { FinanceOverviewPage } from './finance/pages/FinanceOverviewPage';
+import { ReceivablesListPage } from './finance/pages/ReceivablesListPage';
+import { ReceivableDetailPage } from './finance/pages/ReceivableDetailPage';
+import { PayablesListPage } from './finance/pages/PayablesListPage';
+import { PayableDetailPage } from './finance/pages/PayableDetailPage';
+import { TreasuryListPage } from './finance/pages/TreasuryListPage';
+import { TreasuryAccountDetailPage } from './finance/pages/TreasuryAccountDetailPage';
+import { BankReconciliationPage } from './finance/pages/BankReconciliationPage';
+import { FiscalRoute } from './fiscal/FiscalRoute';
+import { FiscalDocumentsPage } from './fiscal/pages/FiscalDocumentsPage';
+import { FiscalApuracaoPage } from './fiscal/pages/FiscalApuracaoPage';
+import { FiscalTributosPage } from './fiscal/pages/FiscalTributosPage';
+import { AccountingRoute } from './accounting/AccountingRoute';
+import { ChartOfAccountsPage } from './accounting/pages/ChartOfAccountsPage';
+import { JournalsPage } from './accounting/pages/JournalsPage';
+import {
+  BalanceSheetPage,
+  GeneralLedgerPage,
+  IncomeStatementPage,
+  JournalBookPage,
+  TrialBalancePage,
+} from './accounting/pages/PeriodReportPages';
+import { PeriodClosePage } from './accounting/pages/PeriodClosePage';
 
 export function App() {
   return (
@@ -217,6 +244,14 @@ export function App() {
                 }
               />
               <Route
+                path="/app/fleet"
+                element={
+                  <AssetsRoute>
+                    <FleetListPage />
+                  </AssetsRoute>
+                }
+              />
+              <Route
                 path="/app/assets"
                 element={
                   <AssetsRoute>
@@ -345,6 +380,22 @@ export function App() {
                 }
               />
               <Route
+                path="/app/rentals"
+                element={
+                  <ServiceOrdersRoute>
+                    <RentalsListPage />
+                  </ServiceOrdersRoute>
+                }
+              />
+              <Route
+                path="/app/transport"
+                element={
+                  <ServiceOrdersRoute>
+                    <TransportListPage />
+                  </ServiceOrdersRoute>
+                }
+              />
+              <Route
                 path="/app/service-orders"
                 element={
                   <ServiceOrdersRoute>
@@ -374,6 +425,174 @@ export function App() {
                   <BillingRoute>
                     <BillingDashboardPage />
                   </BillingRoute>
+                }
+              />
+              <Route
+                path="/app/finance"
+                element={
+                  <FinanceRoute access="overview">
+                    <FinanceOverviewPage />
+                  </FinanceRoute>
+                }
+              />
+              <Route
+                path="/app/finance/receivables"
+                element={
+                  <FinanceRoute access="receivables">
+                    <ReceivablesListPage />
+                  </FinanceRoute>
+                }
+              />
+              <Route
+                path="/app/finance/receivables/:receivableId"
+                element={
+                  <FinanceRoute access="receivables">
+                    <ReceivableDetailPage />
+                  </FinanceRoute>
+                }
+              />
+              <Route
+                path="/app/finance/payables"
+                element={
+                  <FinanceRoute access="payables">
+                    <PayablesListPage />
+                  </FinanceRoute>
+                }
+              />
+              <Route
+                path="/app/finance/payables/:payableId"
+                element={
+                  <FinanceRoute access="payables">
+                    <PayableDetailPage />
+                  </FinanceRoute>
+                }
+              />
+              <Route
+                path="/app/finance/treasury"
+                element={
+                  <FinanceRoute access="treasury">
+                    <TreasuryListPage />
+                  </FinanceRoute>
+                }
+              />
+              <Route
+                path="/app/finance/treasury/:accountId"
+                element={
+                  <FinanceRoute access="treasury">
+                    <TreasuryAccountDetailPage />
+                  </FinanceRoute>
+                }
+              />
+              <Route
+                path="/app/finance/reconciliation"
+                element={
+                  <FinanceRoute access="reconciliation">
+                    <BankReconciliationPage />
+                  </FinanceRoute>
+                }
+              />
+              <Route
+                path="/app/fiscal/documents"
+                element={
+                  <FiscalRoute access="documents">
+                    <FiscalDocumentsPage />
+                  </FiscalRoute>
+                }
+              />
+              <Route
+                path="/app/fiscal/documents/:fiscalDocumentId"
+                element={
+                  <FiscalRoute access="documents">
+                    <FiscalDocumentsPage />
+                  </FiscalRoute>
+                }
+              />
+              <Route
+                path="/app/fiscal/apuracao"
+                element={
+                  <FiscalRoute access="tax">
+                    <FiscalApuracaoPage />
+                  </FiscalRoute>
+                }
+              />
+              <Route
+                path="/app/fiscal/tributos"
+                element={
+                  <FiscalRoute access="tax">
+                    <FiscalTributosPage />
+                  </FiscalRoute>
+                }
+              />
+              <Route
+                path="/app/accounting/chart"
+                element={
+                  <AccountingRoute>
+                    <ChartOfAccountsPage />
+                  </AccountingRoute>
+                }
+              />
+              <Route
+                path="/app/accounting/journals"
+                element={
+                  <AccountingRoute>
+                    <JournalsPage />
+                  </AccountingRoute>
+                }
+              />
+              <Route
+                path="/app/accounting/journals/:journalId"
+                element={
+                  <AccountingRoute>
+                    <JournalsPage />
+                  </AccountingRoute>
+                }
+              />
+              <Route
+                path="/app/accounting/diario"
+                element={
+                  <AccountingRoute>
+                    <JournalBookPage />
+                  </AccountingRoute>
+                }
+              />
+              <Route
+                path="/app/accounting/razao"
+                element={
+                  <AccountingRoute>
+                    <GeneralLedgerPage />
+                  </AccountingRoute>
+                }
+              />
+              <Route
+                path="/app/accounting/balancete"
+                element={
+                  <AccountingRoute>
+                    <TrialBalancePage />
+                  </AccountingRoute>
+                }
+              />
+              <Route
+                path="/app/accounting/dre"
+                element={
+                  <AccountingRoute>
+                    <IncomeStatementPage />
+                  </AccountingRoute>
+                }
+              />
+              <Route
+                path="/app/accounting/balanco"
+                element={
+                  <AccountingRoute>
+                    <BalanceSheetPage />
+                  </AccountingRoute>
+                }
+              />
+              <Route
+                path="/app/accounting/fechamentos"
+                element={
+                  <AccountingRoute>
+                    <PeriodClosePage />
+                  </AccountingRoute>
                 }
               />
               <Route

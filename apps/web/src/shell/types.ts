@@ -1,3 +1,5 @@
+import type { GatedModuleId } from '../release-scope/release-1-scope';
+
 export type ShellNavAccessCheck =
   | 'authz-probe'
   | 'client-list'
@@ -8,7 +10,15 @@ export type ShellNavAccessCheck =
   | 'purchase-order-list'
   | 'billing-list'
   | 'service-order-list'
-  | 'people-list';
+  | 'people-list'
+  | 'finance-overview'
+  | 'finance-receivable-list'
+  | 'finance-payable-list'
+  | 'finance-treasury-list'
+  | 'finance-reconciliation-read'
+  | 'fiscal-document-read'
+  | 'fiscal-tax-read'
+  | 'accounting-journal-read';
 
 export type ShellNavItem = {
   id: string;
@@ -16,6 +26,7 @@ export type ShellNavItem = {
   path: string;
   capabilityId: string | null;
   accessCheck?: ShellNavAccessCheck;
+  featureFlag?: GatedModuleId;
 };
 
 export type ShellNavGroup = {

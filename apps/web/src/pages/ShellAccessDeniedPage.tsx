@@ -4,19 +4,26 @@ import { ErrorState } from '../ui/ErrorState';
 type ShellAccessState = {
   from?: string;
   capabilityId?: string;
+  reason?: 'capability' | 'feature_disabled';
+  moduleId?: string;
 };
 
 export function ShellAccessDeniedPage() {
   const location = useLocation();
   const state = (location.state as ShellAccessState | null) ?? {};
   const capabilityLabel = state.capabilityId ?? 'permissão necessária';
+  const featureDisabled = state.reason === 'feature_disabled';
 
   return (
     <main id="main-content" className="shell-page">
       <ErrorState
         kind="denied"
         title="Acesso negado"
-        message={`Você não possui a permissão ${capabilityLabel} exigida para esta área. A autorização é aplicada pelo backend.`}
+        message={
+          featureDisabled
+            ? `O módulo ${state.moduleId ?? 'solicitado'} não faz parte da Release 1 e está desligado (fail-closed).`
+            : `Você não possui a permissão ${capabilityLabel} exigida para esta área. A autorização é aplicada pelo backend.`
+        }
         action={<Link to="/app">Voltar ao painel</Link>}
       />
       {state.from ? (

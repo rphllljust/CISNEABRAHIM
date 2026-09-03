@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/context/AuthProvider';
 import { useAlertBadge } from '../alerts/hooks/useAlerts';
+import { isReleaseModuleEnabled } from '../release-scope/feature-flags';
+import { ReleaseScopeGate } from '../release-scope/ReleaseScopeGate';
 import { ShellBreadcrumbs } from './ShellBreadcrumbs';
 import { ShellBrandMark } from './ShellBrandMark';
 import { ShellErrorBoundary } from './ShellErrorBoundary';
@@ -19,7 +21,8 @@ export function AppShellLayout() {
   const hideBreadcrumbs = location.pathname === '/app';
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const isDesktop = useMediaQuery('(min-width: 64rem)');
-  const { activeCount, loading: alertsLoading } = useAlertBadge();
+  const alertsEnabled = isReleaseModuleEnabled('alerts');
+  const { activeCount, loading: alertsLoading } = useAlertBadge(alertsEnabled);
   const { identityId } = useAuth();
 
   useRouteFocus();
@@ -77,9 +80,11 @@ export function AppShellLayout() {
         <div className="flex-1 px-4 py-8 sm:px-6 lg:px-8">
           <div className="shell-page-frame mx-auto w-full max-w-6xl min-w-0">
             {!hideBreadcrumbs ? <ShellBreadcrumbs /> : null}
-            <ShellErrorBoundary>
-              <Outlet />
-            </ShellErrorBoundary>
+            <ReleaseScopeGate>
+              <ShellErrorBoundary>
+                <Outlet />
+              </ShellErrorBoundary>
+            </ReleaseScopeGate>
           </div>
         </div>
       </div>

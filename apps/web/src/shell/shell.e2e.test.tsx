@@ -29,6 +29,26 @@ describe('protected application shell', () => {
     expect(screen.getByRole('link', { name: /ir para o conteúdo principal/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /menu do usuário/i })).toBeInTheDocument();
     expect(screen.getByText('Minha conta')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /contas a receber/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /documentos fiscais/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /plano de contas/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^pessoas$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^locações$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^transporte$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^alertas$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^relatórios$/i })).not.toBeInTheDocument();
+  });
+
+  it('blocks deep links to modules outside Release 1', async () => {
+    vi.stubGlobal('fetch', createShellFetchMock());
+    tokenStore.setTokens('access-token', 'refresh-token');
+    window.history.pushState({}, '', '/app/finance');
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /acesso negado/i })).toBeInTheDocument();
+    });
+    expect(screen.getByText(/não faz parte da Release 1/i)).toBeInTheDocument();
   });
 
   it('redirects absent sessions to login', async () => {

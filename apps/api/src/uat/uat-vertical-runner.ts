@@ -108,6 +108,7 @@ export async function runUatVerticalScenario(
   },
 ): Promise<UatScenarioResult & { measurementId?: string; artifacts?: MasterBusinessArtifacts }> {
   const started = Date.now();
+  let stage = 'bootstrap';
   try {
     const suffix =
       options?.deterministicSuffix ??
@@ -115,7 +116,27 @@ export async function runUatVerticalScenario(
     const poNumber = options?.poNumberOverride ?? `PO-UAT-${scenario.id.toUpperCase()}-${suffix}`;
     const syntheticClient =
       options?.syntheticClient ?? buildSyntheticUatClient(scenario.id, suffix);
+    const requestLocation =
+      scenario.archetype === 'TRANSPORT'
+        ? {
+            origin: `${syntheticClient.city} - Centro de distribuição`,
+            destination: 'Porto Velho - Cliente final',
+          }
+        : {
+            city: syntheticClient.city,
+          };
+    const plannedOperationalWindow =
+      scenario.archetype === 'RENTAL'
+        ? {
+            operationalStart: '2026-07-01T08:00:00.000Z',
+            operationalEnd: '2026-07-04T18:00:00.000Z',
+          }
+        : {
+            operationalStart: '2026-07-01T08:00:00.000Z',
+            operationalEnd: '2026-07-01T18:00:00.000Z',
+          };
 
+    stage = 'client:create';
     const client = await services.clientAccess.create(actor, {
       legalName: syntheticClient.legalName,
       tradeName: syntheticClient.tradeName,
@@ -141,11 +162,13 @@ export async function runUatVerticalScenario(
       ],
     });
 
+    stage = 'catalog:category';
     const category = await insertCatalogCategory(services.pool, {
       code: `UAT-${scenario.id.toUpperCase()}-${options?.deterministicSuffix ?? suffix}`,
       name: 'UAT',
     });
 
+    stage = 'catalog:create';
     const draft = await services.catalogAccess.create(actor, {
       code: `UAT-SRV-${options?.deterministicSuffix ?? suffix}`,
       name: scenario.serviceName,
@@ -170,9 +193,11 @@ export async function runUatVerticalScenario(
       ],
     });
 
+    stage = 'catalog:publish';
     const definition = await services.catalogAccess.getDefinition(actor, draft.serviceDefinitionId);
     const published = await services.catalogAccess.publishVersion(actor, draft.serviceDefinitionId, 1, definition.version);
 
+    stage = 'proposal:create';
     const proposal = await services.proposalsAccess.create(actor, {
       clientId: client.id,
       unitId,
@@ -191,6 +216,7 @@ export async function runUatVerticalScenario(
       acceptanceOriginCode: PROPOSAL_ACCEPTANCE_ORIGINS.InternalApproval,
     });
 
+    stage = 'purchase-order:create';
     const purchaseOrder = await services.purchaseOrdersAccess.create(actor, {
       clientId: client.id,
       unitId,
@@ -205,8 +231,8 @@ export async function runUatVerticalScenario(
           serviceDefinitionVersionId: published.id,
           quantity: '1.0000',
           unitCode: scenario.defaultUnitCode,
-          unitPrice: '2500.0000',
-          lineTotal: '2500.0000',
+          unitPrice: '50000.0000',
+          lineTotal: '50000.0000',
         },
       ],
     });
@@ -214,6 +240,7 @@ export async function runUatVerticalScenario(
       rowVersion: purchaseOrder.purchaseOrder.rowVersion,
     });
 
+    stage = 'service-request:create';
     const request = await services.serviceRequestsAccess.create(actor, {
       unitId,
       originSource: SERVICE_REQUEST_ORIGINS.ProposalAcceptance,
@@ -223,17 +250,22 @@ export async function runUatVerticalScenario(
       proposalId: accepted.proposalId,
       purchaseOrderId: registeredPo.purchaseOrder.id,
       description: scenario.requestDescription,
+      location: requestLocation,
     });
+    stage = 'service-request:submit';
     const submitted = await services.serviceRequestsAccess.submit(actor, request.serviceRequest.id, {
       rowVersion: request.serviceRequest.rowVersion,
     });
+    stage = 'service-request:review';
     const reviewed = await services.serviceRequestsAccess.startReview(actor, request.serviceRequest.id, {
       rowVersion: submitted.serviceRequest.rowVersion,
     });
+    stage = 'service-request:approve';
     const approved = await services.serviceRequestsAccess.approve(actor, request.serviceRequest.id, {
       rowVersion: reviewed.serviceRequest.rowVersion,
     });
 
+    stage = 'service-request:document';
     const document = await services.documentsAccess.createWithUpload(
       actor,
       {
@@ -250,6 +282,7 @@ export async function runUatVerticalScenario(
       linkPurpose: SERVICE_REQUEST_DOCUMENT_LINK_PURPOSES.Evidence,
     });
 
+    stage = 'service-request:convert';
     const converted = await services.serviceRequestsAccess.convert(actor, request.serviceRequest.id, {
       rowVersion: approved.serviceRequest.rowVersion,
     });
@@ -257,8 +290,22 @@ export async function runUatVerticalScenario(
       throw new Error(`Expected converted request, got ${converted.serviceRequest.status}`);
     }
 
-    const order = await services.serviceOrdersAccess.getById(actor, converted.serviceRequest.convertedServiceOrderId!);
-    const prepared = await services.serviceOrdersAccess.prepare(actor, order.id, { rowVersion: order.rowVersion });
+    stage = 'service-order:load';
+    let draftOrder = await services.serviceOrdersAccess.getById(
+      actor,
+      converted.serviceRequest.convertedServiceOrderId!,
+    );
+    if (scenario.archetype === 'TRANSPORT') {
+      stage = 'service-order:update-transport-route';
+      draftOrder = await services.serviceOrdersAccess.update(actor, draftOrder.id, {
+        rowVersion: draftOrder.rowVersion,
+        location: requestLocation,
+      });
+    }
+    stage = 'service-order:prepare';
+    const prepared = await services.serviceOrdersAccess.prepare(actor, draftOrder.id, {
+      rowVersion: draftOrder.rowVersion,
+    });
 
     if (options?.stopAfter === 'prepared') {
       return {
@@ -269,6 +316,7 @@ export async function runUatVerticalScenario(
       };
     }
 
+    stage = 'service-order:release';
     const released = await services.serviceOrdersAccess.release(actor, prepared.id, { rowVersion: prepared.rowVersion });
 
     if (options?.stopAfter === 'released') {
@@ -280,8 +328,10 @@ export async function runUatVerticalScenario(
       };
     }
 
+    stage = 'resource-types:list';
     const listed = await services.resourceTypesAccess.list(actor, { limit: 50, offset: 0 });
     for (const resourceTypeCode of scenario.resourceTypeCodes) {
+      stage = `planning:plan-${resourceTypeCode}`;
       const resourceType = listed.items.find((item) => item.code === resourceTypeCode);
       if (!resourceType) {
         throw new Error(`Resource type ${resourceTypeCode} not found`);
@@ -290,7 +340,10 @@ export async function runUatVerticalScenario(
         requirementKind: PLANNED_RESOURCE_KINDS.PhysicalResource,
         resourceTypeCode,
         plannedQuantity: '1',
+        operationalStart: plannedOperationalWindow.operationalStart,
+        operationalEnd: plannedOperationalWindow.operationalEnd,
       });
+      stage = `asset:create-${resourceTypeCode}`;
       const asset = await services.assetsAccess.create(actor, {
         assetCode: `${resourceTypeCode}-${suffix}`,
         resourceTypeId: resourceType.id,
@@ -307,6 +360,7 @@ export async function runUatVerticalScenario(
                 }
             : undefined,
       });
+      stage = `planning:allocate-${resourceTypeCode}`;
       await services.planningAccess.allocateResource(actor, released.id, {
         plannedResourceId: planned.id,
         physicalAssetId: asset.id,
@@ -315,20 +369,24 @@ export async function runUatVerticalScenario(
       });
     }
 
+    stage = 'execution:start';
     const startedExecution = await services.executionAccess.start(actor, released.id, {
       rowVersion: released.rowVersion,
     });
+    stage = 'execution:observation';
     await services.executionAccess.recordObservation(actor, startedExecution.id, {
       rowVersion: startedExecution.rowVersion,
       text: scenario.executionObservation,
     });
     const afterObservation = await services.serviceOrdersAccess.getById(actor, startedExecution.id);
+    stage = 'execution:quantity';
     await services.executionAccess.recordQuantity(actor, afterObservation.id, {
       rowVersion: afterObservation.rowVersion,
       quantityValue: scenario.quantityValue,
       unitCode: scenario.defaultUnitCode,
     });
     const afterQuantity = await services.serviceOrdersAccess.getById(actor, startedExecution.id);
+    stage = 'execution:complete';
     const completed = await services.executionAccess.complete(actor, afterQuantity.id, {
       rowVersion: afterQuantity.rowVersion,
     });
@@ -342,13 +400,17 @@ export async function runUatVerticalScenario(
       };
     }
 
+    stage = 'measurement:create';
     const measurement = await services.measurementsAccess.create(actor, completed.id);
+    stage = 'measurement:submit';
     const submittedMeasurement = await services.measurementsAccess.submit(actor, completed.id, measurement.id, {
       rowVersion: measurement.rowVersion,
     });
+    stage = 'measurement:review';
     const reviewedMeasurement = await services.measurementsAccess.startReview(actor, completed.id, measurement.id, {
       rowVersion: submittedMeasurement.rowVersion,
     });
+    stage = 'measurement:approve';
     const measurementReviewer =
       options?.reviewer ?? (await createMeasurementReviewer(services.pool, actor.identityId));
     const approvedMeasurement = await services.measurementsAccess.approve(
@@ -373,10 +435,12 @@ export async function runUatVerticalScenario(
       };
     }
 
+    stage = 'billing:prepare';
     const billing = await services.billingAccess.prepare(actor, completed.id, {
       measurementId: approvedMeasurement.id,
       paymentTerms: '30 DDL',
     });
+    stage = 'billing:issue-document';
     const notaFatura = await services.billingDocumentAccess.issue(actor, completed.id, billing.id, {
       dueDate: '2026-10-31',
     });
@@ -388,6 +452,7 @@ export async function runUatVerticalScenario(
     }
     assertNoStorageKeyLeak(notaFatura);
 
+    stage = 'billing:download-pdf';
     const pdf = await services.billingDocumentAccess.downloadPdf(actor, completed.id, billing.id, notaFatura.id);
     if (pdf.buffer.subarray(0, 4).toString('ascii') !== '%PDF') {
       throw new Error('Billing PDF artifact invalid');
@@ -432,7 +497,7 @@ export async function runUatVerticalScenario(
       scenarioId: scenario.id,
       status: 'FAIL',
       durationMs: Date.now() - started,
-      error: formatUatScenarioError(error),
+      error: `[${stage}] ${formatUatScenarioError(error)}`,
     };
   }
 }

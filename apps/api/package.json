@@ -29,6 +29,7 @@
     "test:uat:unit": "vitest run src/uat --exclude '**/*.integration.spec.ts'",
     "test:uat": "vitest run --config vitest.integration.config.ts src/uat/uat-business.integration.spec.ts",
     "test:master-business": "vitest run --config vitest.integration.config.ts src/master-business/master-business.integration.spec.ts",
+    "test:enterprise-financial-gate": "vitest run --config vitest.integration.config.ts src/enterprise-integrity/enterprise-integrity.integration.spec.ts",
     "test:master-business:bypass": "vitest run --config vitest.e2e.config.ts src/master-business/master-business-bypass.e2e.spec.ts",
     "test:concurrency": "vitest run --config vitest.integration.config.ts src/concurrency/concurrency-torture.integration.spec.ts",
     "test:failure-injection": "vitest run --config vitest.integration.config.ts src/failure-injection/failure-injection.integration.spec.ts",

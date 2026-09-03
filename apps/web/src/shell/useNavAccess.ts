@@ -9,7 +9,16 @@ import { probePurchaseOrderListAccess } from '../purchase-orders/api/purchase-or
 import { probeBillingCapabilities } from '../billing/api/billing-api';
 import { probeServiceOrderListAccess } from '../service-orders/api/service-orders-api';
 import { probePersonListAccess } from '../people/api/people-api';
+import {
+  probePayableListAccess,
+  probeReceivableListAccess,
+  probeReconciliationReadAccess,
+  probeTreasuryListAccess,
+} from '../finance/api/finance-api';
+import { probeFiscalDocumentReadAccess, probeTaxReadAccess } from '../fiscal/api/fiscal-api';
+import { probeAccountingReadAccess } from '../accounting/api/accounting-api';
 import { useAuth } from '../auth/context/AuthProvider';
+import { isReleaseModuleEnabled } from '../release-scope/feature-flags';
 import { SHELL_NAV_ITEMS } from './nav-config';
 import type { NavAccessMap } from './types';
 
@@ -42,6 +51,11 @@ export function useNavAccess(): NavAccessState {
       const nextAccess: NavAccessMap = { ...INITIAL_ACCESS };
 
       for (const item of SHELL_NAV_ITEMS) {
+        if (item.featureFlag && !isReleaseModuleEnabled(item.featureFlag)) {
+          nextAccess[item.id] = false;
+          continue;
+        }
+
         if (!item.accessCheck) {
           nextAccess[item.id] = true;
           continue;
@@ -168,6 +182,99 @@ export function useNavAccess(): NavAccessState {
               nextAccess[item.id] = false;
             }
           }
+          continue;
+        }
+
+        if (item.accessCheck === 'finance-overview') {
+          try {
+            const [receivables, payables, treasury] = await Promise.all([
+              probeReceivableListAccess(controller.signal),
+              probePayableListAccess(controller.signal),
+              probeTreasuryListAccess(controller.signal),
+            ]);
+            nextAccess[item.id] = receivables || payables || treasury;
+          } catch {
+            if (!cancelled) {
+              nextAccess[item.id] = false;
+            }
+          }
+          continue;
+        }
+
+        if (item.accessCheck === 'finance-receivable-list') {
+          try {
+            nextAccess[item.id] = await probeReceivableListAccess(controller.signal);
+          } catch {
+            if (!cancelled) {
+              nextAccess[item.id] = false;
+            }
+          }
+          continue;
+        }
+
+        if (item.accessCheck === 'finance-payable-list') {
+          try {
+            nextAccess[item.id] = await probePayableListAccess(controller.signal);
+          } catch {
+            if (!cancelled) {
+              nextAccess[item.id] = false;
+            }
+          }
+          continue;
+        }
+
+        if (item.accessCheck === 'finance-treasury-list') {
+          try {
+            nextAccess[item.id] = await probeTreasuryListAccess(controller.signal);
+          } catch {
+            if (!cancelled) {
+              nextAccess[item.id] = false;
+            }
+          }
+          continue;
+        }
+
+        if (item.accessCheck === 'finance-reconciliation-read') {
+          try {
+            nextAccess[item.id] = await probeReconciliationReadAccess(controller.signal);
+          } catch {
+            if (!cancelled) {
+              nextAccess[item.id] = false;
+            }
+          }
+          continue;
+        }
+
+        if (item.accessCheck === 'fiscal-document-read') {
+          try {
+            nextAccess[item.id] = await probeFiscalDocumentReadAccess(controller.signal);
+          } catch {
+            if (!cancelled) {
+              nextAccess[item.id] = false;
+            }
+          }
+          continue;
+        }
+
+        if (item.accessCheck === 'fiscal-tax-read') {
+          try {
+            nextAccess[item.id] = await probeTaxReadAccess(controller.signal);
+          } catch {
+            if (!cancelled) {
+              nextAccess[item.id] = false;
+            }
+          }
+          continue;
+        }
+
+        if (item.accessCheck === 'accounting-journal-read') {
+          try {
+            nextAccess[item.id] = await probeAccountingReadAccess(controller.signal);
+          } catch {
+            if (!cancelled) {
+              nextAccess[item.id] = false;
+            }
+          }
         }
       }
 
@@ -190,6 +297,9 @@ export function useNavAccess(): NavAccessState {
 export function isNavItemVisible(itemId: string, access: NavAccessMap, loading: boolean): boolean {
   const item = SHELL_NAV_ITEMS.find((entry) => entry.id === itemId);
   if (!item) {
+    return false;
+  }
+  if (item.featureFlag && !isReleaseModuleEnabled(item.featureFlag)) {
     return false;
   }
   if (!item.accessCheck) {

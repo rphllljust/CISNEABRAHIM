@@ -2,6 +2,7 @@ import { useId } from 'react';
 import { ChevronDown, Menu, X } from 'lucide-react';
 import { useAuth } from '../auth/context/AuthProvider';
 import { AlertBadgeLink } from '../alerts/components/AlertBadgeLink';
+import { isReleaseModuleEnabled } from '../release-scope/feature-flags';
 import { GlobalSearchBar } from '../search/components/GlobalSearchBar';
 import { formatUserMenuLabel } from './format-identity';
 import { Dropdown } from '../ui/Dropdown';
@@ -56,7 +57,7 @@ export function ShellTopBar({ onMenuToggle, menuExpanded }: ShellTopBarProps) {
           </span>
         ) : null}
 
-        <AlertBadgeLink />
+        {isReleaseModuleEnabled('alerts') ? <AlertBadgeLink /> : null}
 
         <div className="hidden h-6 w-px bg-gray-200 sm:block" aria-hidden />
 
