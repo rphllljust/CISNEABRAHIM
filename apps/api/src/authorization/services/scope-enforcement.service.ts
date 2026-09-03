@@ -182,6 +182,10 @@ export class ScopeEnforcementService {
     return this.buildCommercialRecordListFilter(grants);
   }
 
+  buildContractListFilter(grants: GrantRow[]): ScopeSqlPredicate {
+    return this.buildCommercialRecordListFilter(grants);
+  }
+
   buildServiceRequestListFilter(grants: GrantRow[]): ScopeSqlPredicate {
     return this.buildCommercialRecordListFilter(grants);
   }

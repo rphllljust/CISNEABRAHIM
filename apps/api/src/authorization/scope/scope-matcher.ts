@@ -135,6 +135,19 @@ export function toResourceContextFromPurchaseOrder(purchaseOrder: {
   };
 }
 
+export function toResourceContextFromContract(contract: {
+  id: string;
+  unit_id: string;
+  client_id: string;
+}): AuthzResourceContext {
+  return {
+    resourceId: contract.id,
+    unitId: contract.unit_id,
+    clientId: contract.client_id,
+    contractId: contract.id,
+  };
+}
+
 export function toResourceContextFromServiceRequest(serviceRequest: {
   id: string;
   unit_id: string;
@@ -144,6 +157,52 @@ export function toResourceContextFromServiceRequest(serviceRequest: {
     resourceId: serviceRequest.id,
     unitId: serviceRequest.unit_id,
     clientId: serviceRequest.client_id ?? undefined,
+  };
+}
+
+export function toResourceContextFromReceivable(receivable: {
+  id: string;
+  unitId: string;
+  clientId: string;
+}): AuthzResourceContext {
+  return {
+    resourceId: receivable.id,
+    unitId: receivable.unitId,
+    clientId: receivable.clientId,
+    isFinancial: true,
+  };
+}
+
+export function toResourceContextFromPayable(payable: {
+  id: string;
+  unitId: string;
+}): AuthzResourceContext {
+  return {
+    resourceId: payable.id,
+    unitId: payable.unitId,
+    isFinancial: true,
+  };
+}
+
+export function toResourceContextFromTreasuryAccount(account: {
+  id: string;
+  unitId: string;
+}): AuthzResourceContext {
+  return {
+    resourceId: account.id,
+    unitId: account.unitId,
+    isFinancial: true,
+  };
+}
+
+export function toResourceContextFromAccounting(resource: {
+  id: string;
+  unitId: string;
+}): AuthzResourceContext {
+  return {
+    resourceId: resource.id,
+    unitId: resource.unitId,
+    isFinancial: true,
   };
 }
 

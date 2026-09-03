@@ -10,7 +10,12 @@ export type AuthzErrorBody = {
 };
 
 export class AuthzHttpException extends HttpException {
-  constructor(status: HttpStatus, code: AuthzErrorCode, message: string, correlationId?: string) {
+  constructor(
+    status: HttpStatus,
+    readonly code: AuthzErrorCode,
+    message: string,
+    correlationId?: string,
+  ) {
     const body: AuthzErrorBody = {
       error: {
         code,
