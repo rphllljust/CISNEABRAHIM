@@ -701,6 +701,21 @@ main:not(.login-page):not(.dashboard-page):not(.shell-page):not(.reports-page):n
   color: #1e40af;
 }
 
+.assets-operational-status--available {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.assets-operational-status--allocated {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.assets-operational-status--unavailable {
+  background: #fef3c7;
+  color: #92400e;
+}
+
 .assets-conflict-notice {
   margin-bottom: 1rem;
 }

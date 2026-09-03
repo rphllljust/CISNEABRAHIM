@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../App';
 import { resetTokenStoreForTests } from '../auth/storage/token-store';
 import { loginAndReachApp, LOGIN_FORM_HEADING } from '../test/login-ui-helpers';
-import { createShellFetchMock, MOCK_IDENTITY_ID } from '../test/shell-fetch-mock';
+import { createShellFetchMock } from '../test/shell-fetch-mock';
 
 describe('auth flow e2e (frontend)', () => {
   beforeEach(() => {
@@ -56,7 +56,7 @@ describe('auth flow e2e (frontend)', () => {
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /painel operacional/i })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /painel operacional/i })).toBeInTheDocument();
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
@@ -67,7 +67,7 @@ describe('auth flow e2e (frontend)', () => {
       expect.stringContaining('/api/v1/auth/session'),
       expect.objectContaining({ method: 'GET' }),
     );
-    expect(screen.getByTitle(MOCK_IDENTITY_ID)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /menu do usuário/i })).toBeInTheDocument();
   });
 
   it('shows service unavailable on network errors during bootstrap', async () => {

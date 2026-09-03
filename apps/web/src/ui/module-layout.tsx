@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, MouseEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from './Button';
 import { PageHeader } from './PageHeader';
@@ -66,11 +66,20 @@ export function ModulePrimaryLink({
   );
 }
 
-export function ModuleTableLink({ to, children }: { to: string; children: ReactNode }) {
+export function ModuleTableLink({
+  to,
+  children,
+  onClick,
+}: {
+  to: string;
+  children: ReactNode;
+  onClick?: (event: MouseEvent<HTMLAnchorElement>) => void;
+}) {
   return (
     <Link
       to={to}
       className="text-sm font-semibold text-brand-700 no-underline hover:text-brand-800"
+      onClick={onClick}
     >
       {children}
     </Link>
@@ -162,6 +171,7 @@ export function ModuleErrorState({
 
 export function ModulePagination({
   pageNumber,
+  rangeLabel,
   onPrevious,
   onNext,
   previousDisabled,
@@ -170,6 +180,7 @@ export function ModulePagination({
   nextLabel = 'Próxima',
 }: {
   pageNumber: number;
+  rangeLabel?: string;
   onPrevious: () => void;
   onNext: () => void;
   previousDisabled: boolean;
@@ -179,7 +190,7 @@ export function ModulePagination({
 }) {
   return (
     <Pagination
-      pageLabel={`Página ${pageNumber}`}
+      pageLabel={rangeLabel ?? `Página ${pageNumber}`}
       onPrevious={onPrevious}
       onNext={onNext}
       previousDisabled={previousDisabled}
