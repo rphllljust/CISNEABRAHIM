@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, Inject, Injectable, Optional } from '@nestjs/common';
 import {
   SECURITY_AUDIT_ACTIONS,
   SECURITY_AUDIT_CLASSIFICATIONS,
@@ -27,6 +27,11 @@ import type {
 import { BillingRepository } from '../repositories/billing.repository';
 import type { BillingRecordRow } from '../repositories/billing.repository.types';
 import { BillingDocumentRepository } from '../repositories/billing-document.repository';
+import type { BillingDocumentRow } from '../repositories/billing-document.repository.types';
+import {
+  ENTERPRISE_CORE_PORT,
+  type FinanceReceivablePort,
+} from '../../platform/bounded-contexts/enterprise-core-ports';
 import {
   toBillingDocumentDetailResponse,
   type BillingDocumentDetailResponse,
@@ -58,6 +63,9 @@ export class BillingDocumentAccessService {
     private readonly artifactService: BillingDocumentArtifactService,
     private readonly securityAudit: SecurityAuditService,
     private readonly objectStorage: ObjectStorageService,
+    @Optional()
+    @Inject(ENTERPRISE_CORE_PORT.FinanceReceivable)
+    private readonly receivablePort?: FinanceReceivablePort,
   ) {}
 
   async listByBillingRecord(
@@ -166,9 +174,14 @@ export class BillingDocumentAccessService {
         documentNumber: result.billingDocument.document_number,
       });
 
+      await this.openReceivableFromDocument(actor, result.billingDocument);
+
       return this.getById(actor, serviceOrderId, billingRecordId, result.billingDocument.id);
     } catch (error) {
       await this.artifactService.compensateStorage(error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw mapBillingDocumentRepositoryError(error);
     }
   }
@@ -185,6 +198,7 @@ export class BillingDocumentAccessService {
     const validated = resolveCancelBillingDocumentInput(input);
 
     try {
+      await this.cancelReceivableFromDocument(actor, billingDocumentId, validated.cancelReason);
       const result = await this.billingDocumentRepository.cancelBillingDocument({
         billingDocumentId,
         billingRecordId,
@@ -203,6 +217,9 @@ export class BillingDocumentAccessService {
       const history = await this.billingDocumentRepository.listHistoryEvents(result.billingDocument.id);
       return toBillingDocumentDetailResponse(result.billingDocument, items, history);
     } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw mapBillingDocumentRepositoryError(error);
     }
   }
@@ -240,6 +257,7 @@ export class BillingDocumentAccessService {
     }
 
     try {
+      await this.cancelReceivableFromDocument(actor, billingDocumentId, validated.replaceReason);
       const result = await this.billingDocumentRepository.replaceBillingDocument(
         {
           billingRecord,
@@ -274,9 +292,14 @@ export class BillingDocumentAccessService {
         billingDocumentId: result.billingDocument.id,
       });
 
+      await this.openReceivableFromDocument(actor, result.billingDocument);
+
       return this.getById(actor, serviceOrderId, billingRecordId, result.billingDocument.id);
     } catch (error) {
       await this.artifactService.compensateStorage(error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw mapBillingDocumentRepositoryError(error);
     }
   }
@@ -339,6 +362,45 @@ export class BillingDocumentAccessService {
       throw billingDocumentAccessNotFound();
     }
     return billingRecord;
+  }
+
+  private async openReceivableFromDocument(
+    actor: IdentityAuthzContext,
+    document: BillingDocumentRow,
+  ): Promise<void> {
+    if (!this.receivablePort) {
+      return;
+    }
+    const issuedAt = typeof document.issued_at === 'string' ? document.issued_at : String(document.issued_at);
+    await this.receivablePort.openFromBilling({
+      billingRecordId: document.billing_record_id,
+      billingDocumentId: document.id,
+      serviceOrderId: document.service_order_id,
+      measurementId: document.measurement_id,
+      unitId: document.unit_id,
+      clientId: document.client_id,
+      principal: document.total_amount,
+      currencyCode: document.currency_code,
+      dueDate: (document.due_date ?? issuedAt).slice(0, 10),
+      paymentTerms: document.payment_terms,
+      externalReference: document.document_number,
+      actorIdentityId: actor.identityId,
+    });
+  }
+
+  private async cancelReceivableFromDocument(
+    actor: IdentityAuthzContext,
+    billingDocumentId: string,
+    reason: string,
+  ): Promise<void> {
+    if (!this.receivablePort) {
+      return;
+    }
+    await this.receivablePort.cancelFromBilling({
+      billingDocumentId,
+      actorIdentityId: actor.identityId,
+      reason,
+    });
   }
 
   private async requireBillingDocumentForRecord(billingDocumentId: string, billingRecordId: string) {

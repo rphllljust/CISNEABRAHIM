@@ -63,23 +63,11 @@ export type BillingCommandIdempotencyRow = {
   created_at: string;
 };
 
-export type MeasurementForBillingRow = {
-  id: string;
-  service_order_id: string;
-  status: string;
-  commercial_reference_snapshot: Record<string, unknown>;
-};
+export type {
+  MeasurementForBillingRow,
+  MeasurementItemForBillingRow,
+} from '../../measurements/application/measurement-billing';
 
-export type MeasurementItemForBillingRow = {
-  id: string;
-  line_number: number;
-  source_execution_entry_id: string | null;
-  unit_code: string;
-  measured_quantity: string;
-  unit_price: string | null;
-  line_amount: string | null;
-  pricing_line_snapshot: Record<string, unknown>;
-};
 
 export type ClientBillingSnapshotRow = {
   id: string;

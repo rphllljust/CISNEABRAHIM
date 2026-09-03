@@ -355,6 +355,9 @@ describe('Billing PostgreSQL integration', () => {
     expect(billing.clientTaxIdSnapshot).toBe(TEST_CNPJ);
     expect(billing.billingAddressSnapshot.city).toBe('Porto Velho');
     expect(billing.commercialReferenceSnapshot).toBeTruthy();
+    const costSummary = (billing.commercialReferenceSnapshot as { costSummary?: { totalRevenue?: string } })
+      .costSummary;
+    expect(costSummary?.totalRevenue).toBe('1000');
   });
 
   it('rejects duplicate billing for the same measurement', async () => {
@@ -521,6 +524,83 @@ describe('Billing PostgreSQL integration', () => {
     const rejected = results.filter((result) => result.status === 'rejected');
     expect(fulfilled).toHaveLength(1);
     expect(rejected).toHaveLength(1);
+  });
+
+  it('preserves traceable billing origin with OS, measurement and item linkage', async () => {
+    const { actor } = await seedActor();
+    const { completed, approved, client } = await seedApprovedMeasurement(actor);
+
+    const billing = await billingAccess.prepare(actor, completed.id, {
+      measurementId: approved.id,
+      paymentTerms: '30 DDL',
+    });
+
+    expect(billing.serviceOrderId).toBe(completed.id);
+    expect(billing.measurementId).toBe(approved.id);
+    expect(billing.clientId).toBe(client.id);
+    expect(billing.items[0]?.measurementItemId).toBeTruthy();
+
+    const origin = (
+      billing.commercialReferenceSnapshot as {
+        billingOrigin?: { serviceOrderId: string; measurementId: string; clientId: string };
+      }
+    ).billingOrigin;
+    expect(origin?.serviceOrderId).toBe(completed.id);
+    expect(origin?.measurementId).toBe(approved.id);
+    expect(origin?.clientId).toBe(client.id);
+  });
+
+  it('replays prepare with the same idempotency key without duplicate records', async () => {
+    const { actor } = await seedActor();
+    const { completed, approved } = await seedApprovedMeasurement(actor);
+    const idempotencyKey = `prepare-replay-${crypto.randomUUID()}`;
+
+    const first = await billingAccess.prepare(actor, completed.id, {
+      measurementId: approved.id,
+      paymentTerms: '30 DDL',
+      idempotencyKey,
+    });
+    const replayed = await billingAccess.prepare(actor, completed.id, {
+      measurementId: approved.id,
+      paymentTerms: '30 DDL',
+      idempotencyKey,
+    });
+
+    expect(replayed.id).toBe(first.id);
+    expect(replayed.status).toBe(BILLING_RECORD_STATUSES.Prepared);
+
+    const records = await pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM bil.billing_records WHERE measurement_id = $1 AND status = 'PREPARED'`,
+      [approved.id],
+    );
+    expect(records.rows[0]?.count).toBe('1');
+  });
+
+  it('allows concurrent prepare retries with the same idempotency key', async () => {
+    const { actor } = await seedActor();
+    const { completed, approved } = await seedApprovedMeasurement(actor);
+    const idempotencyKey = `prepare-concurrent-${crypto.randomUUID()}`;
+    const payload = {
+      measurementId: approved.id,
+      paymentTerms: '30 DDL',
+      idempotencyKey,
+    };
+
+    const results = await Promise.allSettled([
+      billingAccess.prepare(actor, completed.id, payload),
+      billingAccess.prepare(actor, completed.id, payload),
+    ]);
+
+    const fulfilled = results.filter((result) => result.status === 'fulfilled');
+    expect(fulfilled).toHaveLength(2);
+    const ids = fulfilled.map((result) => (result as PromiseFulfilledResult<{ id: string }>).value.id);
+    expect(new Set(ids).size).toBe(1);
+
+    const records = await pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM bil.billing_records WHERE measurement_id = $1`,
+      [approved.id],
+    );
+    expect(records.rows[0]?.count).toBe('1');
   });
 
   it('denies unauthorized billing read', async () => {
@@ -841,7 +921,7 @@ describe('Billing PostgreSQL integration', () => {
     const afterObservation = await serviceOrdersAccess.getById(actor, started.id);
     await executionAccess.recordQuantity(actor, afterObservation.id, {
       rowVersion: afterObservation.rowVersion,
-      quantityValue: '1',
+      quantityValue: '2',
       unitCode: 'SERVICE',
     });
     const afterQuantity = await serviceOrdersAccess.getById(actor, started.id);

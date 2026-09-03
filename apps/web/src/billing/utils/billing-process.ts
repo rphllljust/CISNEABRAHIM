@@ -194,10 +194,9 @@ export function readDocumentLabels(snapshot: Record<string, unknown> | null | un
 }
 
 export const BILLING_FUTURE_PROCESS_STEPS = [
-  { id: 'issued', label: 'Emitido', available: false },
-  { id: 'sent', label: 'Enviado', available: false },
-  { id: 'awaiting_payment', label: 'Aguardando pagamento', available: false },
-  { id: 'paid', label: 'Pago', available: false },
+  { id: 'official_fiscal', label: 'Emissão fiscal oficial (NF-e/NFS-e)', available: false },
+  { id: 'receivable', label: 'Contas a receber', available: false },
+  { id: 'settlement', label: 'Liquidação financeira', available: false },
 ] as const;
 
 export function groupWorkQueueByBucket(

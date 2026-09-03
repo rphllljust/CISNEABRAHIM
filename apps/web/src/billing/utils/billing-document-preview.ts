@@ -12,7 +12,7 @@ export const BILLING_EMITTER_PREVIEW = {
   },
   documentCategory: 'NOTA FATURA',
   fiscalDisclaimer:
-    'Documento interno de cobrança. Não constitui NF-e, NFS-e ou documento fiscal autorizado.',
+    'Faturamento interno da Release 1. Documento de cobrança operacional. Não constitui NF-e, NFS-e nem documento fiscal oficial autorizado.',
 } as const;
 
 export type BillingDocumentPreviewModel = {

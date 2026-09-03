@@ -13,7 +13,12 @@ import { OutboxDomainEventWriter } from '../../platform/outbox/services/outbox-d
 import {
   consumePurchaseOrderBalanceForBilling,
   releasePurchaseOrderBalanceForBillingVoid,
-} from '../../commercial/repositories/purchase-order-consumption.persistence';
+} from '../../commercial/application/purchase-order-billing-consumption';
+import {
+  findMeasurementForBilling,
+  listMeasurementItemsForBilling,
+  lockMeasurementForBilling,
+} from '../../measurements/application/measurement-billing';
 import { BILLING_COMMANDS, BILLING_HISTORY_EVENTS } from '../domain/billing';
 import type {
   BillingCommandIdempotencyRow,
@@ -125,34 +130,17 @@ export class BillingRepository {
     measurementId: string,
     serviceOrderId: string,
   ): Promise<MeasurementForBillingRow | null> {
-    const result = await this.pool().query<MeasurementForBillingRow>(
-      `SELECT id, service_order_id, status::text AS status, commercial_reference_snapshot
-       FROM msr.measurements
-       WHERE id = $1 AND service_order_id = $2`,
-      [measurementId, serviceOrderId],
-    );
-    return result.rows[0] ?? null;
+    return findMeasurementForBilling(this.pool(), measurementId, serviceOrderId);
   }
 
   async listMeasurementItemsForBilling(measurementId: string): Promise<MeasurementItemForBillingRow[]> {
-    const result = await this.pool().query<MeasurementItemForBillingRow>(
-      `SELECT id, line_number, source_execution_entry_id, unit_code,
-              measured_quantity::text AS measured_quantity,
-              unit_price::text AS unit_price,
-              line_amount::text AS line_amount,
-              pricing_line_snapshot
-       FROM msr.measurement_items
-       WHERE measurement_id = $1
-       ORDER BY line_number ASC`,
-      [measurementId],
-    );
-    return result.rows;
+    return listMeasurementItemsForBilling(this.pool(), measurementId);
   }
 
   async findClientBillingSnapshot(clientId: string): Promise<ClientBillingSnapshotRow | null> {
     const result = await this.pool().query<ClientBillingSnapshotRow>(
       `SELECT id, legal_name, normalized_tax_id AS tax_id
-       FROM pty.clients
+       FROM rpt.read_clients
        WHERE id = $1`,
       [clientId],
     );
@@ -162,7 +150,7 @@ export class BillingRepository {
   async listClientAddresses(clientId: string): Promise<ClientAddressRow[]> {
     const result = await this.pool().query<ClientAddressRow>(
       `SELECT purpose::text AS purpose, street, number, complement, district, city, state, postal_code, country
-       FROM pty.client_addresses
+       FROM rpt.read_client_addresses
        WHERE client_id = $1
        ORDER BY CASE purpose::text WHEN 'billing' THEN 0 WHEN 'correspondence' THEN 1 ELSE 2 END`,
       [clientId],
@@ -173,7 +161,7 @@ export class BillingRepository {
   async findPurchaseOrderTerms(purchaseOrderId: string): Promise<PurchaseOrderTermsRow | null> {
     const result = await this.pool().query<PurchaseOrderTermsRow>(
       `SELECT id, payment_terms
-       FROM com.purchase_orders
+       FROM rpt.read_purchase_orders
        WHERE id = $1`,
       [purchaseOrderId],
     );
@@ -201,7 +189,7 @@ export class BillingRepository {
     try {
       await client.query('BEGIN');
 
-      await client.query(`SELECT id FROM msr.measurements WHERE id = $1 FOR UPDATE`, [input.measurementId]);
+      await lockMeasurementForBilling(client, input.measurementId);
 
       if (input.idempotencyKey) {
         const cached = await this.findBillingCommandIdempotency(

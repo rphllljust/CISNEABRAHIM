@@ -1,5 +1,5 @@
 import type { PoolClient } from 'pg';
-import { DOCUMENT_CLASSIFICATIONS } from '../../documents/domain/document-categories';
+import { registerGeneratedDocument } from '../../documents/application/generated-document-registration';
 import { BILLING_DOCUMENT_COMMANDS, formatBillingDocumentNumber } from '../domain/billing-document';
 import type {
   AllocatedDocumentNumber,
@@ -56,79 +56,10 @@ export async function persistBillingDocumentRecords(
     actorIdentityId: string;
   },
 ): Promise<void> {
-  await client.query(
-    `INSERT INTO doc.documents (
-       id,
-       title,
-       category_code,
-       classification_code,
-       unit_id,
-       current_version_number,
-       created_by_identity_id,
-       updated_by_identity_id
-     )
-     VALUES ($1, $2, 'BILLING_DOCUMENT', $3, $4, 1, $5, $5)`,
-    [
-      input.documentId,
-      input.title,
-      DOCUMENT_CLASSIFICATIONS.Internal,
-      input.unitId,
-      input.actorIdentityId,
-    ],
-  );
-
-  await client.query(
-    `INSERT INTO "authorization".scoped_records (
-       id,
-       owner_identity_id,
-       assigned_identity_id,
-       unit_id,
-       client_id,
-       contract_id,
-       document_id,
-       is_financial,
-       label
-     )
-     VALUES (gen_random_uuid(), $1, NULL, $2, $3, $4, $5, TRUE, $6)`,
-    [
-      input.actorIdentityId,
-      input.unitId,
-      `unassigned-${input.documentId}`,
-      `unassigned-${input.documentId}`,
-      input.documentId,
-      input.title,
-    ],
-  );
-
-  await client.query(
-    `INSERT INTO doc.stored_objects (
-       id,
-       storage_key,
-       sha256_hash,
-       mime_type,
-       byte_size,
-       original_filename
-     )
-     VALUES ($1, $2, $3, 'application/pdf', $4, $5)`,
-    [
-      input.storedObjectId,
-      input.storageKey,
-      input.sha256,
-      input.byteSize,
-      input.originalFilename,
-    ],
-  );
-
-  await client.query(
-    `INSERT INTO doc.document_versions (
-       document_id,
-       version_number,
-       stored_object_id,
-       uploaded_by_identity_id
-     )
-     VALUES ($1, 1, $2, $3)`,
-    [input.documentId, input.storedObjectId, input.actorIdentityId],
-  );
+  await registerGeneratedDocument(client, {
+    ...input,
+    isFinancial: true,
+  });
 }
 
 export async function findBillingDocumentByIdWithClient(

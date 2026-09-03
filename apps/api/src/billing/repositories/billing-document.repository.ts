@@ -108,7 +108,7 @@ export class BillingDocumentRepository {
 
   async findPurchaseOrderNumber(purchaseOrderId: string): Promise<string | null> {
     const result = await this.pool().query<PurchaseOrderNumberRow>(
-      `SELECT po_number FROM com.purchase_orders WHERE id = $1`,
+      `SELECT po_number FROM rpt.read_purchase_orders WHERE id = $1`,
       [purchaseOrderId],
     );
     return result.rows[0]?.po_number ?? null;
@@ -136,8 +136,8 @@ export class BillingDocumentRepository {
       sha256_hash: string;
     }>(
       `SELECT so.storage_key, so.original_filename, so.sha256_hash
-       FROM doc.document_versions dv
-       INNER JOIN doc.stored_objects so ON so.id = dv.stored_object_id
+       FROM rpt.read_document_versions dv
+       INNER JOIN rpt.read_stored_objects so ON so.id = dv.stored_object_id
        WHERE dv.document_id = $1 AND dv.superseded_at IS NULL
        ORDER BY dv.version_number DESC
        LIMIT 1`,

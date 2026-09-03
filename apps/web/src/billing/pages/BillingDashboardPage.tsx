@@ -55,7 +55,7 @@ export function BillingDashboardPage() {
   if (capabilitiesLoading || state.phase === 'loading') {
     return (
       <main id="main-content" className="shell-page billing-page">
-        <h1>Faturamento</h1>
+        <h1>Faturamento interno</h1>
         <p aria-busy="true" aria-live="polite">
           Carregando painel…
         </p>
@@ -66,8 +66,8 @@ export function BillingDashboardPage() {
   if (state.phase === 'denied') {
     return (
       <main id="main-content" className="shell-page billing-page">
-        <h1>Faturamento</h1>
-        <p role="alert">Você não tem permissão para acessar o faturamento.</p>
+        <h1>Faturamento interno</h1>
+        <p role="alert">Você não tem permissão para acessar o faturamento interno.</p>
         <Link to="/app">Voltar ao início</Link>
       </main>
     );
@@ -76,7 +76,7 @@ export function BillingDashboardPage() {
   if (state.phase === 'error') {
     return (
       <main id="main-content" className="shell-page billing-page">
-        <h1>Faturamento</h1>
+        <h1>Faturamento interno</h1>
         <p role="alert">{state.message}</p>
         {state.retryable ? (
           <button type="button" className="billing-button" onClick={() => void reload()}>
@@ -90,11 +90,11 @@ export function BillingDashboardPage() {
   return (
     <main id="main-content" className="shell-page billing-page">
       <header className="billing-page__header">
-        <p className="billing-page__eyebrow">Administração financeira</p>
-        <h1>Faturamento</h1>
+        <p className="billing-page__eyebrow">Cobrança operacional interna</p>
+        <h1>Faturamento interno</h1>
         <p className="billing-page__lead">
-          Acompanhe a preparação operacional a partir de medições aprovadas. Etapas fiscais e de
-          pagamento serão habilitadas em prompts futuros.
+          Preparação de cobrança a partir de medições aprovadas. A Nota Fatura é documento interno
+          e não constitui NF-e, NFS-e nem emissão fiscal oficial.
         </p>
       </header>
 

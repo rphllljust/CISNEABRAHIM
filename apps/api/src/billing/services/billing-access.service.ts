@@ -16,7 +16,7 @@ import { AUTHZ_SCOPES } from '../../authorization/types/authz-scopes';
 import type { IdentityAuthzContext } from '../../authorization/types/authz-decision';
 import { assertUuid } from '../../catalog/domain/service-catalog.validation';
 import { assertCurrencyCode } from '../../commercial/domain/money';
-import { PurchaseOrderConsumptionPersistenceError } from '../../commercial/repositories/purchase-order-consumption.persistence';
+import { PurchaseOrderConsumptionPersistenceError } from '../../commercial/application/purchase-order-billing-consumption';
 import { ADDRESS_PURPOSES } from '../../clients/domain/client-status';
 import { ServiceOrdersRepository } from '../../service-orders/repositories/service-orders.repository';
 import type { ServiceOrderRow } from '../../service-orders/repositories/service-orders.repository.types';
@@ -27,6 +27,11 @@ import {
   PAYMENT_TERMS_SOURCES,
   type BillingAddressSnapshot,
 } from '../domain/billing';
+import { buildBillingCostSummaryFromMeasurementItems } from '../domain/billing-cost-summary';
+import {
+  assertBillingItemsTraceable,
+  buildBillingOriginSnapshot,
+} from '../domain/billing-invariants';
 import { moneyAmountsEqual, sumMoneyAmounts } from '../domain/billing-totals';
 import {
   validatePrepareBillingRecordInput,
@@ -132,6 +137,21 @@ export class BillingAccessService {
       };
     });
 
+    try {
+      assertBillingItemsTraceable(
+        itemDrafts.map((item) => ({
+          measurementItemId: item.measurementItemId,
+          sourceExecutionEntryId: item.sourceExecutionEntryId,
+          lineNumber: item.lineNumber,
+          unitCode: item.unitCode,
+          quantity: item.quantity,
+          lineAmount: item.lineAmount,
+        })),
+      );
+    } catch {
+      throw this.mapBillingError(new BillingError('BILLING_ITEMS_REQUIRED'));
+    }
+
     const computedTotal = sumMoneyAmounts(itemDrafts.map((item) => item.lineAmount));
     if (
       validated.assertedTotalAmount &&
@@ -169,9 +189,26 @@ export class BillingAccessService {
     const addresses = await this.billingRepository.listClientAddresses(order.client_id);
     const billingAddressSnapshot = this.buildBillingAddressSnapshot(addresses, order);
 
+    const measurementCurrencyCode = measurement.commercial_reference_snapshot['currencyCode'];
     const currencyCode = assertCurrencyCode(
-      (measurement.commercial_reference_snapshot as { currencyCode?: string }).currencyCode ?? 'BRL',
+      typeof measurementCurrencyCode === 'string' ? measurementCurrencyCode : 'BRL',
     );
+
+    const commercialReferenceSnapshot = {
+      ...measurement.commercial_reference_snapshot,
+      costSummary: buildBillingCostSummaryFromMeasurementItems(measurementItems),
+      billingOrigin: buildBillingOriginSnapshot({
+        serviceOrderId: order.id,
+        measurementId: measurement.id,
+        clientId: order.client_id,
+        proposalId: order.proposal_id,
+        purchaseOrderId: order.purchase_order_id,
+        contractReference: order.contract_reference,
+        itemCount: itemDrafts.length,
+        totalAmount: computedTotal,
+        currencyCode,
+      }),
+    };
 
     let result;
     try {
@@ -186,7 +223,7 @@ export class BillingAccessService {
         clientLegalNameSnapshot: client.legal_name,
         clientTaxIdSnapshot: client.tax_id,
         billingAddressSnapshot,
-        commercialReferenceSnapshot: measurement.commercial_reference_snapshot,
+        commercialReferenceSnapshot,
         currencyCode,
         paymentTerms: termsResolution.appliedTerms,
         paymentTermsSource: termsResolution.source,
@@ -206,6 +243,10 @@ export class BillingAccessService {
         BILLING_ERROR_CODES.BILLING_ALREADY_EXISTS,
         'A prepared billing record already exists for this measurement.',
       );
+    }
+
+    if (result.outcome === 'idempotent') {
+      return this.loadDetail(result.billingRecord);
     }
 
     await this.audit(actor, SECURITY_AUDIT_ACTIONS.BillingBillingRecordPrepare, order.id, {
