@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { Pool } from 'pg';
+import { registerScopedDocument } from '../../authorization/application/scoped-document-registration';
 import { DatabaseService } from '../../infrastructure/database/database.service';
 import { queryIsUnitRegistered } from '../../infrastructure/database/reference-lookups';
 import type { DocumentStatus } from '../domain/document-categories';
@@ -231,28 +232,13 @@ export class DocumentsRepository {
           throw new Error('DOCUMENT_CREATE_FAILED');
         }
 
-        await client.query(
-          `INSERT INTO "authorization".scoped_records (
-             id,
-             owner_identity_id,
-             assigned_identity_id,
-             unit_id,
-             client_id,
-             contract_id,
-             document_id,
-             is_financial,
-             label
-           )
-           VALUES (gen_random_uuid(), $1, NULL, $2, $3, $4, $5, FALSE, $6)`,
-          [
-            input.actorIdentityId,
-            input.unitId,
-            `unassigned-${documentId}`,
-            `unassigned-${documentId}`,
-            documentId,
-            input.title ?? 'document',
-          ],
-        );
+        await registerScopedDocument(client, {
+          documentId,
+          ownerIdentityId: input.actorIdentityId,
+          unitId: input.unitId,
+          isFinancial: false,
+          label: input.title ?? 'document',
+        });
       } else {
         const existing = await client.query<{ current_version_number: number | null }>(
           `SELECT current_version_number

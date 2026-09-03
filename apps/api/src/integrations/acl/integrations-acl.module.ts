@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
-import { StubFiscalProvider } from './adapters/stub/stub-fiscal.provider';
-import { StubNotificationProvider } from './adapters/stub/stub-notification.provider';
-import { UnconfiguredErpProvider } from './adapters/unconfigured/unconfigured-erp.provider';
+import {
+  UnconfiguredErpProvider,
+  UnconfiguredFiscalProvider,
+  UnconfiguredNotificationProvider,
+} from './adapters/unconfigured/unconfigured-erp.provider';
 import { UnconfiguredTrackingProvider } from './adapters/unconfigured/unconfigured-tracking.provider';
 import { ERP_PROVIDER } from './ports/erp-provider.port';
 import { FISCAL_PROVIDER } from './ports/fiscal-provider.port';
@@ -13,8 +15,8 @@ import { IntegrationAvailabilityService } from './services/integration-availabil
   providers: [
     UnconfiguredErpProvider,
     UnconfiguredTrackingProvider,
-    StubFiscalProvider,
-    StubNotificationProvider,
+    UnconfiguredFiscalProvider,
+    UnconfiguredNotificationProvider,
     IntegrationAvailabilityService,
     {
       provide: ERP_PROVIDER,
@@ -26,11 +28,11 @@ import { IntegrationAvailabilityService } from './services/integration-availabil
     },
     {
       provide: NOTIFICATION_PROVIDER,
-      useExisting: StubNotificationProvider,
+      useExisting: UnconfiguredNotificationProvider,
     },
     {
       provide: FISCAL_PROVIDER,
-      useExisting: StubFiscalProvider,
+      useExisting: UnconfiguredFiscalProvider,
     },
   ],
   exports: [

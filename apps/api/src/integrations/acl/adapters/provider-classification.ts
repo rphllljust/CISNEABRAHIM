@@ -19,4 +19,6 @@ export const ACL_PROVIDER_CLASSIFICATION = {
   DygnusErpAdapter: PROVIDER_IMPLEMENTATION_CLASS.TestOnly,
   UnconfiguredErpProvider: PROVIDER_IMPLEMENTATION_CLASS.Unconfigured,
   UnconfiguredTrackingProvider: PROVIDER_IMPLEMENTATION_CLASS.Unconfigured,
+  UnconfiguredFiscalProvider: PROVIDER_IMPLEMENTATION_CLASS.Unconfigured,
+  UnconfiguredNotificationProvider: PROVIDER_IMPLEMENTATION_CLASS.Unconfigured,
 } as const satisfies Record<string, ProviderImplementationClass>;
