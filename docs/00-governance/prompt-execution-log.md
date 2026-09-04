@@ -11444,3 +11444,26 @@ NOTES:
   Proxima rodada: Comercial (Contratos UI) e/ou Inventory/Procurement (gates PENDING_APPROVAL, TRANSFER/ADJUSTMENT, recebimento parcial).
 WORKING TREE: DIRTY (WIP anterior mantido) | NEXT: proxima rodada do programa
 ```
+
+```text
+PROMPT: BUSINESS FRONTEND GAP CLOSURE — Rodada 3 (Inventory x Procurement)
+TITLE: Fechar lacunas criticas de Inventory e Procurement na UI (gates de estado, campos obrigatorios, recebimento parcial, mapas de erro, feedback de reserva)
+STARTED_AT: 2026-09-04T13:00:00-04:00
+FINISHED_AT: 2026-09-04T13:30:00-04:00
+STATUS: PASS (Rodada 3; programa ativo — proximas rodadas)
+CLASSIFICATION: Fechamento frontend-only com contratos/endpoints existentes; sem regra de negocio/endpoint/capability novos; /app/access-admin intocado.
+SCOPE:
+  - Procurement: approve/reject passam a exigir PENDING_APPROVAL (backend nunca emite SUBMITTED); labels/tone PENDING_APPROVAL e ISSUED (removidos SUBMITTED/ORDERED/OPEN inexistentes); recebimento por linha com inputs de quantidade (default = saldo restante), payload por quantidades informadas, bloqueio de over-receipt e de linha zerada; cancela pedido desabilitado com recebimento; mensagens explicitas HAS_ORDER/HAS_RECEIPTS/NOT_APPROVED/OVER_RECEIPT/DUPLICATE_ORDER/INVOICE_*/MATCH_NOT_FOUND.
+  - Inventory: movimento TRANSFER passa a enviar destinationWarehouseId e ADJUSTMENT adjustmentEffect INCREASE/DECREASE (helpers puros unit-testados); mapas INVENTORY_NEGATIVE_STOCK/INVALID_TRANSFER/INVALID_ADJUSTMENT/COSTING_RULE_NOT_CONFIGURED; Reservar exibe id criado, autopreenche liberacao e recarrega saldo.
+RESULT:
+  BROKEN (Inventory/Procurement): aprovacao de requisicao, TRANSFER/ADJUSTMENT e recebimento parcial — fechados na UI.
+QUALITY GATES (Rodada 3):
+  typecheck web: exit 0
+  specs novas: partial-receive 10/10, movement-payload 7/7 + regressao financial-ui labels 2/2 (19/19)
+  build web: PASS (dist gerado)
+NOTES:
+  Modulos apps/web/src/inventory e apps/web/src/procurement estavam inteiros UNTRACKED (WIP de prompts anteriores); o commit da rodada os introduz ao git com as correcoes.
+  Commits: feat(web) 8e3e595.
+  Proxima rodada: Comercial (Contratos UI) e/ou Payroll (mapas de erro/estados).
+WORKING TREE: DIRTY (WIP anterior mantido) | NEXT: proxima rodada do programa
+```
