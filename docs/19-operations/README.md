@@ -15,3 +15,4 @@ Documentação operacional (backup, continuidade, runbooks).
 | [pilot-exit-readiness-snapshot-2026-09-03.md](pilot-exit-readiness-snapshot-2026-09-03.md) | PILOT EXIT READINESS |
 | [release-hermetic-audit.md](release-hermetic-audit.md) | HERMETIC PRODUCTION RELEASE |
 | [release-hermetic-report.md](release-hermetic-report.md) | HERMETIC PRODUCTION RELEASE |
+| [frontend-backend-alignment.md](frontend-backend-alignment.md) | FRONT-BACK-ALIGN-001 |
