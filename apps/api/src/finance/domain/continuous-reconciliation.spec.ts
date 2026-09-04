@@ -46,26 +46,22 @@ describe('continuous financial reconciliation engine', () => {
   it('passes a fully reconciled economic chain (receivable -> settlement -> treasury -> posting)', () => {
     const billing = rootBilling('b-1', '1000.0000');
     const receivable = linked('r-1', 'receivable', '1000.0000', { ledger: 'billing', id: 'b-1' });
-    const settlement = linked('s-1', 'settlement', '1000.0000', { ledger: 'receivable', id: 'r-1' });
+    const settlement: EconomicFact = {
+      ...linked('s-1', 'settlement', '1000.0000', { ledger: 'receivable', id: 'r-1' }),
+      expectedPostingSourceContext: 'SETTLEMENT',
+    };
     const treasury = linked('t-1', 'treasury', '1000.0000', { ledger: 'settlement', id: 's-1' });
-    const journalReceivable = posted('j-r', 'receivable', 'r-1', '1000.0000');
-    const journalSettlement = posted('j-s', 'settlement', 's-1', '1000.0000');
-    const journalTreasury = posted('j-t', 'treasury', 't-1', '1000.0000');
-    const report = runContinuousReconciliation([
-      billing,
-      receivable,
-      settlement,
-      treasury,
-      journalReceivable,
-      journalSettlement,
-      journalTreasury,
-    ]);
+    const journalSettlement = posted('j-s', 'SETTLEMENT', 's-1', '1000.0000');
+    const report = runContinuousReconciliation([billing, receivable, settlement, treasury, journalSettlement]);
     expect(report.status).toBe('PASS');
     expect(report.findings).toEqual([]);
   });
 
   it('detects a missing posting for a settlement', () => {
-    const settlement = linked('s-1', 'settlement', '500.0000', { ledger: 'receivable', id: 'r-1' });
+    const settlement: EconomicFact = {
+      ...linked('s-1', 'settlement', '500.0000', { ledger: 'receivable', id: 'r-1' }),
+      expectedPostingSourceContext: 'SETTLEMENT',
+    };
     const report = runContinuousReconciliation([settlement]);
     expect(report.status).toBe('FAIL');
     expect(kinds(report)).toContain('MISSING_POSTING');

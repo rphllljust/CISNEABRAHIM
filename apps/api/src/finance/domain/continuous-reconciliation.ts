@@ -51,6 +51,13 @@ export type EconomicFact = {
   sourceReference?: string;
   source?: EconomicSourceRef | null;
   postingSource?: { sourceContext: string; sourceId: string } | null;
+  /**
+   * Posting source kind expected for this economic fact (e.g. a settlement is
+   * expected to be posted under SETTLEMENT, a payment under PAYMENT). Ledgers
+   * without a defined accounting source kind keep this undefined and are still
+   * reconciled for origin existence, amount agreement, duplicates and balance.
+   */
+  expectedPostingSourceContext?: string;
   debits?: Array<{ amount: string }>;
   credits?: Array<{ amount: string }>;
 };
@@ -125,20 +132,24 @@ export function runContinuousReconciliation(facts: EconomicFact[]): ContinuousRe
     }
   }
 
-  // 3) Missing posting: economic facts that are downstream of a posting-producing
-  //    event (receivable/settlement/treasury/payable/payment) must have exactly
-  //    one posting; absence is a reconciliation break.
-  const postingProducingLedgers = new Set<EconomicLedger>(['receivable', 'settlement', 'treasury', 'payable', 'payment']);
+  // 3) Missing posting: a fact with an expected posting source kind must have
+  //    exactly one POSTED journal entry referencing it.
   for (const fact of facts) {
-    if (!postingProducingLedgers.has(fact.ledger)) {
+    if (!fact.expectedPostingSourceContext) {
       continue;
     }
     const postingCount = journalEntries.filter(
       (journal) =>
-        journal.postingSource?.sourceContext === fact.ledger && journal.postingSource.sourceId === fact.id,
+        journal.postingSource?.sourceContext === fact.expectedPostingSourceContext &&
+        journal.postingSource?.sourceId === fact.id,
     ).length;
     if (postingCount === 0) {
-      addFinding(findings, 'MISSING_POSTING', fact, `${fact.ledger}:${fact.id} has no journal entry posting`);
+      addFinding(
+        findings,
+        'MISSING_POSTING',
+        fact,
+        `${fact.ledger}:${fact.id} has no ${fact.expectedPostingSourceContext} journal entry posting`,
+      );
     }
   }
 

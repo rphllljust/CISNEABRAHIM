@@ -101,6 +101,7 @@ export async function collectEconomicFacts(pool: Pool): Promise<EconomicFact[]> 
       currencyCode: text(row, 'currency_code'),
       sourceReference: `RECEIVABLE:${text(row, 'receivable_id')}`,
       source: { ledger: 'receivable', id: text(row, 'receivable_id') },
+      expectedPostingSourceContext: 'SETTLEMENT',
     });
   }
 
@@ -153,6 +154,7 @@ export async function collectEconomicFacts(pool: Pool): Promise<EconomicFact[]> 
       currencyCode: text(row, 'currency_code'),
       sourceReference: optionalText(row, 'payment_reference'),
       source: { ledger: 'payable', id: text(row, 'payable_id') },
+      expectedPostingSourceContext: 'PAYMENT',
     });
   }
 
