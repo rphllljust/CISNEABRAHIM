@@ -16,7 +16,10 @@ services:
       POSTGRES_PASSWORD: ${PROD_POSTGRES_PASSWORD}
       POSTGRES_DB: ${PROD_POSTGRES_DB}
     volumes:
-      - cisne_prod_pg_data:/var/lib/postgresql/data
+      # PG18 PGDATA lives under /var/lib/postgresql/18/docker — the volume must
+      # mount /var/lib/postgresql (as dev/HML do) or data is written to the
+      # container layer and lost on recreate.
+      - cisne_prod_pg_data:/var/lib/postgresql
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
       interval: 10s
@@ -70,13 +73,20 @@ services:
     env_file:
       - ../../.env.prod
     environment:
-      DATABASE_URL: postgresql://${PROD_POSTGRES_USER}:${PROD_POSTGRES_PASSWORD}@postgres:5432/${PROD_POSTGRES_DB}?sslmode=disable
-      OBJECT_STORAGE_ENDPOINT: http://minio:9000
+      # DATABASE_URL / OBJECT_STORAGE_* come solely from .env.prod (env_file):
+      # no duplicate overrides that could silently flip sslmode or endpoints.
+      NODE_ENV: production
     depends_on:
       postgres:
         condition: service_healthy
       minio:
         condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:3000/api/v1/health/live']
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
     networks: [cisne_prod_internal]
 
   worker:
@@ -89,9 +99,13 @@ services:
     env_file:
       - ../../.env.prod
     environment:
-      DATABASE_URL: postgresql://${PROD_POSTGRES_USER}:${PROD_POSTGRES_PASSWORD}@postgres:5432/${PROD_POSTGRES_DB}?sslmode=disable
-      OBJECT_STORAGE_ENDPOINT: http://minio:9000
+      NODE_ENV: production
       OUTBOX_PUBLISHER_ENABLED: 'true'
+    healthcheck:
+      test: ['CMD-SHELL', 'pgrep -f "dist/worker/main.js" >/dev/null || exit 1']
+      interval: 15s
+      timeout: 5s
+      retries: 5
     depends_on:
       postgres:
         condition: service_healthy
@@ -105,6 +119,11 @@ services:
         VITE_API_BASE_URL: ${PROD_PUBLIC_API_URL}
     container_name: cisne_prod_web
     restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1/']
+      interval: 15s
+      timeout: 5s
+      retries: 5
     depends_on:
       - api
     networks: [cisne_prod_internal]
