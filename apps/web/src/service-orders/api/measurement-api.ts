@@ -42,8 +42,11 @@ function classifyError(status: number, code: MeasurementsErrorCode | undefined):
 async function parseError(response: Response): Promise<ServiceOrdersApiError> {
   let code: MeasurementsErrorCode | undefined;
   try {
-    const body = (await response.json()) as { code?: MeasurementsErrorCode };
-    code = body.code;
+    const body = (await response.json()) as {
+      error?: { code?: MeasurementsErrorCode; message?: string };
+      code?: MeasurementsErrorCode;
+    };
+    code = body.error?.code ?? body.code;
   } catch {
     // ignore
   }

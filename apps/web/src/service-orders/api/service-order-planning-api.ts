@@ -32,8 +32,11 @@ async function requestJson<T>(path: string, init: RequestInit): Promise<T> {
     if (!response.ok) {
       let code: ServiceOrdersErrorCode | undefined;
       try {
-        const body = (await response.json()) as { code?: ServiceOrdersErrorCode };
-        code = body.code;
+        const body = (await response.json()) as {
+          error?: { code?: ServiceOrdersErrorCode; message?: string };
+          code?: ServiceOrdersErrorCode;
+        };
+        code = body.error?.code ?? body.code;
       } catch {
         // ignore
       }

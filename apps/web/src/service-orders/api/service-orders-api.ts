@@ -30,7 +30,11 @@ export class ServiceOrdersApiError extends Error {
   }
 }
 
-type ErrorBody = { code?: ServiceOrdersErrorCode; message?: string };
+type ErrorBody = {
+  error?: { code?: ServiceOrdersErrorCode; message?: string };
+  code?: ServiceOrdersErrorCode;
+  message?: string;
+};
 
 const PROBE_SERVICE_ORDER_ID = '00000000-0000-4000-8000-000000000010';
 
@@ -60,7 +64,7 @@ async function parseError(response: Response): Promise<ServiceOrdersApiError> {
   let code: ServiceOrdersErrorCode | undefined;
   try {
     const body = (await response.json()) as ErrorBody;
-    code = body.code;
+    code = body.error?.code ?? body.code;
   } catch {
     // ignore
   }

@@ -39,7 +39,7 @@ function requestError(code: string, status: number): Response {
   return {
     ok: false,
     status,
-    json: async () => ({ code, message: 'error' }),
+    json: async () => ({ error: { code, message: 'error' } }),
   } as Response;
 }
 

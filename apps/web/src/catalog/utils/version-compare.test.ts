@@ -16,6 +16,8 @@ function version(partial: Partial<ServiceDefinitionVersion>): ServiceDefinitionV
     defaultUnitCode: 'DAY',
     measurementMode: 'BY_PERIOD',
     measurementBasis: 'TIME',
+    billingEntitlementPolicy: 'MEASUREMENT_APPROVED',
+    requiresPurchaseOrder: false,
     allowedUnits: [{ unitCode: 'DAY', isDefault: true, sortOrder: 0 }],
     resourceRequirements: [],
     laborRequirements: [],

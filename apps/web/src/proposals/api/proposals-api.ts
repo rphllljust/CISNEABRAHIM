@@ -37,6 +37,7 @@ export class ProposalsApiError extends Error {
 }
 
 type RequestErrorBody = {
+  error?: { code?: ProposalErrorCode; message?: string };
   code?: ProposalErrorCode;
   message?: string;
 };
@@ -70,7 +71,7 @@ async function parseError(response: Response): Promise<ProposalsApiError> {
   let code: ProposalErrorCode | undefined;
   try {
     const body = (await response.json()) as RequestErrorBody;
-    code = body.code;
+    code = body.error?.code ?? body.code;
   } catch {
     // ignore parse errors
   }

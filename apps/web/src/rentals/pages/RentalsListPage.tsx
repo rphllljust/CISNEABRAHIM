@@ -108,7 +108,7 @@ export function RentalsListPage() {
               {items.map((order) => (
                 <tr key={order.id} className={moduleTableRowClass}>
                   <td className={moduleTableCellClass}>
-                    <ModuleTableLink to={`/app/service-orders/${order.id}`}>{order.orderNumber}</ModuleTableLink>
+                    <ModuleTableLink to={`/app/service-orders/${order.id}/planning`}>{order.orderNumber}</ModuleTableLink>
                   </td>
                   <td className={moduleTableCellClass}>
                     {formatClientLabel(order.clientSnapshot, order.clientId)}

@@ -38,6 +38,7 @@ export class PurchaseOrdersApiError extends Error {
 }
 
 type RequestErrorBody = {
+  error?: { code?: PurchaseOrderErrorCode; message?: string };
   code?: PurchaseOrderErrorCode;
   message?: string;
 };
@@ -70,7 +71,7 @@ async function parseError(response: Response): Promise<PurchaseOrdersApiError> {
   let code: PurchaseOrderErrorCode | undefined;
   try {
     const body = (await response.json()) as RequestErrorBody;
-    code = body.code;
+    code = body.error?.code ?? body.code;
   } catch {
     // ignore parse errors
   }
