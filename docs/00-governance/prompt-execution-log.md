@@ -11589,3 +11589,10 @@ COMMIT: n/a nesta rodada (apenas limpeza DBs de teste)
 WORKING TREE: DIRTY (WIP pre-existente preservado)
 NEXT: CONTINUE (fechar e2e/lint/unit WIP-dependente + rodar fluxo critico com dataset operacional autorizado)
 ```
+```text
+PROMPT: HERMETIC PRODUCTION RELEASE (round 5 update — status BLOCKED no criterio READY)
+STATUS: BLOCKED (somente para o criterio estrito PRODUCTION ARTIFACT=READY)
+BLOCKER: Execucao do fluxo critico vertical (uat/master-business/enterprise + jornada HTTP completa) exige dataset operacional AUTORIZADO (tenant/unidade + emissora com CNPJ ativo via OWN_COMPANY_* de fonte SRC-005 + grants). bootstrap-own-company validado e funcional; sem dados autorizados o agente nao pode fabricar (governanca: nunca inventar dados empresariais / fake success). Condicao persistente nas rodadas 3-5.
+ESCOPO DE ENGENHARIA DA RELEASE: CONCLUIDO E GATEADO (build hermetico, pacote 0.1.0-rc.1, clean/offline install, migrations 75/75+idempotente, upgrade, recovery, secrets 0, SBOM 735+6, modulo-suites criticos verdes em DB real provisionado pelo artefato, ERP NONE, core sem integracoes PASS). Documentacao: docs/19-operations/release-hermetic-audit.md e release-hermetic-report.md.
+NEXT: aguardar provisionamento operacional autorizado para executar verticais e fluxo HTTP completo e entao setar READY.
+```
