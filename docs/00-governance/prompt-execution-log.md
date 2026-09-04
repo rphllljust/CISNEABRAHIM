@@ -11393,3 +11393,28 @@ NOTES:
   Working tree permanece com WIP anterior preservado.
 WORKING TREE: DIRTY (WIP pre-existente mantido) | NEXT: STOP
 ```
+
+```text
+PROMPT: BUSINESS FRONTEND GAP CLOSURE (programa em rodadas) — Rodada 1 (correcoes sistemicas)
+TITLE: Auditar cobertura UI x backend (8 dominios) e corrigir PARTIAL/MISSING/BROKEN; Rodada 1 = envelope de erro dos clients, probes (outage != denied), rotas/hrefs quebrados, drift de fixtures do build
+STARTED_AT: 2026-09-04T10:40:00-04:00
+FINISHED_AT: 2026-09-04T12:00:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS (Rodada 1 de N; programa ativo via goal — lacunas por dominio seguem nas proximas rodadas)
+CLASSIFICATION: Auditoria (somente leitura) + correcoes de engenharia frontend, sem criar regra de negocio/endpoint/capability; /app/access-admin NAO foi tocado.
+SCOPE (Rodada 1):
+  Auditoria de cobertura por 8 subagentes (Comercial, Operations, Finance, Fiscal/Accounting, Inventory/Procurement, Payroll, Assets/Rental/Transport, Documents/Reports) — tabelas COMPLETE/PARTIAL/MISSING/BROKEN com evidencias; sem edicao na fase de auditoria.
+  Correcoes sistemicas:
+    - Envelope de erro: backend serializa {error:{code,...}}; clients SO (service-orders/planning/execution/measurement) e commercial (proposals/purchase-orders) liam flat -> passam a ler body.error?.code ?? body.code; mock commercial-fetch-mock atualizado para o contrato real.
+    - Probes de rota (Requests/ServiceOrders/People): 500/network agora viram estado 'error' com retry (nao mais falso 'denied').
+    - Rotas quebradas: links Rentals/Transport -> rota real /app/service-orders/:id/planning; hrefs de alertas (OS/billing) e de busca (proposal/purchase-order) apontados para rotas reais do SPA.
+    - Drift pre-existente de fixtures de catalog (billingEntitlementPolicy/requiresPurchaseOrder) corrigido para destravar tsc -b/build.
+RESULT RODADA 1:
+  typecheck web: zero erros novos (2 erros pre-existentes de catalog eliminados pelas fixtures).
+  typecheck api: apenas erro pre-existente pilot-observation.spec.ts (WIP).
+  UI/e2e isolados: proposals.e2e 4/4, purchase-orders.e2e 4/4 (incl. version conflict), service-orders-list.e2e 3/3, unit (measurement 9/9, requests list 5/5, people list 3/3). Lote combinado multi-arquivo apresentou interferencia de mocks globais entre arquivos (falha de isolamento pre-existente, nao das correcoes).
+  build web: PASS (dist gerado; warning chunk size pre-existente).
+NOTES:
+  Registrado como programa multi-rodada (goal ativo): proximas rodadas fecham criticos por dominio (Contratos UI, ciclo OS, emissao fiscal, lancamento/posting rules, issuer, tesouraria escrita, collections, resubmit medição, receiving parcial/rejeicao, custos operacionais, CRUD tipos recurso, unidades medida, filtros reports/search/docs probes etc.). Itens que exigem novo endpoint/capability ficam fora do escopo de fechamento de UI (registrados).
+  Commits Rodada 1 (por area) a seguir.
+WORKING TREE: DIRTY (WIP anterior mantido) | NEXT: proxima rodada do programa
+```
