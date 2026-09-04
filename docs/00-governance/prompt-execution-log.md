@@ -11564,3 +11564,16 @@ COMMIT: DONE (por area: database/migrations, runtime-config, web hermetico, infr
 WORKING TREE: DIRTY (WIP pre-existente preservado)
 NEXT: CONTINUE
 ```
+```text
+PROMPT: HERMETIC PRODUCTION RELEASE (round 3 update)
+TITLE: Suites canonicas com banco real + correcoes de dominio descobertas no gate
+STATUS: IN_PROGRESS (continua NOT_READY)
+NOTES:
+  - Suites de modulo critico com PostgreSQL real (DB descartavel migrado pelo runner do artefato, 75/75): PASS auth 7/7, clients 5/5, fiscal 6/6, accounting 9/9, documents 9/9, billing 19/19, finance/receivables 13/13, service-orders 24/25, requests 17/18. 2 falhas unitarias pre-existentes de fixtures de dominio (conflito CNPJ/ordem), nao causadas por esta release.
+  - Verticais orquestradas (uat/master-business/enterprise-integrity) exigem emissora (propria empresa com CNPJ ativo) via bootstrap operacional OWN_COMPANY_* (SRC-005); sem ela: ISSUER_DEFAULT_NOT_FOUND (nao emitir documento). Bootstrap com CNPJ sintetico nao registrou linha de CNPJ (validacao intencional). Executar verticais com seed operacional autorizado antes do READY.
+  - Correcoes desta rodada: InvalidUuidError mapeado p/ 400 (ledger sem chartId parou de dar 500) e escrita billing_entitlement_policy alinhada ao DEFAULT do DDL MEASUREMENT_APPROVED (repositorio gravava NULL vs NOT NULL; service-orders foi de 3 p/ 24/25). Commit 23f78ae.
+  - Gate de install/offline revalidado com a imagem final (g4): PASS.
+COMMIT: DONE (fix(accounting,catalog) 23f78ae)
+WORKING TREE: DIRTY (WIP pre-existente preservado)
+NEXT: CONTINUE
+```

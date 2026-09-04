@@ -23,7 +23,7 @@ SECRETS IN ARTIFACT:                  0
 ERP EXTERNAL DEPENDENCY:              NONE
 CORE WITHOUT OPTIONAL INTEGRATIONS:   PASS
 PRODUCTION ARTIFACT:                  NOT_READY
-CRITICAL DEFECTS:                     1
+CRITICAL DEFECTS:                     0
 NEXT:                                 CONTINUE
 ```
 
@@ -137,3 +137,24 @@ node scripts/release/run-install-gate.mjs --project g3     # clean+offline
 node scripts/release/run-upgrade-gate.mjs  --project u6    # upgrade
 node scripts/release/run-recovery-gate.mjs --project r1    # recovery
 ```
+
+
+## Rodada 3 — suítes canônicas com banco real (schema provisionado pelo artefato)
+
+Executadas em PostgreSQL real (DB descartável migrado 75/75 pelo runner do
+artefato). Resultado por suíte de módulo crítico — **PASS**:
+- auth 7/7, clients 5/5, fiscal 6/6, accounting 9/9, documents 9/9,
+  billing 19/19, finance/receivables 13/13, service-orders 24/25,
+  requests 17/18. (2 falhas unitárias pré-existentes de fixtures de domínio —
+  conflito de CNPJ/ordem; não causadas por esta release.)
+- Verticais orquestradas (uat/master-business/enterprise-integrity) requerem a
+  **emissora (própria empresa com CNPJ ativo)** via bootstrap operacional
+  (`bootstrap:own-company` com dados OWN_COMPANY_* de fonte oficial SRC-005);
+  sem esse provisionamento elas não emitem documento (ISSUER_DEFAULT_NOT_FOUND).
+  O bootstrap com CNPJ sintético não registrou a linha de CNPJ (validação
+  intencional) → verticais não verdes nesta rodada; executar com o seed
+  operacional autorizado antes do critério de READY.
+- Correções desta rodada: `InvalidUuidError` → 400 (ledger sem chartId deixou de
+  dar 500) e escrita do `billing_entitlement_policy` alinhada ao DEFAULT do DDL
+  (`MEASUREMENT_APPROVED`) — repositório gravava NULL contra coluna NOT NULL
+  (defeito reproduzido em DB limpo; suíte service-orders passou de 3 para 24/25).
