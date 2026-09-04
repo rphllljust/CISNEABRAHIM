@@ -34,6 +34,8 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
+process.env['NODE_NO_WARNINGS'] = '1';
+
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const outRoot = resolve(process.env.RELEASE_OUT_DIR ?? join(ROOT, 'artifacts', 'release'));
 
@@ -189,6 +191,8 @@ async function main() {
     throw new Error(`SECRETS IN ARTIFACT > 0\n${findings.join('\n')}`);
   }
 
+  // 6b) SBOM (dependency + container image inventory) into the package.
+  run('node', [join(ROOT, 'scripts/release/emit-sbom.mjs'), '--out', join(stagedRoot, 'sbom.json')]);
   // 7) checksums + manifest
   const files = walkFiles(stagedRoot).sort((a, b) => a.localeCompare(b));
   const checksumLines = files.map((file) => {
@@ -213,7 +217,7 @@ async function main() {
       api: 'apps/api/dist (no source maps)',
       web: 'apps/web/dist',
       database: 'packages/database/dist + migrations',
-      migrations: files.filter((f) => f.includes('/migrations/')).length,
+      migrations: files.filter((f) => f.replace(/\\\\/g,'/').includes('/migrations/')).length,
     },
     runtime: { node: process.versions.node, pnpm: readPnpmVersion() },
   };
