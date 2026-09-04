@@ -516,6 +516,13 @@
     {
       "idx": 73,
       "version": "7",
+      "when": 1788388200000,
+      "tag": "0073_recurring_billing_schedule",
+      "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
       "when": 1788390000000,
       "tag": "0074_access_administration",
       "breakpoints": true
