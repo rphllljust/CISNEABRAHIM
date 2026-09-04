@@ -250,8 +250,8 @@ export class ServiceOrderExecutionRepository {
         const existing = await client.query<ExecutionEntryRow>(
           `SELECT ${EXECUTION_ENTRY_RETURNING}
            FROM so.execution_entries
-           WHERE idempotency_key = $1`,
-          [input.idempotencyKey],
+           WHERE idempotency_key = $1 AND service_order_id = $2`,
+          [input.idempotencyKey, input.serviceOrderId],
         );
         if (existing.rows[0]) {
           await client.query('COMMIT');
@@ -326,13 +326,19 @@ export class ServiceOrderExecutionRepository {
     } catch (error) {
       await client.query('ROLLBACK');
       if (isExecutionIdempotencyViolation(error) && input.idempotencyKey) {
+        // Replay only when the key belongs to THIS service order; a key used
+        // by another order must surface as a conflict, never as a silent
+        // read-back of the other order's entry (idempotency-key IDOR).
         const existing = await this.pool().query<ExecutionEntryRow>(
-          `SELECT ${EXECUTION_ENTRY_RETURNING} FROM so.execution_entries WHERE idempotency_key = $1`,
-          [input.idempotencyKey],
+          `SELECT ${EXECUTION_ENTRY_RETURNING}
+           FROM so.execution_entries
+           WHERE idempotency_key = $1 AND service_order_id = $2`,
+          [input.idempotencyKey, input.serviceOrderId],
         );
         if (existing.rows[0]) {
           return { outcome: 'idempotent', payload: { entry: existing.rows[0] } };
         }
+        return { outcome: 'idempotency_conflict' };
       }
       throw error;
     } finally {
@@ -350,8 +356,9 @@ export class ServiceOrderExecutionRepository {
       if (input.idempotencyKey) {
         const existing = await client.query<ExecutionEvidenceRow>(
           `SELECT id, service_order_id, evidence_kind, payload, actor_identity_id, recorded_at, idempotency_key
-           FROM so.execution_evidence WHERE idempotency_key = $1`,
-          [input.idempotencyKey],
+           FROM so.execution_evidence
+           WHERE idempotency_key = $1 AND service_order_id = $2`,
+          [input.idempotencyKey, input.serviceOrderId],
         );
         if (existing.rows[0]) {
           await client.query('COMMIT');
@@ -411,12 +418,14 @@ export class ServiceOrderExecutionRepository {
       if (isExecutionIdempotencyViolation(error) && input.idempotencyKey) {
         const existing = await this.pool().query<ExecutionEvidenceRow>(
           `SELECT id, service_order_id, evidence_kind, payload, actor_identity_id, recorded_at, idempotency_key
-           FROM so.execution_evidence WHERE idempotency_key = $1`,
-          [input.idempotencyKey],
+           FROM so.execution_evidence
+           WHERE idempotency_key = $1 AND service_order_id = $2`,
+          [input.idempotencyKey, input.serviceOrderId],
         );
         if (existing.rows[0]) {
           return { outcome: 'idempotent', payload: { evidence: existing.rows[0] } };
         }
+        return { outcome: 'idempotency_conflict' };
       }
       throw error;
     } finally {
@@ -434,8 +443,9 @@ export class ServiceOrderExecutionRepository {
       if (input.idempotencyKey) {
         const existing = await client.query<ExecutionOccurrenceRow>(
           `SELECT id, service_order_id, occurrence_code, description, payload, actor_identity_id, recorded_at, idempotency_key
-           FROM so.execution_occurrences WHERE idempotency_key = $1`,
-          [input.idempotencyKey],
+           FROM so.execution_occurrences
+           WHERE idempotency_key = $1 AND service_order_id = $2`,
+          [input.idempotencyKey, input.serviceOrderId],
         );
         if (existing.rows[0]) {
           await client.query('COMMIT');
@@ -496,12 +506,14 @@ export class ServiceOrderExecutionRepository {
       if (isExecutionIdempotencyViolation(error) && input.idempotencyKey) {
         const existing = await this.pool().query<ExecutionOccurrenceRow>(
           `SELECT id, service_order_id, occurrence_code, description, payload, actor_identity_id, recorded_at, idempotency_key
-           FROM so.execution_occurrences WHERE idempotency_key = $1`,
-          [input.idempotencyKey],
+           FROM so.execution_occurrences
+           WHERE idempotency_key = $1 AND service_order_id = $2`,
+          [input.idempotencyKey, input.serviceOrderId],
         );
         if (existing.rows[0]) {
           return { outcome: 'idempotent', payload: { occurrence: existing.rows[0] } };
         }
+        return { outcome: 'idempotency_conflict' };
       }
       throw error;
     } finally {

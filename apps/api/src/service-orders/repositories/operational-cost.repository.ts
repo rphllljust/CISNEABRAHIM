@@ -8,15 +8,25 @@ import {
   type RecordOperationalCostPersistenceResult,
 } from './operational-cost.repository.types';
 
-function isOperationalCostIdempotencyViolation(error: unknown): boolean {
+function isOperationalCostKeyViolation(error: unknown): boolean {
   if (!error || typeof error !== 'object') {
     return false;
   }
   const pgError = error as { code?: string; constraint?: string };
   return (
     pgError.code === '23505' &&
-    (pgError.constraint === 'operational_cost_entries_idempotency_key_uidx' ||
-      pgError.constraint === 'operational_cost_entries_execution_category_kind_uidx')
+    pgError.constraint === 'operational_cost_entries_idempotency_key_uidx'
+  );
+}
+
+function isOperationalCostDuplicateViolation(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+  const pgError = error as { code?: string; constraint?: string };
+  return (
+    pgError.code === '23505' &&
+    pgError.constraint === 'operational_cost_entries_execution_category_kind_uidx'
   );
 }
 
@@ -70,8 +80,8 @@ export class OperationalCostRepository {
         const existing = await client.query<OperationalCostEntryRow>(
           `SELECT ${OPERATIONAL_COST_ENTRY_RETURNING}
            FROM so.operational_cost_entries
-           WHERE idempotency_key = $1`,
-          [input.idempotencyKey],
+           WHERE idempotency_key = $1 AND service_order_id = $2`,
+          [input.idempotencyKey, input.serviceOrderId],
         );
         if (existing.rows[0]) {
           await client.query('COMMIT');
@@ -154,18 +164,22 @@ export class OperationalCostRepository {
       };
     } catch (error) {
       await client.query('ROLLBACK');
-      if (isOperationalCostIdempotencyViolation(error)) {
-        if (input.idempotencyKey) {
-          const existing = await this.pool().query<OperationalCostEntryRow>(
-            `SELECT ${OPERATIONAL_COST_ENTRY_RETURNING}
-             FROM so.operational_cost_entries
-             WHERE idempotency_key = $1`,
-            [input.idempotencyKey],
-          );
-          if (existing.rows[0]) {
-            return { outcome: 'idempotent', payload: { entry: existing.rows[0] } };
-          }
+      if (isOperationalCostKeyViolation(error) && input.idempotencyKey) {
+        // Replay only when the key belongs to THIS service order; a key used by
+        // another order surfaces as a conflict, never as a read-back of the
+        // other order's cost entry (idempotency-key IDOR).
+        const existing = await this.pool().query<OperationalCostEntryRow>(
+          `SELECT ${OPERATIONAL_COST_ENTRY_RETURNING}
+           FROM so.operational_cost_entries
+           WHERE idempotency_key = $1 AND service_order_id = $2`,
+          [input.idempotencyKey, input.serviceOrderId],
+        );
+        if (existing.rows[0]) {
+          return { outcome: 'idempotent', payload: { entry: existing.rows[0] } };
         }
+        return { outcome: 'idempotency_key_conflict' };
+      }
+      if (isOperationalCostDuplicateViolation(error)) {
         return { outcome: 'duplicate_cost_entry' };
       }
       throw error;

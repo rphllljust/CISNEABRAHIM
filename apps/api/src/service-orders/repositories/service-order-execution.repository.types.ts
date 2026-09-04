@@ -96,16 +96,19 @@ export type RecordExecutionPersistenceResult =
   | { outcome: 'success'; entry: ExecutionEntryRow; rowVersion: number }
   | { outcome: 'version_conflict' }
   | { outcome: 'invalid_state' }
-  | { outcome: 'idempotent'; payload: Record<string, unknown> };
+  | { outcome: 'idempotent'; payload: Record<string, unknown> }
+  | { outcome: 'idempotency_conflict' };
 
 export type RecordEvidencePersistenceResult =
   | { outcome: 'success'; evidence: ExecutionEvidenceRow; rowVersion: number }
   | { outcome: 'version_conflict' }
   | { outcome: 'invalid_state' }
-  | { outcome: 'idempotent'; payload: Record<string, unknown> };
+  | { outcome: 'idempotent'; payload: Record<string, unknown> }
+  | { outcome: 'idempotency_conflict' };
 
 export type RecordOccurrencePersistenceResult =
   | { outcome: 'success'; occurrence: ExecutionOccurrenceRow; rowVersion: number }
   | { outcome: 'version_conflict' }
   | { outcome: 'invalid_state' }
-  | { outcome: 'idempotent'; payload: Record<string, unknown> };
+  | { outcome: 'idempotent'; payload: Record<string, unknown> }
+  | { outcome: 'idempotency_conflict' };

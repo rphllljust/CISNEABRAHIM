@@ -51,6 +51,14 @@ export function serviceOrdersVersionConflict(
   );
 }
 
+export function serviceOrdersIdempotencyKeyConflict(): ServiceOrdersHttpException {
+  return new ServiceOrdersHttpException(
+    HttpStatus.CONFLICT,
+    SERVICE_ORDERS_ERROR_CODES.IDEMPOTENCY_KEY_CONFLICT,
+    'This idempotency key is already in use by a record of another service order.',
+  );
+}
+
 export function serviceOrdersClientNotFound(): ServiceOrdersHttpException {
   return new ServiceOrdersHttpException(
     HttpStatus.NOT_FOUND,

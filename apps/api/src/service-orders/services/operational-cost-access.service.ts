@@ -28,6 +28,7 @@ import { ServiceOrdersAccessAuthz } from './service-orders-access.authz';
 import {
   mapOperationalCostError,
   serviceOrdersAccessNotFound,
+  serviceOrdersIdempotencyKeyConflict,
   serviceOrdersVersionConflict,
 } from './service-orders-access.errors';
 import { assertValidServiceOrderId } from './service-orders-input-resolution';
@@ -107,6 +108,9 @@ export class OperationalCostAccessService {
     }
     if (result.outcome === 'duplicate_cost_entry') {
       throw mapOperationalCostError(new OperationalCostError('DUPLICATE_COST_ENTRY'));
+    }
+    if (result.outcome === 'idempotency_key_conflict') {
+      throw serviceOrdersIdempotencyKeyConflict();
     }
     if (result.outcome === 'invalid_state') {
       throw mapOperationalCostError(new OperationalCostError('INVALID_STATE'));

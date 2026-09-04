@@ -40,7 +40,8 @@ export type RecordOperationalCostPersistenceResult =
   | { outcome: 'version_conflict' }
   | { outcome: 'invalid_state' }
   | { outcome: 'execution_entry_not_found' }
-  | { outcome: 'duplicate_cost_entry' };
+  | { outcome: 'duplicate_cost_entry' }
+  | { outcome: 'idempotency_key_conflict' };
 
 export const OPERATIONAL_COST_ENTRY_RETURNING = `
   id,

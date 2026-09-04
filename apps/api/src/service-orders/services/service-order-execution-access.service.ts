@@ -65,6 +65,7 @@ import { ServiceOrdersAccessAuthz } from './service-orders-access.authz';
 import {
   mapServiceOrderExecutionError,
   serviceOrdersAccessNotFound,
+  serviceOrdersIdempotencyKeyConflict,
   serviceOrdersInvalidState,
   serviceOrdersValidationFailed,
   serviceOrdersVersionConflict,
@@ -489,6 +490,9 @@ export class ServiceOrderExecutionAccessService {
     if (result.outcome === 'version_conflict') {
       throw serviceOrdersVersionConflict();
     }
+    if (result.outcome === 'idempotency_conflict') {
+      throw serviceOrdersIdempotencyKeyConflict();
+    }
     if (result.outcome === 'invalid_state') {
       throw serviceOrdersInvalidState('Service order is not in a valid state for this operation.');
     }
@@ -512,6 +516,9 @@ export class ServiceOrderExecutionAccessService {
     if (result.outcome === 'version_conflict') {
       throw serviceOrdersVersionConflict();
     }
+    if (result.outcome === 'idempotency_conflict') {
+      throw serviceOrdersIdempotencyKeyConflict();
+    }
     if (result.outcome === 'invalid_state') {
       throw serviceOrdersInvalidState('Service order is not in a valid state for this operation.');
     }
@@ -534,6 +541,9 @@ export class ServiceOrderExecutionAccessService {
     }
     if (result.outcome === 'version_conflict') {
       throw serviceOrdersVersionConflict();
+    }
+    if (result.outcome === 'idempotency_conflict') {
+      throw serviceOrdersIdempotencyKeyConflict();
     }
     if (result.outcome === 'invalid_state') {
       throw serviceOrdersInvalidState('Service order is not in a valid state for this operation.');
