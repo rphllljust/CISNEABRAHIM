@@ -274,14 +274,38 @@ export class ApprovalMatrixRepository {
     scopeType: string;
     scopeAnchor: string | null;
   }): Promise<ApprovalRoleAssignmentRow> {
-    const result = await this.pool().query<ApprovalRoleAssignmentRow>(
-      `INSERT INTO "authorization".approval_role_assignments (
-         identity_id, role_code, scope_type, scope_anchor
-       ) VALUES ($1, $2, $3::"authorization".authz_scope_type, $4)
-       RETURNING id, identity_id, role_code, scope_type::text AS scope_type, scope_anchor`,
-      [input.identityId, input.roleCode, input.scopeType, input.scopeAnchor],
-    );
-    return result.rows[0]!;
+    try {
+      const result = await this.pool().query<ApprovalRoleAssignmentRow>(
+        `INSERT INTO "authorization".approval_role_assignments (
+           identity_id, role_code, scope_type, scope_anchor
+         ) VALUES ($1, $2, $3::"authorization".authz_scope_type, $4)
+         RETURNING id, identity_id, role_code, scope_type::text AS scope_type, scope_anchor`,
+        [input.identityId, input.roleCode, input.scopeType, input.scopeAnchor],
+      );
+      const assigned = result.rows[0];
+      if (!assigned) {
+        throw new Error('APPROVAL_ROLE_ASSIGN_FAILED');
+      }
+      return assigned;
+    } catch (error) {
+      const code = (error as { code?: string }).code;
+      if (code !== '23505') {
+        throw error;
+      }
+      const existing = await this.pool().query<ApprovalRoleAssignmentRow>(
+        `SELECT id, identity_id, role_code, scope_type::text AS scope_type, scope_anchor
+         FROM "authorization".approval_role_assignments
+         WHERE identity_id = $1
+           AND role_code = $2
+           AND scope_type = $3::"authorization".authz_scope_type
+           AND COALESCE(scope_anchor, '') = COALESCE($4, '')`,
+        [input.identityId, input.roleCode, input.scopeType, input.scopeAnchor],
+      );
+      if (!existing.rows[0]) {
+        throw error;
+      }
+      return existing.rows[0];
+    }
   }
 
   async listPublishedRules(): Promise<ApprovalMatrixRuleRow[]> {
@@ -315,6 +339,104 @@ export class ApprovalMatrixRepository {
       [matrixId],
     );
     return Number(result.rows[0]?.count ?? '0');
+  }
+
+  async listMatricesOverview(): Promise<
+    Array<{
+      id: string;
+      code: string;
+      currency_code: string;
+      published_version: number | null;
+      draft_version: number;
+      published_versions: number;
+      draft_versions: number;
+    }>
+  > {
+    const result = await this.pool().query<{
+      id: string;
+      code: string;
+      currency_code: string;
+      published_version: number | null;
+      draft_version: number;
+      published_versions: number;
+      draft_versions: number;
+    }>(
+      `SELECT m.id,
+              m.code,
+              m.currency_code,
+              m.published_version,
+              m.draft_version,
+              (SELECT count(*) FROM "authorization".approval_matrix_versions v
+                WHERE v.matrix_id = m.id AND v.status = 'PUBLISHED')::int AS published_versions,
+              (SELECT count(*) FROM "authorization".approval_matrix_versions v
+                WHERE v.matrix_id = m.id AND v.status = 'DRAFT')::int AS draft_versions
+       FROM "authorization".approval_matrices m
+       ORDER BY m.code`,
+    );
+    return result.rows;
+  }
+
+  async listMatrixVersionRules(
+    matrixId: string,
+    status: 'PUBLISHED' | 'DRAFT',
+  ): Promise<ApprovalMatrixRuleRow[]> {
+    const result = await this.pool().query<ApprovalMatrixRuleRow>(
+      `SELECT r.id, r.version_id, r.operation::text AS operation, r.role_code, r.capability,
+              r.scope_type::text AS scope_type, r.scope_anchor, r.amount_limit::text AS amount_limit,
+              r.line_number
+       FROM "authorization".approval_matrix_rules r
+       INNER JOIN "authorization".approval_matrix_versions v ON v.id = r.version_id
+       WHERE v.matrix_id = $1
+         AND v.status = $2
+       ORDER BY v.version DESC, r.line_number`,
+      [matrixId, status],
+    );
+    return result.rows;
+  }
+
+  async listApprovalRoleAssignments(
+    identityId?: string,
+  ): Promise<
+    Array<{
+      id: string;
+      identity_id: string;
+      identity_login: string | null;
+      role_code: string;
+      scope_type: string;
+      scope_anchor: string | null;
+      version: number;
+      created_at: string;
+    }>
+  > {
+    const where = identityId ? 'WHERE a.identity_id = $1' : '';
+    const params = identityId ? [identityId] : [];
+    const result = await this.pool().query<{
+      id: string;
+      identity_id: string;
+      identity_login: string | null;
+      role_code: string;
+      scope_type: string;
+      scope_anchor: string | null;
+      version: number;
+      created_at: string;
+    }>(
+      `SELECT a.id,
+              a.identity_id,
+              c.login_identifier_normalized AS identity_login,
+              a.role_code,
+              a.scope_type::text AS scope_type,
+              a.scope_anchor,
+              a.version,
+              a.created_at
+       FROM "authorization".approval_role_assignments a
+       LEFT JOIN identity.credentials c
+         ON c.identity_id = a.identity_id
+        AND c.revoked_at IS NULL
+       ${where}
+       ORDER BY a.created_at DESC`,
+      params,
+    );
+    return result.rows;
   }
 
   private async lockMatrix(client: PoolClient, matrixId: string): Promise<ApprovalMatrixRow | null> {

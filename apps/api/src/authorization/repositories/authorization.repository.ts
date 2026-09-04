@@ -206,4 +206,112 @@ export class AuthorizationRepository {
       ],
     );
   }
+
+  async listGrants(identityId?: string, includeRevoked = false): Promise<GrantRow[]> {
+    const conditions: string[] = [];
+    const params: unknown[] = [];
+    if (identityId) {
+      params.push(identityId);
+      conditions.push(`identity_id = $${params.length}`);
+    }
+    if (!includeRevoked) {
+      conditions.push('revoked_at IS NULL');
+    }
+    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const result = await this.pool().query<GrantRow>(
+      `SELECT id,
+              identity_id,
+              action,
+              resource_type,
+              resource_id,
+              scope_type,
+              constraints,
+              granted_by_identity_id,
+              version,
+              valid_from,
+              valid_until,
+              revoked_at,
+              revoked_by_identity_id,
+              created_at,
+              updated_at
+       FROM "authorization".grants
+       ${where}
+       ORDER BY created_at DESC`,
+      params,
+    );
+    return result.rows;
+  }
+
+  async listIdentities(input: {
+    query?: string;
+    status?: 'active' | 'disabled' | 'locked';
+    limit?: number;
+  }): Promise<
+    Array<{
+      id: string;
+      login: string | null;
+      status: string;
+      disabled_at: string | null;
+      created_at: string;
+    }>
+  > {
+    const conditions: string[] = [];
+    const params: unknown[] = [];
+    if (input.query?.trim()) {
+      params.push(`%${input.query.trim()}%`);
+      conditions.push(`c.login_identifier_normalized ILIKE $${params.length}`);
+    }
+    if (input.status) {
+      params.push(input.status);
+      conditions.push(`i.status = $${params.length}`);
+    }
+    const limit = Math.min(Math.max(input.limit ?? 100, 1), 200);
+    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const result = await this.pool().query<{
+      id: string;
+      login: string | null;
+      status: string;
+      disabled_at: string | null;
+      created_at: string;
+    }>(
+      `SELECT i.id,
+              c.login_identifier_normalized AS login,
+              i.status,
+              i.disabled_at,
+              i.created_at
+       FROM identity.identities i
+       LEFT JOIN identity.credentials c
+         ON c.identity_id = i.id
+        AND c.revoked_at IS NULL
+       ${where}
+       ORDER BY login ASC NULLS LAST
+       LIMIT $${params.length + 1}`,
+      [...params, limit],
+    );
+    return result.rows;
+  }
+
+  async findRoleDerivedActionRows(identityId: string, action: string): Promise<
+    Array<{
+      scope_type: AuthzScopeType;
+      scope_anchor: string | null;
+    }>
+  > {
+    const result = await this.pool().query<{
+      scope_type: AuthzScopeType;
+      scope_anchor: string | null;
+    }>(
+      `SELECT a.scope_type,
+              a.scope_anchor
+       FROM "authorization".access_role_assignments a
+       INNER JOIN "authorization".access_roles r ON r.id = a.role_id
+       INNER JOIN "authorization".access_role_capabilities c ON c.role_id = a.role_id
+       WHERE a.identity_id = $1
+         AND a.revoked_at IS NULL
+         AND r.status = 'ACTIVE'
+         AND c.capability = $2`,
+      [identityId, action],
+    );
+    return result.rows;
+  }
 }

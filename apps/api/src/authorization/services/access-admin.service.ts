@@ -7,6 +7,8 @@ import { AuthzHttpException } from '../errors/authz-http.exception';
 import { DatabaseService } from '../../infrastructure/database/database.service';
 import { PolicyDecisionPointService } from './policy-decision-point.service';
 import { AccessAdminRepository } from '../repositories/access-admin.repository';
+import { AuthorizationRepository } from '../repositories/authorization.repository';
+import { ApprovalMatrixRepository } from '../repositories/approval-matrix.repository';
 import { ScopeContextRepository } from '../repositories/scope-context.repository';
 import { SecurityAuditService } from '../../audit/services/security-audit.service';
 import {
@@ -42,7 +44,9 @@ import {
   type AccessAdminSodConflictResponseV1,
   type AccessRoleResponseV1,
 } from '../serializers/access-admin-response.serializer';
+import { toGrantResponse } from '../serializers/grant-response.serializer';
 import type { AccessAssignmentRow, AccessRoleRow } from '../repositories/access-admin.repository';
+import type { GrantRow } from '../repositories/authorization.repository';
 
 const ALLOWED_SCOPE_KEYS = new Set<string>([
   ...Object.values(AUTHZ_SCOPES),
@@ -53,6 +57,8 @@ export class AccessAdminService {
   constructor(
     private readonly databaseService: DatabaseService,
     private readonly repository: AccessAdminRepository,
+    private readonly authorizationRepository: AuthorizationRepository,
+    private readonly approvalMatrixRepository: ApprovalMatrixRepository,
     private readonly scopeContextRepository: ScopeContextRepository,
     private readonly policyDecisionPoint: PolicyDecisionPointService,
     private readonly securityAudit: SecurityAuditService,
@@ -78,7 +84,57 @@ export class AccessAdminService {
       code,
       anchored: isAnchoredScope(code as AuthzScopeType),
     }));
-    return { capabilities: buildCapabilityCatalog(), scopes };
+    const resources = [...Object.values(AUTHZ_RESOURCE_TYPES)].map((code) => ({ code })).sort(
+      (left, right) => left.code.localeCompare(right.code),
+    );
+    return { capabilities: buildCapabilityCatalog(), scopes, resources };
+  }
+
+  async listGrants(
+    actor: IdentityAuthzContext,
+    identityId?: string,
+    includeRevoked = false,
+  ) {
+    await this.assertAllowed(actor, AUTHZ_ACTIONS.AccessAdminRead);
+    const grants = await this.authorizationRepository.listGrants(
+      identityId?.trim() ? identityId.trim() : undefined,
+      includeRevoked,
+    );
+    return grants.map((grant: GrantRow) => toGrantResponse(grant));
+  }
+
+  async listIdentities(
+    actor: IdentityAuthzContext,
+    filters: { query?: string; status?: string; limit?: number },
+  ) {
+    await this.assertAllowed(actor, AUTHZ_ACTIONS.AccessAdminRead);
+    const status = filters.status as 'active' | 'disabled' | 'locked' | undefined;
+    return this.authorizationRepository.listIdentities({
+      query: filters.query,
+      status,
+      limit: filters.limit,
+    });
+  }
+
+  async approvalMatrices(actor: IdentityAuthzContext) {
+    await this.assertAllowed(actor, AUTHZ_ACTIONS.AccessAdminRead);
+    return this.approvalMatrixRepository.listMatricesOverview();
+  }
+
+  async approvalMatrixRules(
+    actor: IdentityAuthzContext,
+    matrixId: string,
+    status: 'PUBLISHED' | 'DRAFT',
+  ) {
+    await this.assertAllowed(actor, AUTHZ_ACTIONS.AccessAdminRead);
+    return this.approvalMatrixRepository.listMatrixVersionRules(matrixId, status);
+  }
+
+  async approvalRoleAssignments(actor: IdentityAuthzContext, identityId?: string) {
+    await this.assertAllowed(actor, AUTHZ_ACTIONS.AccessAdminRead);
+    return this.approvalMatrixRepository.listApprovalRoleAssignments(
+      identityId?.trim() ? identityId.trim() : undefined,
+    );
   }
 
   async listRoles(actor: IdentityAuthzContext): Promise<AccessRoleResponseV1[]> {

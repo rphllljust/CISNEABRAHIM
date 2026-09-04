@@ -101,6 +101,87 @@ export class AccessAdminController {
     );
   }
 
+  @Get('grants')
+  @UseGuards(JwtAuthGuard, AuthorizationGuard)
+  @RequireAuthz({
+    action: AUTHZ_ACTIONS.AccessAdminRead,
+    resourceType: AUTHZ_RESOURCE_TYPES.AccessAdmin,
+  })
+  listGrants(
+    @CurrentAuth() auth: AccessTokenClaims,
+    @Query('identityId') identityId?: string,
+    @Query('includeRevoked') includeRevoked?: string,
+  ) {
+    return this.accessAdmin.listGrants(
+      { identityId: auth.sub, sessionId: auth.sid },
+      identityId,
+      includeRevoked === 'true',
+    );
+  }
+
+  @Get('identities')
+  @UseGuards(JwtAuthGuard, AuthorizationGuard)
+  @RequireAuthz({
+    action: AUTHZ_ACTIONS.AccessAdminRead,
+    resourceType: AUTHZ_RESOURCE_TYPES.AccessAdmin,
+  })
+  listIdentities(
+    @CurrentAuth() auth: AccessTokenClaims,
+    @Query('query') query?: string,
+    @Query('status') status?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.accessAdmin.listIdentities(
+      { identityId: auth.sub, sessionId: auth.sid },
+      { query, status, limit: limit ? Number(limit) : undefined },
+    );
+  }
+
+  @Get('approval-matrices')
+  @UseGuards(JwtAuthGuard, AuthorizationGuard)
+  @RequireAuthz({
+    action: AUTHZ_ACTIONS.AccessAdminRead,
+    resourceType: AUTHZ_RESOURCE_TYPES.AccessAdmin,
+  })
+  approvalMatrices(@CurrentAuth() auth: AccessTokenClaims) {
+    return this.accessAdmin.approvalMatrices({ identityId: auth.sub, sessionId: auth.sid });
+  }
+
+  @Get('approval-matrices/:matrixId/rules')
+  @UseGuards(JwtAuthGuard, AuthorizationGuard)
+  @RequireAuthz({
+    action: AUTHZ_ACTIONS.AccessAdminRead,
+    resourceType: AUTHZ_RESOURCE_TYPES.AccessAdmin,
+  })
+  approvalMatrixRules(
+    @CurrentAuth() auth: AccessTokenClaims,
+    @Param('matrixId') matrixId: string,
+    @Query('versionStatus') versionStatus?: string,
+  ) {
+    const status = versionStatus === 'DRAFT' ? 'DRAFT' : 'PUBLISHED';
+    return this.accessAdmin.approvalMatrixRules(
+      { identityId: auth.sub, sessionId: auth.sid },
+      matrixId,
+      status,
+    );
+  }
+
+  @Get('approval-role-assignments')
+  @UseGuards(JwtAuthGuard, AuthorizationGuard)
+  @RequireAuthz({
+    action: AUTHZ_ACTIONS.AccessAdminRead,
+    resourceType: AUTHZ_RESOURCE_TYPES.AccessAdmin,
+  })
+  approvalRoleAssignments(
+    @CurrentAuth() auth: AccessTokenClaims,
+    @Query('identityId') identityId?: string,
+  ) {
+    return this.accessAdmin.approvalRoleAssignments(
+      { identityId: auth.sub, sessionId: auth.sid },
+      identityId,
+    );
+  }
+
   @Post('assignments')
   @HttpCode(201)
   @UseGuards(JwtAuthGuard, AuthorizationGuard)

@@ -14,6 +14,7 @@ import type {
   AuthzEvaluationRequest,
   IdentityAuthzContext,
 } from '../types/authz-decision';
+import { isOperationalAuthorityAction } from '../domain/operational-authority';
 
 @Injectable()
 export class PolicyDecisionPointService {
@@ -40,13 +41,33 @@ export class PolicyDecisionPointService {
         request.resourceType,
       );
 
-      if (grants.length === 0) {
+      // Enforcement efetivo das roles administradas (Access Administration):
+      // uma capability de role igual à action pedida e atribuída à identidade
+      // (role ACTIVE, assignment ativo) concede acesso com as mesmas regras de
+      // escopo das grants. Nada é decidido pelo frontend — só o backend avalia.
+      const roleDerived = await this.repository.findRoleDerivedActionRows(
+        identity.identityId,
+        request.action,
+      );
+      const matchedDerived = roleDerived.some((row) =>
+        grantMatchesResourceContext({
+          grant: {
+            scope_type: row.scope_type,
+            resource_id: row.scope_anchor,
+            resource_type: request.resourceType,
+          },
+          identityId: identity.identityId,
+          context: request.context,
+        }),
+      );
+
+      if (grants.length === 0 && !matchedDerived) {
         const decision = this.deny(request, AUTHZ_DENY_REASONS.NO_ACTIVE_GRANT);
         await this.maybeAudit(identity.identityId, request, decision, options);
         return decision;
       }
 
-      const matched = grants.some((grant) =>
+      const matchedDirect = grants.some((grant) =>
         grantMatchesResourceContext({
           grant,
           identityId: identity.identityId,
@@ -54,7 +75,7 @@ export class PolicyDecisionPointService {
         }),
       );
 
-      if (!matched) {
+      if (!matchedDirect && !matchedDerived) {
         const decision = this.deny(request, AUTHZ_DENY_REASONS.SCOPE_MISMATCH);
         await this.maybeAudit(identity.identityId, request, decision, options);
         return decision;
@@ -117,7 +138,9 @@ export class PolicyDecisionPointService {
         outcome: SECURITY_AUDIT_OUTCOMES.Denied,
         correlationId: options?.correlationId,
         reasonCode: decision.reasonCode,
-        classification: SECURITY_AUDIT_CLASSIFICATIONS.Standard,
+        classification: isOperationalAuthorityAction(request.action)
+          ? SECURITY_AUDIT_CLASSIFICATIONS.Critical
+          : SECURITY_AUDIT_CLASSIFICATIONS.Standard,
         metadata: {
           evaluated_action: request.action,
           evaluated_resource_type: request.resourceType,
