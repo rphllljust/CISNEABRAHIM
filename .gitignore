@@ -98,6 +98,8 @@ apps/api/gate-output.json
 
 # CD promotion manifests (generated in CI)
 artifacts/cd/
+# Hermetic release packages (generated; never committed)
+artifacts/release/
 .pilot/
 
 # Local runtime scratch (object storage, seeds, test artifacts)

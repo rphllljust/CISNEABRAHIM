@@ -36,6 +36,7 @@
     "test:uat": "pnpm --filter @cisne/api test:uat",
     "pilot:status": "node scripts/pilot/status.mjs",
     "release:drill": "node scripts/release/drill.mjs",
+    "release:package": "node scripts/release/package.mjs",
     "readiness:gate": "node scripts/readiness/gate.mjs",
     "readiness:engineering": "node scripts/readiness/engineering.mjs",
     "readiness:record-milestones": "node scripts/readiness/record-milestones.mjs",
