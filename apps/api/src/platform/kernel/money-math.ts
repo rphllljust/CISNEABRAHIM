@@ -37,12 +37,19 @@ export function formatMoneyAmountForApi(value: string | null): string | null {
   if (value === null) {
     return null;
   }
-  const normalized = normalizeMoneyAmount(value);
+  // Derived/internal amounts (balances, deltas, projections) can be negative;
+  // the magnitude is validated through normalizeMoneyAmount while the sign is
+  // preserved. normalizeMoneyAmount itself stays strict (input validation).
+  const trimmed = value.trim();
+  const negative = trimmed.startsWith('-');
+  const magnitude = negative ? trimmed.slice(1) : trimmed;
+  const normalized = normalizeMoneyAmount(magnitude);
   const parts = normalized.split('.');
   const whole = parts[0] ?? '0';
   const fraction = parts[1] ?? '0000';
   const trimmedFraction = fraction.replace(/0+$/, '');
-  return trimmedFraction.length > 0 ? `${whole}.${trimmedFraction}` : whole;
+  const formatted = trimmedFraction.length > 0 ? `${whole}.${trimmedFraction}` : whole;
+  return negative && formatted !== '0' ? `-${formatted}` : formatted;
 }
 
 export function assertCurrencyCode(value: string | undefined): string {

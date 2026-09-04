@@ -9,9 +9,18 @@ describe('money', () => {
     expect(formatMoneyAmountForApi('9351.5000')).toBe('9351.5');
   });
 
+  it('formats derived negative amounts (overdraft balances, deltas) preserving the sign', () => {
+    expect(formatMoneyAmountForApi('-12.5000')).toBe('-12.5');
+    expect(formatMoneyAmountForApi('-0.2500')).toBe('-0.25');
+    expect(formatMoneyAmountForApi('-0.0000')).toBe('0');
+    expect(formatMoneyAmountForApi('-42')).toBe('-42');
+  });
+
   it('rejects float-like invalid amounts and excess precision', () => {
     expect(() => normalizeMoneyAmount('-1')).toThrow();
     expect(() => normalizeMoneyAmount('12.34567')).toThrow();
     expect(() => parseOptionalMoneyAmount('not-money')).toThrow();
+    expect(() => formatMoneyAmountForApi('--1')).toThrow();
+    expect(() => formatMoneyAmountForApi('12.34567')).toThrow();
   });
 });
