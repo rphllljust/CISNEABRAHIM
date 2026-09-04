@@ -11513,3 +11513,28 @@ NOTES:
   Proxima rodada: Finance (reverse payable, tesouraria escrita, recon/collections, false-success) e/ou unidades de medida admin.
 WORKING TREE: DIRTY (WIP anterior mantido) | NEXT: proxima rodada do programa
 ```
+```text
+PROMPT: BUSINESS FRONTEND GAP CLOSURE — Rodada 6 (Finance)
+TITLE: Finance: reverse de pagamento, escrita de tesouraria, acoes de conciliacao bancaria, correcoes de false-success (overview/treasury/recon/collection)
+STARTED_AT: 2026-09-04T14:40:00-04:00
+FINISHED_AT: 2026-09-04T15:05:00-04:00
+STATUS: PASS (Rodada 6; programa ativo — proximas rodadas)
+CLASSIFICATION: Fechamento frontend-only com contratos existentes; sem regra de negocio/endpoint/capability novos; /app/access-admin intocado.
+SCOPE:
+  - Payables reverse (POST /finance/payables/:id/payments/:paymentId/reverse {rowVersion,idempotencyKey,paymentReference,amount?,reason}) + UI na pagina de titulo com motivo/versao/reload.
+  - Tesouraria: abrir conta (BANK/CASH), registrar movimento (MANUAL_AUTHORIZED), transferir, estornar movimento e transferencia (payloads reais; CLOSED desabilita).
+  - Conciliacao bancaria: match manual (POST /matches), confirm e unreconcile (banner 409 + reload); reconciliacoes rastreadas em sessao (sem GET list).
+  - False-success: FinanceOverviewPage per-card erro/retry (sem mascarar 500 em '—'), TreasuryAccountDetailPage expoe erro do GET, BankReconciliationPage nao descarta extrato em falha de import/match, CollectionPanel nao mais abre cegamente com 404 e refresh do pai (key=rowVersion + onChanged).
+RESULT:
+  MISSING; BROKEN; FALSE SUCCESS (Finance): reverse payable, escrita de tesouraria, acoes de conciliacao e falso vazio/erros silenciosos — fechados.
+QUALITY GATES (Rodada 6):
+  typecheck web: exit 0
+  specs novas: payable-actions 12/12, treasury-forms 6/6, payable-reverse.ui 2/2 + regressao financial-ui 2/2 e idempotency-retry 4/4
+  build web: PASS (dist regenerado)
+NOTES:
+  Endpoint real de reverse e por pagamento (nao /payables/:id/reverse como auditado) — implementado contra o controller real.
+  Sem endpoints GET de listas de movimentos/transferencias/reconcil: formas usam ids explicitos (sem inventar UUIDs).
+  Commits: feat(web) fd1c7b5.
+  Proxima rodada: Fiscal/Accounting (emissao fiscal, regras tributarias, lancamento manual, posting rules, issuer) e/ou Assets/Rental/Transport.
+WORKING TREE: DIRTY (WIP anterior mantido) | NEXT: proxima rodada do programa
+```
