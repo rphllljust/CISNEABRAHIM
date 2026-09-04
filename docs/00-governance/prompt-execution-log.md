@@ -11577,3 +11577,15 @@ COMMIT: DONE (fix(accounting,catalog) 23f78ae)
 WORKING TREE: DIRTY (WIP pre-existente preservado)
 NEXT: CONTINUE
 ```
+```text
+PROMPT: HERMETIC PRODUCTION RELEASE (round 4 update)
+TITLE: Verificacao do prerequisito de emissora (own-company) para verticais
+STATUS: IN_PROGRESS (continua NOT_READY)
+NOTES:
+  - bootstrap:own-company validado em DB limpo: exige CEP apenas digitos (check pty.establishments_postal_digits_chk) e CNPJ valido; com isso registra LegalEntity + Establishment MATRIZ (default issuer) + CNPJ ACTIVE (1 linha verificada).
+  - Verticais uat/master-business/enterprise continuam exigindo o dataset operacional HML/sintetico (tenant/unit do proprio cenario com emissora ativa) — seed operacional autorizado (SRC-005/sintetico HML), fora do escopo de empacotamento; sem ele: ISSUER_DEFAULT_NOT_FOUND (correto: nada hardcoded).
+  - Suites de modulo critico PASS em DB limpo migrado pelo artefato (ver round 3). lint: api+db PASS; web lint apresenta erros em arquivos WIP Round-6 (contracts/finance) nao tocados por esta release. unit: 3 falhas WIP (PDP/release-scope) nao causadas por este prompt.
+COMMIT: n/a nesta rodada (apenas limpeza DBs de teste)
+WORKING TREE: DIRTY (WIP pre-existente preservado)
+NEXT: CONTINUE (fechar e2e/lint/unit WIP-dependente + rodar fluxo critico com dataset operacional autorizado)
+```
