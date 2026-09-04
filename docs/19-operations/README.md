@@ -12,3 +12,5 @@ Documentação operacional (backup, continuidade, runbooks).
 | [pilot-program.md](pilot-program.md) | 90 |
 | [release-rollback-strategy.md](release-rollback-strategy.md) | 91 |
 | [production-readiness-gate.md](production-readiness-gate.md) | 92 |
+| [pilot-exit-readiness-snapshot-2026-09-03.md](pilot-exit-readiness-snapshot-2026-09-03.md) | PILOT EXIT READINESS |
+| [release-hermetic-audit.md](release-hermetic-audit.md) | HERMETIC PRODUCTION RELEASE |
