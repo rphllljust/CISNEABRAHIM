@@ -18,6 +18,7 @@ export type RequestsFetchMockOptions = {
   requestApproveAllowed?: boolean;
   requestRejectAllowed?: boolean;
   requestCancelAllowed?: boolean;
+  requestStatus?: ServiceRequest['status'];
   versionConflictOnUpdate?: boolean;
   clientListAllowed?: boolean;
   documents?: DocumentsFetchMockOptions;
@@ -100,6 +101,14 @@ export function createRequestsFetchMock(options: RequestsFetchMockOptions = {}) 
       updatedAt: '2026-01-01T12:00:00.000Z',
     },
   ];
+
+  const seededRequest = store[0]!;
+  if (options.requestStatus && options.requestStatus !== seededRequest.status) {
+    seededRequest.status = options.requestStatus;
+    if (options.requestStatus === SERVICE_REQUEST_STATUSES.Approved) {
+      seededRequest.approvedAt = '2026-01-01T12:30:00.000Z';
+    }
+  }
 
   function findRequest(id: string): ServiceRequest | undefined {
     return store.find((item) => item.id === id);
@@ -410,6 +419,21 @@ export function createRequestsFetchMock(options: RequestsFetchMockOptions = {}) 
             status: SERVICE_REQUEST_STATUSES.Cancelled,
             cancelledAt: new Date().toISOString(),
             cancellationReason: body.cancellationReason,
+          }),
+        ),
+      );
+    }
+
+    if (action === 'convert' && method === 'POST') {
+      if (current.status !== SERVICE_REQUEST_STATUSES.Approved) {
+        return requestError('REQUESTS_SERVICE_REQUEST_INVALID_STATE', 409);
+      }
+      return jsonResponse(
+        toDetail(
+          bump(current, {
+            status: SERVICE_REQUEST_STATUSES.Converted,
+            convertedAt: new Date().toISOString(),
+            convertedServiceOrderId: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
           }),
         ),
       );

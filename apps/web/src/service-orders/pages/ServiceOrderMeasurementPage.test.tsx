@@ -211,4 +211,30 @@ describe('ServiceOrderMeasurementPage', () => {
     expect(screen.getByRole('navigation', { name: /atalhos da ordem de serviço/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /resumo da conferência/i })).toBeInTheDocument();
   });
+
+  it('reenvia medição rejeitada para rascunho via resubmit', async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal(
+      'fetch',
+      createServiceOrdersFetchMock({
+        orderCompleted: true,
+        seedMeasurement: 'rejected',
+      }),
+    );
+    renderServiceOrderRoutes(measurementPath);
+
+    await waitFor(() => {
+      expect(document.querySelector('.measurement-status--rejected')).toHaveTextContent('Rejeitada');
+    });
+
+    const resubmitButton = screen.getByRole('button', { name: /reenviar medição/i });
+    expect(resubmitButton).toBeEnabled();
+    await user.click(resubmitButton);
+
+    await waitFor(() => {
+      expect(screen.getByText(/medição reenviada/i)).toBeInTheDocument();
+    });
+    expect(document.querySelector('.measurement-status--draft')).toHaveTextContent('Rascunho');
+    expect(screen.getByRole('button', { name: /submeter medição/i })).toBeEnabled();
+  });
 });

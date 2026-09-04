@@ -26,7 +26,8 @@ export type MeasurementSeedKind =
   | 'draft-divergent'
   | 'submitted'
   | 'under_review'
-  | 'approved';
+  | 'approved'
+  | 'rejected';
 
 export type BillingSeedKind = 'none' | 'prepared' | 'voided';
 
@@ -44,6 +45,9 @@ export type ServiceOrdersFetchMockOptions = {
   measurementAllowed?: boolean;
   measurementVersionConflict?: boolean;
   orderCompleted?: boolean;
+  orderStatus?: string;
+  statusBeforeCancel?: string;
+  lifecycleVersionConflict?: boolean;
   seedMeasurement?: MeasurementSeedKind;
   billingAllowed?: boolean;
   billingReadAllowed?: boolean;
@@ -184,6 +188,7 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
     purchaseOrderSnapshot?: Record<string, unknown> | null;
     proposalSnapshot?: Record<string, unknown> | null;
     contractSnapshot?: Record<string, unknown> | null;
+    statusBeforeCancel: string | null;
     historyEvents: unknown[];
   };
   type MockEntry = {
@@ -285,6 +290,7 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
       preparedAt: '2026-01-01T08:00:00.000Z',
       releasedAt: '2026-01-01T09:00:00.000Z',
       cancelledAt: null,
+      statusBeforeCancel: null,
       updatedAt: '2026-01-01T10:00:00.000Z',
       historyEvents: [],
     };
@@ -339,6 +345,7 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
       clientId: order.clientId,
       clientSnapshot: order.clientSnapshot,
       description: order.description,
+      rowVersion: order.rowVersion,
       updatedAt: order.updatedAt,
     };
   }
@@ -449,8 +456,8 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
       replacesDocumentId: null,
       status: 'FINALIZED',
       documentCategory: 'NOTA_FATURA',
-      emitterLegalName: 'CISNE RONDÔNIA COMÉRCIO E SERVIÇOS LTDA',
-      emitterTaxId: '11897171000181',
+      emitterLegalName: 'EMPRESA EMISSORA PILOTO LTDA',
+      emitterTaxId: '11222333000181',
       emitterAddressSnapshot: {},
       clientLegalNameSnapshot: billing.clientLegalNameSnapshot,
       clientTaxIdSnapshot: billing.clientTaxIdSnapshot,
@@ -613,6 +620,8 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
         return 'UNDER_REVIEW';
       case 'approved':
         return 'APPROVED';
+      case 'rejected':
+        return 'REJECTED';
       default:
         return 'DRAFT';
     }
@@ -670,9 +679,10 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
       submittedByIdentityId: status === 'SUBMITTED' || status === 'UNDER_REVIEW' ? 'actor-demo' : null,
       reviewStartedAt: status === 'UNDER_REVIEW' ? now : null,
       reviewStartedByIdentityId: status === 'UNDER_REVIEW' ? 'actor-demo' : null,
-      decidedAt: null,
-      decidedByIdentityId: null,
-      rejectionReason: null,
+      decidedAt: status === 'APPROVED' || status === 'REJECTED' ? now : null,
+      decidedByIdentityId: status === 'APPROVED' || status === 'REJECTED' ? 'actor-demo' : null,
+      rejectionReason:
+        status === 'REJECTED' ? 'Divergência de quantidade não justificada na revisão.' : null,
       rowVersion: 1,
       createdAt: now,
       updatedAt: now,
@@ -741,6 +751,18 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
         rowVersion: 1,
       });
     }
+  }
+
+  if (options.orderStatus) {
+    const current = getOrder(MOCK_SERVICE_ORDER_ID);
+    saveOrder({
+      ...current,
+      status: options.orderStatus,
+      statusBeforeCancel:
+        options.orderStatus === SERVICE_ORDER_STATUSES.Cancelled
+          ? (options.statusBeforeCancel ?? SERVICE_ORDER_STATUSES.Prepared)
+          : null,
+    });
   }
 
   if (options.purchaseOrderPaymentTerms) {
@@ -965,6 +987,104 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
     return null;
   }
 
+  async function handleLifecycleAction(
+    orderId: string,
+    action: string,
+    init?: RequestInit,
+  ): Promise<Response> {
+    if (orderId !== MOCK_SERVICE_ORDER_ID && orderId !== PROBE_SERVICE_ORDER_ID) {
+      return orderError('SERVICE_ORDERS_NOT_FOUND', 404);
+    }
+    if (options.lifecycleVersionConflict) {
+      return orderError('SERVICE_ORDERS_VERSION_CONFLICT', 409);
+    }
+    const body = parseBody(init);
+    const rowVersion = Number(body.rowVersion);
+    const order = getOrder(orderId);
+    if (Number.isFinite(rowVersion) && rowVersion > 0 && rowVersion !== order.rowVersion) {
+      return orderError('SERVICE_ORDERS_VERSION_CONFLICT', 409);
+    }
+
+    const now = new Date().toISOString();
+    switch (action) {
+      case 'prepare': {
+        if (order.status !== SERVICE_ORDER_STATUSES.Draft) {
+          return orderError('SERVICE_ORDERS_INVALID_STATE', 409);
+        }
+        const updated = saveOrder({
+          ...order,
+          status: SERVICE_ORDER_STATUSES.Prepared,
+          preparedAt: now,
+          rowVersion: order.rowVersion + 1,
+          updatedAt: now,
+        });
+        return jsonResponse(updated);
+      }
+      case 'release': {
+        if (order.status !== SERVICE_ORDER_STATUSES.Prepared) {
+          return orderError('SERVICE_ORDERS_INVALID_STATE', 409);
+        }
+        const updated = saveOrder({
+          ...order,
+          status: SERVICE_ORDER_STATUSES.Released,
+          releasedAt: now,
+          rowVersion: order.rowVersion + 1,
+          updatedAt: now,
+        });
+        return jsonResponse(updated);
+      }
+      case 'cancel': {
+        const reason = readString(body.cancellationReason).trim();
+        if (!reason) {
+          return orderError('SERVICE_ORDERS_VALIDATION_FAILED', 400);
+        }
+        if (
+          order.status !== SERVICE_ORDER_STATUSES.Draft &&
+          order.status !== SERVICE_ORDER_STATUSES.Prepared &&
+          order.status !== SERVICE_ORDER_STATUSES.Released
+        ) {
+          return orderError('SERVICE_ORDERS_INVALID_STATE', 409);
+        }
+        const updated = saveOrder({
+          ...order,
+          status: SERVICE_ORDER_STATUSES.Cancelled,
+          cancelledAt: now,
+          statusBeforeCancel: order.status,
+          rowVersion: order.rowVersion + 1,
+          updatedAt: now,
+        });
+        return jsonResponse(updated);
+      }
+      case 'reopen': {
+        const reason = readString(body.reopenReason).trim();
+        if (!reason) {
+          return orderError('SERVICE_ORDERS_VALIDATION_FAILED', 400);
+        }
+        let nextStatus: string;
+        if (order.status === SERVICE_ORDER_STATUSES.Cancelled) {
+          if (!order.statusBeforeCancel) {
+            return orderError('SERVICE_ORDERS_INVALID_STATE', 409);
+          }
+          nextStatus = order.statusBeforeCancel;
+        } else if (order.status === SERVICE_ORDER_STATUSES.Completed) {
+          nextStatus = SERVICE_ORDER_STATUSES.InExecution;
+        } else {
+          return orderError('SERVICE_ORDERS_INVALID_STATE', 409);
+        }
+        const updated = saveOrder({
+          ...order,
+          status: nextStatus,
+          statusBeforeCancel: null,
+          rowVersion: order.rowVersion + 1,
+          updatedAt: now,
+        });
+        return jsonResponse(updated);
+      }
+      default:
+        return orderError('SERVICE_ORDERS_INVALID_STATE', 409);
+    }
+  }
+
   async function handleMeasurementRoute(
     orderId: string,
     suffix: string,
@@ -1100,6 +1220,26 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
         decidedAt: new Date().toISOString(),
         decidedByIdentityId: 'actor-demo',
         rejectionReason: reason.trim(),
+        rowVersion: measurement.rowVersion + 1,
+        updatedAt: new Date().toISOString(),
+      });
+      return jsonResponse(updated);
+    }
+
+    if (actionSuffix === '/resubmit') {
+      if (measurement.status !== 'REJECTED') {
+        return orderError('MEASUREMENTS_INVALID_STATE', 409);
+      }
+      const updated = saveMeasurement({
+        ...measurement,
+        status: 'DRAFT',
+        submittedAt: null,
+        submittedByIdentityId: null,
+        reviewStartedAt: null,
+        reviewStartedByIdentityId: null,
+        decidedAt: null,
+        decidedByIdentityId: null,
+        rejectionReason: null,
         rowVersion: measurement.rowVersion + 1,
         updatedAt: new Date().toISOString(),
       });
@@ -1416,6 +1556,13 @@ export function createServiceOrdersFetchMock(options: ServiceOrdersFetchMockOpti
         return orderError('SERVICE_ORDERS_DENIED', 403);
       }
       return orderError('SERVICE_ORDERS_NOT_FOUND', 404);
+    }
+
+    const lifecycleActionMatch = pathname.match(
+      /^\/api\/v1\/service-orders\/([^/]+)\/(prepare|release|cancel|reopen)$/,
+    );
+    if (lifecycleActionMatch && method === 'POST') {
+      return await handleLifecycleAction(lifecycleActionMatch[1]!, lifecycleActionMatch[2]!, init);
     }
 
     const executionMatch = pathname.match(/^\/api\/v1\/service-orders\/([^/]+)\/execution(\/.*)?$/);

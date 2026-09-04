@@ -1,11 +1,20 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Route, Routes, useParams } from 'react-router-dom';
 import { createRequestsFetchMock } from '../../test/requests-fetch-mock';
 import { renderRequestRoutes } from '../../test/render-request-routes';
 import { tokenStore, resetTokenStoreForTests } from '../../auth/storage/token-store';
+import { ServiceRequestDetailPage } from './ServiceRequestDetailPage';
+import { SERVICE_REQUEST_STATUSES } from '../types/service-request.types';
 
 const REQUEST_ID = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+const CONVERTED_SERVICE_ORDER_ID = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+
+function PlanningStub() {
+  const { serviceOrderId } = useParams();
+  return <h1>Planejamento da OS {serviceOrderId}</h1>;
+}
 
 describe('ServiceRequestDetailPage', () => {
   beforeEach(() => {
@@ -81,6 +90,36 @@ describe('ServiceRequestDetailPage', () => {
     await waitFor(() => {
       expect(screen.getByLabelText('Status: Rejeitada')).toBeInTheDocument();
       expect(screen.getByText('Fora do escopo')).toBeInTheDocument();
+    });
+  });
+
+  it('shows conversion on an approved request and navigates to planning after success', async () => {
+    vi.stubGlobal(
+      'fetch',
+      createRequestsFetchMock({ requestStatus: SERVICE_REQUEST_STATUSES.Approved }),
+    );
+    const user = userEvent.setup();
+    renderRequestRoutes(
+      `/app/requests/${REQUEST_ID}`,
+      <Routes>
+        <Route path="/app/requests/:serviceRequestId" element={<ServiceRequestDetailPage />} />
+        <Route
+          path="/app/service-orders/:serviceOrderId/planning"
+          element={<PlanningStub />}
+        />
+      </Routes>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /converter em os/i })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: /converter em os/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('heading', { name: `Planejamento da OS ${CONVERTED_SERVICE_ORDER_ID}` }),
+      ).toBeInTheDocument();
     });
   });
 });
