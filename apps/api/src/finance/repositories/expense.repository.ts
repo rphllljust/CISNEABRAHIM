@@ -55,10 +55,19 @@ export class ExpenseRepository {
     return connection.pool;
   }
 
-  async findByIdempotencyKey(idempotencyKey: string): Promise<ExpenseAggregate | null> {
+  async findOwnedByIdempotencyKey(
+    idempotencyKey: string,
+    requesterIdentityId: string,
+    unitId: string,
+  ): Promise<ExpenseAggregate | null> {
+    // Idempotency replay is scoped to the requester + unit that originally
+    // created the expense, so a caller can never read back an expense owned
+    // by another identity/unit that happens to reuse the same key.
     const result = await this.pool().query<ExpenseRow>(
-      `SELECT ${EXPENSE_RETURNING} FROM fin.expenses WHERE idempotency_key = $1`,
-      [idempotencyKey],
+      `SELECT ${EXPENSE_RETURNING}
+       FROM fin.expenses
+       WHERE idempotency_key = $1 AND requester_identity_id = $2 AND unit_id = $3`,
+      [idempotencyKey, requesterIdentityId, unitId],
     );
     if (!result.rows[0]) {
       return null;
@@ -129,10 +138,19 @@ export class ExpenseRepository {
     } catch (error) {
       await client.query('ROLLBACK');
       if (isUniqueViolation(error)) {
-        const raced = await this.findByIdempotencyKey(input.idempotencyKey);
+        // The unique idempotency_key was taken. Replay only when the winner is
+        // the same requester+unit (a concurrent retry of this very request);
+        // a key owned by a different requester/unit is a conflict, never a
+        // silent read-back of another identity's expense.
+        const raced = await this.findOwnedByIdempotencyKey(
+          input.idempotencyKey,
+          input.requesterIdentityId,
+          input.unitId,
+        );
         if (raced) {
           return raced;
         }
+        throw new ExpenseError('EXPENSE_IDEMPOTENCY_KEY_CONFLICT');
       }
       throw error;
     } finally {

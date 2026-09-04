@@ -64,6 +64,12 @@ export function mapExpenseError(error: unknown): FinanceHttpException | AuthzHtt
         FINANCE_ERROR_CODES.EXPENSE_RECEIPT_NOT_FOUND,
         'Expense receipt document was not found.',
       );
+    case 'EXPENSE_IDEMPOTENCY_KEY_CONFLICT':
+      return new FinanceHttpException(
+        HttpStatus.CONFLICT,
+        FINANCE_ERROR_CODES.EXPENSE_IDEMPOTENCY_KEY_CONFLICT,
+        'This idempotency key is already in use by another expense.',
+      );
     case 'EXPENSE_CATEGORY_NOT_FOUND':
       return new FinanceHttpException(
         HttpStatus.NOT_FOUND,

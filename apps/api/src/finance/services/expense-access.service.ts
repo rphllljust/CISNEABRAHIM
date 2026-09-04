@@ -50,7 +50,14 @@ export class ExpenseAccessService {
           throw new ExpenseError('EXPENSE_RECEIPT_NOT_FOUND');
         }
       }
-      const existing = await this.repository.findByIdempotencyKey(validated.idempotencyKey);
+      // Replay only an expense previously created by THIS requester in THIS
+      // unit — a globally-reused idempotency key must never disclose another
+      // requester's expense (idempotency-key IDOR).
+      const existing = await this.repository.findOwnedByIdempotencyKey(
+        validated.idempotencyKey,
+        actor.identityId,
+        validated.unitId,
+      );
       if (existing) {
         return toExpenseResponse(existing);
       }
