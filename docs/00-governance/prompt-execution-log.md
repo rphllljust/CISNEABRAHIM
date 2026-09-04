@@ -11493,3 +11493,23 @@ NOTES:
   Proxima rodada: Comercial (Contratos UI) e/ou Finance (reverse/tesouraria/recon/collections).
 WORKING TREE: DIRTY (WIP anterior mantido) | NEXT: proxima rodada do programa
 ```
+```text
+PROMPT: BUSINESS FRONTEND GAP CLOSURE — Rodada 5 (Comercial: Contratos UI)
+TITLE: Criar modulo UI de contratos comerciais (list/create/detail, update versionado, activate/close/expire, document links) sobre controller existente
+STARTED_AT: 2026-09-04T14:10:00-04:00
+FINISHED_AT: 2026-09-04T14:30:00-04:00
+STATUS: PASS (Rodada 5; programa ativo — proximas rodadas)
+CLASSIFICATION: Novo modulo frontend-only com contrato/backend existentes; sem regra de negocio/endpoint/capability novos; /app/access-admin intocado.
+SCOPE:
+  apps/web/src/contracts/: types, api client (envelope error aninhado), error-messages PT, ContractsRoute (401/403/outage+retry), capabilities hook, status badge, form fields, list (filtros/paginacao), create, detail com acoes por status (PATCH versionado, activate, close c/ motivo, expire sem corpo), document links client; util labels + form-values.
+  Wire: rotas /app/contracts[/new|/:id] em App.tsx e item 'Contratos' no grupo commercial (capabilityId commercial:contract:list).
+QUALITY GATES (Rodada 5):
+  typecheck web: exit 0
+  contracts.e2e 2/2 (ciclo completo + 403), contract-status-labels 12/12, App smoke (service-orders-list) 3/3 => 17/17 PASS
+  build web: PASS (dist regenerado)
+NOTES:
+  Backend validado: expire NAO tem corpo; close reason opcional no backend mas UI exige motivo; PATCH so DRAFT com rowVersion; status DRAFT/ACTIVE/CLOSED/EXPIRED; capabilities comerciais existentes.
+  Commits: feat(web) 8803139.
+  Proxima rodada: Finance (reverse payable, tesouraria escrita, recon/collections, false-success) e/ou unidades de medida admin.
+WORKING TREE: DIRTY (WIP anterior mantido) | NEXT: proxima rodada do programa
+```
