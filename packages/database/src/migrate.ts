@@ -66,8 +66,10 @@ export async function runMigrations(input: {
 
 async function countAppliedMigrations(pool: Pool): Promise<number> {
   try {
-    const applied = await pool.query(`SELECT count(*)::int AS count FROM drizzle.__drizzle_migrations`);
-    return (applied.rows[0]?.count as number) ?? 0;
+    const applied = await pool.query<{ count: number }>(
+      `SELECT count(*)::int AS count FROM drizzle.__drizzle_migrations`,
+    );
+    return applied.rows[0]?.count ?? 0;
   } catch (error) {
     // 42P01 = undefined_table: the journal table does not exist yet (fresh DB).
     const code = (error as { code?: string })?.code;
