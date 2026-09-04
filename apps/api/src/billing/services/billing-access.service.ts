@@ -544,6 +544,12 @@ export class BillingAccessService {
           BILLING_ERROR_CODES.PURCHASE_ORDER_INVALID_STATE,
           'Purchase order is not in a billable state.',
         );
+      case 'PURCHASE_ORDER_RELEASE_WITHOUT_CONSUMPTION':
+        return new BillingHttpException(
+          HttpStatus.CONFLICT,
+          BILLING_ERROR_CODES.INVALID_STATE,
+          'No purchase order consumption exists for this billing record to release.',
+        );
       default:
         return new BillingHttpException(
           HttpStatus.CONFLICT,

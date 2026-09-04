@@ -67,6 +67,12 @@ export async function consumePurchaseOrderBalanceForBilling(
     actorIdentityId: string;
   },
 ): Promise<void> {
+  // Lock the PO row first: concurrent duplicate requests serialize on the
+  // FOR UPDATE lock, so the existence check below can never race two
+  // increments for the same (purchase_order, billing_record) pair into a
+  // unique-index violation that aborts the caller's transaction.
+  const purchaseOrder = await lockPurchaseOrder(client, input.purchaseOrderId);
+
   const existing = await client.query(
     `SELECT 1
      FROM com.purchase_order_consumption_entries
@@ -80,7 +86,6 @@ export async function consumePurchaseOrderBalanceForBilling(
     return;
   }
 
-  const purchaseOrder = await lockPurchaseOrder(client, input.purchaseOrderId);
   const lineTotals = await loadLineTotals(client, input.purchaseOrderId);
   const balanceSource = {
     pricingStructure: purchaseOrder.pricing_structure as PurchaseOrderBalanceSource['pricingStructure'],
@@ -139,6 +144,10 @@ export async function releasePurchaseOrderBalanceForBillingVoid(
     actorIdentityId: string;
   },
 ): Promise<void> {
+  // Lock the PO row first (see consumePurchaseOrderBalanceForBilling): the
+  // idempotency checks below are only reliable under the FOR UPDATE lock.
+  const purchaseOrder = await lockPurchaseOrder(client, input.purchaseOrderId);
+
   const existing = await client.query(
     `SELECT 1
      FROM com.purchase_order_consumption_entries
@@ -161,9 +170,16 @@ export async function releasePurchaseOrderBalanceForBillingVoid(
      LIMIT 1`,
     [input.purchaseOrderId, input.billingRecordId],
   );
-  const preparedAmount = prepared.rows[0]?.amount ?? input.amount;
-
-  await lockPurchaseOrder(client, input.purchaseOrderId);
+  const preparedRow = prepared.rows[0];
+  if (!preparedRow) {
+    // A void may only release balance that was actually consumed at prepare.
+    // Releasing with no BILLING_PREPARE entry would fabricate a release and
+    // corrupt the PO available balance, so surface an explicit error instead.
+    throw new PurchaseOrderConsumptionPersistenceError(
+      'PURCHASE_ORDER_RELEASE_WITHOUT_CONSUMPTION',
+    );
+  }
+  const preparedAmount = preparedRow.amount;
 
   const updated = await client.query(
     `UPDATE com.purchase_orders
@@ -177,11 +193,6 @@ export async function releasePurchaseOrderBalanceForBillingVoid(
     throw new PurchaseOrderConsumptionPersistenceError('PURCHASE_ORDER_RELEASE_FAILED');
   }
 
-  const purchaseOrder = await client.query<{ currency_code: string }>(
-    `SELECT currency_code FROM com.purchase_orders WHERE id = $1`,
-    [input.purchaseOrderId],
-  );
-
   await client.query(
     `INSERT INTO com.purchase_order_consumption_entries (
        purchase_order_id, billing_record_id, entry_type, amount, currency_code, created_by_identity_id
@@ -190,7 +201,7 @@ export async function releasePurchaseOrderBalanceForBillingVoid(
       input.purchaseOrderId,
       input.billingRecordId,
       preparedAmount,
-      purchaseOrder.rows[0]?.currency_code ?? 'BRL',
+      purchaseOrder.currency_code,
       input.actorIdentityId,
     ],
   );
