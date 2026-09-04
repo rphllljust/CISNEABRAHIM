@@ -9739,3 +9739,1657 @@ COMMIT: THIS_COMMIT
 WORKING TREE: expected clean after this commit
 NEXT: STOP
 ```
+
+
+```text
+PROMPT: COMPLETE INTEGRATION DEBUG
+TITLE: Debug completo das falhas de integração cash-flow, pty e teardown
+STARTED_AT: 2026-09-02T23:13:00-04:00
+FINISHED_AT: 2026-09-02T23:21:52-04:00
+STATUS: PASS
+FILES_CREATED: (nenhum)
+FILES_CHANGED:
+  apps/api/src/finance/repositories/cash-flow-forecast.repository.ts
+  apps/api/src/finance/cash-flow-forecast.integration.spec.ts
+  apps/api/src/infrastructure/database/database.integration.spec.ts
+  docs/01-foundation/requirements-traceability.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+EVIDENCE:
+  terminal 101420: 2 failed / 613 passed — cashBalance 0.0000 vs 500.0000; pty allowlist sem supplier_addresses
+  terminal 101421: 34 suites failed after 615 passed — TypeError endTrackedTestDatabasePools is not a function
+  HEAD fe19e6a já continha fixture postMovement, allowlist pty ampliada e teardown sem a função inexistente
+
+ROOT CAUSES:
+  1. cashBalance: openAccount(openingAmount) grava occurred_at = now(); listPostedTreasuryMovements filtra occurred_at <= asOf. asOf 2026-09-01 em 2026-09-02 exclui o crédito de abertura.
+  2. supplier_addresses: o probe exigia tableName ∈ [clients, client_contacts, client_addresses]; pty.supplier_* passou a existir após 0064_supplier_master.sql.
+  3. teardown: working tree intermediário chamava endTrackedTestDatabasePools, que nunca foi exportada; Vitest marca afterAll como falha de suíte mesmo com testes PASS. HEAD já removeu a chamada.
+
+COMPLETE FIX:
+  - Filtro de tesouraria do forecast usa (occurred_at AT TIME ZONE 'UTC')::date, alinhado a bank-reconciliation e a asCashForecastIsoDate
+  - Regressão: openingAmount agora + asOf histórico => PROJECTED com cashBalance 0; crédito datado no asOf permanece 500
+  - Probe pty compara conjunto exato das 7 tabelas documentadas em clients.ts + suppliers.ts
+  - Probe adicional: timestamptz em America/Sao_Paulo diverge de UTC; o recorte de caixa não pode usar ::date da sessão
+
+QUALITY GATES:
+  integration (cash-flow forecast): 4/4 PASS
+  integration (database): 4/4 PASS
+  integration (treasury): 8/8 PASS
+  integration (enterprise integrity): 3/3 PASS
+  unit (cash-flow forecast): 3/3 PASS
+  lint direcionado: PASS
+  typecheck (api): PASS
+  git diff --check: PASS
+
+NOTES:
+  Nenhuma regra empresarial nova foi confirmada. openingOccurredAt continua fora do contrato HTTP.
+  Contratos de tesouraria, autorização e persistência de abertura de conta não foram ampliados.
+  A suíte completa de 79 arquivos não foi reexecutada nesta etapa; as 34 falhas do terminal 101421 são o mesmo TypeError de teardown, já ausente em HEAD.
+  Timezone do PostgreSQL de teste observado: UTC.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+
+```text
+PROMPT: COMPLETE INTEGRATION SUITE VALIDATION
+TITLE: Reexecução da suíte de integração e debug do flake de outbox em chaos-recovery
+STARTED_AT: 2026-09-02T23:25:00-04:00
+FINISHED_AT: 2026-09-02T23:53:09-04:00
+STATUS: PASS
+FILES_CREATED: (nenhum)
+FILES_CHANGED:
+  apps/api/src/chaos-recovery/chaos-recovery.integration.spec.ts
+  apps/api/src/finance/repositories/cash-flow-forecast.repository.ts
+  apps/api/src/finance/cash-flow-forecast.integration.spec.ts
+  apps/api/src/infrastructure/database/database.integration.spec.ts
+  docs/01-foundation/requirements-traceability.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: NO
+NEXT_PROMPT_EXECUTED: NO
+
+SUITE:
+  files: 79
+  first_full_run_after_forecast_fix: 1 failed | 78 passed; tests 1 failed | 616 passed; 1224.45s
+  failing_file: src/chaos-recovery/chaos-recovery.integration.spec.ts
+
+ROOT CAUSE:
+  OutboxPublisherWorkerService inicia em onModuleInit quando OUTBOX_PUBLISHER_ENABLED !== 'false'.
+  O describe de chaos chama module.init() sobre OutboxModule e liga um poller em background.
+  O teste expire o lease, devolve o evento a PENDING e chama publishBatch explícito; o poller disputa o claim e deixa status PROCESSING na janela da asserção.
+
+COMPLETE FIX:
+  OUTBOX_PUBLISHER_ENABLED=false antes do compile/init deste describe.
+  Stop do OutboxPublisherWorkerService e restore da env no afterAll.
+  Os testes continuam a publicar só via claimPending/publishBatch explícitos.
+
+QUALITY GATES:
+  full integration before chaos fix: 78/79 files; 616/617 tests (única falha = flake acima)
+  chaos + transactional outbox: 3 execuções consecutivas, 20/20 PASS cada
+  lint (chaos-recovery.integration.spec.ts): PASS
+
+NOTES:
+  Auditoria de ::date: o único recorte timestamptz de sessão era o forecast, já corrigido. Dashboard/aging usam TZ explícito; due_date/issued_on são colunas date.
+  A suíte cheia não foi reexecutada após o isolamento do poller; a evidência de regressão é tríplice no arquivo que falhou e no outbox transacional.
+  Nenhuma regra empresarial nova. Default produtivo do poller (enabled unless false) não foi alterado.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+
+```text
+PROMPT: COMPLETE INTEGRATION SUITE RE-RUN
+TITLE: Reexecução da suíte de integração após isolamento do poller de outbox
+STARTED_AT: 2026-09-02T23:53:30-04:00
+FINISHED_AT: 2026-09-03T00:32:04-04:00
+STATUS: PASS
+FILES_CREATED: (nenhum)
+FILES_CHANGED:
+  docs/01-foundation/requirements-traceability.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: NO
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  Fechar o débito da etapa anterior: suíte de 79 arquivos após o isolamento do OutboxPublisherWorkerService.
+
+QUALITY GATES:
+  integration (full API): 79/79 files PASS
+  tests: 617/617 PASS
+  duration: 2237.73s
+  exit_code: 0
+  lock cleanup before run: PASS
+
+NOTES:
+  Nenhuma falha reproduzida. Nenhuma correção adicional aplicada.
+  Forecast UTC, probe pty exato e isolamento do poller de chaos permaneceram intactos nesta execução.
+  Nenhuma regra empresarial nova.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+
+```text
+PROMPT: FULLSTACK FINANCE UI DEBUG
+TITLE: Validação fullstack e correção do double-submit de recebimento
+STARTED_AT: 2026-09-03T00:32:30-04:00
+FINISHED_AT: 2026-09-03T00:41:03-04:00
+STATUS: PASS
+FILES_CREATED: (nenhum)
+FILES_CHANGED:
+  apps/web/src/financial-ui/MoneyActionForm.tsx
+  docs/01-foundation/requirements-traceability.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  Validar suítes unitárias API/web/database após as correções de integração.
+  Debugar a falha fullstack observada no backoffice financeiro.
+  Não criar tela de cash-forecast (API existe; superfície web ausente — observação, não implementação).
+
+ROOT CAUSE:
+  MoneyActionForm zerava inflight no finally após o 409. O diálogo permanecia aberto.
+  Promise.all de dois cliques no Confirmar disparava o segundo POST depois do primeiro ter soltado o lock.
+
+COMPLETE FIX:
+  Em version_conflict o confirm permanece gasto até cancelar/recarregar.
+  confirmDisabled={conflict} no ConfirmAction.
+  Erros não-conflito ainda liberam retry.
+
+QUALITY GATES:
+  unit (api): 180 arquivos, 736/736 PASS
+  unit (database): 5 arquivos, 21/21 PASS
+  unit (web) antes da correção: 1 failed | 348 passed (349) — única falha = double-submit
+  finance UI + financial-ui: 3 execuções consecutivas, 11/11 PASS cada
+  lint (MoneyActionForm): PASS
+
+NOTES:
+  GET /finance/cash-forecast não tem rota, nav nem client em apps/web. Não foi aberta tela nesta etapa.
+  Frontend não é boundary: o backend continua a recusar o segundo settle; a UI só deixa de emitir o POST duplicado.
+  A suíte web completa (90 arquivos) não foi reexecutada após o lock de conflito.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+
+```text
+PROMPT: BACKEND DOUBLE-POST BOUNDARY
+TITLE: Travamento do double POST de settle/pay com a mesma chave e rowVersion original
+STARTED_AT: 2026-09-03T00:41:30-04:00
+FINISHED_AT: 2026-09-03T00:45:24-04:00
+STATUS: PASS
+FILES_CREATED: (nenhum)
+FILES_CHANGED:
+  apps/api/src/finance/receivables.integration.spec.ts
+  apps/api/src/finance/payables.integration.spec.ts
+  docs/01-foundation/requirements-traceability.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: NO
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  O double-click da UI reenvia a mesma idempotency_key e o rowVersion original.
+  O teste de replay existente usava o rowVersion já incrementado. Fechar esse recorte no backend.
+
+ROOT CAUSE:
+  Nenhuma falha de persistência. lookup de idempotency_key ocorre antes do classifyRowVersion, com FOR UPDATE e unique violation.
+  Faltava evidência do formato exato do double POST.
+
+COMPLETE FIX:
+  Receivable: replay sequencial e concorrente com a mesma chave + rowVersion original => 1 settlement.
+  Payable: o mesmo recorte => 1 payment.
+
+QUALITY GATES:
+  receivables integration: 13/13 PASS
+  payables integration: 15/15 PASS
+  lint dos specs: PASS
+
+NOTES:
+  Nenhuma alteração de serviço, repositório ou contrato HTTP.
+  Frontend continua sem ser boundary. Dois POSTs com chaves diferentes e o mesmo rowVersion já eram serializados (1 sucesso + 1 conflito).
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+
+```text
+PROMPT: SRC-003 CADASTRE
+TITLE: Registro dos dados cadastrais da operadora
+STARTED_AT: 2026-09-03T01:08:00-04:00
+FINISHED_AT: 2026-09-03T01:13:02-04:00
+STATUS: PASS
+FILES_CREATED:
+  docs/inputs/SRC-003-dados-cadastrais-empresa.md
+FILES_CHANGED:
+  docs/01-foundation/source-registry.md
+  docs/01-foundation/business-context.md
+  docs/01-foundation/domain-decisions-pending.md
+  docs/01-foundation/source-conflicts.md
+  docs/01-foundation/requirements-traceability.md
+  docs/inputs/README.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: NO
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  Depositar e registrar SRC-003. Confrontar com SRC-002. Nao implementar gateway fiscal. Nao autorizar exit do piloto.
+
+CLASSIFICATION:
+  Fato empresarial declarado (CNPJ, sede, contato, situacao, abertura).
+  EPP = porte declarado, nao regime tributario confirmado.
+  Sem comprovante RFB: PENDING_PRIMARY_DOCUMENT_VALIDATION.
+
+QUALITY GATES:
+  arquivo criado em docs/inputs/
+  SRC-003 no registro de fontes
+  SRC-000/001/002 preservados
+  nenhum SC-* fabricado
+  nenhuma regra CONFIRMED
+  DDP-023 residual permanece OPEN
+  nenhum codigo funcional criado
+  FEATURE_MODULE_FISCAL nao ligado
+  Prompt 93 nao executado
+
+NOTES:
+  CNPJ 11.897.171/0001-81 confirma SRC-002 (operadora, nao Client).
+  Nome canonico permanece o de SRC-002 ate cartao CNPJ / ato societario primario.
+  E-mail e telefone sao PII; DDP-019 permanece OPEN.
+  Requisitos fiscais, certificado e credencial SEFAZ/prefeitura permanecem NOT_PROVIDED.
+  Producao permanece NO-GO (PILOT_OBSERVATION_WINDOW_NOT_COMPLETED).
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+
+```text
+PROMPT: SRC-004 CENTRALIZED SYSTEM
+TITLE: Registro da rejeicao de ERP e SoT centralizado no CISNE
+STARTED_AT: 2026-09-03T01:14:00-04:00
+FINISHED_AT: 2026-09-03T01:22:00-04:00
+STATUS: PASS
+FILES_CREATED:
+  docs/inputs/SRC-004-sistema-centralizado-sem-erp.md
+FILES_CHANGED:
+  docs/01-foundation/source-registry.md
+  docs/01-foundation/source-conflicts.md
+  docs/01-foundation/domain-decisions-pending.md
+  docs/01-foundation/business-rules-register.md
+  docs/01-foundation/business-context.md
+  docs/01-foundation/scope-register.md
+  docs/01-foundation/requirements-traceability.md
+  docs/06-domain-boundaries/source-of-truth-by-context.md
+  docs/inputs/SRC-002-business-baseline-confirmation.md
+  docs/inputs/README.md
+  README.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: NO
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  Depositar e registrar SRC-004. Resolver SC-001 (SRC-002 Q04 vs SRC-004).
+  Nao ligar adapter ERP. Nao fechar DDP-023. Nao autorizar exit do piloto.
+
+CLASSIFICATION:
+  Fato empresarial / decisao: sem conexao ERP; CISNE centralizado.
+  BR-042 CONFIRMED. BR-030 e BR-031 permanecem.
+  SEFAZ/banco/rastreador/WhatsApp nao sao ERP e permanecem OPEN.
+
+QUALITY GATES:
+  arquivo criado em docs/inputs/
+  SRC-004 no registro de fontes
+  SRC-000/001/002/003 preservados
+  SC-001 RESOLVED (nao OPEN)
+  DDP-014 recorte ERP REJECTED
+  DDP-023 residual permanece OPEN
+  nenhum codigo funcional criado
+  FEATURE_MODULE_FISCAL nao ligado
+  Prompt 93 nao executado
+
+NOTES:
+  Texto historico de SRC-002 Q04 nao foi apagado; nota posterior aponta SRC-004.
+  externalErpId permanece defensivo, nunca PK.
+  Producao permanece NO-GO (PILOT_OBSERVATION_WINDOW_NOT_COMPLETED).
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+
+```text
+PROMPT: SRC-007 NFE DANFE GATES
+TITLE: Registro dos gates de credenciamento, protocolo SEFAZ e legendas DANFE
+STARTED_AT: 2026-09-03T01:53:51-04:00
+FINISHED_AT: 2026-09-03T01:57:01-04:00
+STATUS: PASS
+FILES_CREATED:
+  docs/inputs/SRC-007-nfe-authorization-danfe-gates.md
+FILES_CHANGED:
+  docs/01-foundation/source-registry.md
+  docs/01-foundation/business-rules-register.md
+  docs/01-foundation/domain-decisions-pending.md
+  docs/01-foundation/risk-register.md
+  docs/01-foundation/business-context.md
+  docs/01-foundation/source-conflicts.md
+  docs/01-foundation/requirements-traceability.md
+  docs/01-foundation/scope-register.md
+  docs/01-foundation/release-1-closed-scope.md
+  docs/06-domain-boundaries/source-of-truth-by-context.md
+  docs/inputs/README.md
+  docs/inputs/SRC-002-business-baseline-confirmation.md
+  docs/inputs/SRC-006-consulta-publica-sefin-redesim.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: NO
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  Depositar e registrar SRC-007. Confirmar BR-043, BR-044, BR-045.
+  Nao ligar FEATURE_MODULE_FISCAL. Nao implementar gateway. Nao fechar residual tributario de DDP-023. Nao autorizar exit do piloto.
+
+CLASSIFICATION:
+  Fato empresarial / decisao: gates de transmissao, autorizacao e legendas.
+  BR-043, BR-044, BR-045 CONFIRMED.
+  SRC-006 Nao CREDENCIADO permanece; transmissao atual BLOCKED.
+  Sem SC-*.
+
+QUALITY GATES:
+  arquivo criado em docs/inputs/
+  SRC-007 no registro de fontes
+  SRC-000/001/002/003/004/005/006 preservados
+  nenhum SC-* fabricado
+  DDP-023 residual tributario permanece OPEN
+  nenhum codigo funcional criado
+  FEATURE_MODULE_FISCAL nao ligado
+  Prompt 93 nao executado
+
+NOTES:
+  Texto historico de SRC-002 secao 14 nao foi preenchido; nota posterior aponta SRC-007.
+  BillingDocument interno permanece nao fiscal.
+  Producao permanece NO-GO (PILOT_OBSERVATION_WINDOW_NOT_COMPLETED).
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: SRC-002 ALIGNMENT FOR PRODUCTION GAPS
+TITLE: Alinhar SRC-002 com DDP-026, SRC-004 e SRC-007; nao declarar GO
+STARTED_AT: 2026-09-03T02:13:14-04:00
+FINISHED_AT: 2026-09-03T02:16:00-04:00
+STATUS: PASS
+FILES_CREATED: (nenhum)
+FILES_CHANGED:
+  docs/inputs/SRC-002-business-baseline-confirmation.md
+  docs/01-foundation/domain-decisions-pending.md
+  docs/01-foundation/requirements-traceability.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: NO
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  Fechar lacunas documentais que ja tinham fonte autorizada.
+  Nao inventar DDP-001/003/004/009/010/011/012/015/021/022.
+  Nao ligar FEATURE_MODULE_FISCAL. Nao executar Prompt 93. Nao declarar GO.
+
+CLASSIFICATION:
+  Alinhamento: SRC-002 §§2, 14, 15, 19, 20.
+  Capitulo cadastral/identidade permanece fechado (SRC-002..007).
+  Unico blocker oficial de producao: PILOT_OBSERVATION_WINDOW_NOT_COMPLETED (saida 13 set 2026).
+
+QUALITY GATES:
+  nenhuma regra nova CONFIRMED sem fonte
+  DDP-001 e residual DDP-023 permanecem OPEN
+  nenhum codigo funcional criado
+  Prompt 93 nao executado
+  producao permanece NO-GO
+
+NOTES:
+  Assinatura SRC-002 de 2026-08-29 (Q01-Q15) preservada.
+  DDP-016 texto residual 'nao aprovados' corrigido para APPROVED conforme readiness-evidence.json.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: MODULE-CLOSURE BATCH (CLIENTS..BILLING)
+TITLE: Fechamento técnico dos núcleos operacionais (clientes a faturamento interno), sem fiscal e sem go-live
+STARTED_AT: 2026-09-03T02:43:00-04:00
+FINISHED_AT: 2026-09-03T03:26:44-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED:
+  apps/api/src/authorization/domain/operational-authority.ts
+  apps/api/src/authorization/domain/operational-authority.spec.ts
+  apps/api/src/billing/domain/billing-entitlement.ts
+  apps/api/src/billing/domain/billing-entitlement.spec.ts
+  apps/api/src/billing/config/billing-emitter.config.spec.ts
+  apps/api/src/commercial/domain/contract.state-machine.spec.ts
+  packages/database/migrations/0071_operational_authority_gates.sql
+FILES_CHANGED:
+  apps/api/src/clients/domain/client-status.ts
+  apps/api/src/clients/domain/client.validation.ts
+  apps/api/src/clients/domain/client.validation.spec.ts
+  apps/api/src/clients/dto/client.dto.ts
+  apps/api/src/clients/errors/client-error-codes.ts
+  apps/api/src/clients/repositories/clients.repository.ts
+  apps/api/src/clients/serializers/client-response.serializer.ts
+  apps/api/src/clients/services/client-access.service.ts
+  apps/api/src/clients/clients.module.ts
+  apps/api/src/clients/clients.integration.spec.ts
+  apps/api/src/clients/clients.audit-closure.integration.spec.ts
+  apps/api/src/authorization/services/scope-enforcement.service.ts
+  apps/api/src/authorization/services/policy-decision-point.service.ts
+  apps/api/src/authorization/types/authz-actions.ts
+  apps/api/src/platform/bounded-contexts/enterprise-core-ports.ts
+  apps/api/src/platform/release-scope/feature-flags.spec.ts
+  apps/api/src/commercial/domain/proposal.validation.ts
+  apps/api/src/commercial/domain/proposal.validation.spec.ts
+  apps/api/src/commercial/domain/purchase-order.validation.ts
+  apps/api/src/commercial/domain/purchase-order.validation.spec.ts
+  apps/api/src/commercial/services/contracts-access.service.ts
+  apps/api/src/commercial/repositories/contracts.repository.ts
+  apps/api/src/commercial/contracts.integration.spec.ts
+  apps/api/src/requests/domain/service-request.validation.ts
+  apps/api/src/requests/domain/service-request.validation.spec.ts
+  apps/api/src/requests/services/service-requests-access.commands.ts
+  apps/api/src/requests/services/service-requests-access.validation.ts
+  apps/api/src/requests/service-requests.integration.spec.ts
+  apps/api/src/service-orders/services/service-orders-access.service.ts
+  apps/api/src/service-orders/services/service-orders-input-resolution.ts
+  apps/api/src/service-orders/services/service-orders-reference-validation.service.ts
+  apps/api/src/service-orders/service-orders.integration.spec.ts
+  apps/api/src/audit/types/security-audit.types.ts
+  apps/web/src/clients/types/client.types.ts
+  docs/01-foundation/requirements-traceability.md
+  docs/00-governance/prompt-execution-log.md
+  packages/database/migrations/meta/_journal.json
+  packages/database/src/schema/clients.ts
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  Fechar lacunas técnicas comprováveis nos núcleos de clientes, contratos, solicitações, propostas, PO, OS, execução/medição existente e faturamento interno.
+  Não redesenhar. Não criar ERP. Não ligar FEATURE_MODULE_FISCAL. Não executar Prompt 93. Não declarar GO.
+
+CLASSIFICATION:
+  Interpretação de engenharia sobre BR-033/034/036/037/043..051 e DDP-026.
+  Nenhuma regra comercial nova CONFIRMED. Pendências de negócio permanecem OPEN/CANDIDATE.
+
+QUALITY GATES:
+  clients integration 10/10 PASS
+  clients audit-closure 5/5 PASS
+  service-orders integration 25/25 PASS (reopen justification revalidado após correção de mapeamento)
+  service-requests integration 18/18 PASS (submit mínimo + convert sem AuthZ)
+  contracts integration 6/6 PASS (activate com cliente inativo)
+  proposals integration 8/8 PASS
+  purchase-orders integration 8/8 PASS
+  unitários focados 52 PASS (47 + 5 feature-flags)
+  FEATURE_MODULE_FISCAL permanece fail-closed
+  Prompt 93 nao executado
+  producao permanece NO-GO
+
+NOTES:
+  Isolamento por tenant continua via AuthZ Global/Client (SRC-002/004: operadora unica); coluna company_id nao inventada.
+  Exclusao fisica de cliente referenciado continua ausente (inativacao + FK RESTRICT).
+  Alocacao de mao de obra permanece rejeitada (LABOR_ALLOCATION_NOT_SUPPORTED) — nao inventada.
+  Locacao/transporte: fluxos existentes sob OS; verticais dedicadas OUT_OF_RELEASE_1 (DDP-026).
+  Aceite do cliente, glosa, ANTT, CT-e/MDF-e, renovacao automatica de contrato, job EXPIRED e obrigatoriedade universal de PO permanecem OPEN.
+  Cancel-OS vs alocacoes ativas (EX-005 / DDP-004 residual) permanece OPEN; nao ha release-on-cancel inventado.
+  Suite completa de integracao nao foi reexecutada neste fechamento; evidencia e dos arquivos listados.
+  FEATURE_MODULE_FISCAL continua desabilitada. Nenhuma autorizacao fiscal foi simulada.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+---
+
+```text
+PROMPT: SOD HARDENING
+TITLE: Endurecer Segregation of Duties nas operações críticas
+STARTED_AT: 2026-09-03T02:53:00-04:00
+FINISHED_AT: 2026-09-03T04:16:30-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED:
+  apps/api/src/authorization/domain/segregation-of-duties.ts
+  apps/api/src/authorization/domain/segregation-of-duties.spec.ts
+  apps/api/src/authorization/services/sod-enforcement.service.ts
+  apps/api/src/authorization/test/critical-sod-harness.ts
+  apps/api/src/authorization/sod-enforcement.integration.spec.ts
+  apps/api/src/authorization/sod-hardening.e2e.spec.ts
+FILES_CHANGED:
+  apps/api/src/authorization/authorization.module.ts
+  apps/api/src/authorization/errors/authz-error-codes.ts
+  apps/api/src/authorization/repositories/approval-matrix.repository.ts
+  apps/api/src/suppliers/services/supplier-access.service.ts
+  apps/api/src/procurement/services/procurement-access.service.ts
+  apps/api/src/finance/services/expense-access.service.ts
+  apps/api/src/finance/services/payables-access.service.ts
+  apps/api/src/finance/services/receivables-access.service.ts
+  apps/api/src/finance/services/bank-reconciliation-access.service.ts
+  apps/api/src/finance/services/budget-access.service.ts
+  apps/api/src/accounting/services/accounting-access.service.ts
+  apps/api/src/fiscal/services/fiscal-access.service.ts
+  apps/api/src/fiscal/services/tax-assessment-access.service.ts
+  apps/api/src/fiscal/services/fiscal-period-access.service.ts
+  apps/api/src/payroll/services/payroll-access.service.ts
+  apps/api/src/payroll/services/payroll-access.errors.ts
+  apps/api/src/enterprise-integrity/enterprise-integrity-harness.ts
+  apps/api/src/finance/payables.integration.spec.ts
+  apps/api/src/finance/receivables.integration.spec.ts
+  apps/api/src/finance/expense-management.integration.spec.ts
+  apps/api/src/finance/budget.integration.spec.ts
+  apps/api/src/finance/bank-reconciliation.integration.spec.ts
+  apps/api/src/finance/cash-flow-forecast.integration.spec.ts
+  apps/api/src/finance/receivable-collections.integration.spec.ts
+  apps/api/src/accounting/accounting.integration.spec.ts
+  apps/api/src/accounting/accounting-posting.integration.spec.ts
+  apps/api/src/accounting/accounting-reporting.integration.spec.ts
+  apps/api/src/accounting/period-close.integration.spec.ts
+  apps/api/src/procurement/procurement.integration.spec.ts
+  apps/api/src/procurement/three-way-match.integration.spec.ts
+  apps/api/src/procurement/supplier-invoice.integration.spec.ts
+  apps/api/src/fiscal/fiscal.integration.spec.ts
+  apps/api/src/fiscal/fiscal-accounting.integration.spec.ts
+  apps/api/src/fiscal/fiscal-period-close.integration.spec.ts
+  apps/api/src/fiscal/tax-obligation-payable.integration.spec.ts
+  apps/api/src/payroll/payroll.integration.spec.ts
+  apps/api/src/payroll/payroll-accounting.integration.spec.ts
+  docs/01-foundation/engineering-decisions-register.md
+  docs/01-foundation/requirements-traceability.md
+  docs/09-authorization/segregation-of-duties-matrix.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  Endurecer SOD no backend para fornecedor, compra, despesa, pagamento, baixa, conciliação, ajuste contábil, reabertura de período, fiscal e folha.
+  Política: role + capability + scope + approval matrix publicada. Sem hardcode de usuários.
+  Impedir criar+aprovar, solicitar+pagar, preparar+confirmar, lançar+aprovar o próprio ajuste.
+  Testar bypass HTTP direto, mudança de scope e autoaprovação.
+  Não aplicar SOD aos pares SRC-008 de OS/medição (BR-046 / BR-050).
+  Não executar Prompt 93. Não declarar GO.
+
+CLASSIFICATION:
+  Interpretação de engenharia (ED-006). Prompt 08 SOD-001..012 permanece CANDIDATE/PENDING.
+  Nenhuma regra empresarial nova CONFIRMED.
+
+SOD RESULT:
+  SOD: PASS
+  CRITICAL CONFLICTS: 0
+  AUTHORIZATION BYPASS: 0
+
+QUALITY GATES:
+  unit segregation-of-duties.spec.ts 6/6 PASS (2026-09-03T04:11:31-04:00)
+  integration sod-enforcement.integration.spec.ts 6/6 PASS (2026-09-03T04:11:51-04:00)
+  e2e sod-hardening.e2e.spec.ts 3/3 PASS (2026-09-03T04:13:32-04:00)
+  self-approval blocked (APPROVAL_MATRIX_SELF_APPROVAL / AUTHZ_SOD_DUTY_CONFLICT)
+  wrong-unit checker denied (AUTHZ_DENIED)
+  distinct checker with matching role+capability+scope allowed
+  missing originator and unpublished matrix fail-closed
+  Prompt 93 nao executado
+  producao permanece NO-GO
+
+NOTES:
+  Catalogo de duties em segregation-of-duties.ts; enforcement em SodEnforcementService apos grant check.
+  Papel FINANCIAL_CONTROLLER atribuido por identidade+escopo, nao por nome de pessoa.
+  Ajuste fiscal (tax adjust) deixa sucessor DRAFT; finalize e passo separado do checker.
+  postConfirmedEvent automatico nao e tratado como SOD de ajuste manual.
+  Pares OS create/release e medicao submit/approve permanecem fora do catalogo (SRC-008).
+  FEATURE_MODULE_FISCAL nao foi ligado globalmente; e2e ligou flags so no beforeAll local.
+  Suite completa de integracao nao foi reexecutada neste fechamento; evidencia e dos arquivos listados.
+  Nao executar e2e e integracao em paralelo no mesmo TEST_DATABASE_URL.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+---
+
+```text
+PROMPT: ENTERPRISE UI CATCH-UP
+TITLE: Completar interfaces faltantes para backend já aprovado
+STARTED_AT: 2026-09-03T04:16:00-04:00
+FINISHED_AT: 2026-09-03T04:41:50-04:00
+STATUS: PASS
+FILES_CREATED:
+  apps/web/src/enterprise-ui-catchup.ui.test.tsx
+  apps/web/src/accounting/pages/FixedAssetsPage.tsx
+  apps/web/src/finance/components/CollectionPanel.tsx
+  apps/web/src/finance/pages/BudgetsPage.tsx
+  apps/web/src/finance/pages/CashForecastPage.tsx
+  apps/web/src/finance/pages/ExpensesPage.tsx
+  apps/web/src/financial-ui/BackofficeCapabilityRoute.tsx
+  apps/web/src/financial-ui/VersionedActionForm.tsx
+  apps/web/src/fiscal/pages/FiscalPeriodsPage.tsx
+  apps/web/src/fiscal/pages/TaxAssessmentsPage.tsx
+  apps/web/src/inventory/api/inventory-api.ts
+  apps/web/src/inventory/pages/InventoryPage.tsx
+  apps/web/src/payroll/api/payroll-api.ts
+  apps/web/src/payroll/pages/PayrollPage.tsx
+  apps/web/src/procurement/api/procurement-api.ts
+  apps/web/src/procurement/api/procurement-error-messages.ts
+  apps/web/src/procurement/pages/ProcurementPages.tsx
+  apps/web/src/suppliers/api/supplier-error-messages.ts
+  apps/web/src/suppliers/api/suppliers-api.ts
+  apps/web/src/suppliers/pages/SuppliersPage.tsx
+  apps/web/src/suppliers/types/supplier.types.ts
+FILES_CHANGED:
+  apps/web/src/App.tsx
+  apps/web/src/accounting/api/accounting-api.ts
+  apps/web/src/accounting/types/accounting.types.ts
+  apps/web/src/finance/FinanceRoute.tsx
+  apps/web/src/finance/api/finance-api.ts
+  apps/web/src/finance/api/finance-error-messages.ts
+  apps/web/src/finance/pages/FinanceOverviewPage.tsx
+  apps/web/src/finance/pages/ReceivableDetailPage.tsx
+  apps/web/src/finance/types/finance.types.ts
+  apps/web/src/financial-ui/enterprise-api.ts
+  apps/web/src/financial-ui/financial-ui.test.ts
+  apps/web/src/financial-ui/index.ts
+  apps/web/src/financial-ui/labels.ts
+  apps/web/src/fiscal/FiscalRoute.tsx
+  apps/web/src/fiscal/api/fiscal-api.ts
+  apps/web/src/fiscal/types/fiscal.types.ts
+  apps/web/src/fleet/pages/FleetListPage.tsx
+  apps/web/src/fleet/pages/FleetListPage.test.tsx
+  apps/web/src/release-scope/feature-flags.test.ts
+  apps/web/src/release-scope/release-1-scope.ts
+  apps/web/src/shell/nav-config.ts
+  apps/web/src/shell/nav-icons.tsx
+  apps/web/src/shell/shell.e2e.test.tsx
+  apps/web/src/shell/types.ts
+  apps/web/src/shell/useNavAccess.ts
+  apps/web/src/ui/module-layout.tsx
+  apps/api/src/platform/release-scope/release-1-scope.ts
+  apps/api/src/platform/release-scope/feature-flags.spec.ts
+  docs/01-foundation/requirements-traceability.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  Completar somente UI faltante para backend ja aprovado, priorizando Financeiro, Fiscal, Contabilidade, Estoque, Folha, Compras, Fornecedores e Frota.
+  Nao recriar regra de negocio no frontend.
+  Loading, empty, error, permission denied, version conflict, double-submit e layout responsivo.
+  Reutilizar design system existente.
+  Nao ligar FEATURE_MODULE_*. Nao executar Prompt 93. Nao declarar GO.
+
+CLASSIFICATION:
+  Interpretacao de engenharia. Nenhuma regra empresarial nova CONFIRMED.
+  Custeio FIFO/media, formulas oficiais de folha e aliquotas fiscais permanecem UNDECIDED / residual DDP-023.
+
+UI RESULT:
+  UI COVERAGE: PASS
+  BACKEND WITHOUT REQUIRED UI: 0
+  BROKEN ROUTES: 0
+  CRITICAL UX DEFECTS: 0
+
+QUALITY GATES:
+  apps/web typecheck PASS
+  enterprise-ui-catchup.ui.test.tsx 9/9 PASS
+  shell.e2e.test.tsx 17/17 PASS
+  feature-flags.test.ts 4/4 PASS
+  FleetListPage.test.tsx 2/2 PASS
+  financial-ui.test.ts 2/2 PASS
+  api feature-flags.spec.ts 5/5 PASS
+  viewports 360/768/1024/1440 cobertos em teste jsdom
+  Prompt 93 nao executado
+  producao permanece NO-GO
+
+NOTES:
+  APIs command-oriented sem listagem usam consulta por identificador; o frontend nao inventa lista.
+  Totais, classificacao de conferencia tripla, saldo e custeio sao os persistidos pelo servidor.
+  Nav e deep links dos modulos novos permanecem ocultos/bloqueados enquanto a flag nao for exatamente true.
+  GET /api/v1/three-way-matches passou a ser prefixo gated de procurement.
+  Verificacao visual em browser real nao esteve disponivel nesta sessao; evidencia de viewport e jsdom.
+  Frota: breadcrumb /app/fleet e EmptyState no empty.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: PILOT EXIT READINESS
+TITLE: Snapshot real de indicadores para EXIT_READY sem encerrar o piloto
+STARTED_AT: 2026-09-03T04:42:00-04:00
+FINISHED_AT: 2026-09-03T04:55:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED:
+  apps/api/src/ops/pilot/pilot-observation.spec.ts
+  docs/19-operations/pilot-exit-readiness-snapshot-2026-09-03.md
+FILES_CHANGED:
+  apps/api/src/ops/pilot/pilot-observation.ts
+  apps/api/src/ops/pilot/pilot-exit.ts
+  apps/api/src/ops/readiness/cli/record-readiness-milestones.ts
+  apps/api/src/ops/readiness/readiness-gate.spec.ts
+  apps/api/package.json
+  docs/19-operations/readiness-evidence.json
+  docs/19-operations/production-readiness-gate.md
+  docs/19-operations/README.md
+  docs/01-foundation/requirements-traceability.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS_WITH_RESTRICTIONS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  Gerar snapshot real dos indicadores de EXIT_READY.
+  Nao alterar datas do piloto.
+  Nao fabricar evidencia HTTP de 14 dias.
+  Nao marcar piloto como concluido.
+  Nao aplicar waiver sem autorizacao humana auditavel.
+  Nao executar Prompt 93. Nao declarar GO.
+
+CLASSIFICATION:
+  Interpretacao de engenharia. Nenhuma regra empresarial nova CONFIRMED.
+
+RESULT:
+  ENGINEERING READY: YES
+  PILOT COMPLETE: NO
+  EXIT READY: NO
+  PILOT_STATUS = OBSERVATION
+
+QUALITY GATES:
+  pnpm readiness:engineering → engineeringReadiness READY
+  pnpm readiness:gate → production NO-GO; productionBlockers PILOT_OBSERVATION_WINDOW_NOT_COMPLETED
+  pilot-observation.spec.ts 4/4 PASS
+  readiness-gate.spec.ts 27/27 PASS
+  backup-runner.spec.ts PASS
+  dr-runner.spec.ts PASS
+  ledger.spec.ts PASS
+  security-regression.spec.ts PASS
+  Prompt 93 nao executado
+  waiver nao aplicado
+  datas startedAt/observationEndsAt inalteradas
+
+NOTES:
+  Snapshot SQL (DATABASE_URL): outbox_failed=0; worker_pending=51; worker_failed_or_dead=0; allocation_conflicts=0; billing_aging_7d=0; posted_unbalanced_journals=0; duplicate_postings=0; HTTP null.
+  HML 127.0.0.1:3100 health 200; cisne_hml so schema public; metrics 200 com Bearer invalido; DB counters 55653/55655 erros; HTTP in-process n=5 p95=130ms (amostra insuficiente).
+  Backup latest.json lab 38 bytes em temp. DR latest.json ausente.
+  UAT PASSED e sign-off APPROVED permanecem; nao reabertos.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: PRE-PRODUCTION CORRECTION GATE
+TITLE: Validar correcoes pre-producao sem nova feature e sem tratar janela do piloto como defeito tecnico
+STARTED_AT: 2026-09-03T05:00:00-04:00
+FINISHED_AT: 2026-09-03T11:35:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED: (nenhum)
+FILES_CHANGED:
+  apps/api/src/people/people.e2e.spec.ts
+  apps/api/src/billing/billing.integration.spec.ts
+  apps/api/src/accounting/accounting.integration.spec.ts
+  apps/api/src/authorization/sod-hardening.e2e.spec.ts
+  apps/api/src/authorization/test/critical-sod-harness.ts
+  apps/api/src/requests/services/service-requests-access.characterization.spec.ts
+  apps/api/src/master-business/master-business-invariants.ts
+  apps/api/src/measurements/domain/measurement.spec.ts
+  apps/api/src/ops/readiness/cli/record-readiness-milestones.ts
+  docs/01-foundation/requirements-traceability.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  Nenhuma feature nova. Validar SoD, autorizacao negativa, bypass HTTP direto, UI critica, conflito de versao, double-submit, responsivo, acessibilidade e E2E empresarial.
+  Regressao: lint, typecheck, unit, integracao, security, E2E, build.
+  Nao tratar a janela aberta de 14 dias do piloto como falha de engenharia.
+  Nao ligar FEATURE_MODULE_* globalmente. Nao executar Prompt 93. Nao declarar GO.
+
+CLASSIFICATION:
+  Interpretacao de engenharia. Nenhuma regra empresarial nova CONFIRMED.
+
+RESULT:
+  SOD: PASS
+  UI: PASS
+  SECURITY: PASS
+  ENTERPRISE E2E: PASS
+  CRITICAL DEFECTS: 0
+  ENGINEERING: READY
+  PRODUCTION: NO_GO
+
+QUALITY GATES:
+  SoD unit segregation-of-duties.spec.ts + operational-authority.spec.ts PASS
+  SoD integration sod-enforcement.integration.spec.ts 6/6 PASS
+  SoD HTTP sod-hardening.e2e.spec.ts 3/3 PASS
+  AuthZ authorization.integration.spec.ts 4/4; authorization.e2e.spec.ts 3/3 PASS
+  Direct API bypass master-business-bypass.e2e.spec.ts 5/5 PASS
+  Security adversarial-security.e2e.spec.ts 12/12 PASS
+  Web unit 91 arquivos / 363 testes PASS
+  API unit 186 arquivos / 769 testes PASS
+  API E2E 23 arquivos / 64 testes PASS (2026-09-03T11:14:27-04:00)
+  API integration 80 arquivos / 636 testes PASS (2026-09-03T11:16:43-04:00; 1007.57s)
+  API lint / typecheck / build PASS
+  Web lint / typecheck / build PASS
+  database lint / typecheck / build PASS
+  pnpm readiness:engineering → engineeringReadiness READY; engineeringBlockers []
+  pnpm readiness:gate → production NO-GO; productionBlockers PILOT_OBSERVATION_WINDOW_NOT_COMPLETED
+  Turbo pnpm lint/typecheck nesta sessao Windows: FAIL (Unable to find package manager binary) — nao e defeito de codigo; evidencia por pacote
+  Prompt 93 nao executado
+  waiver nao aplicado
+  datas startedAt/observationEndsAt inalteradas
+
+NOTES:
+  people.e2e falhava 401/400 vs 403 porque ReleaseScopeGuard fecha FEATURE_MODULE_PEOPLE ausente; o teste liga a flag so no beforeAll e restaura no afterAll.
+  FEATURE_MODULE_PEOPLE nao foi ligado globalmente (.env.example permanece comentado).
+  Correcoes restantes: fecha describe de billing.integration; unused checker em accounting.integration; tipos no harness/e2e SOD; submit de request com descricao; skip measurementItemId nulo em FIXED_PRICE; fixtures de medicao com billingEntitlementPolicy; commitSha ?? null no CLI de milestones.
+  Janela do piloto 2026-08-30T22:28:40.517Z → 2026-09-13T22:28:40.517Z permanece OBSERVATION.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: PILOT PATH HARDENING
+TITLE: Fechar lacunas de engenharia do caminho de producao (HML, HTTP live, DR) sem ERP e sem go-live
+STARTED_AT: 2026-09-03T11:20:00-04:00
+FINISHED_AT: 2026-09-03T11:48:43-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED: (nenhum permanente; artefato DR gitignored)
+FILES_CHANGED:
+  apps/api/src/ops/pilot/pilot-observation.ts
+  apps/api/src/ops/pilot/pilot-observation.spec.ts
+  apps/api/src/ops/readiness/cli/record-readiness-milestones.ts
+  apps/api/src/test/ensure-migrations.ts
+  docs/19-operations/readiness-evidence.json
+  docs/19-operations/pilot-exit-readiness-snapshot-2026-09-03.md
+  docs/01-foundation/requirements-traceability.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  Resolver lacunas de engenharia do caminho de producao. Sem ERP. Sem FEATURE_MODULE_FISCAL. Sem Prompt 93. Sem waiver. Sem fabricar HTTP de 14 dias.
+
+CLASSIFICATION:
+  Interpretacao de engenharia. Nenhuma regra empresarial nova CONFIRMED.
+
+RESULT:
+  HML MIGRATIONS: APPLIED (29 schemas)
+  HML SMOKE: PASS
+  PILOT SNAPSHOT: RECORDED (HML; phase unchanged)
+  DR application_host_loss: PASS
+  ENGINEERING READY: YES
+  EXIT READY: NO
+  PRODUCTION: NO-GO
+
+QUALITY GATES:
+  pilot-observation.spec.ts 8/8 PASS
+  HML smoke 11/11 checks PASS
+  snapshot HTTP n=14 errorRate=0.571 p95=345ms worker_pending=0
+  DR latest.json PASS
+  Prompt 93 nao executado
+  waiver nao aplicado
+  datas startedAt/observationEndsAt inalteradas
+
+NOTES:
+  Snapshot anterior (51 PENDING) media cisne_local_dev; HML agora e a fonte do snapshot.
+  51 NOTIFICATION PENDING permanecem no lab local_dev; nao foram apagados.
+  HTTP errorRate alto reflete 403 da identidade bootstrap sem grants operacionais; nao e incidente de producao.
+  Amostra HTTP nao substitui observacao ate 2026-09-13.
+  ERP nao foi ligado. FEATURE_MODULE_FISCAL permanece desabilitada.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: PILOT PATH HARDENING
+TITLE: Fechar lacunas de engenharia do caminho de producao (HML, HTTP live, DR) sem ERP e sem go-live
+STARTED_AT: 2026-09-03T11:20:00-04:00
+FINISHED_AT: 2026-09-03T11:48:43-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED: (nenhum permanente; artefato DR gitignored)
+FILES_CHANGED:
+  apps/api/src/ops/pilot/pilot-observation.ts
+  apps/api/src/ops/pilot/pilot-observation.spec.ts
+  apps/api/src/ops/readiness/cli/record-readiness-milestones.ts
+  apps/api/src/test/ensure-migrations.ts
+  docs/19-operations/readiness-evidence.json
+  docs/19-operations/pilot-exit-readiness-snapshot-2026-09-03.md
+  docs/01-foundation/requirements-traceability.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  Resolver lacunas de engenharia do caminho de producao. Sem ERP. Sem FEATURE_MODULE_FISCAL. Sem Prompt 93. Sem waiver. Sem fabricar HTTP de 14 dias.
+
+CLASSIFICATION:
+  Interpretacao de engenharia. Nenhuma regra empresarial nova CONFIRMED.
+
+RESULT:
+  HML MIGRATIONS: APPLIED (29 schemas)
+  HML SMOKE: PASS
+  PILOT SNAPSHOT: RECORDED (HML; phase unchanged)
+  DR application_host_loss: PASS
+  ENGINEERING READY: YES
+  EXIT READY: NO
+  PRODUCTION: NO-GO
+
+QUALITY GATES:
+  pilot-observation.spec.ts 8/8 PASS
+  readiness-gate.spec.ts 27/27 PASS (sessao anterior; nao reaberto)
+  HML smoke 11/11 checks PASS
+  snapshot HTTP n=14 errorRate=0.571 p95=345ms worker_pending=0
+  DR latest.json PASS
+  Prompt 93 nao executado
+  waiver nao aplicado
+  datas startedAt/observationEndsAt inalteradas
+
+NOTES:
+  Snapshot anterior (51 PENDING) media cisne_local_dev; HML agora e a fonte do snapshot.
+  51 NOTIFICATION PENDING permanecem no lab local_dev; nao foram apagados.
+  HTTP errorRate alto reflete 403 da identidade bootstrap sem grants operacionais; nao e incidente de producao.
+  Amostra HTTP nao substitui observacao ate 2026-09-13.
+  ERP nao foi ligado. FEATURE_MODULE_FISCAL permanece desabilitada.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: SRC-008 OPERATIONAL AUTHORITY
+TITLE: Autoridade operacional máxima, OS, medição, PO e faturamento interno
+STARTED_AT: 2026-09-03T02:22:00-04:00
+FINISHED_AT: 2026-09-03T12:39:40-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED:
+  docs/inputs/SRC-008-autoridade-operacional-os-medicao-po-faturamento.md
+  packages/database/migrations/0071_operational_authority_gates.sql
+  apps/api/src/authorization/domain/operational-authority.ts
+  apps/api/src/authorization/domain/operational-authority.spec.ts
+  apps/api/src/billing/domain/billing-entitlement.ts
+  apps/api/src/billing/domain/billing-entitlement.spec.ts
+FILES_CHANGED:
+  docs/01-foundation/source-registry.md
+  docs/01-foundation/business-rules-register.md
+  docs/01-foundation/domain-decisions-pending.md
+  docs/01-foundation/requirements-traceability.md
+  docs/00-governance/prompt-execution-log.md
+  apps/api/src/uat/uat-profiles.ts
+  apps/api/src/service-orders/services/service-orders-access.service.ts
+  apps/api/src/service-orders/service-orders.integration.spec.ts
+  apps/api/src/requests/application/service-request-conversion.persistence.ts
+  apps/api/src/measurements/services/measurements-access.service.ts
+  apps/api/src/measurements/measurements.integration.spec.ts
+  apps/api/src/commercial/services/purchase-orders-access.service.ts
+  apps/api/src/billing/services/billing-access.service.ts
+  apps/api/src/billing/billing.integration.spec.ts
+  apps/api/src/idempotency-retry/idempotency-retry.integration.spec.ts
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  Registrar SRC-008 e implementar no backend as regras de autoridade máxima, solicitação≠OS, máquina de estados/reabertura, PO configurável, medição real e desacoplamento de faturamento.
+  Não hardcodar nomes no PDP. Não ligar FEATURE_MODULE_FISCAL. Não executar Prompt 93. Não declarar GO.
+
+CLASSIFICATION:
+  Fato empresarial / decisão: BR-046..BR-051 CONFIRMED (SRC-008).
+  DDP-022 ANSWERED. DDP-002/003/004/005/009/010/011/015/021 PARTIALLY_ANSWERED.
+  DDP-001 e residual tributário DDP-023 permanecem OPEN.
+
+QUALITY GATES:
+  unitários SRC-008 25/25 PASS (2026-09-03T12:39:41-04:00)
+  API integration 80/80 arquivos, 636/636 testes PASS (2026-09-03T11:16:43-04:00; 1007.57s)
+  FEATURE_MODULE_FISCAL permanece fail-closed
+  Prompt 93 nao executado
+  producao permanece NO-GO
+
+NOTES:
+  Capabilities em OPERATIONAL_AUTHORITY_ACTIONS; UAT control_admin e o mapeamento de engenharia da autoridade máxima.
+  Finance UAT perdeu billing:prepare (DENY).
+  Unique 1 request → 1 OS removido; 2ª conversão exige rowVersion atual; retry com versão velha = VERSION_CONFLICT (1 OS).
+  Saldo PO persistido: total, consumido/faturado, excedente autorizado, disponível. Comprometido/medido/aprovado não foram inventados como ledger separado.
+  Frontend não ganhou botões de reopen/resubmit/overrun; o boundary é o backend.
+  WhatsApp permanece origem da solicitação; sem integração API.
+  Janela do piloto permanece OBSERVATION até 13 set 2026.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: HML PILOT OPERATOR
+TITLE: Tornar o operador sintetico do HML capaz de listar e observar o piloto
+STARTED_AT: 2026-09-03T12:32:00-04:00
+FINISHED_AT: 2026-09-03T12:47:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED:
+  apps/api/src/ops/hml/hml-pilot-operator.ts
+  apps/api/src/ops/hml/hml-pilot-operator.spec.ts
+  apps/api/src/ops/hml/cli/grant-hml-pilot-operator.ts
+FILES_CHANGED:
+  apps/api/src/uat/uat-profiles.ts
+  apps/api/src/uat/uat-vertical-runner.ts
+  apps/api/src/ops/hml/hml-smoke.ts
+  apps/api/src/ops/hml/hml-smoke.spec.ts
+  apps/api/package.json
+  scripts/hml/bootstrap-synthetic.mjs
+  docs/19-operations/hml-environment.md
+  docs/19-operations/readiness-evidence.json
+  docs/19-operations/pilot-exit-readiness-snapshot-2026-09-03.md
+  docs/01-foundation/requirements-traceability.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  Operar o piloto no HML. Conceder grants so no HML. Apertar smoke. Recolher snapshot.
+  Nao ligar FEATURE_MODULE_*. Nao executar Prompt 93. Nao autorizar exit. Nao alterar datas.
+
+CLASSIFICATION:
+  Interpretacao de engenharia. Nenhuma regra empresarial nova CONFIRMED.
+
+RESULT:
+  HML GRANTS: 77 (control_admin + diagnostics)
+  HML SMOKE: PASS (listas 200; nested 404 sem OS)
+  PILOT SNAPSHOT: RECORDED (2026-09-03T16:46:03.644Z)
+  PILOT_STATUS = OBSERVATION
+  EXIT READY: NO
+  PRODUCTION: NO-GO
+
+QUALITY GATES:
+  hml-config/smoke/pilot-operator unit 9/9 PASS
+  smoke live 11/11 PASS
+  snapshot phase/dates/waiver inalterados
+  Prompt 93 nao executado
+
+NOTES:
+  Bootstrap de producao continua sem papeis.
+  HTTP errorRate 0.355 e amostra acumulada do processo (inclui 403 anteriores ao grant); nao substitui 14 dias.
+  Massa operacional (OS/medicao/faturamento) ainda nao foi semeada no HML.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: HML SYNTHETIC SEED
+TITLE: Semear massa operacional sintética no HML e recolher snapshot
+STARTED_AT: 2026-09-03T14:50:00-04:00
+FINISHED_AT: 2026-09-03T15:08:28-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED: (nenhum)
+FILES_CHANGED:
+  apps/api/src/synthetic-seed/synthetic-business-seed-runner.ts
+  docs/19-operations/readiness-evidence.json
+  docs/19-operations/pilot-exit-readiness-snapshot-2026-09-03.md
+  docs/19-operations/hml-environment.md
+  docs/implementation/19-seeding.md
+  docs/01-foundation/requirements-traceability.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  Semear cliente → OS → medição → faturamento no HML. Re-smoke. Recolher snapshot.
+  Nao ligar FEATURE_MODULE_*. Nao executar Prompt 93. Nao autorizar exit. Nao alterar datas.
+
+CLASSIFICATION:
+  Interpretacao de engenharia. Nenhuma regra empresarial nova CONFIRMED.
+
+RESULT:
+  HML SEED: 15/15 (14 already_present + medicao-pendente created)
+  HML SMOKE: PASS (11/11; nested execution/measurements/billing = 200)
+  PILOT SNAPSHOT: RECORDED (2026-09-03T19:07:16.475Z)
+  PILOT_STATUS = OBSERVATION
+  EXIT READY: NO
+  PRODUCTION: NO-GO
+
+QUALITY GATES:
+  seed live PASS
+  smoke live 11/11 PASS
+  snapshot phase/dates/waiver inalterados
+  Prompt 93 nao executado
+
+NOTES:
+  planResource de locacao no fluxo parcial passou a enviar janela contratada (2026-07-01 08:00–18:00Z); sem isso o seed falhava com SERVICE_ORDERS_VALIDATION_FAILED.
+  HTTP errorRate 0.239 e amostra acumulada do processo (inclui 4xx anteriores); nao substitui 14 dias.
+  worker_pending=47 sao NOTIFICATION PENDING no HML; worker nao esta consumindo a fila. FAILED/DEAD=0. Nao e incidente de producao.
+  FEATURE_MODULE_FISCAL permanece desabilitada. ERP nao foi ligado.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: BACKOFFICE MATURITY HARDENING
+TITLE: Tesouraria na matriz e gates SRC-007 no backend sem ligar fiscal
+STARTED_AT: 2026-09-03T15:17:00-04:00
+FINISHED_AT: 2026-09-03T15:44:23-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+FILES_CREATED:
+  apps/api/src/fiscal/domain/fiscal-credentialing.ts
+  apps/api/src/fiscal/domain/fiscal-credentialing.spec.ts
+  apps/api/src/fiscal/ports/fiscal-credentialing.port.ts
+  apps/api/src/fiscal/ports/src006-fiscal-credentialing.ts
+FILES_CHANGED:
+  apps/api/src/authorization/domain/segregation-of-duties.ts
+  apps/api/src/authorization/domain/segregation-of-duties.spec.ts
+  apps/api/src/finance/services/treasury-access.service.ts
+  apps/api/src/finance/services/treasury-access.errors.ts
+  apps/api/src/finance/treasury.integration.spec.ts
+  apps/api/src/finance/bank-reconciliation.integration.spec.ts
+  apps/api/src/fiscal/errors/fiscal-error-codes.ts
+  apps/api/src/fiscal/services/fiscal-access.errors.ts
+  apps/api/src/fiscal/services/fiscal-access.service.ts
+  apps/api/src/fiscal/serializers/fiscal-response.serializer.ts
+  apps/api/src/fiscal/fiscal.module.ts
+  apps/api/src/fiscal/fiscal.integration.spec.ts
+  apps/api/src/fiscal/fiscal-accounting.integration.spec.ts
+  apps/web/src/fiscal/types/fiscal.types.ts
+  apps/web/src/fiscal/pages/FiscalDocumentsPage.tsx
+  apps/web/src/fiscal/fiscal-backoffice.ui.test.tsx
+  apps/web/src/test/finance-fetch-mock.ts
+  docs/01-foundation/engineering-decisions-register.md
+  docs/01-foundation/requirements-traceability.md
+  docs/00-governance/prompt-execution-log.md
+QUALITY_GATE: PASS
+FUNCTIONAL_CODE_CREATED: YES
+NEXT_PROMPT_EXECUTED: NO
+
+SCOPE:
+  Fechar o furo restante da matriz (tesouraria) e gravar BR-043..045 no backend.
+  Nao ligar FEATURE_MODULE_*. Nao inventar aliquota, FIFO, folha oficial nem credenciamento.
+  Nao executar Prompt 93. Nao declarar GO.
+
+CLASSIFICATION:
+  Interpretacao de engenharia. Nenhuma regra empresarial nova CONFIRMED.
+  BR-043..045 ja eram CONFIRMED; passam a ter boundary de codigo.
+
+RESULT:
+  FINANCE MATRIX: tesouraria transfer/reverse via SOD + matriz publicada
+  FISCAL PRODUCT: 4.0 (inalterado; SRC-006 NAO CREDENCIADO)
+  FISCAL GATES: transmission BLOCKED default; AUTHORIZED exige protocolo
+  ACCOUNTING / INVENTORY / PAYROLL / PROCUREMENT R1 SURFACE: inalterada (gated)
+
+QUALITY GATES:
+  segregation-of-duties.spec.ts 6/6 PASS
+  fiscal-credentialing.spec.ts 4/4 PASS
+  treasury.integration.spec.ts 9/9 PASS
+  fiscal.integration.spec.ts 6/6 PASS
+  fiscal-accounting.integration.spec.ts 9/9 PASS
+  bank-reconciliation.integration.spec.ts 3/3 PASS
+  sod-enforcement.integration.spec.ts 6/6 PASS
+  fiscal-backoffice.ui.test.tsx 3/3 PASS
+  Prompt 93 nao executado
+  FEATURE_MODULE_FISCAL permanece fail-closed
+  producao permanece NO-GO
+
+NOTES:
+  Scorecard inicial "matriz so em despesa" estava defasado: AP/AR/orcamento/conciliacao ja passavam por SOD.
+  Tesouraria era o furo restante: opener nao transfere; checker distinto; estorno exige ator distinto do movimento original.
+  Credenciamento de producao e Src006FiscalCredentialing sem override por env. Lab injeta port APPROVED so para exercitar a maquina de estados.
+  Ledger, estoque, folha e compras a fornecedor continuam nucleo de API com UI gated, sem superficie R1.
+  FIFO/media, formulas oficiais de folha e residual tributario DDP-023 permanecem UNDECIDED / OPEN.
+
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: LEGAL ESTABLISHMENT MASTER
+TITLE: Cadastro da propria empresa emissora (LegalEntity/Establishment/TaxRegistration) + FiscalDocument referencia estabelecimento + fim de dados fiscais hardcoded
+STARTED_AT: 2026-09-02T22:05:00-04:00
+FINISHED_AT: 2026-09-02T22:50:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+CLASSIFICATION: Interpretacao de engenharia. Nenhuma regra empresarial nova CONFIRMED; modelagem registrada como interpretacao. Dados empresariais da Cisne permanecem somente nas fontes (docs/inputs) e contexto de negocio.
+SCOPE:
+  Criar master da propria empresa: pty.legal_entities, pty.establishments (endereco fiscal, default issuer unico), pty.establishment_tax_registrations (CNPJ/IE/IM + regime/vigencia/autoridade), pty.establishment_certificates (A1/A3) e historico append-only.
+  fis.fiscal_documents ganha establishment_id FK; emissao fiscal resolve emissor do registry (nunca hardcoded).
+  Remover identidade fiscal da Cisne hardcoded (billing-emitter.config deletado; preview web sem emissor inventado; fixtures de teste sinteticos).
+  Nao criar dados reais da Cisne em seed; registro de emissor e alimentado por operador/registry.
+RESULT:
+  ESTABLISHMENT: PASS (unit 5/5; typecheck api limpo exceto erro pre-existente pilot-observation.spec.ts WIP; integracao escrita para TEST_DATABASE_URL, nao executada nesta sessao sem Postgres)
+  HARDCODED FISCAL DATA: 0 (grep apps: zero ocorrencias de CNPJ/razao/endereco da Cisne em codigo/testes; docs e inputs preservam os fatos empresariais)
+  FiscalDocument.establishment_id FK + resolucao de emissor por estabelecimento
+QUALITY GATES:
+  money.spec / legal-establishment.spec / billing-document-preview.test.ts PASS local
+  typecheck packages/database EXIT 0
+  typecheck apps/web EXIT 0
+  typecheck apps/api: apenas erro pre-existente em src/ops/pilot/pilot-observation.spec.ts (WIP anterior, fora do escopo deste prompt)
+  migration 0072 registrada em meta/_journal.json
+  Testes de integracao (duplicidade/inativacao/version conflict/autorizacao/historico) escritos; execucao requer TEST_DATABASE_URL com migration 0072 aplicada
+NOTES:
+  Schema pty (party), padrao suppliers: version otimista + historico append-only com ator.
+  Autorizacao: 25 acoes issuer:* + 4 recursos + 16 acoes de auditoria adicionadas; operacoes exigem grant Global (decisao registrada).
+  Duplicidade: CNPJ unico entre estabelecimentos; IE unica por UF; IM unica por estabelecimento (indices parciais + 23505 -> 409).
+  Um unico default issuer por legal entity (indice parcial).
+  Billing resolve emissor default via registry; sem CNPJ ativo registrado -> 409 (nada hardcoded).
+  Web preview usa emissor do documento emitido; sem documento, campos de emissor vazios.
+  Commit: nao realizado (protocolo: COMMIT: NOT_REQUIRED); working tree permanece DIRTY com WIP previo.
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: CUSTOMER CONTRACTS
+TITLE: CustomerContract separado de Proposal/PurchaseOrder — vigencia, expiracao efetiva, versionamento imutavel (HISTORY LOSS 0), cancelamento, autorizacao, reajuste/limites e OS referenciando contrato valido
+STARTED_AT: 2026-09-02T22:30:00-04:00
+FINISHED_AT: 2026-09-02T23:05:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+CLASSIFICATION: Interpretacao de engenharia. Base existente (0038_commercial_contracts_baseline) evoluida; nenhuma regra empresarial nova CONFIRMED sem fonte.
+SCOPE:
+  Base com.commercial_contracts + contract_items + contract_document_links + contract_history_events ja existia (DRAFT/ACTIVE/CLOSED/EXPIRED, row_version, FK so.service_orders.contract_id e validacao operacional de contrato ativo na vigencia usada na criacao/conversao de OS).
+  Delta: transicao ACTIVE->EXPIRED persistida (repository.markExpired + evento EXPIRED append-only + access expire + rota POST /commercial/contracts/:id/expire + acao/auditoria CommercialContractExpire).
+  Modelo tipado de reajuste/limites em commercial_terms (contract-terms.ts): parse tolerante, applyUnitPriceAdjustment half-up em BigInt, vigencia de reajuste.
+  effectiveContractStatus (ACTIVE alem de valid_to => EXPIRED) e guarda declarativa de historico append-only.
+  Contrato historico nao e sobrescrito: estados terminais sem transicao; atualizacoes so em DRAFT com row_version; eventos apenas INSERT.
+RESULT:
+  CUSTOMER CONTRACTS: PASS (unit contract-lifecycle 6/6 + state-machine/operational specs pre-existentes; typecheck api limpo exceto erro pre-existente pilot-observation.spec.ts WIP)
+  HISTORY LOSS: 0 (sem DELETE/UPDATE/TRUNCATE em com.contract_history_events no codigo; eventos somente append)
+  OS referencia contrato valido ja existente (FK contract_id + ContractsOperationalValidationService na criacao/conversao de OS)
+QUALITY GATES:
+  contract-lifecycle.spec.ts 6/6 PASS; contract.state-machine.spec e contract-operational.spec PASS
+  typecheck apps/api: apenas erro pre-existente em src/ops/pilot/pilot-observation.spec.ts (WIP anterior)
+  Varredura HISTORY LOSS: 0 ocorrencias de DELETE/UPDATE/TRUNCATE em historico de contrato
+  Integracao DB (markExpired, cancelamento, autorizacao, versionamento) permanece em spec existente contracts.integration.spec.ts para CI (nao executada localmente sem Postgres)
+NOTES:
+  Cancelamento = transicao ACTIVE->CLOSED com closure_reason (pre-existente), preservado.
+  Reajuste/limites residem em commercial_terms jsonb tipado; nenhuma migration nova necessaria.
+  Comportamento idempotente do runner de expiracao quando contrato ja EXPIRED.
+  Commit: nao realizado (protocolo COMMIT: NOT_REQUIRED); working tree DIRTY com WIP previo.
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: RENTAL OPERATIONS
+TITLE: Ciclo de locacao (RentalRequest/Reservation/CheckOut/ActiveRental/CheckIn/Measurement-Billing) sobre Assets e Allocation existentes, sem duplicar Asset nem Billing
+STARTED_AT: 2026-09-02T23:10:00-04:00
+FINISHED_AT: 2026-09-02T23:40:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+CLASSIFICATION: Interpretacao de engenharia. Locacao permanece arquétipo RENTAL de OS (estado existente) com alocacao reutilizada; nenhuma nova tabela de asset/billing; nenhuma regra empresarial nova CONFIRMED sem fonte.
+SCOPE:
+  Dominio puro rental-cycle.ts + rental-cycle-errors.ts em service-orders/domain: fases do ciclo mapeadas ao estado existente (OS/alocacao/execucao/measurement/billing).
+  Guards: sobreposicao por asset (janela [start,end)) — pre-cheque transacional; exclusion constraint resource_allocations_no_overlap_active_excl garante ASSET OVERBOOKING 0; devolucao (CheckIn) exige medidor final>=inicial, condicao e evidencia; atraso; janela bloqueada; estado terminal.
+  Medidores/condicao/evidencias registrados nos fluxos existentes (execution entries/evidence); Measurement/Billing reutilizam msr./bil. (nao duplicados).
+RESULT:
+  RENTAL: PASS (unit rental-cycle 6/6 + rental-operations 4/4 pre-existente; typecheck api limpo exceto erro pre-existente pilot-observation.spec.ts WIP)
+  ASSET OVERBOOKING: 0 (constraint de exclusao + FOR UPDATE; unico INSERT em resource-planning.repository; sem DROP/TRUNCATE da constraint)
+QUALITY GATES:
+  rental-cycle.spec.ts 6/6 PASS; rental-operations.spec.ts 4/4 PASS
+  typecheck apps/api: apenas erro pre-existente em src/ops/pilot/pilot-observation.spec.ts (WIP anterior)
+  Gate: INSERT em res.resource_allocations somente no repository; nenhum bypass da exclusion constraint
+NOTES:
+  Ciclo integrado ao pipeline existente (service-order RENTAL + resource allocation + execution + measurement + billing) — sem novo master de asset nem novas tabelas de faturamento.
+  Concorencia/rollback: serializacao por FOR UPDATE + transacao com rollback explicito (repositorios existentes); domain fornece guardas puras.
+  Proximo passo operacional (fora deste prompt): expor endpoints do ciclo (reservation/checkout/checkin) sobre as OS de arqué tipo RENTAL quando o fluxo for autorizado.
+  Commit: nao realizado (protocolo COMMIT: NOT_REQUIRED); working tree DIRTY com WIP previo.
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: RECURRING RENTAL BILLING
+TITLE: BillingSchedule para contratos/locacoes recorrentes — competencia elegivel gera Billing; mesmo periodo nunca fatura 2x; alteracao de contrato nao toca historico
+STARTED_AT: 2026-09-02T23:20:00-04:00
+FINISHED_AT: 2026-09-02T23:45:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+CLASSIFICATION: Interpretacao de engenharia. Engine puro sem valores/regras inventados; pro-rata apenas quando regra fornecida; snapshot de contrato imutavel por competencia.
+SCOPE:
+  Domínio puro billing/domain/recurring-billing.ts + recurring-billing-errors.ts: elegibilidade (agenda ACTIVE, sujeito elegivel, janela, cancelamento), mensalidade fixa, pro-rata sob regra (dias), ledger de periodo unico, replay, cancelamento futuro, avancos mensais.
+  DDL 0073_recurring_billing_schedule.sql (bil.recurring_billing_schedules + bil.recurring_billing_periods com UNIQUE (schedule, competence_on) e (schedule, period_key)) registrada no journal idx 73.
+  Snapshot do contrato capturado por competencia; nenhuma API de mutacao de historico.
+RESULT:
+  RECURRING BILLING: PASS (unit recurring-billing 8/8; typecheck api limpo exceto erro pre-existente pilot-observation.spec.ts WIP)
+  DUPLICATE PERIOD BILLING: 0 (engine assertPeriodNotBilled + UNIQUE (schedule, competence_on)/(schedule, period_key) no banco)
+QUALITY GATES:
+  recurring-billing.spec.ts 8/8 PASS
+  typecheck apps/api: apenas erro pre-existente em src/ops/pilot/pilot-observation.spec.ts (WIP anterior)
+  DDL 0073 registrada no meta/_journal.json
+  Sem bypass: unica via de escrita futura sera repository com FOR UPDATE + ON CONFLICT; engine deduplica antes
+NOTES:
+  Competencia = dia 1 do mes (YYYY-MM-DD); period_key YYYY-MM.
+  Pro-rata: resolveRecurringAmount so aplica quando regra DAYS existe (sem invencao de regra).
+  Concorrencia/rollback: dedupe no ledger antes da escrita + unicidade no banco; lote so commita sem falha.
+  Integracao DB (criacao de agenda/geracao/billing) para CI quando fluxo operacional autorizado; proximo passo expor repository/endpoints.
+  Commit: nao realizado (protocolo COMMIT: NOT_REQUIRED); working tree DIRTY com WIP previo.
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: TRANSPORT DISPATCH
+TITLE: Trip/Dispatch vinculado a ServiceOrder (origem/destino/veiculo/motorista/carga|passageiros/saida/chegada/evidencias); Planning != TripExecution; sem duplicar Vehicle ou Driver
+STARTED_AT: 2026-09-02T23:30:00-04:00
+FINISHED_AT: 2026-09-02T23:50:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+CLASSIFICATION: Interpretacao de engenharia. Veiculo = physical asset existente; motorista = cadastro existente (referencias por id, sem novo master). Regras sem inventar valores.
+SCOPE:
+  Dominio puro service-orders/domain/transport-dispatch.ts + transport-dispatch-errors.ts: TripPlan (PLANNED) separado de TripExecution (DISPATCHED/ACTIVE/COMPLETED/CANCELLED); dispatch/saida/chegada/evidencia/cancelamento.
+  Guards: vehicle conflict e driver conflict por janela [start,end) (mesma semantica da exclusion de alocacao); trips cancelados/completos nao bloqueiam; execucao terminal imutavel.
+RESULT:
+  TRANSPORT DISPATCH: PASS (unit transport-dispatch 7/7; typecheck api limpo exceto erro pre-existente pilot-observation.spec.ts WIP)
+  INVALID ASSIGNMENTS: 0 (sem novo cadastro de veiculo/motorista; atribuicao conflitante rejeitada antes de gravar)
+QUALITY GATES:
+  transport-dispatch.spec.ts 7/7 PASS
+  typecheck apps/api: apenas erro pre-existente em src/ops/pilot/pilot-observation.spec.ts (WIP anterior)
+NOTES:
+  Carga/passageiros opcionais (quando aplicavel).
+  Proximo passo: repository/tabela de trips (vinculo so.service_orders) + endpoints dispatch/checkin quando o fluxo operacional for autorizado; concorrencia real por FOR UPDATE + constraint.
+  Commit: nao realizado (protocolo COMMIT: NOT_REQUIRED); working tree DIRTY com WIP previo.
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: OPERATIONAL ELIGIBILITY
+TITLE: Avaliacao de elegibilidade pre-alocacao (Fleet/Safety) sobre documentos, validade, manutencao, status e alocacao existentes; decisao ELIGIBLE/BLOCKED/REVIEW_REQUIRED; regra ausente nunca vira aprovado
+STARTED_AT: 2026-09-02T23:50:00-04:00
+FINISHED_AT: 2026-09-02T23:59:00-04:00
+STATUS: PASS
+CLASSIFICATION: Interpretacao de engenharia. Sem novo cadastro de Document/Asset (referencias por id); sinais existentes compostos em engine puro; fail-safe por regra ausente/desconhecida.
+SCOPE:
+  Dominio puro service-orders/domain/operational-eligibility.ts + operational-eligibility-errors.ts: rules document-validity/maintenance/asset-status/allocation-conflict; precedencia BLOCKED > REVIEW_REQUIRED > ELIGIBLE; override autorizado explicito; unknown/ausente -> REVIEW_REQUIRED.
+RESULT:
+  ELIGIBILITY: PASS (unit 7/7; typecheck api limpo exceto erro pre-existente pilot-observation.spec.ts WIP)
+  FALSE ELIGIBLE: 0 (regra ausente/desconhecida jamais produz ELIGIBLE; assertNoMissingRuleAllowed guarda)
+QUALITY GATES:
+  operational-eligibility.spec.ts 7/7 PASS
+  typecheck apps/api: apenas erro pre-existente em src/ops/pilot/pilot-observation.spec.ts (WIP anterior)
+NOTES:
+  Proximo passo: ligar o engine na alocacao (resources/planning) e persistir decisao/override autorizado quando o fluxo operacional for autorizado.
+  Commit: nao realizado (protocolo COMMIT: NOT_REQUIRED); working tree DIRTY com WIP previo.
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: SERVICE ACCEPTANCE
+TITLE: ServiceAcceptance + AcceptanceEvidence pos-execucao (quem/quando/resultado/observacao/evidencia quando suportada); aceite nao altera Execution historica; rejeicao abre pendencia sem apagar execucao
+STARTED_AT: 2026-09-02T23:55:00-04:00
+FINISHED_AT: 2026-09-03T00:05:00-04:00
+STATUS: PASS
+CLASSIFICATION: Interpretacao de engenharia. Aceite e append-only sobre a execucao COMPLETED; um unico aceite por OS; auditoria de quem/quando/resultado.
+SCOPE:
+  Dominio puro service-orders/domain/service-acceptance.ts + service-acceptance-errors.ts: recordAcceptance (accept/reject), pendencia em rejeicao, duplicate bloqueado, autorizacao obrigatoria, auditoria, evidencia opcional.
+RESULT:
+  SERVICE ACCEPTANCE: PASS (unit 6/6; typecheck api limpo exceto erro pre-existente pilot-observation.spec.ts WIP)
+  HISTORY LOSS: 0 (execucao recebida como Readonly; rejeicao nao apaga/reescreve execucao)
+QUALITY GATES:
+  service-acceptance.spec.ts 6/6 PASS
+  typecheck apps/api: apenas erro pre-existente em src/ops/pilot/pilot-observation.spec.ts (WIP anterior)
+NOTES:
+  Proximo passo: persistir ServiceAcceptance/AcceptanceEvidence e pendencia (tabela + repository) e ligar ao fluxo de OS quando autorizado.
+  Commit: nao realizado (protocolo COMMIT: NOT_REQUIRED); working tree DIRTY com WIP previo.
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: MAINTENANCE COST INTEGRATION
+TITLE: Integrar MaintenanceOrder com Inventory/Payables/Expenses/Accounting — peca gera movimento de estoque; servico externo mantem origem rastreavel; sem duplicar custo (DUPLICATE COSTS 0); reversal compensatorio e reconciliacao
+STARTED_AT: 2026-09-03T00:00:00-04:00
+FINISHED_AT: 2026-09-03T00:15:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+CLASSIFICATION: Interpretacao de engenharia. Nao existe aggregate MaintenanceOrder proprio ainda; entregue o contrato de integracao (engine puro) sobre os fluxos existentes, sem novo cadastro de Inventory/Payable/Expense/Accounting.
+SCOPE:
+  Dominio puro maintenance/domain/maintenance-cost-integration.ts + maintenance-cost-errors.ts: instructions (STOCK_MOVEMENT para peca; PAYABLE com originKind MAINTENANCE_ORDER para servico externo), ledger (order,line) unico, reversal idempotente compensatorio, reconciliacao por soma vs. lançamentos.
+RESULT:
+  MAINTENANCE COST: PASS (unit 5/5; typecheck api limpo exceto erro pre-existente pilot-observation.spec.ts WIP)
+  DUPLICATE COSTS: 0 (ledger por maintenanceOrderId+lineNumber; reversal tambem deduplicado)
+QUALITY GATES:
+  maintenance-cost-integration.spec.ts 5/5 PASS
+  typecheck apps/api: apenas erro pre-existente em src/ops/pilot/pilot-observation.spec.ts (WIP anterior)
+NOTES:
+  Proximo passo: persistir MaintenanceOrder + ledger e efetivar instrucoes nos repos existentes (inventory movement / payable / expense / accounting) com FOR UPDATE + UNIQUE(order,line).
+  Commit: nao realizado (protocolo COMMIT: NOT_REQUIRED); working tree DIRTY com WIP previo.
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: PROCUREMENT RECEIVING
+TITLE: Evoluir Receipt para parcial/total/rejeicao/devolucao; Receipt confirmado movimenta Inventory; PurchaseOrder nunca cria estoque direto; three-way match
+STARTED_AT: 2026-09-03T00:05:00-04:00
+FINISHED_AT: 2026-09-03T00:20:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+CLASSIFICATION: Interpretacao de engenharia. Receipt existente (prc.goods_receipts) evoluido com dominio puro; efeito de estoque restrito a Receipt confirmado.
+SCOPE:
+  Dominio puro procurement/domain/receiving.ts + receiving-errors.ts: classificacao PARTIAL/TOTAL/REJECTION/RETURN; over-receipt barrado; devolucao exige recebimento e nao excede; duplicidade por (receipt,linha); avaliacao rollback-safe; stock movement somente de RECEIPT confirmado; three-way match pedido>=recebido>=faturado.
+RESULT:
+  RECEIVING: PASS (unit 8/8; typecheck api limpo exceto erro pre-existente pilot-observation.spec.ts WIP)
+  INVALID STOCK EFFECTS: 0 (apenas RECEIPT confirmado gera instrucao IN; PO direto barrado por STOCK_SOURCE_REQUIRED)
+QUALITY GATES:
+  receiving.spec.ts 8/8 PASS
+  typecheck apps/api: apenas erro pre-existente em src/ops/pilot/pilot-observation.spec.ts (WIP anterior)
+NOTES:
+  Proximo passo: ligar o engine ao repositorio de goods_receipts e ao inventory (FOR UPDATE + UNIQUE(receipt,line)) quando o fluxo operacional for autorizado.
+  Commit: nao realizado (protocolo COMMIT: NOT_REQUIRED); working tree DIRTY com WIP previo.
+COMMIT: NOT_REQUIRED
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: WORK TIME TRACKING
+TITLE: Timesheet/WorkLog vinculado a Employee/ServiceOrder/Execution (data, inicio/fim ou quantidade, atividade, OS, aprovacao); sem calculo de folha no apontamento
+STARTED_AT: 2026-09-03T00:40:00-04:00
+FINISHED_AT: 2026-09-03T00:55:00-04:00
+STATUS: PASS
+CLASSIFICATION: Interpretacao de engenharia. Sem novo cadastro de Employee (workforce/person existentes); apontamento por inicio/fim OU quantidade; aprovacao com autorizacao e sem auto-aprovacao.
+SCOPE:
+  Dominio puro service-orders/domain/work-time-tracking.ts + work-time-tracking-errors.ts: validacao (modo exclusivo), overlap por employee, duplicidade por chave, aprovacao (autorizacao + self-approval + imutabilidade), edicao pos-fechamento bloqueada, guard de nao-calculo de folha.
+RESULT:
+  TIME TRACKING: PASS (unit 6/6; typecheck api limpo exceto erro pre-existente pilot-observation.spec.ts WIP)
+  OVERLAPPING WORKLOGS: 0 (overlap por employee na janela [start,end) rejeitado; rejected nao bloqueia)
+QUALITY GATES:
+  work-time-tracking.spec.ts 6/6 PASS
+  typecheck apps/api: apenas erro pre-existente em src/ops/pilot/pilot-observation.spec.ts (WIP anterior)
+NOTES:
+  Proximo passo: persistir Timesheet/WorkLog (tabela + repository) e ligar a aprovacao no fluxo operacional quando autorizado.
+  Commit realizado por area (feat(service-orders): work time tracking...).
+COMMIT: DONE
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: PAYROLL RULE ENGINE
+TITLE: Motor de regras versionadas (PayrollRule/PayrollRuleVersion/PayrollCalculationTrace); todo resultado indica regra e versao; regra ausente => PAYROLL_RULE_NOT_CONFIGURED; sem formula legal hardcoded (INVENTED FORMULAS 0)
+STARTED_AT: 2026-09-03T00:45:00-04:00
+FINISHED_AT: 2026-09-03T01:00:00-04:00
+STATUS: PASS
+CLASSIFICATION: Interpretacao de engenharia. Regra so calcula com formulaKey/configuracao validada (fonte oficial); arredondamento half-up na escala da versao; versoes imutaveis para reproducao historica.
+SCOPE:
+  Dominio puro payroll/domain/payroll-rule-engine.ts + payroll-rule-engine-errors.ts: resolveRuleVersion (efetiva), publishRuleVersion (imutavel, sem duplicidade), evaluatePayrollRule (trace com ruleId+version), fechamento de periodo, regra ausente/sem formula => PAYROLL_RULE_NOT_CONFIGURED.
+RESULT:
+  PAYROLL ENGINE: PASS (unit 6/6; typecheck api limpo exceto erro pre-existente pilot-observation.spec.ts WIP)
+  INVENTED FORMULAS: 0 (sem formulaKey configurada a regra nunca calcula; nenhum valor legal hardcoded)
+QUALITY GATES:
+  payroll-rule-engine.spec.ts 6/6 PASS
+  typecheck apps/api: apenas erro pre-existente em src/ops/pilot/pilot-observation.spec.ts (WIP anterior)
+NOTES:
+  Proximo passo: persistir PayrollRule/Version/Trace (pay schema) e ligar aos resultados quando o fluxo operacional for autorizado.
+  Commit realizado por area (feat(payroll): versioned rule engine with traces...).
+COMMIT: DONE
+WORKING TREE: DIRTY
+NEXT: STOP
+```
+
+```text
+PROMPT: PAYROLL CLOSE
+TITLE: Fechamento de competencia com calculos aprovados; CLOSED imutavel; reabertura com capability+motivo+audit
+STARTED_AT: 2026-09-03T00:50:00-04:00
+FINISHED_AT: 2026-09-03T01:05:00-04:00
+STATUS: PASS
+CLASSIFICATION: Interpretacao de engenharia. Pendencia critica/inconsistencia bloqueia antes de fechar; funcoes puras sem efeito parcial (rollback).
+SCOPE: Dominio puro payroll-close (checks, close, double/concurrent close, reopen auditado, guard CLOSED).
+RESULT: PAYROLL CLOSE: PASS (unit 4/4) | CLOSED PERIOD VIOLATIONS: 0
+QUALITY GATES: payroll-close.spec.ts 4/4 PASS; typecheck api: apenas erro pre-existente pilot-observation.spec.ts (WIP)
+COMMIT: DONE (feat(payroll): immutable period close with audited reopen)
+WORKING TREE: DIRTY | NEXT: STOP
+```
+
+```text
+PROMPT: NFE EVENT LIFECYCLE
+TITLE: Ciclo de eventos do adapter oficial (cancelamento/CC-e/inutilizacao/consulta/contingencia quando suportada); protocolo e XML originais preservados; idempotente
+STARTED_AT: 2026-09-03T00:55:00-04:00
+FINISHED_AT: 2026-09-03T01:10:00-04:00
+STATUS: PASS
+CLASSIFICATION: Interpretacao de engenharia. Sem inventar evento/regra fiscal; contingencia so quando suportada; events idempotentes por (accessKey, kind).
+SCOPE: Dominio puro nfe-events (registro preservando protocolo/XML, timeout/rejeicao/recovery, duplicate/idempotencia, FAKE_EVENT guard).
+RESULT: NFE EVENTS: PASS (unit 5/5) | FAKE EVENTS: 0
+QUALITY GATES: nfe-events.spec.ts 5/5 PASS; typecheck api: apenas erro pre-existente pilot-observation.spec.ts (WIP)
+COMMIT: DONE (feat(fiscal): official NFe event lifecycle...)
+WORKING TREE: DIRTY | NEXT: STOP
+```
+
+```text
+PROMPT: MDF-e READINESS
+TITLE: Avaliar quando operacoes exigem MDF-e (sem inferir por CNAE); verificar credenciamento/documentacao/certificado/schemas/homologacao/eventos; BLOCKED_REQUIREMENTS quando faltar; sem adapter fake
+STARTED_AT: 2026-09-03T01:00:00-04:00
+FINISHED_AT: 2026-09-03T01:15:00-04:00
+STATUS: PASS
+CLASSIFICATION: Interpretacao de engenharia. Obrigacao so com fonte oficial validada (nao CNAE); avaliador nunca instancia adapter/provedor.
+SCOPE: Dominio puro fiscal/domain/mdfe-readiness (decisions READY/BLOCKED_REQUIREMENTS/NOT_APPLICABLE; requisitos; guard fake provider).
+RESULT: MDF-e: READY quando todos requisitos atendidos | BLOCKED_REQUIREMENTS caso contrario | NOT_APPLICABLE sem transporte | FAKE PROVIDERS 0
+QUALITY GATES: mdfe-readiness.spec.ts 5/5 PASS; typecheck api: apenas erro pre-existente pilot-observation.spec.ts (WIP)
+COMMIT: DONE (feat(fiscal): MDF-e readiness evaluator...)
+WORKING TREE: DIRTY | NEXT: STOP
+```
+
+```text
+PROMPT: (fonte SRC-005 anexada) Semear registry da propria empresa
+TITLE: Bootstrap do cadastro da propria empresa a partir da fonte oficial SRC-005, sem hardcode (dados via env)
+STARTED_AT: 2026-09-03T01:05:00-04:00
+FINISHED_AT: 2026-09-03T01:20:00-04:00
+STATUS: PASS_WITH_RESTRICTIONS
+CLASSIFICATION: Interpretacao de engenharia. Fatos confirmados por SRC-005 (3 imagens do comprovante CNPJ, mesmo ente). Bootstrap mapeia env; nenhum dado literal da Cisne no codigo.
+SCOPE:
+  builder puro own-company-bootstrap (env -> config: legalName/code MATRIZ/CNPJ/endereco), CLI dry-run (bootstrap-own-company.ts), guard de idempotencia, spec.
+RESULT:
+  Fonte SRC-005 ja registrada e consistente com as 3 imagens (mesmo CNPJ/razao/endereco/situacao ATIVA).
+  Seed efetivo no registry NAO executado (requer DB + ator de identidade); builder + dry-run + prova de ausencia de hardcode entregues.
+QUALITY GATES: own-company-bootstrap.spec.ts 3/3 PASS; typecheck api: apenas erro pre-existente pilot-observation.spec.ts (WIP)
+NOTES:
+  MDF-e: CNAEs de transporte (49.30-2-01 etc.) presentes no comprovante NAO inferem obrigacao (regra mantida).
+  COMMIT: DONE (feat(establishments): own-company bootstrap from env...)
+WORKING TREE: DIRTY | NEXT: STOP
+```
+
+```text
+PROMPT: ACCESS ADMINISTRATION UI
+TITLE: UI administrativa de acesso (roles, capabilities, scopes, SoD conflicts) com backend e audit; frontend nunca define autoridade; mutacao bloqueada por guards de seguranca (escalacao, escopo errado, auto-escalacao, conflito de versao)
+STARTED_AT: 2026-09-04T00:30:00-04:00
+FINISHED_AT: 2026-09-04T09:52:00-04:00
+STATUS: PASS
+CLASSIFICATION: Interpretacao de engenharia (artefato de seguranca). Role/capability/scopes de ACESSO TECNICO administrados com catalogo servidor (AUTHZ_ACTIONS + SOD duties + meta); papéis empresariais (ROLE-CAND docs/09-authorization) NAO sao definidos aqui. Guard SOD-007 (ACESSO ADMIN x aprovacao financeira) aplicado em codigo como protecao de engenharia da propria camada (status documental CANDIDATE; SOD-012 ADVISORY enquanto DDP-015 aberto). Grants e decisões PDP nao alteradas: registro configura a camada administravel; ligacao ao enforcement efetivo permanece pendente (mesmo padrao dos prompts recentes).
+SCOPE:
+  Backend (apps/api authorization): tabelas authorization.access_roles/access_role_capabilities/access_role_assignments (migration 0074); dominio puro access-admin-rules (catalogo capabilities/scopes, classes SOD, coverage de escopo, expectedVersion); repository/DTO allowlist/serializer; service com guards (PDP deny-by-default por endpoint; escopo fora do catalogo ou sem scope_ref -> 400; auto-atribuicao -> 403 ACCESS_ADMIN_SELF_ESCALATION; versao obsoleta -> 409 ACCESS_ADMIN_VERSION_CONFLICT; acumulo classe A+B no mesmo escopo efetivo -> 403 ACCESS_ADMIN_SOD_CONFLICT); controller /authz/access-admin (catalog, roles CRUD+update versionado, assignments assign/revoke, sod-conflicts); novas actions/resources authz:access-admin:read/manage + AccessAdmin; eventos de auditoria Critical para toda mutacao.
+  Frontend (apps/web/access-admin): rota /app/access-admin com tabs Roles/Capabilities/Scopes/Assignments/Conflitos SoD; catalogo sempre do servidor; forms apenas enviam codigos escolhidos; banner de conflito de versao; textos em pt indicando que o servidor decide autoridade.
+  Testes: unit domain 7/7; integracao PG 7/7 (escalacao de privilegio, escopo errado, self-escalation, version conflict, SOD-007, assign/revoke limpo, auditoria); UI jsdom 3/3.
+RESULT:
+  ACCESS ADMIN: PASS
+  PRIVILEGE ESCALATION: 0 (deny-by-default sem grant; read-only nao administra; escopo validado no backend; auto-atribuicao negada; versao obsoleta rejeitada)
+QUALITY GATES:
+  access-admin-rules.spec.ts 7/7 PASS
+  access-admin.integration.spec.ts 7/7 PASS (PostgreSQL real)
+  access-admin.ui.test.tsx 3/3 PASS (jsdom)
+  typecheck apps/api: apenas erro pre-existente src/ops/pilot/pilot-observation.spec.ts (WIP anterior)
+  typecheck apps/web: zero erros nos arquivos novos; 2 erros pre-existentes de drift (catalog version-compare.test.ts e catalog-fetch-mock.ts)
+  typecheck packages/database: PASS
+  migration 0074 aplicada em dev e test (runners com effect probe 0074_access_administration)
+NOTES:
+  Working tree ja estava DIRTY (WIP anterior) antes deste prompt. Commits por area:
+    feat(database): access administration schema (roles/capabilities/assignments)
+    feat(authorization): access admin backend (guards SOD/self-escalation/version + audit)
+    feat(web): access administration UI
+  Frontend nao decide autoridade: catalogo/roles/conflicts vem do backend; nenhuma capability inventada no cliente.
+WORKING TREE: DIRTY (WIP pre-existente mantido) | NEXT: STOP
+```
+
+```text
+PROMPT: ACCESS ADMIN CONSOLE — REFLECT FULL AUTHORIZATION MODEL (V2)
+TITLE: Front senior reflete o restante do modelo de autorizacao do backend/banco: authorization.grants, approval matrices / approval_role_assignments, catalogo de identities; roles administradas passam a ser ENFORCED pelo PDP (enforcement efetivo)
+STARTED_AT: 2026-09-04T09:55:00-04:00
+FINISHED_AT: 2026-09-04T10:35:00-04:00
+STATUS: PASS
+CLASSIFICATION: Interpretacao de engenharia. Autorizacao por roles (antes apenas configuracao persistida) foi ligada ao PolicyDecisionPoint: capability de role == action pedida + assignment ativo (role ACTIVE) concede acesso nas mesmas regras de escopo das grants; revogacao/desativacao remove o acesso nas proximas decisoes. Grants, identities e approval data permanecem decididos/validados no backend; frontend apenas reflete (nunca decide autoridade).
+SCOPE:
+  Backend (apps/api authorization):
+    - PolicyDecisionPointService.decide agora avalia roles administradas (findRoleDerivedActionRows) apos grants (deny-by-default mantido; sem regressao nas suítes anteriores).
+    - AuthorizationRepository: listGrants (ativas/revogadas por identity), listIdentities (catalogo usuarios: login/status), findRoleDerivedActionRows.
+    - ApprovalMatrixRepository: listMatricesOverview, listMatrixVersionRules(PUBLISHED/DRAFT), listApprovalRoleAssignments.
+    - AccessAdminService: catalog agora inclui resources; listGrants, listIdentities, approvalMatrices, approvalMatrixRules, approvalRoleAssignments.
+    - AccessAdminController: GET /authz/access-admin/{grants,identities,approval-matrices,approval-matrices/:id/rules,approval-role-assignments}.
+    - UI escrita reutiliza endpoints existentes: POST /authz/grants, POST /authz/grants/:id/revoke, POST /authz/approval-matrices/role-assignments.
+  Frontend (apps/web/access-admin): tabs Concessoes (grants create/revoke com filtros), Usuarios (catalogo + visao do usuario: grants/roles de acesso/roles de aprovacao), Aprovacoes (overview de matrizes + rules PUBLICADA/RASCUNHO + atribuicoes de role de aprovacao + painel atribuir); Roles/Assignments indicam enforcement efetivo pelo PDP.
+RESULT:
+  Console reflete: grants (PDP), approval matrices e approval_role_assignments, catalogo de identities e roles ENFORCED em runtime.
+  PRIVILEGE ESCALATION: 0 (nenhum caminho novo: leituras exigem authz:access-admin:read; writes exigem grants/actions proprias; PDP deny-by-default preservado)
+QUALITY GATES:
+  access-admin-console.integration.spec.ts 6/6 PASS (grants list/revogadas, identities, PDP role-derived allow, escopo ancorado + revogacao, role INACTIVE nao enforced, matrices/rules/approval assignments)
+  Regressao: access-admin.integration.spec.ts 7/7 PASS + authorization.integration.spec.ts 4/4 PASS (11/11)
+  access-admin.ui.test.tsx 3/3 PASS + access-admin-console.ui.test.tsx 3/3 PASS (jsdom)
+  typecheck apps/api: apenas erro pre-existente src/ops/pilot/pilot-observation.spec.ts (WIP)
+  typecheck apps/web: zero erros novos (2 erros pre-existentes catalog drift)
+NOTES:
+  Commits V2 por area:
+    feat(authorization): access admin console — grants/identities/approval reads + PDP role enforcement
+    feat(web): access admin console — grants/users/approval tabs (PDP-enforced roles)
+  Restricao explicita: edicao/publicacao de versoes de matriz e limites permanece no fluxo financeiro existente (console reflete e permite atribuicao de role de aprovacao).
+  Working tree permanece com WIP anterior preservado.
+WORKING TREE: DIRTY (WIP pre-existente mantido) | NEXT: STOP
+```
