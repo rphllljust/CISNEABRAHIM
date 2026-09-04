@@ -287,10 +287,7 @@ function proposalSearchQuery(
                           p.title AS subtitle,
                           pv.status::text AS status,
                           p.created_at AS occurred_at,
-                          CASE WHEN p.client_id IS NOT NULL
-                            THEN '/app/clients/' || p.client_id::text
-                            ELSE '/app/requests'
-                          END AS entity_href,
+                          '/app/proposals/' || p.id::text AS entity_href,
                           p.proposal_code AS highlight`,
     fromClause: `rpt.read_proposals p
                  INNER JOIN LATERAL (
@@ -328,10 +325,7 @@ function purchaseOrderSearchQuery(
                           po.rc_number AS subtitle,
                           po.status::text AS status,
                           po.created_at AS occurred_at,
-                          CASE WHEN po.client_id IS NOT NULL
-                            THEN '/app/clients/' || po.client_id::text
-                            ELSE '/app/requests'
-                          END AS entity_href,
+                          '/app/purchase-orders/' || po.id::text AS entity_href,
                           COALESCE(po.po_number, po.internal_code) AS highlight`,
     fromClause: 'rpt.read_purchase_orders po',
     predicate: `(${match.clause}) AND (${filterClause})`,

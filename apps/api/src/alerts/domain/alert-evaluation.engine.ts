@@ -99,7 +99,7 @@ export function evaluateServiceOrderDueSoon(
     severity: 'WARNING',
     title: 'OS vencendo em breve',
     message: `Ordem de serviço com prazo nos próximos ${policy.approachingDueDays} dia(s).`,
-    entityHref: `/app/service-orders/${candidate.id}`,
+    entityHref: `/app/service-orders/${candidate.id}/planning`,
     metadata: { serviceOrderId: candidate.id },
   };
 }
@@ -133,7 +133,7 @@ export function evaluateServiceOrderOverdueAlert(
     message: escalation
       ? `Ordem de serviço vencida há ${delayDays} dia(s) — nível crítico.`
       : `Ordem de serviço vencida há ${delayDays} dia(s).`,
-    entityHref: `/app/service-orders/${candidate.id}?filter=overdue`,
+    entityHref: `/app/service-orders/${candidate.id}/planning?filter=overdue`,
     metadata: { serviceOrderId: candidate.id, delayDays },
   };
 }
@@ -177,7 +177,7 @@ export function evaluateServiceOrderStalled(
     severity: 'WARNING',
     title: 'OS parada',
     message: `Ordem de serviço sem progresso há ${ageDays} dia(s) no estágio atual.`,
-    entityHref: `/app/service-orders/${candidate.id}`,
+    entityHref: `/app/service-orders/${candidate.id}/planning`,
     metadata: { serviceOrderId: candidate.id, ageDays, stage: anchor?.stage },
   };
 }
@@ -229,7 +229,7 @@ export function evaluateBillingAging(
     severity: 'WARNING',
     title: 'Faturamento parado',
     message: `Registro de faturamento preparado há ${ageDays} dia(s) sem documento finalizado.`,
-    entityHref: `/app/billing/service-orders/${candidate.serviceOrderId}`,
+    entityHref: `/app/service-orders/${candidate.serviceOrderId}/billing`,
     metadata: { billingRecordId: candidate.id, serviceOrderId: candidate.serviceOrderId, ageDays },
   };
 }
