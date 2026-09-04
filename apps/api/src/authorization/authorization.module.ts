@@ -6,16 +6,20 @@ import { SecurityAuditController } from '../audit/controllers/security-audit.con
 import { AuthzGrantsController, AuthzProbeController } from './controllers/authz.controller';
 import { ApprovalMatrixController } from './controllers/approval-matrix.controller';
 import { ScopedRecordController } from './controllers/scoped-record.controller';
+import { AccessAdminController } from './controllers/access-admin.controller';
 import { AuthorizationGuard } from './guards/authorization.guard';
 import { AuthorizationRepository } from './repositories/authorization.repository';
 import { ApprovalMatrixRepository } from './repositories/approval-matrix.repository';
 import { ScopeContextRepository } from './repositories/scope-context.repository';
+import { AccessAdminRepository } from './repositories/access-admin.repository';
 import { GrantAdminService } from './services/grant-admin.service';
 import { ApprovalMatrixAccessService } from './services/approval-matrix-access.service';
+import { SodEnforcementService } from './services/sod-enforcement.service';
 import { PolicyDecisionPointService } from './services/policy-decision-point.service';
 import { ScopeEnforcementService } from './services/scope-enforcement.service';
 import { ScopeResolverService } from './services/scope-resolver.service';
 import { ScopedRecordAccessService } from './services/scoped-record-access.service';
+import { AccessAdminService } from './services/access-admin.service';
 
 @Module({
   imports: [DatabaseModule, AuthModule, AuditModule],
@@ -24,18 +28,22 @@ import { ScopedRecordAccessService } from './services/scoped-record-access.servi
     AuthzGrantsController,
     ApprovalMatrixController,
     ScopedRecordController,
+    AccessAdminController,
     SecurityAuditController,
   ],
   providers: [
     AuthorizationRepository,
     ApprovalMatrixRepository,
     ScopeContextRepository,
+    AccessAdminRepository,
     PolicyDecisionPointService,
     ScopeResolverService,
     ScopeEnforcementService,
     GrantAdminService,
     ApprovalMatrixAccessService,
+    SodEnforcementService,
     ScopedRecordAccessService,
+    AccessAdminService,
     AuthorizationGuard,
   ],
   exports: [
@@ -43,6 +51,7 @@ import { ScopedRecordAccessService } from './services/scoped-record-access.servi
     AuthorizationGuard,
     AuthorizationRepository,
     ApprovalMatrixAccessService,
+    SodEnforcementService,
     ScopeContextRepository,
     ScopeEnforcementService,
     ScopeResolverService,

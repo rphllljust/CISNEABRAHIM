@@ -23,6 +23,10 @@ export const AUTHZ_RESOURCE_TYPES = {
   RequestsServiceRequest: 'requests:service-request',
   ServiceOrdersServiceOrder: 'service-orders:service-order',
   PeoplePerson: 'people:person',
+  IssuerLegalEntity: 'issuer:legal-entity',
+  IssuerEstablishment: 'issuer:establishment',
+  IssuerTaxRegistration: 'issuer:tax-registration',
+  IssuerCertificate: 'issuer:certificate',
   FinanceReceivable: 'finance:receivable',
   FinancePayable: 'finance:payable',
   FinanceExpense: 'finance:expense',
@@ -36,6 +40,7 @@ export const AUTHZ_RESOURCE_TYPES = {
   FiscalPeriod: 'fiscal:period',
   InventoryStock: 'inventory:stock',
   PayrollLedger: 'payroll:ledger',
+  AccessAdmin: 'authz:access-admin',
 } as const;
 
 export type AuthzResourceType = (typeof AUTHZ_RESOURCE_TYPES)[keyof typeof AUTHZ_RESOURCE_TYPES];

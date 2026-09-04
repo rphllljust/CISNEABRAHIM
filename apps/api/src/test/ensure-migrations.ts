@@ -11,7 +11,7 @@ const journalPath = resolve(repoRoot, 'packages/database/migrations/meta/_journa
 const migrationsDir = resolve(repoRoot, 'packages/database/migrations');
 
 function migrationFileHash(fileName: string): string {
-  const content = readFileSync(join(migrationsDir, fileName), 'utf8');
+  const content = readMigrationSql(join(migrationsDir, fileName));
   return createHash('sha256').update(content).digest('hex');
 }
 
@@ -67,13 +67,31 @@ async function columnExists(
   return result.rows[0]?.exists === true;
 }
 
+function readMigrationSql(filePath: string): string {
+  const bytes = readFileSync(filePath);
+  const isUtf16Le =
+    bytes.length >= 2 &&
+    ((bytes[0] === 0xff && bytes[1] === 0xfe) || (bytes.length >= 4 && bytes[1] === 0 && bytes[3] === 0));
+  const sql = isUtf16Le ? bytes.toString('utf16le') : bytes.toString('utf8');
+  return sql.replace(/^\uFEFF/, '').replace(/\0/g, '');
+}
+
+function splitMigrationStatements(sql: string): string[] {
+  if (sql.includes('--> statement-breakpoint')) {
+    return sql
+      .split('--> statement-breakpoint')
+      .map((statement) => statement.trim())
+      .filter((statement) => statement.length > 0);
+  }
+  return sql
+    .split(/;\s*(?=(?:CREATE|ALTER|DROP|COMMENT)\b)/i)
+    .map((statement) => statement.trim().replace(/;$/, ''))
+    .filter((statement) => statement.length > 0);
+}
+
 async function applySqlFile(pool: pg.Pool, relativePath: string): Promise<void> {
   const filePath = resolve(__dirname, '../../../../packages/database/migrations', relativePath);
-  const sql = readFileSync(filePath, 'utf8');
-  const statements = sql
-    .split('--> statement-breakpoint')
-    .map((statement) => statement.trim())
-    .filter((statement) => statement.length > 0);
+  const statements = splitMigrationStatements(readMigrationSql(filePath));
 
   for (const statement of statements) {
     try {
@@ -101,6 +119,23 @@ export default async function ensureMigrations(): Promise<void> {
   const pool = new pg.Pool({ connectionString: testDatabaseUrl });
   try {
     await syncDrizzleJournal(pool);
+
+    const hasInfrastructureBaseline = await tableExists(pool, 'infrastructure.schema_baseline');
+    if (!hasInfrastructureBaseline) {
+      await applySqlFile(pool, '0000_early_thaddeus_ross.sql');
+    }
+
+    const hasIdentities = await tableExists(pool, 'identity.identities');
+    if (!hasIdentities) {
+      await applySqlFile(pool, '0001_striped_the_liberteens.sql');
+    }
+
+    const hasAuthorizationSchema = await pool.query<{ exists: boolean }>(
+      `SELECT EXISTS(SELECT 1 FROM pg_namespace WHERE nspname = 'authorization') AS exists`,
+    );
+    if (!hasAuthorizationSchema.rows[0]?.exists) {
+      await applySqlFile(pool, '0002_authorization_baseline.sql');
+    }
 
     const hasScopedRecords = await tableExists(pool, '"authorization".scoped_records');
     if (!hasScopedRecords) {
@@ -611,6 +646,16 @@ $$;`);
       await applySqlFile(pool, '0070_receivable_collections.sql');
     }
 
+    const hasPurchaseOrderRequirement = await columnExists(
+      pool,
+      'pty',
+      'clients',
+      'purchase_order_requirement',
+    );
+    if (!hasPurchaseOrderRequirement) {
+      await applySqlFile(pool, '0071_operational_authority_gates.sql');
+    }
+
     const hasOnePublishedIndex = await pool.query<{ exists: boolean }>(
       `SELECT EXISTS (
          SELECT 1
@@ -627,6 +672,13 @@ $$;`);
         WHERE status = 'PUBLISHED'
       `);
     }
+
+    const hasAccessRoles = await tableExists(pool, '"authorization".access_roles');
+    if (!hasAccessRoles) {
+      await applySqlFile(pool, '0074_access_administration.sql');
+    }
+
+    await syncDrizzleJournal(pool);
   } finally {
     await pool.end();
   }
