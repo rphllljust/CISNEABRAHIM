@@ -55,6 +55,10 @@ import { PurchaseOrdersListPage } from './purchase-orders/pages/PurchaseOrdersLi
 import { PurchaseOrderCreatePage } from './purchase-orders/pages/PurchaseOrderCreatePage';
 import { PurchaseOrderDetailPage } from './purchase-orders/pages/PurchaseOrderDetailPage';
 import { PurchaseOrderEditPage } from './purchase-orders/pages/PurchaseOrderEditPage';
+import { ContractsRoute } from './contracts/ContractsRoute';
+import { ContractsListPage } from './contracts/pages/ContractsListPage';
+import { ContractsCreatePage } from './contracts/pages/ContractsCreatePage';
+import { ContractsDetailPage } from './contracts/pages/ContractsDetailPage';
 import { OperationalDashboardPage } from './dashboard/pages/OperationalDashboardPage';
 import { AlertCenterPage } from './alerts/pages/AlertCenterPage';
 import { SearchResultsPage } from './search/pages/SearchResultsPage';
@@ -404,6 +408,30 @@ export function App() {
                   <PurchaseOrdersRoute>
                     <PurchaseOrderDetailPage />
                   </PurchaseOrdersRoute>
+                }
+              />
+              <Route
+                path="/app/contracts"
+                element={
+                  <ContractsRoute>
+                    <ContractsListPage />
+                  </ContractsRoute>
+                }
+              />
+              <Route
+                path="/app/contracts/new"
+                element={
+                  <ContractsRoute>
+                    <ContractsCreatePage />
+                  </ContractsRoute>
+                }
+              />
+              <Route
+                path="/app/contracts/:contractId"
+                element={
+                  <ContractsRoute>
+                    <ContractsDetailPage />
+                  </ContractsRoute>
                 }
               />
               <Route

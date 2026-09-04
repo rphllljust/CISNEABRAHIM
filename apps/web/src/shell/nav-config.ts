@@ -49,6 +49,12 @@ export const SHELL_NAV_GROUPS: ShellNavGroup[] = [
         capabilityId: 'commercial:purchase-order:list',
         accessCheck: 'purchase-order-list',
       },
+      {
+        id: 'contracts',
+        label: 'Contratos',
+        path: '/app/contracts',
+        capabilityId: 'commercial:contract:list',
+      },
     ],
   },
   {
@@ -428,6 +434,8 @@ const STATIC_ROUTE_LABELS: Record<string, string> = {
   '/app/proposals/new': 'Nova proposta',
   '/app/purchase-orders': 'Pedidos de compra',
   '/app/purchase-orders/new': 'Novo pedido de compra',
+  '/app/contracts': 'Contratos',
+  '/app/contracts/new': 'Novo contrato',
   '/app/billing': 'Faturamento interno',
   '/app/finance': 'Visão Geral',
   '/app/finance/receivables': 'Contas a Receber',
