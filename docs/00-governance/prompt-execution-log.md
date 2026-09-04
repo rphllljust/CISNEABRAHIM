@@ -11418,3 +11418,29 @@ NOTES:
   Commits Rodada 1 (por area) a seguir.
 WORKING TREE: DIRTY (WIP anterior mantido) | NEXT: proxima rodada do programa
 ```
+
+```text
+PROMPT: BUSINESS FRONTEND GAP CLOSURE — Rodada 2 (Operations)
+TITLE: Fechar lacunas criticas do dominio OPERATIONS na UI (convert SR->OS, ciclo de vida da OS, resubmit de medicao)
+STARTED_AT: 2026-09-04T12:05:00-04:00
+FINISHED_AT: 2026-09-04T12:50:00-04:00
+STATUS: PASS (Rodada 2; programa ativo — proximas rodadas por dominio)
+CLASSIFICATION: Fechamento frontend-only com contratos/endpoints existentes; sem regra de negocio/endpoint/capability novos; /app/access-admin intocado.
+SCOPE:
+  - convert SR aprovada -> OS: client convertServiceRequest (POST /requests/service-requests/:id/convert, body {rowVersion}); botao 'Converter em OS' em ServiceRequestDetailPage (gate APPROVED && !convertedServiceOrderId) com navegacao para /app/service-orders/:convertedId/planning.
+  - Ciclo de vida da OS na lista: clients prepare/release/cancel(rowVersion+cancellationReason)/reopen(rowVersion+reopenReason); botoes por status (DRAFT->Preparar, PREPARED->Liberar, DRAFT/PREPARED/RELEASED->Cancelar c/ motivo, CANCELLED/COMPLETED->Reabrir c/ motivo); rowVersion adicionado ao tipo ServiceOrderSummary (servidor ja devolve).
+  - Medicao REJECTED: client resubmitMeasurement (POST .../measurements/:id/resubmit {rowVersion}); acao 'Reenviar medicao' com gate REJECTED + capability canUpdate.
+RESULT:
+  MISSING CRITICAL PAGES (Operations): convert SR->OS 0, ciclo OS 0, resubmit 0 — fechados.
+  BROKEN (Operations): dead-end de medicao e pipeline aprovado->OS agora navegaveis pela UI.
+QUALITY GATES (Rodada 2):
+  typecheck web: exit 0 (normal e tsc -b --force)
+  Page tests: ServiceOrdersListPage 8/8, ServiceOrderMeasurementPage 10/10, ServiceRequestDetailPage 4/4 (22/22)
+  E2E: service-orders-list 3/3, service-requests 1/1, service-order-measurement 4/4
+  build web: PASS (dist gerado; warning chunk size pre-existente)
+NOTES:
+  Payloads validados no backend (rowVersion/reasons obrigatorios por estado; REJECTED->DRAFT sem motivo).
+  Commits: feat(web) 28b47be; test(web) d4bc272.
+  Proxima rodada: Comercial (Contratos UI) e/ou Inventory/Procurement (gates PENDING_APPROVAL, TRANSFER/ADJUSTMENT, recebimento parcial).
+WORKING TREE: DIRTY (WIP anterior mantido) | NEXT: proxima rodada do programa
+```
