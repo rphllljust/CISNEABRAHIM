@@ -34,11 +34,13 @@ import { SearchModule } from './search/search.module';
 import { ReportsModule } from './reports/reports.module';
 import { ServiceOrdersModule } from './service-orders/service-orders.module';
 import { PeopleModule } from './people/people.module';
+import { IssuerRegistryModule } from './establishments/issuer-registry.module';
 import { FaultInjectionModule } from './platform/fault-injection/fault-injection.module';
 import { ReleaseScopeGuard } from './platform/release-scope/release-scope.guard';
+import { ModuleRegistryModule } from './platform/module-registry/module-registry.module';
 
 @Module({
-  imports: [FaultInjectionModule, SecurityModule, ObservabilityModule, HealthModule, AuditModule, AuthModule, AuthorizationModule, ClientsModule, SuppliersModule, PeopleModule, CatalogModule, CommercialModule, ProcurementModule, RequestsModule, ServiceOrdersModule, MeasurementsModule, BillingModule, FinanceModule, AccountingModule, FiscalModule, InventoryModule, PayrollModule, ResourcesModule, DocumentsModule, EventsModule, NotificationsModule, DashboardModule, AnalyticsModule, AlertsModule, SearchModule, ReportsModule, BackgroundJobsModule, OutboxModule, IntegrationsAclModule, IntegrationsInboxModule],
+  imports: [ModuleRegistryModule, FaultInjectionModule, SecurityModule, ObservabilityModule, HealthModule, AuditModule, AuthModule, AuthorizationModule, ClientsModule, SuppliersModule, PeopleModule, IssuerRegistryModule, CatalogModule, CommercialModule, ProcurementModule, RequestsModule, ServiceOrdersModule, MeasurementsModule, BillingModule, FinanceModule, AccountingModule, FiscalModule, InventoryModule, PayrollModule, ResourcesModule, DocumentsModule, EventsModule, NotificationsModule, DashboardModule, AnalyticsModule, AlertsModule, SearchModule, ReportsModule, BackgroundJobsModule, OutboxModule, IntegrationsAclModule, IntegrationsInboxModule],
   providers: [{ provide: APP_GUARD, useClass: ReleaseScopeGuard }],
 })
 export class AppModule {}
