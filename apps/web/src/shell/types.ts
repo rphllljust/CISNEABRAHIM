@@ -16,9 +16,19 @@ export type ShellNavAccessCheck =
   | 'finance-payable-list'
   | 'finance-treasury-list'
   | 'finance-reconciliation-read'
+  | 'finance-expense-read'
+  | 'finance-budget-read'
+  | 'finance-forecast-read'
   | 'fiscal-document-read'
   | 'fiscal-tax-read'
-  | 'accounting-journal-read';
+  | 'fiscal-period-read'
+  | 'accounting-journal-read'
+  | 'accounting-fixed-asset-read'
+  | 'inventory-read'
+  | 'payroll-read'
+  | 'procurement-read'
+  | 'supplier-read'
+  | 'access-admin';
 
 export type ShellNavItem = {
   id: string;

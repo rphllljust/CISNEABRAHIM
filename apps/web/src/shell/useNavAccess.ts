@@ -14,9 +14,17 @@ import {
   probeReceivableListAccess,
   probeReconciliationReadAccess,
   probeTreasuryListAccess,
+  probeExpenseReadAccess,
+  probeBudgetReadAccess,
+  probeForecastReadAccess,
 } from '../finance/api/finance-api';
-import { probeFiscalDocumentReadAccess, probeTaxReadAccess } from '../fiscal/api/fiscal-api';
-import { probeAccountingReadAccess } from '../accounting/api/accounting-api';
+import { probeFiscalDocumentReadAccess, probeFiscalPeriodReadAccess, probeTaxReadAccess } from '../fiscal/api/fiscal-api';
+import { probeAccountingReadAccess, probeFixedAssetReadAccess } from '../accounting/api/accounting-api';
+import { probeSupplierReadAccess } from '../suppliers/api/suppliers-api';
+import { probeProcurementReadAccess } from '../procurement/api/procurement-api';
+import { probeInventoryReadAccess } from '../inventory/api/inventory-api';
+import { probePayrollReadAccess } from '../payroll/api/payroll-api';
+import { probeAccessAdminAccess } from '../access-admin/api/access-admin-api';
 import { useAuth } from '../auth/context/AuthProvider';
 import { isReleaseModuleEnabled } from '../release-scope/feature-flags';
 import { SHELL_NAV_ITEMS } from './nav-config';
@@ -245,6 +253,39 @@ export function useNavAccess(): NavAccessState {
           continue;
         }
 
+        if (item.accessCheck === 'finance-expense-read') {
+          try {
+            nextAccess[item.id] = await probeExpenseReadAccess(controller.signal);
+          } catch {
+            if (!cancelled) {
+              nextAccess[item.id] = false;
+            }
+          }
+          continue;
+        }
+
+        if (item.accessCheck === 'finance-budget-read') {
+          try {
+            nextAccess[item.id] = await probeBudgetReadAccess(controller.signal);
+          } catch {
+            if (!cancelled) {
+              nextAccess[item.id] = false;
+            }
+          }
+          continue;
+        }
+
+        if (item.accessCheck === 'finance-forecast-read') {
+          try {
+            nextAccess[item.id] = await probeForecastReadAccess(controller.signal);
+          } catch {
+            if (!cancelled) {
+              nextAccess[item.id] = false;
+            }
+          }
+          continue;
+        }
+
         if (item.accessCheck === 'fiscal-document-read') {
           try {
             nextAccess[item.id] = await probeFiscalDocumentReadAccess(controller.signal);
@@ -267,9 +308,85 @@ export function useNavAccess(): NavAccessState {
           continue;
         }
 
+        if (item.accessCheck === 'fiscal-period-read') {
+          try {
+            nextAccess[item.id] = await probeFiscalPeriodReadAccess(controller.signal);
+          } catch {
+            if (!cancelled) {
+              nextAccess[item.id] = false;
+            }
+          }
+          continue;
+        }
+
         if (item.accessCheck === 'accounting-journal-read') {
           try {
             nextAccess[item.id] = await probeAccountingReadAccess(controller.signal);
+          } catch {
+            if (!cancelled) {
+              nextAccess[item.id] = false;
+            }
+          }
+          continue;
+        }
+
+        if (item.accessCheck === 'accounting-fixed-asset-read') {
+          try {
+            nextAccess[item.id] = await probeFixedAssetReadAccess(controller.signal);
+          } catch {
+            if (!cancelled) {
+              nextAccess[item.id] = false;
+            }
+          }
+          continue;
+        }
+
+        if (item.accessCheck === 'inventory-read') {
+          try {
+            nextAccess[item.id] = await probeInventoryReadAccess(controller.signal);
+          } catch {
+            if (!cancelled) {
+              nextAccess[item.id] = false;
+            }
+          }
+          continue;
+        }
+
+        if (item.accessCheck === 'payroll-read') {
+          try {
+            nextAccess[item.id] = await probePayrollReadAccess(controller.signal);
+          } catch {
+            if (!cancelled) {
+              nextAccess[item.id] = false;
+            }
+          }
+          continue;
+        }
+
+        if (item.accessCheck === 'procurement-read') {
+          try {
+            nextAccess[item.id] = await probeProcurementReadAccess(controller.signal);
+          } catch {
+            if (!cancelled) {
+              nextAccess[item.id] = false;
+            }
+          }
+          continue;
+        }
+
+        if (item.accessCheck === 'supplier-read') {
+          try {
+            nextAccess[item.id] = await probeSupplierReadAccess(controller.signal);
+          } catch {
+            if (!cancelled) {
+              nextAccess[item.id] = false;
+            }
+          }
+        }
+
+        if (item.accessCheck === 'access-admin') {
+          try {
+            nextAccess[item.id] = await probeAccessAdminAccess(controller.signal);
           } catch {
             if (!cancelled) {
               nextAccess[item.id] = false;

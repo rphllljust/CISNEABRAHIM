@@ -89,6 +89,25 @@ import {
   TrialBalancePage,
 } from './accounting/pages/PeriodReportPages';
 import { PeriodClosePage } from './accounting/pages/PeriodClosePage';
+import { FixedAssetsPage } from './accounting/pages/FixedAssetsPage';
+import { ExpensesPage } from './finance/pages/ExpensesPage';
+import { BudgetsPage } from './finance/pages/BudgetsPage';
+import { CashForecastPage } from './finance/pages/CashForecastPage';
+import { FiscalPeriodsPage } from './fiscal/pages/FiscalPeriodsPage';
+import { TaxAssessmentsPage } from './fiscal/pages/TaxAssessmentsPage';
+import { SuppliersRoute, SuppliersPage } from './suppliers/pages/SuppliersPage';
+import {
+  ProcurementRoute,
+  ProcurementHubPage,
+  PurchaseRequestPage,
+  PurchaseOrderPage,
+  SupplierInvoicePage,
+  ThreeWayMatchPage,
+} from './procurement/pages/ProcurementPages';
+import { InventoryRoute, InventoryPage } from './inventory/pages/InventoryPage';
+import { PayrollRoute, PayrollPage } from './payroll/pages/PayrollPage';
+import { AccessAdminRoute } from './access-admin/AccessAdminRoute';
+import { AccessAdminPage } from './access-admin/pages/AccessAdminPage';
 
 export function App() {
   return (
@@ -115,6 +134,14 @@ export function App() {
               <Route path="/app/alerts" element={<AlertCenterPage />} />
               <Route path="/app/search" element={<SearchResultsPage />} />
               <Route path="/app/reports" element={<ReportsPage />} />
+              <Route
+                path="/app/access-admin"
+                element={
+                  <AccessAdminRoute>
+                    <AccessAdminPage />
+                  </AccessAdminRoute>
+                }
+              />
               <Route
                 path="/app/platform"
                 element={
@@ -492,6 +519,46 @@ export function App() {
                 }
               />
               <Route
+                path="/app/finance/expenses/:expenseId"
+                element={
+                  <FinanceRoute access="expenses">
+                    <ExpensesPage />
+                  </FinanceRoute>
+                }
+              />
+              <Route
+                path="/app/finance/expenses"
+                element={
+                  <FinanceRoute access="expenses">
+                    <ExpensesPage />
+                  </FinanceRoute>
+                }
+              />
+              <Route
+                path="/app/finance/budgets/:budgetId"
+                element={
+                  <FinanceRoute access="budgets">
+                    <BudgetsPage />
+                  </FinanceRoute>
+                }
+              />
+              <Route
+                path="/app/finance/budgets"
+                element={
+                  <FinanceRoute access="budgets">
+                    <BudgetsPage />
+                  </FinanceRoute>
+                }
+              />
+              <Route
+                path="/app/finance/forecast"
+                element={
+                  <FinanceRoute access="forecast">
+                    <CashForecastPage />
+                  </FinanceRoute>
+                }
+              />
+              <Route
                 path="/app/fiscal/documents"
                 element={
                   <FiscalRoute access="documents">
@@ -520,6 +587,38 @@ export function App() {
                 element={
                   <FiscalRoute access="tax">
                     <FiscalTributosPage />
+                  </FiscalRoute>
+                }
+              />
+              <Route
+                path="/app/fiscal/periods/:periodId"
+                element={
+                  <FiscalRoute access="period">
+                    <FiscalPeriodsPage />
+                  </FiscalRoute>
+                }
+              />
+              <Route
+                path="/app/fiscal/periods"
+                element={
+                  <FiscalRoute access="period">
+                    <FiscalPeriodsPage />
+                  </FiscalRoute>
+                }
+              />
+              <Route
+                path="/app/fiscal/assessments/:assessmentId"
+                element={
+                  <FiscalRoute access="tax">
+                    <TaxAssessmentsPage />
+                  </FiscalRoute>
+                }
+              />
+              <Route
+                path="/app/fiscal/assessments"
+                element={
+                  <FiscalRoute access="tax">
+                    <TaxAssessmentsPage />
                   </FiscalRoute>
                 }
               />
@@ -593,6 +692,110 @@ export function App() {
                   <AccountingRoute>
                     <PeriodClosePage />
                   </AccountingRoute>
+                }
+              />
+              <Route
+                path="/app/accounting/fixed-assets/:registerId"
+                element={
+                  <AccountingRoute>
+                    <FixedAssetsPage />
+                  </AccountingRoute>
+                }
+              />
+              <Route
+                path="/app/accounting/fixed-assets"
+                element={
+                  <AccountingRoute>
+                    <FixedAssetsPage />
+                  </AccountingRoute>
+                }
+              />
+              <Route
+                path="/app/suppliers/:supplierId"
+                element={
+                  <SuppliersRoute>
+                    <SuppliersPage />
+                  </SuppliersRoute>
+                }
+              />
+              <Route
+                path="/app/suppliers"
+                element={
+                  <SuppliersRoute>
+                    <SuppliersPage />
+                  </SuppliersRoute>
+                }
+              />
+              <Route
+                path="/app/procurement/invoices/:invoiceId"
+                element={
+                  <ProcurementRoute>
+                    <SupplierInvoicePage />
+                  </ProcurementRoute>
+                }
+              />
+              <Route
+                path="/app/procurement/invoices"
+                element={
+                  <ProcurementRoute>
+                    <SupplierInvoicePage />
+                  </ProcurementRoute>
+                }
+              />
+              <Route
+                path="/app/procurement/matches/:matchId"
+                element={
+                  <ProcurementRoute>
+                    <ThreeWayMatchPage />
+                  </ProcurementRoute>
+                }
+              />
+              <Route
+                path="/app/procurement/requests/:requestId"
+                element={
+                  <ProcurementRoute>
+                    <PurchaseRequestPage />
+                  </ProcurementRoute>
+                }
+              />
+              <Route
+                path="/app/procurement/orders/:orderId"
+                element={
+                  <ProcurementRoute>
+                    <PurchaseOrderPage />
+                  </ProcurementRoute>
+                }
+              />
+              <Route
+                path="/app/procurement"
+                element={
+                  <ProcurementRoute>
+                    <ProcurementHubPage />
+                  </ProcurementRoute>
+                }
+              />
+              <Route
+                path="/app/inventory"
+                element={
+                  <InventoryRoute>
+                    <InventoryPage />
+                  </InventoryRoute>
+                }
+              />
+              <Route
+                path="/app/payroll/periods/:periodId"
+                element={
+                  <PayrollRoute>
+                    <PayrollPage />
+                  </PayrollRoute>
+                }
+              />
+              <Route
+                path="/app/payroll"
+                element={
+                  <PayrollRoute>
+                    <PayrollPage />
+                  </PayrollRoute>
                 }
               />
               <Route
