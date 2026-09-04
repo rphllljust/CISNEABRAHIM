@@ -311,6 +311,13 @@ export class TreasuryAccessService {
       id: from.id,
       unitId: from.unit_id,
     });
+    // Reversing a transfer writes compensating legs to both accounts
+    // (credit restoring the source, debit unwinding the destination), so the
+    // actor must be authorized on the destination as well — mirroring transfer().
+    await this.authz.assertTreasuryAction(actor, AUTHZ_ACTIONS.FinanceTreasuryReverse, {
+      id: to.id,
+      unitId: to.unit_id,
+    });
     try {
       const validated = validateReverseTreasuryInput(input);
       const reversed = await this.repository.reverseTransfer({
