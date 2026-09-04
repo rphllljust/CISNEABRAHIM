@@ -11626,3 +11626,18 @@ COMMIT: DONE (feat(finance) x4: engine, collector, per-fact posting, integracao 
 WORKING TREE: DIRTY (WIP pre-existente preservado)
 NEXT: STOP
 ```
+```text
+PROMPT: ENTERPRISE MODULE REGISTRY
+TITLE: Registry servidor-side dos modulos reais do Cisne (moduleCode/name/capabilities/resources/availableFeatures/routes/status)
+STATUS: PASS
+CLASSIFICATION: Interpretacao de engenharia. Projecao sobre o catalogo de autorizacao existente (AUTHZ_ACTIONS/AUTHZ_RESOURCE_TYPES) + release-scope feature flags; nenhum catalogo duplicado; nenhuma regra de negocio; frontend pode consultar futuramente (contrato estavel GET /api/v1/modules/registry).
+SCOPE:
+  - platform/module-registry/module-registry.ts (definicoes canonicas + build/status fail-closed + assertRegistryDefinitions rejeita capability/recurso inventado), module-registry.controller.ts (JwtAuthGuard; lista e :moduleCode; desconhecido -> 404), ModuleRegistryModule importado no AppModule.
+RESULT:
+  - MODULE REGISTRY: PASS (unit 5/5; e2e 4/4: 401 sem token, lista 200, moduleCode conhecido 200 / desconhecido 404, gated desativado com flag off)
+  - CLIENT-INVENTED MODULES: 0 (capabilities/resources derivados do catalogo authz; capability inventada rejeitada em assertRegistryDefinitions)
+QUALITY GATES: typecheck api PASS; eslint limpo
+COMMIT: DONE (feat(platform): enterprise module registry ... 909d63f)
+WORKING TREE: DIRTY (WIP pre-existente preservado)
+NEXT: STOP
+```
