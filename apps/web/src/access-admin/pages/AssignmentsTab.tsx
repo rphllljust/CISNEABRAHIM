@@ -12,6 +12,7 @@ import { mapAccessAdminErrorToMessage } from '../api/access-admin-error-messages
 import { useAsyncResource } from '../hooks/useAccessAdminData';
 import type { AccessRole, RoleAssignment } from '../types';
 import {
+  Alert,
   Button,
   ConfirmAction,
   EmptyState,
@@ -186,6 +187,13 @@ export function AssignmentsTab() {
 
   return (
     <div>
+      <div className="mb-4">
+        <Alert tone="info">
+          Roles ACTIVE com atribuições são ENFORCED pelo PDP: revogar uma atribuição remove
+          o acesso imediatamente nas próximas decisões do PDP.
+        </Alert>
+      </div>
+
       <div className="mb-6 rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-900/5">
         <h2 className="text-sm font-semibold text-gray-900">Atribuir role</h2>
         <p className="mt-1 text-sm text-gray-500">

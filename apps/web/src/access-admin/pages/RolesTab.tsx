@@ -12,6 +12,7 @@ import { mapAccessAdminErrorToMessage } from '../api/access-admin-error-messages
 import { useAsyncResource } from '../hooks/useAccessAdminData';
 import { AccessAdminErrorCodes, type AccessRole } from '../types';
 import {
+  Alert,
   Badge,
   Button,
   EmptyState,
@@ -61,6 +62,14 @@ export function RolesTab() {
         <Button type="button" onClick={() => setModal({ mode: 'create' })}>
           Nova role
         </Button>
+      </div>
+
+      <div className="mb-4">
+        <Alert tone="info">
+          Roles ACTIVE com atribuições são ENFORCED pelo PDP: alterar uma role
+          (capacidades ou status) altera a permissão em tempo de execução nas próximas
+          decisões do PDP.
+        </Alert>
       </div>
 
       {roles.length === 0 ? (

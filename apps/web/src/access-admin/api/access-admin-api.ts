@@ -2,7 +2,13 @@ import { getApiBaseUrl, isNetworkError } from '../../auth/api/auth-api';
 import { tokenStore } from '../../auth/storage/token-store';
 import type {
   AccessRole,
+  ApprovalMatrixInfo,
+  ApprovalMatrixRule,
+  ApprovalRoleAssignment,
   CapabilityEntry,
+  GrantInfo,
+  IdentityInfo,
+  ResourceEntry,
   RoleAssignment,
   ScopeEntry,
   SodConflict,
@@ -35,10 +41,13 @@ type AccessAdminErrorBody = {
 };
 
 const BASE = '/api/v1/authz/access-admin';
+const GRANTS_BASE = '/api/v1/authz/grants';
+const APPROVAL_MATRICES_BASE = '/api/v1/authz/approval-matrices';
 
 export type AccessAdminCatalog = {
   capabilities: CapabilityEntry[];
   scopes: ScopeEntry[];
+  resources: ResourceEntry[];
 };
 
 export type CreateRoleInput = {
@@ -198,4 +207,156 @@ export async function listSodConflicts(signal?: AbortSignal): Promise<SodConflic
     headers: authHeaders(),
     signal,
   });
+}
+
+export type ListGrantsInput = {
+  identityId?: string;
+  includeRevoked?: boolean;
+};
+
+/**
+ * Concessões diretas decididas pelo PDP. `includeRevoked` exige `true` explícito
+ * no servidor (o padrão exclui concessões revogadas).
+ */
+export async function listGrants(
+  input: ListGrantsInput = {},
+  signal?: AbortSignal,
+): Promise<GrantInfo[]> {
+  const params = new URLSearchParams();
+  if (input.identityId) {
+    params.set('identityId', input.identityId);
+  }
+  if (input.includeRevoked) {
+    params.set('includeRevoked', 'true');
+  }
+  const query = params.toString();
+  return requestJson<GrantInfo[]>(`${BASE}/grants${query ? `?${query}` : ''}`, {
+    method: 'GET',
+    headers: authHeaders(),
+    signal,
+  });
+}
+
+export type ListIdentitiesInput = {
+  query?: string;
+  status?: string;
+  limit?: number;
+};
+
+/** Catálogo de identidades (usuários). O servidor limita e normaliza os filtros. */
+export async function listIdentities(
+  input: ListIdentitiesInput = {},
+  signal?: AbortSignal,
+): Promise<IdentityInfo[]> {
+  const params = new URLSearchParams();
+  if (input.query) {
+    params.set('query', input.query);
+  }
+  if (input.status) {
+    params.set('status', input.status);
+  }
+  if (input.limit !== undefined) {
+    params.set('limit', String(input.limit));
+  }
+  const query = params.toString();
+  return requestJson<IdentityInfo[]>(`${BASE}/identities${query ? `?${query}` : ''}`, {
+    method: 'GET',
+    headers: authHeaders(),
+    signal,
+  });
+}
+
+/** Visão geral das matrizes de aprovação (RBAC financeiro). */
+export async function listApprovalMatrices(signal?: AbortSignal): Promise<ApprovalMatrixInfo[]> {
+  return requestJson<ApprovalMatrixInfo[]>(`${BASE}/approval-matrices`, {
+    method: 'GET',
+    headers: authHeaders(),
+    signal,
+  });
+}
+
+/** Regras de uma versão (PUBLISHED ou DRAFT) de uma matriz de aprovação. */
+export async function listApprovalMatrixRules(
+  matrixId: string,
+  versionStatus: 'PUBLISHED' | 'DRAFT' = 'PUBLISHED',
+  signal?: AbortSignal,
+): Promise<ApprovalMatrixRule[]> {
+  return requestJson<ApprovalMatrixRule[]>(
+    `${BASE}/approval-matrices/${encodeURIComponent(matrixId)}/rules?versionStatus=${versionStatus}`,
+    {
+      method: 'GET',
+      headers: authHeaders(),
+      signal,
+    },
+  );
+}
+
+/** Atribuições de roles de aprovação financeira (opcionalmente por identidade). */
+export async function listApprovalRoleAssignments(
+  identityId?: string,
+  signal?: AbortSignal,
+): Promise<ApprovalRoleAssignment[]> {
+  const query = identityId ? `?identityId=${encodeURIComponent(identityId)}` : '';
+  return requestJson<ApprovalRoleAssignment[]>(`${BASE}/approval-role-assignments${query}`, {
+    method: 'GET',
+    headers: authHeaders(),
+    signal,
+  });
+}
+
+export type CreateGrantInput = {
+  identityId: string;
+  action: string;
+  resourceType: string;
+  resourceId?: string;
+  scopeType: string;
+  validUntil?: string;
+};
+
+/**
+ * Cria uma concessão direta (`POST /authz/grants`). O servidor valida ação,
+ * recurso, escopo, self-escalation e a âncora — o cliente apenas envia os códigos.
+ */
+export async function createGrant(input: CreateGrantInput): Promise<GrantInfo> {
+  return requestJson<GrantInfo>(GRANTS_BASE, {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify(input),
+  });
+}
+
+/** Revoga uma concessão ativa (`POST /authz/grants/:grantId/revoke`). */
+export async function revokeGrant(grantId: string): Promise<{ success: boolean }> {
+  return requestJson<{ success: boolean }>(
+    `${GRANTS_BASE}/${encodeURIComponent(grantId)}/revoke`,
+    {
+      method: 'POST',
+      headers: jsonHeaders(),
+      body: JSON.stringify({}),
+    },
+  );
+}
+
+export type AssignApprovalRoleInput = {
+  identityId: string;
+  roleCode: string;
+  scopeType: string;
+  scopeAnchor?: string;
+};
+
+/**
+ * Atribui uma role de aprovação financeira (`POST /authz/approval-matrices/role-assignments`).
+ * Atribuição duplicada retorna o registro existente (200) — o servidor decide.
+ */
+export async function assignApprovalRole(
+  input: AssignApprovalRoleInput,
+): Promise<{ id: string; identityId: string; roleCode: string }> {
+  return requestJson<{ id: string; identityId: string; roleCode: string }>(
+    `${APPROVAL_MATRICES_BASE}/role-assignments`,
+    {
+      method: 'POST',
+      headers: jsonHeaders(),
+      body: JSON.stringify(input),
+    },
+  );
 }
