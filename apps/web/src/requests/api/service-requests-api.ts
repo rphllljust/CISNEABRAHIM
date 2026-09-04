@@ -206,7 +206,7 @@ export async function updateServiceRequestDraft(
 
 async function transitionServiceRequest(
   serviceRequestId: string,
-  action: 'submit' | 'review' | 'approve' | 'reject' | 'cancel',
+  action: 'submit' | 'review' | 'approve' | 'reject' | 'cancel' | 'convert',
   body: Record<string, unknown>,
   signal?: AbortSignal,
 ): Promise<ServiceRequestDetail> {
@@ -277,6 +277,14 @@ export function cancelServiceRequest(
     { rowVersion, cancellationReason },
     signal,
   );
+}
+
+export function convertServiceRequest(
+  serviceRequestId: string,
+  rowVersion: number,
+  signal?: AbortSignal,
+): Promise<ServiceRequestDetail> {
+  return transitionServiceRequest(serviceRequestId, 'convert', { rowVersion }, signal);
 }
 
 export type ServiceRequestCapabilities = {

@@ -116,6 +116,7 @@ export type ServiceOrderSummary = {
   clientSnapshot: Record<string, unknown> | null;
   description: string | null;
   location?: Record<string, unknown>;
+  rowVersion: number;
   updatedAt: string;
 };
 
@@ -179,6 +180,68 @@ export async function getServiceOrder(
   return requestJson<ServiceOrderDetail>(`/api/v1/service-orders/${serviceOrderId}`, {
     method: 'GET',
     headers: authHeaders(),
+    signal,
+  });
+}
+
+export type CancelServiceOrderPayload = {
+  rowVersion: number;
+  cancellationReason: string;
+};
+
+export type ReopenServiceOrderPayload = {
+  rowVersion: number;
+  reopenReason: string;
+};
+
+export function prepareServiceOrder(
+  serviceOrderId: string,
+  rowVersion: number,
+  signal?: AbortSignal,
+): Promise<ServiceOrderDetail> {
+  return requestJson<ServiceOrderDetail>(`/api/v1/service-orders/${serviceOrderId}/prepare`, {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify({ rowVersion }),
+    signal,
+  });
+}
+
+export function releaseServiceOrder(
+  serviceOrderId: string,
+  rowVersion: number,
+  signal?: AbortSignal,
+): Promise<ServiceOrderDetail> {
+  return requestJson<ServiceOrderDetail>(`/api/v1/service-orders/${serviceOrderId}/release`, {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify({ rowVersion }),
+    signal,
+  });
+}
+
+export function cancelServiceOrder(
+  serviceOrderId: string,
+  payload: CancelServiceOrderPayload,
+  signal?: AbortSignal,
+): Promise<ServiceOrderDetail> {
+  return requestJson<ServiceOrderDetail>(`/api/v1/service-orders/${serviceOrderId}/cancel`, {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify(payload),
+    signal,
+  });
+}
+
+export function reopenServiceOrder(
+  serviceOrderId: string,
+  payload: ReopenServiceOrderPayload,
+  signal?: AbortSignal,
+): Promise<ServiceOrderDetail> {
+  return requestJson<ServiceOrderDetail>(`/api/v1/service-orders/${serviceOrderId}/reopen`, {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify(payload),
     signal,
   });
 }

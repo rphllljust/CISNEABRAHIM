@@ -7,6 +7,7 @@ import {
   createMeasurement,
   getMeasurement,
   rejectMeasurement,
+  resubmitMeasurement,
   startMeasurementReview,
   submitMeasurement,
 } from '../api/measurement-api';
@@ -247,6 +248,8 @@ export function ServiceOrderMeasurementPage() {
     capabilities.canApprove && measurement?.status === MEASUREMENT_STATUSES.UnderReview;
   const canReject =
     capabilities.canReject && measurement?.status === MEASUREMENT_STATUSES.UnderReview;
+  const canResubmit =
+    capabilities.canUpdate && measurement?.status === MEASUREMENT_STATUSES.Rejected;
 
   return (
     <main id="main-content" className="shell-page measurement-page">
@@ -377,6 +380,23 @@ export function ServiceOrderMeasurementPage() {
                   onClick={() => setRejectOpen(true)}
                 >
                   Rejeitar…
+                </button>
+              ) : null}
+              {canResubmit ? (
+                <button
+                  type="button"
+                  disabled={actionsBlocked}
+                  onClick={() =>
+                    void runTransition(
+                      () =>
+                        resubmitMeasurement(serviceOrderId, measurement.id, {
+                          rowVersion: measurement.rowVersion,
+                        }),
+                      'Medição reenviada. Revise os itens antes de submeter novamente.',
+                    )
+                  }
+                >
+                  Reenviar medição
                 </button>
               ) : null}
             </div>

@@ -219,6 +219,18 @@ export async function rejectMeasurement(
   });
 }
 
+export async function resubmitMeasurement(
+  serviceOrderId: string,
+  measurementId: string,
+  body: RowVersionCommand,
+): Promise<MeasurementDetail> {
+  return requestJson<MeasurementDetail>(measurementPath(serviceOrderId, `/${measurementId}/resubmit`), {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify(body),
+  });
+}
+
 async function probeMutation(
   path: string,
   method: string,

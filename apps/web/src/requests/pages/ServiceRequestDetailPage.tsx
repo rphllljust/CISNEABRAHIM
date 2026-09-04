@@ -1,10 +1,11 @@
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useCallback, useEffect, useId, useState } from 'react';
 import { DocumentManagementPanel } from '../../documents/components/DocumentManagementPanel';
 import { ConfirmDialog } from '../../clients/components/ConfirmDialog';
 import {
   approveServiceRequest,
   cancelServiceRequest,
+  convertServiceRequest,
   getServiceRequest,
   rejectServiceRequest,
   ServiceRequestsApiError,
@@ -38,11 +39,13 @@ type DetailState =
 
 export function ServiceRequestDetailPage() {
   const { serviceRequestId = '' } = useParams();
+  const navigate = useNavigate();
   const reasonId = useId();
   const { identityId } = useAuth();
   const { capabilities } = useServiceRequestCapabilities();
   const [state, setState] = useState<DetailState>({ phase: 'loading' });
   const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [versionConflict, setVersionConflict] = useState(false);
   const [actionSubmitting, setActionSubmitting] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
@@ -55,6 +58,7 @@ export function ServiceRequestDetailPage() {
   const reload = useCallback(async () => {
     setState({ phase: 'loading' });
     setActionError(null);
+    setActionSuccess(null);
     setVersionConflict(false);
     try {
       const detail = await getServiceRequest(serviceRequestId);
@@ -90,6 +94,7 @@ export function ServiceRequestDetailPage() {
     }
     setActionSubmitting(true);
     setActionError(null);
+    setActionSuccess(null);
     try {
       await action();
       await reload();
@@ -101,6 +106,36 @@ export function ServiceRequestDetailPage() {
         error instanceof ServiceRequestsApiError
           ? mapRequestErrorToMessage(error.code, error.status)
           : 'Não foi possível concluir a operação.',
+      );
+    } finally {
+      setActionSubmitting(false);
+    }
+  }
+
+  async function convertToServiceOrder(): Promise<void> {
+    if (state.phase !== 'ready' || actionSubmitting) {
+      return;
+    }
+    setActionSubmitting(true);
+    setActionError(null);
+    setActionSuccess(null);
+    try {
+      const detail = await convertServiceRequest(serviceRequest.id, serviceRequest.rowVersion);
+      const convertedServiceOrderId = detail.serviceRequest.convertedServiceOrderId;
+      if (convertedServiceOrderId) {
+        navigate(`/app/service-orders/${convertedServiceOrderId}/planning`);
+        return;
+      }
+      setState({ phase: 'ready', detail });
+      setActionSuccess('Solicitação convertida em ordem de serviço.');
+    } catch (error) {
+      if (error instanceof ServiceRequestsApiError && error.kind === 'version_conflict') {
+        setVersionConflict(true);
+      }
+      setActionError(
+        error instanceof ServiceRequestsApiError
+          ? mapRequestErrorToMessage(error.code, error.status)
+          : 'Não foi possível converter a solicitação.',
       );
     } finally {
       setActionSubmitting(false);
@@ -170,6 +205,9 @@ export function ServiceRequestDetailPage() {
     SERVICE_REQUEST_STATUSES.Approved,
   ]);
   const canCancel = capabilities.canCancel && cancellableStatuses.has(serviceRequest.status);
+  const canConvert =
+    serviceRequest.status === SERVICE_REQUEST_STATUSES.Approved &&
+    !serviceRequest.convertedServiceOrderId;
 
   return (
     <main id="main-content" className="shell-page requests-page">
@@ -238,12 +276,26 @@ export function ServiceRequestDetailPage() {
               Cancelar
             </button>
           ) : null}
+          {canConvert ? (
+            <button
+              type="button"
+              disabled={actionSubmitting}
+              onClick={() => void convertToServiceOrder()}
+            >
+              Converter em OS
+            </button>
+          ) : null}
         </div>
       </header>
 
       {actionError ? (
         <p className="form-error" role="alert">
           {actionError}
+        </p>
+      ) : null}
+      {actionSuccess ? (
+        <p className="form-notice" role="status">
+          {actionSuccess}
         </p>
       ) : null}
       {versionConflict ? <VersionConflictNotice onReload={() => void reload()} /> : null}

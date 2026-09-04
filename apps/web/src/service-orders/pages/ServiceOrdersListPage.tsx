@@ -1,6 +1,14 @@
 import { useSearchParams } from 'react-router-dom';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { listServiceOrders, ServiceOrdersApiError, type ServiceOrderSummary } from '../api/service-orders-api';
+import { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import {
+  cancelServiceOrder,
+  listServiceOrders,
+  prepareServiceOrder,
+  releaseServiceOrder,
+  reopenServiceOrder,
+  ServiceOrdersApiError,
+  type ServiceOrderSummary,
+} from '../api/service-orders-api';
 import { mapServiceOrdersErrorToMessage } from '../api/service-orders-error-messages';
 import { ServiceOrderStatusBadge } from '../components/ServiceOrderStatusBadge';
 import {
@@ -8,7 +16,7 @@ import {
   SERVICE_ORDER_LIST_EVENTS,
   SERVICE_ORDER_LIST_FILTERS,
 } from '../types/service-order-list.types';
-import { SERVICE_ORDER_STATUSES } from '../types/service-order.types';
+import { SERVICE_ORDER_STATUSES, type ServiceOrderStatus } from '../types/service-order.types';
 import {
   buildServiceOrderListSearchParams,
   EMPTY_SERVICE_ORDER_LIST_PARAMS,
@@ -21,6 +29,7 @@ import {
   formatServiceOrderStatus,
 } from '../utils/service-order-labels';
 import { Button } from '../../ui/Button';
+import { ConfirmAction } from '../../ui/ConfirmAction';
 import {
   DataTable,
   DataTableBody,
@@ -43,6 +52,17 @@ import {
 } from '../../ui/module-layout';
 
 const PAGE_SIZE = 20;
+
+const CANCELLABLE_SERVICE_ORDER_STATUSES = new Set<ServiceOrderStatus>([
+  SERVICE_ORDER_STATUSES.Draft,
+  SERVICE_ORDER_STATUSES.Prepared,
+  SERVICE_ORDER_STATUSES.Released,
+]);
+
+const REOPENABLE_SERVICE_ORDER_STATUSES = new Set<ServiceOrderStatus>([
+  SERVICE_ORDER_STATUSES.Cancelled,
+  SERVICE_ORDER_STATUSES.Completed,
+]);
 
 type ListState =
   | { phase: 'loading' }
@@ -73,6 +93,17 @@ export function ServiceOrdersListPage() {
   const filters = useMemo(() => parseServiceOrderListParams(searchParams), [searchParams]);
   const offset = Number(searchParams.get('offset') ?? '0');
   const [listState, setListState] = useState<ListState>({ phase: 'loading' });
+  const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
+  const [rowFeedback, setRowFeedback] = useState<{
+    tone: 'error' | 'success';
+    message: string;
+  } | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    kind: 'cancel' | 'reopen';
+    order: ServiceOrderSummary;
+  } | null>(null);
+  const [dialogReason, setDialogReason] = useState('');
+  const confirmReasonId = useId();
 
   const updateFilters = useCallback(
     (next: Partial<ServiceOrderListParams>) => {
@@ -135,6 +166,59 @@ export function ServiceOrdersListPage() {
     void loadPage(offset, filters, controller.signal);
     return () => controller.abort();
   }, [filters, loadPage, offset]);
+
+  const runLifecycleAction = useCallback(
+    async (order: ServiceOrderSummary, run: () => Promise<unknown>, successMessage: string) => {
+      if (pendingOrderId) {
+        return;
+      }
+      setPendingOrderId(order.id);
+      setRowFeedback(null);
+      try {
+        await run();
+        setRowFeedback({ tone: 'success', message: successMessage });
+        await loadPage(offset, filters);
+      } catch (error) {
+        setRowFeedback({
+          tone: 'error',
+          message:
+            error instanceof ServiceOrdersApiError
+              ? mapServiceOrdersErrorToMessage(error.code, error.status)
+              : 'Não foi possível concluir a operação.',
+        });
+      } finally {
+        setPendingOrderId(null);
+      }
+    },
+    [loadPage, offset, filters, pendingOrderId],
+  );
+
+  function openConfirmDialog(
+    kind: 'cancel' | 'reopen',
+    order: ServiceOrderSummary,
+  ): void {
+    setDialogReason('');
+    setConfirmDialog({ kind, order });
+  }
+
+  function confirmLifecycleAction(): void {
+    if (!confirmDialog) {
+      return;
+    }
+    const reason = dialogReason.trim();
+    const { kind, order } = confirmDialog;
+    setConfirmDialog(null);
+    setDialogReason('');
+    const action =
+      kind === 'cancel'
+        ? cancelServiceOrder(order.id, { rowVersion: order.rowVersion, cancellationReason: reason })
+        : reopenServiceOrder(order.id, { rowVersion: order.rowVersion, reopenReason: reason });
+    const message =
+      kind === 'cancel'
+        ? `Ordem de serviço ${order.orderNumber} cancelada.`
+        : `Ordem de serviço ${order.orderNumber} reaberta.`;
+    void runLifecycleAction(order, () => action, message);
+  }
 
   const filterDescription = resolveFilterDescription(filters);
   const pageNumber = Math.floor(offset / PAGE_SIZE) + 1;
@@ -311,6 +395,19 @@ export function ServiceOrdersListPage() {
         ) : null}
       </FilterCard>
 
+      {rowFeedback ? (
+        <p
+          role={rowFeedback.tone === 'error' ? 'alert' : 'status'}
+          className={
+            rowFeedback.tone === 'error'
+              ? 'mb-6 rounded-md bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-500/20 ring-inset'
+              : 'mb-6 rounded-md bg-green-50 px-4 py-3 text-sm text-green-700 ring-1 ring-green-500/20 ring-inset'
+          }
+        >
+          {rowFeedback.message}
+        </p>
+      ) : null}
+
       {items.length === 0 ? (
         <p className="text-sm text-gray-500" role="status">
           Nenhuma ordem de serviço encontrada para os filtros selecionados.
@@ -352,6 +449,63 @@ export function ServiceOrdersListPage() {
                     <ModuleTableLink to={`/app/service-orders/${item.id}/measurement`}>
                       Medição
                     </ModuleTableLink>
+                    {item.status === SERVICE_ORDER_STATUSES.Draft ? (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        disabled={pendingOrderId === item.id}
+                        onClick={() =>
+                          void runLifecycleAction(
+                            item,
+                            () => prepareServiceOrder(item.id, item.rowVersion),
+                            `Ordem de serviço ${item.orderNumber} preparada.`,
+                          )
+                        }
+                      >
+                        Preparar
+                      </Button>
+                    ) : null}
+                    {item.status === SERVICE_ORDER_STATUSES.Prepared ? (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        disabled={pendingOrderId === item.id}
+                        onClick={() =>
+                          void runLifecycleAction(
+                            item,
+                            () => releaseServiceOrder(item.id, item.rowVersion),
+                            `Ordem de serviço ${item.orderNumber} liberada.`,
+                          )
+                        }
+                      >
+                        Liberar
+                      </Button>
+                    ) : null}
+                    {CANCELLABLE_SERVICE_ORDER_STATUSES.has(item.status) ? (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        disabled={pendingOrderId === item.id}
+                        onClick={() => openConfirmDialog('cancel', item)}
+                      >
+                        Cancelar
+                      </Button>
+                    ) : null}
+                    {REOPENABLE_SERVICE_ORDER_STATUSES.has(item.status) ? (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        disabled={pendingOrderId === item.id}
+                        onClick={() => openConfirmDialog('reopen', item)}
+                      >
+                        Reabrir
+                      </Button>
+                    ) : null}
+                    {pendingOrderId === item.id ? (
+                      <span className="text-sm text-gray-500" role="status">
+                        Processando…
+                      </span>
+                    ) : null}
                   </nav>
                 </DataTableCell>
               </DataTableRow>
@@ -369,6 +523,46 @@ export function ServiceOrdersListPage() {
         }
         onNext={() => setSearchParams(buildServiceOrderListSearchParams(filters, offset + PAGE_SIZE))}
       />
+
+      <ConfirmAction
+        open={confirmDialog !== null}
+        title={
+          confirmDialog?.kind === 'cancel'
+            ? 'Cancelar ordem de serviço'
+            : 'Reabrir ordem de serviço'
+        }
+        description={
+          confirmDialog?.kind === 'cancel'
+            ? `Informe o motivo para cancelar a OS ${confirmDialog?.order.orderNumber ?? ''}. A ordem poderá ser reaberta posteriormente com justificativa.`
+            : `Informe o motivo para reabrir a OS ${confirmDialog?.order.orderNumber ?? ''}. A ordem voltará ao fluxo operacional.`
+        }
+        confirmLabel={
+          confirmDialog?.kind === 'cancel' ? 'Confirmar cancelamento' : 'Confirmar reabertura'
+        }
+        confirmVariant={confirmDialog?.kind === 'cancel' ? 'danger' : 'primary'}
+        confirmDisabled={
+          !dialogReason.trim() || pendingOrderId === confirmDialog?.order.id
+        }
+        loading={pendingOrderId === confirmDialog?.order.id}
+        onCancel={() => {
+          setConfirmDialog(null);
+          setDialogReason('');
+        }}
+        onConfirm={() => void confirmLifecycleAction()}
+      >
+        <div>
+          <label className={filterLabelClass} htmlFor={confirmReasonId}>
+            {confirmDialog?.kind === 'cancel' ? 'Motivo do cancelamento' : 'Motivo da reabertura'}
+          </label>
+          <textarea
+            id={confirmReasonId}
+            className={`${filterControlClass} mt-1`}
+            rows={3}
+            value={dialogReason}
+            onChange={(event) => setDialogReason(event.target.value)}
+          />
+        </div>
+      </ConfirmAction>
     </ModulePage>
   );
 }
