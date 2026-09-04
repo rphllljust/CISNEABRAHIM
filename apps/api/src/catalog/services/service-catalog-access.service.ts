@@ -303,6 +303,8 @@ export class ServiceCatalogAccessService {
       laborRequirements: input.laborRequirements ?? [],
       pricingModels: commercial.pricingModels,
       executionRequirements: resolveExecutionRequirementsCatalogAccess(input.executionRequirements),
+      billingEntitlementPolicy: input.billingEntitlementPolicy ?? null,
+      requiresPurchaseOrder: input.requiresPurchaseOrder ?? null,
       actorIdentityId: actor.identityId,
     });
 

@@ -5,9 +5,11 @@ import { CatalogHttpException } from '../errors/catalog-http.exception';
 import {
   assertAllowedUnits,
   assertArchetype,
+  assertBillingEntitlementPolicy,
   assertMeasurementMode,
   assertNonEmptyName,
   assertLaborRequirements,
+  assertRequiresPurchaseOrderFlag,
   assertResourceRequirements,
   assertCommercialCatalogInput,
   assertExecutionRequirementsCatalog,
@@ -360,6 +362,8 @@ export type CreateServiceDefinitionInput = {
   laborRequirements?: LaborRequirementInput[];
   pricingModels: PricingModelInput[];
   executionRequirements?: ExecutionRequirementInput[];
+  billingEntitlementPolicy?: string | null;
+  requiresPurchaseOrder?: boolean | null;
 };
 
 export function parseCreateServiceDefinitionInput(body: unknown): CreateServiceDefinitionInput {
@@ -391,6 +395,8 @@ export function parseCreateServiceDefinitionInput(body: unknown): CreateServiceD
     laborRequirements: assertLaborRequirements(laborRequirements),
     pricingModels,
     executionRequirements,
+    billingEntitlementPolicy: assertBillingEntitlementPolicy(record['billingEntitlementPolicy']),
+    requiresPurchaseOrder: assertRequiresPurchaseOrderFlag(record['requiresPurchaseOrder']),
   };
 }
 
@@ -408,6 +414,8 @@ export type CreateServiceDefinitionVersionInput = {
   pricingModels: PricingModelInput[];
   executionRequirements: ExecutionRequirementInput[];
   sourceVersion?: number;
+  billingEntitlementPolicy?: string | null;
+  requiresPurchaseOrder?: boolean | null;
 };
 
 export function parseCreateServiceDefinitionVersionInput(
@@ -440,6 +448,8 @@ export function parseCreateServiceDefinitionVersionInput(
     laborRequirements: assertLaborRequirements(laborRequirements),
     pricingModels,
     executionRequirements,
+    billingEntitlementPolicy: assertBillingEntitlementPolicy(record['billingEntitlementPolicy']),
+    requiresPurchaseOrder: assertRequiresPurchaseOrderFlag(record['requiresPurchaseOrder']),
     sourceVersion:
       sourceVersionRaw === undefined ? undefined : parsePositiveInt(sourceVersionRaw, 'sourceVersion'),
   };
@@ -459,6 +469,8 @@ export type UpdateDraftServiceDefinitionInput = {
   laborRequirements?: LaborRequirementInput[];
   pricingModels: PricingModelInput[];
   executionRequirements: ExecutionRequirementInput[];
+  billingEntitlementPolicy?: string | null;
+  requiresPurchaseOrder?: boolean | null;
 };
 
 export function parseUpdateDraftServiceDefinitionInput(
@@ -499,6 +511,8 @@ export function parseUpdateDraftServiceDefinitionInput(
     laborRequirements: assertLaborRequirements(laborRequirements),
     pricingModels,
     executionRequirements,
+    billingEntitlementPolicy: assertBillingEntitlementPolicy(record['billingEntitlementPolicy']),
+    requiresPurchaseOrder: assertRequiresPurchaseOrderFlag(record['requiresPurchaseOrder']),
   };
 }
 

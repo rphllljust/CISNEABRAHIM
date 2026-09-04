@@ -129,6 +129,8 @@ export class ServiceCatalogRepository {
               v.default_unit_code,
               v.measurement_mode,
               v.measurement_basis,
+              v.billing_entitlement_policy::text AS billing_entitlement_policy,
+              v.commercial_config,
               v.published_at,
               v.created_at,
               v.updated_at,
@@ -251,8 +253,10 @@ export class ServiceCatalogRepository {
            measurement_mode,
            measurement_basis,
            created_by_identity_id,
-           updated_by_identity_id
-         ) VALUES ($1, 1, 'DRAFT', $2, $3, $4, $5, $6, $7, $8, $9, $9)
+           updated_by_identity_id,
+           billing_entitlement_policy,
+           commercial_config
+         ) VALUES ($1, 1, 'DRAFT', $2, $3, $4, $5, $6, $7, $8, $9, $9, $10::cat.billing_entitlement_policy, $11::jsonb)
          RETURNING id`,
         [
           defRow.id,
@@ -264,6 +268,12 @@ export class ServiceCatalogRepository {
           input.measurementMode,
           input.measurementBasis,
           input.actorIdentityId,
+          input.billingEntitlementPolicy ?? null,
+          JSON.stringify({
+            schemaVersion: 1,
+            requiresPurchaseOrder: input.requiresPurchaseOrder ?? false,
+            requiresContractReference: false,
+          }),
         ],
       );
       const versionId = version.rows[0]?.id;
@@ -413,8 +423,10 @@ export class ServiceCatalogRepository {
            measurement_mode,
            measurement_basis,
            created_by_identity_id,
-           updated_by_identity_id
-         ) VALUES ($1, $2, 'DRAFT', $3, $4, $5, $6, $7, $8, $9, $10, $10)
+           updated_by_identity_id,
+           billing_entitlement_policy,
+           commercial_config
+         ) VALUES ($1, $2, 'DRAFT', $3, $4, $5, $6, $7, $8, $9, $10, $10, $11::cat.billing_entitlement_policy, $12::jsonb)
          RETURNING id`,
         [
           input.definitionId,
@@ -427,6 +439,12 @@ export class ServiceCatalogRepository {
           payload.measurementMode,
           payload.measurementBasis,
           input.actorIdentityId,
+          payload.billingEntitlementPolicy ?? null,
+          JSON.stringify({
+            schemaVersion: 1,
+            requiresPurchaseOrder: payload.requiresPurchaseOrder ?? false,
+            requiresContractReference: false,
+          }),
         ],
       );
       const versionId = version.rows[0]?.id;
@@ -513,6 +531,8 @@ export class ServiceCatalogRepository {
              default_unit_code = $7,
              measurement_mode = $8,
              measurement_basis = $9,
+             billing_entitlement_policy = $12::cat.billing_entitlement_policy,
+             commercial_config = $13::jsonb,
              updated_at = now(),
              updated_by_identity_id = $10
          WHERE id = $2
@@ -531,6 +551,12 @@ export class ServiceCatalogRepository {
           input.measurementBasis,
           input.actorIdentityId,
           input.versionNumber,
+          input.billingEntitlementPolicy ?? null,
+          JSON.stringify({
+            schemaVersion: 1,
+            requiresPurchaseOrder: input.requiresPurchaseOrder ?? false,
+            requiresContractReference: false,
+          }),
         ],
       );
 

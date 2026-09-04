@@ -156,6 +156,33 @@ export function ServiceDefinitionForm({
             </select>
           </div>
           <div className="form-field">
+            <label htmlFor={`${formId}-billing-policy`}>Política de faturamento</label>
+            <select
+              id={`${formId}-billing-policy`}
+              value={state.billingEntitlementPolicy}
+              onChange={(event) => update('billingEntitlementPolicy', event.target.value)}
+              disabled={readOnly}
+            >
+              {['MEASUREMENT_APPROVED', 'FIXED_PRICE', 'PERIODIC', 'MILESTONE'].map((policy) => (
+                <option key={policy} value={policy}>
+                  {policy}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="form-field">
+            <label htmlFor={`${formId}-requires-po`} className="inline-check">
+              <input
+                id={`${formId}-requires-po`}
+                type="checkbox"
+                checked={state.requiresPurchaseOrder}
+                onChange={(event) => update('requiresPurchaseOrder', event.target.checked)}
+                disabled={readOnly}
+              />
+              Exige Purchase Order antes do faturamento
+            </label>
+          </div>
+          <div className="form-field">
             <label htmlFor={`${formId}-default-unit`}>Unidade padrão</label>
             <select
               id={`${formId}-default-unit`}

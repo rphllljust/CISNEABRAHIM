@@ -27,6 +27,8 @@ export type ServiceDefinitionVersionRow = {
   default_unit_code: string | null;
   measurement_mode: string;
   measurement_basis: string;
+  billing_entitlement_policy: string | null;
+  commercial_config: Record<string, unknown> | null;
   published_at: string | null;
   created_at: string;
   updated_at: string;
@@ -118,6 +120,8 @@ export type ServiceDefinitionVersionResponse = {
   defaultUnitCode: string | null;
   measurementMode: string;
   measurementBasis: string;
+  billingEntitlementPolicy: string;
+  requiresPurchaseOrder: boolean;
   allowedUnits: Array<{ unitCode: string; isDefault: boolean; sortOrder: number }>;
   resourceRequirements: Array<{
     resourceTypeCode: string;
@@ -181,6 +185,8 @@ export function toServiceDefinitionVersionResponse(
     defaultUnitCode: row.default_unit_code,
     measurementMode: row.measurement_mode,
     measurementBasis: row.measurement_basis,
+    billingEntitlementPolicy: row.billing_entitlement_policy ?? 'MEASUREMENT_APPROVED',
+    requiresPurchaseOrder: row.commercial_config?.['requiresPurchaseOrder'] === true,
     allowedUnits: row.allowed_units.map((unit) => ({
       unitCode: unit.unit_code,
       isDefault: unit.is_default,

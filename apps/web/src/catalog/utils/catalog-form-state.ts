@@ -18,6 +18,8 @@ export type ServiceDefinitionFormState = {
   archetype: string;
   measurementMode: string;
   measurementBasis: string;
+  billingEntitlementPolicy: string;
+  requiresPurchaseOrder: boolean;
   defaultUnitCode: string;
   allowedUnits: AllowedUnitInput[];
   pricingModels: PricingModelInput[];
@@ -35,6 +37,8 @@ export function createEmptyFormState(): ServiceDefinitionFormState {
     archetype: 'RENTAL',
     measurementMode: 'BY_PERIOD',
     measurementBasis: 'TIME',
+    billingEntitlementPolicy: 'MEASUREMENT_APPROVED',
+    requiresPurchaseOrder: false,
     defaultUnitCode: '',
     allowedUnits: [{ unitCode: 'DAY', isDefault: true, sortOrder: 0 }],
     pricingModels: [
@@ -62,6 +66,8 @@ export function formStateFromVersion(version: ServiceDefinitionVersion): Service
     archetype: version.archetype,
     measurementMode: version.measurementMode,
     measurementBasis: version.measurementBasis,
+    billingEntitlementPolicy: version.billingEntitlementPolicy ?? 'MEASUREMENT_APPROVED',
+    requiresPurchaseOrder: version.requiresPurchaseOrder ?? false,
     defaultUnitCode: version.defaultUnitCode ?? '',
     allowedUnits: version.allowedUnits.map((unit, index) => ({
       ...unit,
@@ -94,6 +100,8 @@ export function toCreatePayload(state: ServiceDefinitionFormState): CreateServic
     archetype: state.archetype,
     measurementMode: state.measurementMode,
     measurementBasis: state.measurementBasis,
+    billingEntitlementPolicy: state.billingEntitlementPolicy,
+    requiresPurchaseOrder: state.requiresPurchaseOrder,
     description: state.description.trim() || null,
     defaultUnitCode: state.defaultUnitCode.trim() || null,
     allowedUnits: state.allowedUnits,

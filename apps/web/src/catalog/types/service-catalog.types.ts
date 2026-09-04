@@ -97,6 +97,8 @@ export type ServiceDefinitionVersion = {
   defaultUnitCode: string | null;
   measurementMode: string;
   measurementBasis: string;
+  billingEntitlementPolicy: string;
+  requiresPurchaseOrder: boolean;
   allowedUnits: AllowedUnitInput[];
   resourceRequirements: ResourceRequirementInput[];
   laborRequirements: LaborRequirementInput[];
@@ -118,6 +120,8 @@ export type CreateServiceDefinitionPayload = {
   pricingModels: PricingModelInput[];
   description?: string | null;
   defaultUnitCode?: string | null;
+  billingEntitlementPolicy?: string | null;
+  requiresPurchaseOrder?: boolean | null;
   resourceRequirements?: ResourceRequirementInput[];
   laborRequirements?: LaborRequirementInput[];
   executionRequirements?: ExecutionRequirementInput[];
@@ -136,6 +140,8 @@ export type VersionMutationPayload = {
   executionRequirements: ExecutionRequirementInput[];
   description?: string | null;
   defaultUnitCode?: string | null;
+  billingEntitlementPolicy?: string | null;
+  requiresPurchaseOrder?: boolean | null;
   sourceVersion?: number;
 };
 

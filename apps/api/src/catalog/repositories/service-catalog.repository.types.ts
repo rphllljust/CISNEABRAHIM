@@ -21,6 +21,8 @@ export type CreateDefinitionWithDraftInput = {
   pricingModels: NormalizedPricingModelInput[];
   executionRequirements: NormalizedExecutionRequirementInput[];
   actorIdentityId: string;
+  billingEntitlementPolicy?: string | null;
+  requiresPurchaseOrder?: boolean | null;
 };
 
 export type CreateDraftVersionInput = {
@@ -39,6 +41,8 @@ export type CreateDraftVersionInput = {
   executionRequirements: NormalizedExecutionRequirementInput[];
   sourceVersion?: number;
   actorIdentityId: string;
+  billingEntitlementPolicy?: string | null;
+  requiresPurchaseOrder?: boolean | null;
 };
 
 export type UpdateDraftVersionInput = {
@@ -58,4 +62,6 @@ export type UpdateDraftVersionInput = {
   pricingModels: NormalizedPricingModelInput[];
   executionRequirements: NormalizedExecutionRequirementInput[];
   actorIdentityId: string;
+  billingEntitlementPolicy?: string | null;
+  requiresPurchaseOrder?: boolean | null;
 };

@@ -65,6 +65,38 @@ export function assertMeasurementMode(value: string): MeasurementMode {
   return value as MeasurementMode;
 }
 
+export const BILLING_ENTITLEMENT_POLICIES = [
+  'MEASUREMENT_APPROVED',
+  'FIXED_PRICE',
+  'PERIODIC',
+  'MILESTONE',
+] as const;
+
+export type BillingEntitlementPolicy =
+  (typeof BILLING_ENTITLEMENT_POLICIES)[number];
+
+/** Política de faturamento do serviço (null = usar default MEASUREMENT_APPROVED). */
+export function assertBillingEntitlementPolicy(value: unknown): BillingEntitlementPolicy | null {
+  if (value === undefined || value === null || value === '') {
+    return null;
+  }
+  if (typeof value !== 'string' || !(BILLING_ENTITLEMENT_POLICIES as readonly string[]).includes(value)) {
+    throw new CatalogValidationError('INVALID_BILLING_POLICY');
+  }
+  return value as BillingEntitlementPolicy;
+}
+
+/** Exigência de PO parametrizável do serviço (null = usar false). */
+export function assertRequiresPurchaseOrderFlag(value: unknown): boolean | null {
+  if (value === undefined || value === null) {
+    return null;
+  }
+  if (typeof value !== 'boolean') {
+    throw new CatalogValidationError('INVALID_PO_REQUIREMENT_FLAG');
+  }
+  return value;
+}
+
 export function assertUuid(value: string, code = 'INVALID_ID'): string {
   if (
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
