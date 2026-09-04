@@ -7,6 +7,12 @@
     "node": ">=24.0.0 <25.0.0",
     "pnpm": ">=9.0.0 <10.0.0"
   },
+  "pnpm": {
+    "overrides": {
+      "@esbuild-kit/core-utils@3.3.2>esbuild": "0.25.12",
+      "@nestjs/platform-fastify@11.2.3>fastify": "5.12.1"
+    }
+  },
   "scripts": {
     "install:deps": "pnpm install",
     "lint": "turbo run lint",
@@ -46,6 +52,7 @@
     "db:generate": "pnpm --filter @cisne/database generate",
     "db:seed:dev": "pnpm --filter @cisne/database seed:dev",
     "auth:repair:dev-login": "node scripts/repair-dev-login.mjs",
+    "bootstrap:own-company": "pnpm --filter @cisne/api bootstrap:own-company",
     "db:seed:synthetic": "pnpm --filter @cisne/api seed:synthetic",
     "db:seed:demo-ui": "pnpm db:seed:synthetic",
     "db:seed:portfolio": "pnpm --filter @cisne/database seed:portfolio",

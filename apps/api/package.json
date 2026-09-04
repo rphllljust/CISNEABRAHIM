@@ -22,6 +22,8 @@
     "test:hml": "vitest run src/ops/hml",
     "hml:smoke": "npx tsx src/ops/hml/cli/run-hml-smoke.ts",
     "hml:deploy": "npx tsx src/ops/hml/cli/run-hml-deploy.ts",
+    "hml:grant-pilot-operator": "npx tsx src/ops/hml/cli/grant-hml-pilot-operator.ts",
+    "hml:seed-synthetic": "nest build && node dist/synthetic-seed/cli/run-synthetic-business-seed.js",
     "test:cd": "vitest run src/ops/cd",
     "cd:promote": "npx tsx src/ops/cd/cli/run-cd-promote.ts",
     "test:prod": "vitest run src/ops/prod",
@@ -50,9 +52,11 @@
     "readiness:gate": "npx tsx src/ops/readiness/cli/run-readiness-gate.ts",
     "readiness:engineering": "npx tsx src/ops/readiness/cli/run-readiness-gate.ts --mode=engineering",
     "readiness:record-milestones": "npx tsx src/ops/readiness/cli/record-readiness-milestones.ts",
+    "readiness:pilot-snapshot": "npx tsx src/ops/readiness/cli/record-readiness-milestones.ts --step=pilot-snapshot",
     "seed:synthetic": "nest build && node dist/synthetic-seed/cli/run-synthetic-business-seed.js",
     "test:synthetic-seed": "vitest run --config vitest.integration.config.ts src/synthetic-seed/",
-    "test:synthetic-seed:unlock": "node scripts/release-integration-test-db-lock.mjs"
+    "test:synthetic-seed:unlock": "node scripts/release-integration-test-db-lock.mjs",
+    "bootstrap:own-company": "npx tsx src/establishments/cli/bootstrap-own-company.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1121.0",
@@ -78,7 +82,7 @@
     "@vitest/coverage-v8": "^3.2.1",
     "dotenv": "^16.5.0",
     "eslint": "^9.28.0",
-    "fastify": "^5.3.3",
+    "fastify": "^5.12.1",
     "pg": "^8.16.0",
     "typescript": "^5.8.3",
     "unplugin-swc": "^1.5.5",
