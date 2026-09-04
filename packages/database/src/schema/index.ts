@@ -393,3 +393,18 @@ export {
   supplierPurchaseOrderStatusEnum,
   supplierPurchaseOrders,
 } from './procurement';
+export {
+  certificateKindEnum,
+  certificateStatusEnum,
+  establishmentCertificates,
+  establishmentHistoryEvents,
+  establishmentStatusEnum,
+  establishmentTaxRegistrationHistoryEvents,
+  establishmentTaxRegistrations,
+  legalEntities,
+  legalEntityHistoryEvents,
+  legalEntityStatusEnum,
+  taxRegistrationKindEnum,
+  taxRegistrationStatusEnum,
+  taxRegimeEnum,
+} from './legal-establishment';
