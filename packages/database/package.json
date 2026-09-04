@@ -33,6 +33,7 @@
     "bootstrap:production": "pnpm build && node dist/cli/run-production-bootstrap.js",
     "generate": "drizzle-kit generate",
     "migrate": "drizzle-kit migrate",
+    "migrate:release": "node dist/cli/run-migrate-cli.js",
     "gate:ci-database": "node scripts/ci-database-gate.mjs",
     "test:migration-torture": "vitest run --config vitest.integration.config.ts src/migration-torture.integration.spec.ts"
   },

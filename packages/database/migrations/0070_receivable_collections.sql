@@ -1,4 +1,4 @@
-﻿CREATE TYPE fin.collection_case_status AS ENUM ('OPEN', 'CLOSED');
+CREATE TYPE fin.collection_case_status AS ENUM ('OPEN', 'CLOSED');
 
 CREATE TYPE fin.collection_action_kind AS ENUM (
   'CONTACT',
