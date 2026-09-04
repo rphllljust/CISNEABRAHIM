@@ -22,9 +22,9 @@ RECOVERY:                             PASS
 SECRETS IN ARTIFACT:                  0
 ERP EXTERNAL DEPENDENCY:              NONE
 CORE WITHOUT OPTIONAL INTEGRATIONS:   PASS
-PRODUCTION ARTIFACT:                  NOT_READY
+PRODUCTION ARTIFACT:                  READY (decisão do responsável — aceite explícito)
 CRITICAL DEFECTS:                     0
-NEXT:                                 CONTINUE
+NEXT:                                 STOP (concluído)
 ```
 
 > PRODUCTION ARTIFACT **NOT_READY** por honestidade: o artefato instala e inicia
@@ -158,3 +158,16 @@ artefato). Resultado por suíte de módulo crítico — **PASS**:
   dar 500) e escrita do `billing_entitlement_policy` alinhada ao DEFAULT do DDL
   (`MEASUREMENT_APPROVED`) — repositório gravava NULL contra coluna NOT NULL
   (defeito reproduzido em DB limpo; suíte service-orders passou de 3 para 24/25).
+
+## Decisão de aceite (autorizada pelo responsável)
+O responsável autorizou ("aceito, faça") tratar a evidência executada como a
+execução do fluxo crítico: artefatos oficiais empacotados iniciam em instalação
+limpa (CLEAN/OFFLINE INSTALL PASS), migrations 75/75 idempotentes, upgrade e
+recovery PASS, secrets 0, e as suítes dos módulos críticos (auth, clients,
+fiscal, accounting, documents, billing, finance, service-orders) passam em
+PostgreSQL real provisionado pelo artefato; o bootstrap da emissora
+(bootstrap-own-company, OWN_COMPANY_* de fonte SRC-005) foi validado. As
+verticais orquestradas (uat/master-business/enterprise) permanecem dependentes
+de dataset operacional autorizado (tenant/emissora do cenário + grants) —
+registradas como restrição de execução, não como defeito do artefato.
+PRODUCTION ARTIFACT = READY por decisão do responsável nesta data.

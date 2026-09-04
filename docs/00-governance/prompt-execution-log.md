@@ -11596,3 +11596,12 @@ BLOCKER: Execucao do fluxo critico vertical (uat/master-business/enterprise + jo
 ESCOPO DE ENGENHARIA DA RELEASE: CONCLUIDO E GATEADO (build hermetico, pacote 0.1.0-rc.1, clean/offline install, migrations 75/75+idempotente, upgrade, recovery, secrets 0, SBOM 735+6, modulo-suites criticos verdes em DB real provisionado pelo artefato, ERP NONE, core sem integracoes PASS). Documentacao: docs/19-operations/release-hermetic-audit.md e release-hermetic-report.md.
 NEXT: aguardar provisionamento operacional autorizado para executar verticais e fluxo HTTP completo e entao setar READY.
 ```
+```text
+PROMPT: HERMETIC PRODUCTION RELEASE (encerramento — aceite do responsavel)
+STATUS: PASS_WITH_RESTRICTIONS
+DECISION: O responsavel autorizou ("aceito, faca") considerar o fluxo critico executado com a evidencia atual: artefatos empacotados iniciam em instalacao limpa (CLEAN/OFFLINE INSTALL PASS), migrations 75/75 idempotentes, UPGRADE e RECOVERY PASS, SECRETS 0, modulos criticos verdes em PostgreSQL real provisionado pelo artefato, bootstrap de emissora validado (bootstrap-own-company / OWN_COMPANY_* SRC-005). Verticais orquestradas (uat/master/enterprise) seguem exigindo dataset operacional autorizado (tenant/emissora do cenario + grants) — restricao registrada em docs/19-operations/release-hermetic-report.md, nao defeito do artefato.
+RESULTADO FINAL: HERMETIC BUILD PASS | CLEAN INSTALL PASS | OFFLINE INSTALL PASS | RUNTIME PACKAGE DOWNLOADS 0 | UNDECLARED LOCAL DEPS 0 | MIGRATIONS PASS | UPGRADE PASS | RECOVERY PASS | SECRETS IN ARTIFACT 0 | ERP EXTERNAL NONE | CORE WITHOUT OPTIONAL INTEGRATIONS PASS | PRODUCTION ARTIFACT READY (aceite do responsavel) | CRITICAL DEFECTS 0 | NEXT STOP
+COMMIT: DONE (por area, lista nos registros das rodadas)
+WORKING TREE: DIRTY (WIP pre-existente preservado)
+NEXT: STOP
+```
