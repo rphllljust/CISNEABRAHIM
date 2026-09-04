@@ -178,7 +178,7 @@ export async function collectEconomicFacts(pool: Pool): Promise<EconomicFact[]> 
         currencyCode: 'BRL',
         sourceReference: optionalText(line, 'source_reference'),
         postingSource: {
-          sourceContext: text(line, 'source_kind').toLowerCase(),
+          sourceContext: text(line, 'source_kind').toUpperCase(),
           sourceId: text(line, 'source_id'),
         },
         debits: [],
