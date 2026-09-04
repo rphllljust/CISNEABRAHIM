@@ -512,6 +512,13 @@
       "when": 1788386400000,
       "tag": "0072_legal_establishment_master",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1788390000000,
+      "tag": "0074_access_administration",
+      "breakpoints": true
     }
   ]
 }

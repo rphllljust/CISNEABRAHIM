@@ -78,6 +78,7 @@ const MIGRATION_EFFECT_CHECKS = {
   '0035_service_orders_list_perf_index': { index: 'service_orders_unit_status_created_idx' },
   '0036_workforce_members_baseline': { table: 'wrk.workforce_members' },
   '0037_purchase_order_balance': { table: 'com.purchase_order_consumption_entries' },
+  '0074_access_administration': { table: '"authorization".access_roles' },
 };
 
 async function migrationEffectsPresent(pool, tag) {
