@@ -1,19 +1,38 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { DateTime, EmptyState, Money } from '../../ui';
+import { DateTime, EmptyState, Field, Money, Select } from '../../ui';
 import { ModulePage, ModulePageHeader } from '../../ui/module-layout';
+import {
+  ModuleTableCard,
+  moduleTableCellClass,
+  moduleTableClass,
+  moduleTableHeadClass,
+  moduleTableHeaderCellClass,
+  moduleTableRowClass,
+} from '../../ui/module-layout';
 import { DefinitionList } from '../../financial-ui/DefinitionList';
 import { MoneyActionForm } from '../../financial-ui/MoneyActionForm';
 import { AGING_BUCKET_LABELS, PAYABLE_STATUS_LABELS } from '../../financial-ui/labels';
 import { renderQueryGate } from '../../financial-ui/BackofficeStates';
 import { useBackofficeQuery } from '../../financial-ui/useBackofficeQuery';
-import { cancelPayable, getPayable, payPayable } from '../api/finance-api';
+import { cancelPayable, getPayable, payPayable, reversePayable } from '../api/finance-api';
 import { mapFinanceErrorToMessage } from '../api/finance-error-messages';
 import { FinanceStatusBadge } from '../components/FinanceStatusBadge';
-import type { PayableDetail } from '../types/finance.types';
+import type { PayableDetail, Payment } from '../types/finance.types';
+import { buildReversePaymentPayload, selectReversablePayments } from '../utils/payable-actions';
+
+const PAYMENT_KIND_LABELS: Record<string, string> = {
+  PAYMENT: 'Pagamento',
+  REVERSAL: 'Estorno',
+};
+
+function reversablePaymentId(payment: Payment): string {
+  return payment.id;
+}
 
 export function PayableDetailPage() {
   const { payableId = '' } = useParams();
+  const [reversalPaymentId, setReversalPaymentId] = useState('');
   const loader = useCallback((signal?: AbortSignal) => getPayable(payableId, signal), [payableId]);
   const { state, reload, setReady } = useBackofficeQuery<PayableDetail>({
     loader,
@@ -42,6 +61,11 @@ export function PayableDetailPage() {
 
   const item = state.data;
   const closed = item.lifecycle === 'CANCELLED' || item.status === 'PAID';
+  const payableActive = item.lifecycle === 'ACTIVE';
+  const reversablePayments = selectReversablePayments(item.payments, payableActive);
+  const reversalPayment = item.payments.find(
+    (payment) => reversablePaymentId(payment) === reversalPaymentId,
+  );
 
   return (
     <ModulePage>
@@ -72,6 +96,109 @@ export function PayableDetailPage() {
           ]}
         />
       </div>
+
+      {item.payments.length === 0 ? (
+        <div className="mb-6">
+          <EmptyState title="Nenhum pagamento lançado" />
+        </div>
+      ) : (
+        <>
+          <ModuleTableCard>
+            <table className={moduleTableClass} aria-label="Pagamentos do título">
+              <thead className={moduleTableHeadClass}>
+                <tr>
+                  <th scope="col" className={moduleTableHeaderCellClass}>
+                    Tipo
+                  </th>
+                  <th scope="col" className={moduleTableHeaderCellClass}>
+                    Quando
+                  </th>
+                  <th scope="col" className={moduleTableHeaderCellClass}>
+                    Referência
+                  </th>
+                  <th scope="col" className={`${moduleTableHeaderCellClass} text-right`}>
+                    Valor
+                  </th>
+                  <th scope="col" className={moduleTableHeaderCellClass}>
+                    Estorna
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {item.payments.map((payment) => (
+                  <tr key={payment.id} className={moduleTableRowClass}>
+                    <td className={moduleTableCellClass}>
+                      <FinanceStatusBadge status={payment.kind} labels={PAYMENT_KIND_LABELS} />
+                    </td>
+                    <td className={moduleTableCellClass}>
+                      <DateTime value={payment.paidAt} />
+                    </td>
+                    <td className={moduleTableCellClass}>{payment.paymentReference}</td>
+                    <td className={`${moduleTableCellClass} text-right`}>
+                      <Money value={payment.amount} currencyCode={payment.currencyCode} />
+                    </td>
+                    <td className={moduleTableCellClass}>
+                      {payment.reversesPaymentId ? (
+                        <span className="font-mono text-xs text-gray-500">{payment.reversesPaymentId}</span>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </ModuleTableCard>
+          {reversablePayments.length > 0 ? (
+            <div className="mb-6 rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-900/5">
+              <Field label="Pagamento a estornar" htmlFor="reversal-payment-select" required>
+                <Select
+                  id="reversal-payment-select"
+                  value={reversalPaymentId}
+                  onChange={(event) => setReversalPaymentId(event.target.value)}
+                  required
+                >
+                  <option value="">Selecione…</option>
+                  {reversablePayments.map((payment) => (
+                    <option key={payment.id} value={reversablePaymentId(payment)}>
+                      {payment.paymentReference} · {payment.amount}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <MoneyActionForm
+                title="Estornar pagamento"
+                description="Estorno integral: sem valor informado, o servidor estorna o valor original do pagamento."
+                confirmTitle="Estornar pagamento"
+                confirmDescription="O backend valida versão, motivo e se o pagamento ainda pode ser estornado."
+                confirmLabel="Estornar pagamento"
+                extraField={{ id: 'reversal-payment-reference', label: 'Referência do estorno', name: 'paymentReference' }}
+                reasonLabel="Motivo"
+                disabled={!reversalPayment}
+                mapError={mapFinanceErrorToMessage}
+                onReload={() => void reload()}
+                onSubmit={async ({ extra, reason, idempotencyKey }) => {
+                  if (!reversalPayment) {
+                    return;
+                  }
+                  const next = await reversePayable(
+                    item.id,
+                    reversalPayment.id,
+                    buildReversePaymentPayload({
+                      rowVersion: item.rowVersion,
+                      paymentReference: extra ?? '',
+                      reason: reason ?? '',
+                      idempotencyKey,
+                    }),
+                  );
+                  setReversalPaymentId('');
+                  setReady(next);
+                }}
+              />
+            </div>
+          ) : null}
+        </>
+      )}
 
       <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <MoneyActionForm

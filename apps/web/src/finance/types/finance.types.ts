@@ -102,6 +102,44 @@ export type PayableAgingResponse = {
   buckets: PayableAgingSummary;
 };
 
+export type FinancialAccountMovement = {
+  id: string;
+  accountId: string;
+  direction: string;
+  amount: string;
+  currencyCode: string;
+  occurredAt: string;
+  status: string;
+  idempotencyKey: string;
+  reference: string;
+  originKind: string;
+  originId: string;
+  originReference: string;
+  transferId: string | null;
+  reversesTransactionId: string | null;
+  actorIdentityId: string;
+  createdAt: string;
+};
+
+export type TreasuryTransfer = {
+  id: string;
+  fromAccountId: string;
+  toAccountId: string;
+  kind: string;
+  amount: string;
+  currencyCode: string;
+  occurredAt: string;
+  idempotencyKey: string;
+  reference: string;
+  originKind: string;
+  originId: string;
+  originReference: string;
+  reversesTransferId: string | null;
+  actorIdentityId: string;
+  createdAt: string;
+  legs: FinancialAccountMovement[];
+};
+
 export type FinancialAccount = {
   id: string;
   unitId: string;
@@ -180,4 +218,118 @@ export type FinanceCapabilities = {
   canListPayables: boolean;
   canListTreasury: boolean;
   canReadReconciliation: boolean;
+};
+
+export type ExpenseItem = {
+  id: string;
+  lineNumber: number;
+  description: string;
+  amount: string;
+};
+
+export type ExpenseDetail = {
+  id: string;
+  unitId: string;
+  requesterIdentityId: string;
+  expenseCategoryId: string;
+  costCenterId: string;
+  costCenterCode: string;
+  totalAmount: string;
+  currencyCode: string;
+  dueDate: string;
+  paymentTerms: string;
+  description: string;
+  receiptDocumentId: string | null;
+  reimbursable: boolean;
+  status: string;
+  version: number;
+  items: ExpenseItem[];
+  approval: {
+    id: string;
+    decision: string;
+    actorIdentityId: string;
+    approvalRuleId: string | null;
+    reason: string | null;
+  } | null;
+  reimbursement: {
+    id: string;
+    payableId: string;
+    amount: string;
+    currencyCode: string;
+  } | null;
+};
+
+export type BudgetLine = {
+  id: string;
+  periodId: string;
+  lineNumber: number;
+  amount: string;
+  costCenterCode: string | null;
+  expenseCategoryId: string | null;
+  accountId: string | null;
+};
+
+export type BudgetPeriod = {
+  id: string;
+  periodKey: string;
+  startsOn: string;
+  endsOn: string;
+  status: string;
+  lines: BudgetLine[];
+};
+
+export type BudgetVersion = {
+  id: string;
+  versionNumber: number;
+  status: string;
+  approvedAt: string | null;
+  periods: BudgetPeriod[];
+};
+
+export type BudgetDetail = {
+  id: string;
+  unitId: string;
+  code: string;
+  name: string;
+  currencyCode: string;
+  status: string;
+  rowVersion: number;
+  versions: BudgetVersion[];
+};
+
+export type BudgetComparison = {
+  budgetId: string;
+  versionId: string;
+  versionNumber: number;
+  currencyCode: string;
+  budgeted: string;
+  actual: string;
+  variance: string;
+};
+
+export type CashForecast = {
+  status: 'PROJECTED' | 'NO_DATA';
+  unitId: string;
+  currencyCode: string;
+  asOf: string;
+  horizonEndsOn: string;
+  realized: { cashBalance: string; inflows: string; outflows: string };
+  forecast: { inflows: string; outflows: string; overdueInflows: string; overdueOutflows: string; net: string };
+  projectedCash: { amount: string };
+  lines: Array<{ kind: string; amount: string; sourceKind?: string }>;
+};
+
+export type CollectionCase = {
+  id: string;
+  receivableId: string;
+  unitId: string;
+  clientId: string;
+  status: string;
+  openedBecauseOverdue: boolean;
+  promisedDueDate: string | null;
+  version: number;
+  openedAt: string;
+  closedAt: string | null;
+  actions: Array<{ id: string; kind: string; notes: string | null; actorIdentityId: string; occurredAt: string }>;
+  promises: Array<{ id: string; promisedAmount: string; promisedOn: string; status: string }>;
 };

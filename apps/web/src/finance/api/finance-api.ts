@@ -15,6 +15,12 @@ import type {
   ReceivableDetail,
   ReconciliationMatch,
   TreasuryReconciliation,
+  TreasuryTransfer,
+  ExpenseDetail,
+  BudgetDetail,
+  BudgetComparison,
+  CashForecast,
+  CollectionCase,
 } from '../types/finance.types';
 
 export { BackofficeApiError };
@@ -109,12 +115,140 @@ export async function cancelPayable(
   });
 }
 
+/**
+ * Estorna um pagamento já lançado. Rota real do backend:
+ * POST /finance/payables/:payableId/payments/:paymentId/reverse
+ * (payables.controller.ts). O servidor valida rowVersion do título, motivo e a
+ * idempotência; amount é opcional e assume o valor original do pagamento.
+ */
+export async function reversePayable(
+  payableId: string,
+  paymentId: string,
+  payload: {
+    rowVersion: number;
+    idempotencyKey: string;
+    paymentReference: string;
+    amount?: string;
+    reason: string;
+  },
+): Promise<PayableDetail> {
+  return requestJson<PayableDetail>(
+    `/api/v1/finance/payables/${payableId}/payments/${paymentId}/reverse`,
+    {
+      method: 'POST',
+      headers: jsonHeaders(),
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
 export async function listTreasuryAccounts(signal?: AbortSignal): Promise<FinancialAccount[]> {
   return requestJson<FinancialAccount[]>('/api/v1/finance/treasury/accounts', {
     method: 'GET',
     headers: authHeaders(),
     signal,
   });
+}
+
+export async function openTreasuryAccount(payload: {
+  unitId: string;
+  kind: string;
+  code: string;
+  name: string;
+  currencyCode: string;
+  overdraftAllowed?: boolean;
+  openingAmount?: string;
+  bank?: { bankCode: string; agency: string; accountNumber: string };
+  cash?: { locationCode: string };
+}): Promise<FinancialAccount> {
+  return requestJson<FinancialAccount>('/api/v1/finance/treasury/accounts', {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function postTreasuryMovement(
+  accountId: string,
+  payload: {
+    direction: string;
+    amount: string;
+    rowVersion: number;
+    idempotencyKey: string;
+    reference: string;
+    originKind: string;
+    originId: string;
+    originReference: string;
+    occurredAt?: string;
+  },
+): Promise<FinancialAccount> {
+  return requestJson<FinancialAccount>(
+    `/api/v1/finance/treasury/accounts/${accountId}/movements`,
+    {
+      method: 'POST',
+      headers: jsonHeaders(),
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function createTreasuryTransfer(payload: {
+  fromAccountId: string;
+  toAccountId: string;
+  amount: string;
+  rowVersionFrom: number;
+  rowVersionTo: number;
+  idempotencyKey: string;
+  reference: string;
+  originId: string;
+  originReference: string;
+  occurredAt?: string;
+}): Promise<TreasuryTransfer> {
+  return requestJson<TreasuryTransfer>('/api/v1/finance/treasury/transfers', {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function reverseTreasuryMovement(
+  transactionId: string,
+  payload: {
+    rowVersion: number;
+    idempotencyKey: string;
+    reference: string;
+    reason: string;
+    amount?: string;
+  },
+): Promise<FinancialAccount> {
+  return requestJson<FinancialAccount>(
+    `/api/v1/finance/treasury/movements/${transactionId}/reverse`,
+    {
+      method: 'POST',
+      headers: jsonHeaders(),
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function reverseTreasuryTransfer(
+  transferId: string,
+  payload: {
+    rowVersion: number;
+    rowVersionTo: number;
+    idempotencyKey: string;
+    reference: string;
+    reason: string;
+  },
+): Promise<TreasuryTransfer> {
+  return requestJson<TreasuryTransfer>(
+    `/api/v1/finance/treasury/transfers/${transferId}/reverse`,
+    {
+      method: 'POST',
+      headers: jsonHeaders(),
+      body: JSON.stringify(payload),
+    },
+  );
 }
 
 export async function getTreasuryAccount(accountId: string, signal?: AbortSignal): Promise<FinancialAccount> {
@@ -172,6 +306,25 @@ export async function confirmReconciliation(reconciliationId: string): Promise<R
   );
 }
 
+export async function unreconcileReconciliation(reconciliationId: string): Promise<ReconciliationMatch> {
+  return requestJson<ReconciliationMatch>(
+    `/api/v1/finance/bank-reconciliation/reconciliations/${reconciliationId}/unreconcile`,
+    { method: 'POST', headers: jsonHeaders(), body: JSON.stringify({}) },
+  );
+}
+
+/** Vincula manualmente uma linha do extrato a um movimento financeiro (POST /finance/bank-reconciliation/matches). */
+export async function matchBankStatementLine(payload: {
+  bankStatementLineId: string;
+  financialTransactionId: string;
+}): Promise<ReconciliationMatch> {
+  return requestJson<ReconciliationMatch>('/api/v1/finance/bank-reconciliation/matches', {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function probeReceivableListAccess(signal?: AbortSignal): Promise<boolean> {
   return probeList('/api/v1/finance/receivables', signal);
 }
@@ -187,6 +340,179 @@ export async function probeTreasuryListAccess(signal?: AbortSignal): Promise<boo
 export async function probeReconciliationReadAccess(signal?: AbortSignal): Promise<boolean> {
   return probeReadAccess(
     `/api/v1/finance/bank-reconciliation/statements/${BACKOFFICE_PROBE_ID}`,
+    signal,
+  );
+}
+
+export async function getExpense(expenseId: string, signal?: AbortSignal): Promise<ExpenseDetail> {
+  return requestJson<ExpenseDetail>(`/api/v1/finance/expenses/${expenseId}`, {
+    method: 'GET',
+    headers: authHeaders(),
+    signal,
+  });
+}
+
+export async function createExpense(payload: Record<string, unknown>): Promise<ExpenseDetail> {
+  return requestJson<ExpenseDetail>('/api/v1/finance/expenses', {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function submitExpense(expenseId: string, payload: { version: number }): Promise<ExpenseDetail> {
+  return requestJson<ExpenseDetail>(`/api/v1/finance/expenses/${expenseId}/submit`, {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function approveExpense(expenseId: string, payload: { version: number }): Promise<ExpenseDetail> {
+  return requestJson<ExpenseDetail>(`/api/v1/finance/expenses/${expenseId}/approve`, {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function rejectExpense(
+  expenseId: string,
+  payload: { version: number; reason: string },
+): Promise<ExpenseDetail> {
+  return requestJson<ExpenseDetail>(`/api/v1/finance/expenses/${expenseId}/reject`, {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getBudget(budgetId: string, signal?: AbortSignal): Promise<BudgetDetail> {
+  return requestJson<BudgetDetail>(`/api/v1/finance/budgets/${budgetId}`, {
+    method: 'GET',
+    headers: authHeaders(),
+    signal,
+  });
+}
+
+export async function compareBudget(budgetId: string, signal?: AbortSignal): Promise<BudgetComparison> {
+  return requestJson<BudgetComparison>(`/api/v1/finance/budgets/${budgetId}/comparison`, {
+    method: 'GET',
+    headers: authHeaders(),
+    signal,
+  });
+}
+
+export async function createBudget(payload: Record<string, unknown>): Promise<BudgetDetail> {
+  return requestJson<BudgetDetail>('/api/v1/finance/budgets', {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function addBudgetPeriod(budgetId: string, payload: Record<string, unknown>): Promise<BudgetDetail> {
+  return requestJson<BudgetDetail>(`/api/v1/finance/budgets/${budgetId}/periods`, {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function addBudgetLine(budgetId: string, payload: Record<string, unknown>): Promise<BudgetDetail> {
+  return requestJson<BudgetDetail>(`/api/v1/finance/budgets/${budgetId}/lines`, {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function approveBudget(budgetId: string): Promise<BudgetDetail> {
+  return requestJson<BudgetDetail>(`/api/v1/finance/budgets/${budgetId}/approve`, {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify({}),
+  });
+}
+
+export async function createBudgetVersion(budgetId: string): Promise<BudgetDetail> {
+  return requestJson<BudgetDetail>(`/api/v1/finance/budgets/${budgetId}/versions`, {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify({}),
+  });
+}
+
+export async function getCashForecast(
+  query: { unitId: string; currencyCode: string; asOf?: string; horizonEndsOn?: string },
+  signal?: AbortSignal,
+): Promise<CashForecast> {
+  const params = new URLSearchParams({ unitId: query.unitId, currencyCode: query.currencyCode });
+  if (query.asOf) {
+    params.set('asOf', query.asOf);
+  }
+  if (query.horizonEndsOn) {
+    params.set('horizonEndsOn', query.horizonEndsOn);
+  }
+  return requestJson<CashForecast>(`/api/v1/finance/cash-forecast?${params.toString()}`, {
+    method: 'GET',
+    headers: authHeaders(),
+    signal,
+  });
+}
+
+export async function getCurrentCollection(
+  receivableId: string,
+  signal?: AbortSignal,
+): Promise<CollectionCase> {
+  return requestJson<CollectionCase>(`/api/v1/finance/receivables/${receivableId}/collections/current`, {
+    method: 'GET',
+    headers: authHeaders(),
+    signal,
+  });
+}
+
+export async function openCollection(receivableId: string): Promise<CollectionCase> {
+  return requestJson<CollectionCase>(`/api/v1/finance/receivables/${receivableId}/collections`, {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify({}),
+  });
+}
+
+export async function recordCollectionAction(
+  collectionId: string,
+  payload: { kind: string; notes?: string; idempotencyKey: string },
+): Promise<CollectionCase> {
+  return requestJson<CollectionCase>(`/api/v1/finance/collections/${collectionId}/actions`, {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function recordCollectionPromise(
+  collectionId: string,
+  payload: { promisedAmount: string; promisedOn: string; notes?: string; idempotencyKey: string },
+): Promise<CollectionCase> {
+  return requestJson<CollectionCase>(`/api/v1/finance/collections/${collectionId}/promises`, {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function probeExpenseReadAccess(signal?: AbortSignal): Promise<boolean> {
+  return probeReadAccess(`/api/v1/finance/expenses/${BACKOFFICE_PROBE_ID}`, signal);
+}
+
+export async function probeBudgetReadAccess(signal?: AbortSignal): Promise<boolean> {
+  return probeReadAccess(`/api/v1/finance/budgets/${BACKOFFICE_PROBE_ID}`, signal);
+}
+
+export async function probeForecastReadAccess(signal?: AbortSignal): Promise<boolean> {
+  return probeReadAccess(
+    `/api/v1/finance/cash-forecast?unitId=${BACKOFFICE_PROBE_ID}&currencyCode=BRL`,
     signal,
   );
 }

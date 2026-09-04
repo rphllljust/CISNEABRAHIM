@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { Button, DateTime, EmptyState, Field, Input, Money, Textarea } from '../../ui';
+import { Button, DateTime, EmptyState, Field, Input, Money, Select, Textarea, VersionConflictBanner } from '../../ui';
 import {
   FilterCard,
   ModulePage,
@@ -18,54 +18,84 @@ import { createIdempotencyKey } from '../../financial-ui/idempotency';
 import { MATCH_STATUS_LABELS, MOVEMENT_DIRECTION_LABELS, STATEMENT_STATUS_LABELS } from '../../financial-ui/labels';
 import { ProcessingBanner } from '../../financial-ui/ProcessingBanner';
 import { RecordLookupCard } from '../../financial-ui/RecordLookupCard';
+import { VersionedActionForm } from '../../financial-ui/VersionedActionForm';
 import { sliceTablePage, tablePageCount } from '../../financial-ui/table-slice';
-import { autoMatchStatement, getBankStatement, importBankFile } from '../api/finance-api';
+import {
+  autoMatchStatement,
+  confirmReconciliation,
+  getBankStatement,
+  importBankFile,
+  matchBankStatementLine,
+  unreconcileReconciliation,
+} from '../api/finance-api';
 import { mapFinanceErrorToMessage } from '../api/finance-error-messages';
 import { FinanceStatusBadge } from '../components/FinanceStatusBadge';
-import type { AutoMatchResult, BankStatement } from '../types/finance.types';
+import type { AutoMatchResult, BankStatement, ReconciliationMatch } from '../types/finance.types';
 
 type PageState =
   | { phase: 'idle' }
   | { phase: 'loading' }
   | { phase: 'denied' }
-  | { phase: 'error'; message: string; retryable: boolean }
+  | { phase: 'error'; message: string; retryable: boolean; conflict: boolean }
   | { phase: 'ready'; statement: BankStatement; autoMatch?: AutoMatchResult };
+
+const RECONCILIATION_STATUS_LABELS: Record<string, string> = {
+  DRAFT: 'Rascunho',
+  CONFIRMED: 'Confirmada',
+  UNRECONCILED: 'Desfeita',
+};
+
+function errorInfo(error: unknown): { message: string; retryable: boolean; conflict: boolean } {
+  if (error instanceof BackofficeApiError) {
+    return {
+      message: mapFinanceErrorToMessage(error.code, error.status),
+      retryable: error.kind === 'network' || error.kind === 'unknown',
+      conflict: error.kind === 'version_conflict' || error.kind === 'closed_period',
+    };
+  }
+  return { message: mapFinanceErrorToMessage(undefined, 0), retryable: true, conflict: false };
+}
 
 export function BankReconciliationPage() {
   const [statementId, setStatementId] = useState('');
   const [state, setState] = useState<PageState>({ phase: 'idle' });
   const [pageNumber, setPageNumber] = useState(1);
+  const [actionError, setActionError] = useState<{ message: string; conflict: boolean } | null>(null);
   const [importFields, setImportFields] = useState({
     unitId: '',
     financialAccountId: '',
     fileName: 'extrato.json',
     content: '',
   });
+  const [manualMatch, setManualMatch] = useState({ lineId: '', transactionId: '' });
+  const [trackedReconciliations, setTrackedReconciliations] = useState<ReconciliationMatch[]>([]);
+  const [selectedReconciliationId, setSelectedReconciliationId] = useState('');
   const [processing, setProcessing] = useState(false);
   const inflight = useRef(false);
   const idempotencyKey = useRef(createIdempotencyKey());
 
-  const loadStatement = useCallback(async (id: string, signal?: AbortSignal) => {
-    setState({ phase: 'loading' });
-    try {
-      const statement = await getBankStatement(id, signal);
-      setPageNumber(1);
-      setState({ phase: 'ready', statement });
-    } catch (error) {
-      if (error instanceof BackofficeApiError && error.kind === 'denied') {
-        setState({ phase: 'denied' });
-        return;
+  const clearActionError = useCallback(() => setActionError(null), []);
+
+  const loadStatement = useCallback(
+    async (id: string, signal?: AbortSignal) => {
+      setState({ phase: 'loading' });
+      setActionError(null);
+      setTrackedReconciliations([]);
+      setSelectedReconciliationId('');
+      try {
+        const statement = await getBankStatement(id, signal);
+        setPageNumber(1);
+        setState({ phase: 'ready', statement });
+      } catch (error) {
+        if (error instanceof BackofficeApiError && error.kind === 'denied') {
+          setState({ phase: 'denied' });
+          return;
+        }
+        setState({ phase: 'error', ...errorInfo(error) });
       }
-      setState({
-        phase: 'error',
-        message:
-          error instanceof BackofficeApiError
-            ? mapFinanceErrorToMessage(error.code, error.status)
-            : 'Não foi possível carregar o extrato.',
-        retryable: true,
-      });
-    }
-  }, []);
+    },
+    [],
+  );
 
   async function handleImport() {
     if (inflight.current) {
@@ -73,6 +103,7 @@ export function BankReconciliationPage() {
     }
     inflight.current = true;
     setProcessing(true);
+    setActionError(null);
     try {
       const statement = await importBankFile({
         ...importFields,
@@ -80,20 +111,37 @@ export function BankReconciliationPage() {
       });
       idempotencyKey.current = createIdempotencyKey();
       setStatementId(statement.id);
+      setTrackedReconciliations([]);
+      setSelectedReconciliationId('');
+      setPageNumber(1);
       setState({ phase: 'ready', statement });
     } catch (error) {
-      setState({
-        phase: 'error',
-        message:
-          error instanceof BackofficeApiError
-            ? mapFinanceErrorToMessage(error.code, error.status)
-            : 'Não foi possível importar o extrato.',
-        retryable: true,
-      });
+      const failure = errorInfo(error);
+      // A falha da importação nunca apaga um extrato já carregado.
+      if (state.phase === 'ready') {
+        setActionError({ message: failure.message, conflict: failure.conflict });
+      } else {
+        setState({ phase: 'error', ...failure });
+      }
     } finally {
       inflight.current = false;
       setProcessing(false);
     }
+  }
+
+  function registerReconciliations(matches: ReconciliationMatch[]) {
+    setTrackedReconciliations((current) => {
+      const next = [...current];
+      for (const match of matches) {
+        const existingIndex = next.findIndex((item) => item.id === match.id);
+        if (existingIndex >= 0) {
+          next[existingIndex] = match;
+        } else {
+          next.push(match);
+        }
+      }
+      return next;
+    });
   }
 
   async function handleAutoMatch() {
@@ -102,22 +150,72 @@ export function BankReconciliationPage() {
     }
     inflight.current = true;
     setProcessing(true);
+    setActionError(null);
+    const statement = state.statement;
     try {
-      const autoMatch = await autoMatchStatement(state.statement.id);
-      const statement = await getBankStatement(state.statement.id);
-      setState({ phase: 'ready', statement, autoMatch });
+      const autoMatch = await autoMatchStatement(statement.id);
+      const reloaded = await getBankStatement(statement.id);
+      registerReconciliations(autoMatch.suggested);
+      setState({ phase: 'ready', statement: reloaded, autoMatch });
     } catch (error) {
-      setState({
-        phase: 'error',
-        message:
-          error instanceof BackofficeApiError
-            ? mapFinanceErrorToMessage(error.code, error.status)
-            : 'Não foi possível conciliar o extrato.',
-        retryable: true,
-      });
+      // Falha do auto-match mantém o extrato carregado e mostra o erro inline.
+      const failure = errorInfo(error);
+      setActionError({ message: failure.message, conflict: failure.conflict });
     } finally {
       inflight.current = false;
       setProcessing(false);
+    }
+  }
+
+  async function handleManualMatch() {
+    if (inflight.current || !manualMatch.lineId || !manualMatch.transactionId.trim()) {
+      return;
+    }
+    inflight.current = true;
+    setProcessing(true);
+    setActionError(null);
+    try {
+      const created = await matchBankStatementLine({
+        bankStatementLineId: manualMatch.lineId,
+        financialTransactionId: manualMatch.transactionId.trim(),
+      });
+      setManualMatch({ lineId: '', transactionId: '' });
+      setSelectedReconciliationId(created.id);
+      registerReconciliations([created]);
+      if (state.phase === 'ready') {
+        const reloaded = await getBankStatement(state.statement.id);
+        setState({ phase: 'ready', statement: reloaded });
+      }
+    } catch (error) {
+      const failure = errorInfo(error);
+      setActionError({ message: failure.message, conflict: failure.conflict });
+    } finally {
+      inflight.current = false;
+      setProcessing(false);
+    }
+  }
+
+  async function handleConfirm() {
+    if (!selectedReconciliationId || inflight.current) {
+      return;
+    }
+    const confirmed = await confirmReconciliation(selectedReconciliationId);
+    registerReconciliations([confirmed]);
+    if (state.phase === 'ready') {
+      const reloaded = await getBankStatement(state.statement.id);
+      setState({ phase: 'ready', statement: reloaded });
+    }
+  }
+
+  async function handleUnreconcile() {
+    if (!selectedReconciliationId || inflight.current) {
+      return;
+    }
+    const unreconciled = await unreconcileReconciliation(selectedReconciliationId);
+    registerReconciliations([unreconciled]);
+    if (state.phase === 'ready') {
+      const reloaded = await getBankStatement(state.statement.id);
+      setState({ phase: 'ready', statement: reloaded });
     }
   }
 
@@ -136,6 +234,9 @@ export function BankReconciliationPage() {
   const lines = statement?.lines ?? [];
   const pageCount = tablePageCount(lines.length);
   const pageItems = sliceTablePage(lines, Math.min(pageNumber, pageCount));
+  const selectedReconciliation = trackedReconciliations.find(
+    (item) => item.id === selectedReconciliationId,
+  );
 
   return (
     <ModulePage>
@@ -191,12 +292,83 @@ export function BankReconciliationPage() {
         </div>
       </FilterCard>
 
-      {processing ? <div className="mb-4"><ProcessingBanner /></div> : null}
+      {statement ? (
+        <FilterCard>
+          <h2 className="mb-3 text-sm font-semibold text-gray-900">Vínculo manual</h2>
+          <p className="mb-4 text-sm text-gray-500">
+            O servidor exige correspondência exata (conta, valor, direção e data) entre a linha e o movimento.
+          </p>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <Field label="Linha do extrato" htmlFor="match-line" required>
+              <Select
+                id="match-line"
+                className={filterControlClass}
+                value={manualMatch.lineId}
+                onChange={(event) => setManualMatch((current) => ({ ...current, lineId: event.target.value }))}
+                disabled={lines.length === 0}
+                required
+              >
+                <option value="">Selecione…</option>
+                {lines
+                  .filter((line) => line.matchStatus !== 'MATCHED')
+                  .map((line) => (
+                    <option key={line.id} value={line.id}>
+                      Linha {line.lineNumber} · {line.description}
+                    </option>
+                  ))}
+              </Select>
+            </Field>
+            <Field label="Identificador do movimento financeiro" htmlFor="match-transaction" required>
+              <Input
+                id="match-transaction"
+                className={filterControlClass}
+                value={manualMatch.transactionId}
+                onChange={(event) =>
+                  setManualMatch((current) => ({ ...current, transactionId: event.target.value }))
+                }
+                required
+              />
+            </Field>
+          </div>
+          <div className="mt-4">
+            <Button type="button" onClick={() => void handleManualMatch()} loading={processing} disabled={processing}>
+              Vincular manualmente
+            </Button>
+          </div>
+        </FilterCard>
+      ) : null}
+
+      {processing ? (
+        <div className="mb-4">
+          <ProcessingBanner />
+        </div>
+      ) : null}
+
+      {actionError ? (
+        actionError.conflict ? (
+          <div className="mb-4">
+            <VersionConflictBanner
+              message={actionError.message}
+              onReload={() => (statement ? void loadStatement(statement.id) : undefined)}
+            />
+          </div>
+        ) : (
+          <p className="mb-4 text-sm text-red-700" role="alert">
+            {actionError.message}
+          </p>
+        )
+      ) : null}
 
       {state.phase === 'error' ? (
-        <p className="mb-4 text-sm text-red-700" role="alert">
-          {state.message}
-        </p>
+        state.conflict ? (
+          <div className="mb-4">
+            <VersionConflictBanner message={state.message} onReload={clearActionError} reloadLabel="Entendido" />
+          </div>
+        ) : (
+          <p className="mb-4 text-sm text-red-700" role="alert">
+            {state.message}
+          </p>
+        )
       ) : null}
 
       {state.phase === 'idle' && !statement ? (
@@ -223,6 +395,60 @@ export function BankReconciliationPage() {
               correspondência e {state.autoMatch.reviewRequired.length} em revisão.
             </p>
           ) : null}
+
+          <FilterCard>
+            <h2 className="mb-3 text-sm font-semibold text-gray-900">Confirmar ou desfazer conciliação</h2>
+            {trackedReconciliations.length === 0 ? (
+              <p className="text-sm text-gray-500">
+                Nenhuma conciliação rastreada nesta sessão. Rode “Sugerir vínculos” ou faça um vínculo manual para
+                confirmar.
+              </p>
+            ) : (
+              <>
+                <Field label="Conciliação" htmlFor="reconciliation-select">
+                  <Select
+                    id="reconciliation-select"
+                    className={`${filterControlClass} max-w-xl`}
+                    value={selectedReconciliationId}
+                    onChange={(event) => setSelectedReconciliationId(event.target.value)}
+                  >
+                    <option value="">Selecione…</option>
+                    {trackedReconciliations.map((reconciliation) => (
+                      <option key={reconciliation.id} value={reconciliation.id}>
+                        {reconciliation.id} · {RECONCILIATION_STATUS_LABELS[reconciliation.status] ?? reconciliation.status}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+                <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-2">
+                  <VersionedActionForm
+                    title="Confirmar conciliação"
+                    description="Confirmação imutável: depois de confirmada só é revertida por desfazer autorizado."
+                    confirmTitle="Confirmar conciliação"
+                    confirmDescription="O backend valida que a conciliação ainda é rascunho."
+                    confirmLabel="Confirmar"
+                    disabled={!selectedReconciliation || selectedReconciliation.status !== 'DRAFT'}
+                    mapError={mapFinanceErrorToMessage}
+                    onReload={() => (statement ? void loadStatement(statement.id) : undefined)}
+                    onSubmit={handleConfirm}
+                  />
+                  <VersionedActionForm
+                    title="Desfazer conciliação"
+                    description="Reverte uma conciliação confirmada para o estado anterior."
+                    confirmTitle="Desfazer conciliação"
+                    confirmDescription="Somente conciliações confirmadas podem ser desfeitas."
+                    confirmLabel="Desfazer conciliação"
+                    variant="danger"
+                    disabled={!selectedReconciliation || selectedReconciliation.status !== 'CONFIRMED'}
+                    mapError={mapFinanceErrorToMessage}
+                    onReload={() => (statement ? void loadStatement(statement.id) : undefined)}
+                    onSubmit={handleUnreconcile}
+                  />
+                </div>
+              </>
+            )}
+          </FilterCard>
+
           {lines.length === 0 ? (
             <EmptyState title="Extrato sem linhas" />
           ) : (

@@ -17,6 +17,7 @@ import { RECEIVABLE_STATUS_LABELS } from '../../financial-ui/labels';
 import { renderQueryGate } from '../../financial-ui/BackofficeStates';
 import { useBackofficeQuery } from '../../financial-ui/useBackofficeQuery';
 import { cancelReceivable, getReceivable, settleReceivable } from '../api/finance-api';
+import { CollectionPanel } from '../components/CollectionPanel';
 import { mapFinanceErrorToMessage } from '../api/finance-error-messages';
 import { FinanceStatusBadge } from '../components/FinanceStatusBadge';
 import type { ReceivableDetail } from '../types/finance.types';
@@ -110,6 +111,13 @@ export function ReceivableDetailPage() {
           </tbody>
         </table>
       </ModuleTableCard>
+
+      <CollectionPanel
+        key={item.rowVersion}
+        receivableId={item.id}
+        receivable={item}
+        onChanged={() => void reload()}
+      />
 
       <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <MoneyActionForm
