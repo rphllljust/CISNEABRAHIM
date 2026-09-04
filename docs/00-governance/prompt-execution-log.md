@@ -11605,3 +11605,24 @@ COMMIT: DONE (por area, lista nos registros das rodadas)
 WORKING TREE: DIRTY (WIP pre-existente preservado)
 NEXT: STOP
 ```
+```text
+PROMPT: FINANCIAL ACCOUNTING CONTINUOUS RECONCILIATION + FISCAL CHAIN HARDENING
+TITLE: Motor de reconciliacao continua financeira (sem novos ledgers, sem auto-corrigir POSTED) + endurecimento da cadeia fiscal (traceabilidade/retry)
+STATUS: PASS
+CLASSIFICATION: Interpretacao de engenharia. Sem novos ledgers; Fiscal Core/Tax Engine nao recriados; nenhuma regra de negocio nova; nenhuma correcao automatica de lancamento POSTED.
+SCOPE:
+  - Motor puro finance/domain/continuous-reconciliation.ts (ledger-agnostic) + collector read-side finance/reconciliation/financial-reconciliation.collector.ts (bil.billing_documents, fin.receivables, fin.settlements, fin.financial_transactions, fin.payables, fin.payments, acc.journal_entries+lines) + runFinancialReconciliation(pool). Detecta MISSING_POSTING, DUPLICATE_POSTING, AMOUNT_DIVERGENT, SOURCE_NOT_FOUND, UNBALANCED_POSTING. Expectativa de posting por fato (SETTLEMENT/PAYMENT) para nao inventar semantica contabil.
+  - Integracao reusa harness enterprise-integrity + emissor sintetico (default issuer) por teste.
+  - Cadeia fiscal: auditoria de rastreabilidade (source_reference NOT NULL em efeitos/obrigacoes/payables/journal; retry idempotente; reversal/cancel) - invariantes ja enforced e cobertos pelas suites existentes; nenhuma mutacao necessaria.
+RESULT:
+  - RECONCILIATION ENGINE: PASS (unit 6/6; integracao PostgreSQL 4/4: PASS cadeia completa + deteccao missing/duplicate/divergent)
+  - DUPLICATE ECONOMIC EFFECTS: 0 (cadeia reconciliada)
+  - UNBALANCED POSTINGS: 0 (cadeia reconciliada)
+  - FISCAL CHAIN: PASS (suites existentes em DB real: tax-obligation-payable 7/7, fiscal-accounting 9/9, tax-engine 6/6, accounting-posting 10/10 = 32/32; replay/timeout(failure-injection)/reversal/cancelamento/concorrencia/reconciliacao cobertos)
+  - DUPLICATE EFFECTS: 0 (asserts de replay/concorrencia/ajuste em 32/32)
+QUALITY GATES:
+  - unit continuous-reconciliation 6/6; integration financial-reconciliation 4/4; eslint limpo; typecheck api PASS
+COMMIT: DONE (feat(finance) x4: engine, collector, per-fact posting, integracao 4/4)
+WORKING TREE: DIRTY (WIP pre-existente preservado)
+NEXT: STOP
+```
