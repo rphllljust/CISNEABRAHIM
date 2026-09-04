@@ -27,6 +27,7 @@ export function toneForStatus(status: string | null | undefined): BadgeTone {
     case 'PENDING':
     case 'PROCESSING':
     case 'SUBMITTED':
+    case 'PENDING_APPROVAL':
     case 'READY':
     case '1_30':
     case '31_60':
@@ -129,4 +130,62 @@ export const ACCOUNT_CLASS_LABELS: Record<string, string> = {
   EQUITY: 'Patrimônio líquido',
   REVENUE: 'Receita',
   EXPENSE: 'Despesa',
+};
+
+export const EXPENSE_STATUS_LABELS: Record<string, string> = {
+  DRAFT: 'Rascunho',
+  SUBMITTED: 'Enviada',
+  APPROVED: 'Aprovada',
+  REJECTED: 'Rejeitada',
+  CANCELLED: 'Cancelada',
+};
+
+export const BUDGET_STATUS_LABELS: Record<string, string> = {
+  DRAFT: 'Rascunho',
+  APPROVED: 'Aprovado',
+  SUPERSEDED: 'Substituído',
+};
+
+export const PROCUREMENT_REQUEST_STATUS_LABELS: Record<string, string> = {
+  DRAFT: 'Rascunho',
+  PENDING_APPROVAL: 'Em aprovação',
+  APPROVED: 'Aprovada',
+  REJECTED: 'Rejeitada',
+  CANCELLED: 'Cancelada',
+};
+
+export const SUPPLIER_PO_STATUS_LABELS: Record<string, string> = {
+  ISSUED: 'Emitido',
+  RECEIVED: 'Recebido',
+  PARTIALLY_RECEIVED: 'Parcialmente recebido',
+  CANCELLED: 'Cancelado',
+};
+
+export const SUPPLIER_INVOICE_STATUS_LABELS: Record<string, string> = {
+  DRAFT: 'Rascunho',
+  VALIDATED: 'Validada',
+  REJECTED: 'Rejeitada',
+};
+
+export const SUPPLIER_STATUS_LABELS: Record<string, string> = {
+  ACTIVE: 'Ativo',
+  INACTIVE: 'Inativo',
+};
+
+export const PAYROLL_PERIOD_STATUS_LABELS: Record<string, string> = {
+  OPEN: 'Aberto',
+  CALCULATED: 'Calculado',
+  CLOSED: 'Fechado',
+};
+
+export const COLLECTION_STATUS_LABELS: Record<string, string> = {
+  OPEN: 'Aberto',
+  CLOSED: 'Encerrado',
+};
+
+export const TAX_ASSESSMENT_STATUS_LABELS: Record<string, string> = {
+  DRAFT: 'Rascunho',
+  FINALIZED: 'Finalizado',
+  ADJUSTED: 'Ajustado',
+  CANCELLED: 'Cancelado',
 };
