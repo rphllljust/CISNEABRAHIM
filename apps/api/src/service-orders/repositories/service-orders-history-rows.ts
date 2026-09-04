@@ -11,6 +11,7 @@ export const SERVICE_ORDER_RETURNING = `
   cancelled_at, cancelled_by_identity_id, cancellation_reason,
   started_at, started_by_identity_id, paused_at, paused_by_identity_id,
   completed_at, completed_by_identity_id,
+  status_before_cancel, reopened_at, reopened_by_identity_id, reopen_reason, status_before_reopen,
   row_version, created_at, updated_at, created_by_identity_id, updated_by_identity_id
 `;
 
@@ -25,6 +26,7 @@ export const SERVICE_ORDER_SELECT = `
     cancelled_at, cancelled_by_identity_id, cancellation_reason,
     started_at, started_by_identity_id, paused_at, paused_by_identity_id,
     completed_at, completed_by_identity_id,
+    status_before_cancel, reopened_at, reopened_by_identity_id, reopen_reason, status_before_reopen,
     row_version, created_at, updated_at, created_by_identity_id, updated_by_identity_id
   FROM so.service_orders
 `;
@@ -64,8 +66,15 @@ export function buildServiceOrderTransitionFields(input: TransitionServiceOrderP
       };
     case 'cancel':
       return {
-        sql: 'cancelled_at = NOW(), cancelled_by_identity_id = $4, cancellation_reason = $6',
+        sql: 'status_before_cancel = $5::so.service_order_status, cancelled_at = NOW(), cancelled_by_identity_id = $4, cancellation_reason = $6',
         params: [input.cancellationReason ?? null],
+      };
+    case 'reopen':
+      return {
+        sql: 'status_before_reopen = $5::so.service_order_status, reopened_at = NOW(), reopened_by_identity_id = $4, reopen_reason = $6, ' +
+          "completed_at = CASE WHEN $5 = 'COMPLETED'::so.service_order_status THEN NULL ELSE completed_at END, " +
+          "completed_by_identity_id = CASE WHEN $5 = 'COMPLETED'::so.service_order_status THEN NULL ELSE completed_by_identity_id END",
+        params: [input.reopenReason ?? null],
       };
     case 'start':
       return {
@@ -110,6 +119,8 @@ export function historyEventForServiceOrderTransition(
       return 'RESUMED';
     case 'complete':
       return 'COMPLETED';
+    case 'reopen':
+      return 'REOPENED';
     default:
       return transition;
   }

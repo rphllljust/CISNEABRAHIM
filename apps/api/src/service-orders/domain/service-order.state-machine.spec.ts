@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { SERVICE_ORDER_STATUSES, type ServiceOrderStatus } from './service-order';
 import {
+  assertReopenJustification,
   assertTransition,
   canTransition,
   isTerminalServiceOrderStatus,
+  resolveReopenStatus,
   ServiceOrderStateError,
   type ServiceOrderTransition,
 } from './service-order.state-machine';
@@ -70,6 +72,38 @@ describe('service-order.state-machine', () => {
     expect(assertTransition(SERVICE_ORDER_STATUSES.InExecution, 'complete')).toBe(
       SERVICE_ORDER_STATUSES.Completed,
     );
+  });
+
+  it('reopens cancelled OS to the previous status with justification', () => {
+    expect(
+      resolveReopenStatus({
+        currentStatus: SERVICE_ORDER_STATUSES.Cancelled,
+        statusBeforeCancel: SERVICE_ORDER_STATUSES.Released,
+      }),
+    ).toBe(SERVICE_ORDER_STATUSES.Released);
+    expect(assertReopenJustification('Correção operacional autorizada')).toBe(
+      'Correção operacional autorizada',
+    );
+    expect(() => assertReopenJustification('   ')).toThrow(ServiceOrderStateError);
+  });
+
+  it('reopens a completed OS to IN_EXECUTION requiring justification (service test)', () => {
+    expect(
+      resolveReopenStatus({
+        currentStatus: SERVICE_ORDER_STATUSES.Completed,
+        statusBeforeCancel: null,
+      }),
+    ).toBe(SERVICE_ORDER_STATUSES.InExecution);
+    expect(() =>
+      resolveReopenStatus({
+        currentStatus: SERVICE_ORDER_STATUSES.Cancelled,
+        statusBeforeCancel: null,
+      }),
+    ).toThrow(ServiceOrderStateError);
+    expect(assertReopenJustification('Retrabalho autorizado após conclusão')).toBe(
+      'Retrabalho autorizado após conclusão',
+    );
+    expect(() => assertReopenJustification('')).toThrow(ServiceOrderStateError);
   });
 
   it('rejects invalid transitions with INVALID_STATE_TRANSITION', () => {
