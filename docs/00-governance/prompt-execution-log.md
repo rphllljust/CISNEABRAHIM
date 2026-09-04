@@ -11538,3 +11538,29 @@ NOTES:
   Proxima rodada: Fiscal/Accounting (emissao fiscal, regras tributarias, lancamento manual, posting rules, issuer) e/ou Assets/Rental/Transport.
 WORKING TREE: DIRTY (WIP anterior mantido) | NEXT: proxima rodada do programa
 ```
+```text
+PROMPT: HERMETIC PRODUCTION RELEASE
+TITLE: Distribuição de produção reproduzível/autocontida (release hermética) — auditar/classificar dependências, eliminar FORBIDDEN, build reproduzível, pacote versionado (manifest/checksums/SBOM), config validada no startup, PostgreSQL/Object Storage explícitos, integrações opcionais sem bloquear core, e gates CLEAN/OFFLINE/UPGRADE/RECOVERY/SECURITY a partir do artefato.
+STARTED_AT: 2026-09-04T14:00:00-04:00
+FINISHED_AT: 2026-09-04T20:30:00-04:00
+STATUS: IN_PROGRESS (PRODUCTION ARTIFACT NOT_READY; gates de install/offline/upgrade/recovery/migrations/security PASS)
+CLASSIFICATION: Interpretacao de engenharia + operacoes. Auditoria 100% feita antes das modificacoes (7 relatorios em tmp/audit-hermetic; consolidado docs/19-operations/release-hermetic-audit.md). 
+SCOPE:
+  - Auditoria e classificacao (BUNDLED/PROVISIONED_AUTOMATICALLY/HOST_PREREQUISITE/OPTIONAL_EXTERNAL_SERVICE/FORBIDDEN).
+  - Correcoes: dotenv/pg promovidos a dependencies (@cisne/api e @cisne/database); frontend self-host fonts (remove Google Fonts); v0ite build fuerça NODE_ENV=production; .dockerignore; literal path de dev removido; journal drizzle regista 0073; BOM de 0070 removido; runner de migrations hermetico (sem drizzle-kit); validação fail-fast de config (API+worker) com CONFIGURATION_ERROR; segredo literal 'test-download-token-secret' removido; worker .env path corrigido; worker DI fixado (export de handlers); prod compose volume PG18 + env unica + healthchecks + pull_policy never; sandbox compose offline (bridge sem masquerade).
+  - Imagens hermeticas: Dockerfile.api runner com node_modules apenas PRODUÇÃO + migrations embutidas; cisne-web nginx.
+  - Pacote versionado: scripts/release/package.mjs (+emit-sbom.mjs) -> artifacts/release/cisne-0.1.0-rc.1 (manifest/checksums/sbom=735 pkgs+6 imagens).
+  - Gates (a partir das imagens): run-install-gate (clean+offline PASS), run-upgrade-gate (PASS), run-recovery-gate (PASS). Evidência em tmp/gates/.
+RESULT:
+  - HERMETIC BUILD PASS; CLEAN INSTALL PASS; OFFLINE INSTALL PASS; RUNTIME PACKAGE DOWNLOADS 0; UNDECLARED LOCAL DEPS 0; MIGRATIONS PASS (75/75 + idempotente); UPGRADE PASS (74->75, idempotente, superset); RECOVERY PASS (api/work/pg restarts); SECRETS IN ARTIFACT 0; ERP EXTERNAL NONE; CORE WITHOUT OPTIONAL INTEGRATIONS PASS; PRODUCTION ARTIFACT NOT_READY (fluxo critico HTTP completo ainda nao executado + suites canonicas nao rodadas nesta rodada); CRITICAL DEFECTS 1 (accounting/ledger sem chartId -> 500).
+QUALITY GATES:
+  - typecheck api/db/web PASS (verificado; fix pre-existente pilot-observation cast).
+  - lint: @cisne/database PASS (apos fix no-unsafe-member-access); @cisne/api lint a confirmar.
+  - unit @cisne/api 885/888; 3 falhas em arquivos WIP nao commitados do programa concorrente (release-scope.guard, policy-decision-point) — nao causadas por este prompt (novas specs verdes). 
+NOTES:
+  - Working tree preserva WIP pre-existente (programa BUSINESS FRONTEND GAP CLOSURE Round 6 em andamento; ~268 arquivos).
+  - Restricoes/débitos registrados em docs/19-operations/release-hermetic-report.md.
+COMMIT: DONE (por area: database/migrations, runtime-config, web hermetico, infra compose, release packager/sbom, install-gate, upgrade-gate, recovery-gate)
+WORKING TREE: DIRTY (WIP pre-existente preservado)
+NEXT: CONTINUE
+```
