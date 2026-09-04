@@ -268,7 +268,7 @@ export class ServiceCatalogRepository {
           input.measurementMode,
           input.measurementBasis,
           input.actorIdentityId,
-          input.billingEntitlementPolicy ?? null,
+          input.billingEntitlementPolicy ?? 'MEASUREMENT_APPROVED',
           JSON.stringify({
             schemaVersion: 1,
             requiresPurchaseOrder: input.requiresPurchaseOrder ?? false,
@@ -439,7 +439,7 @@ export class ServiceCatalogRepository {
           payload.measurementMode,
           payload.measurementBasis,
           input.actorIdentityId,
-          payload.billingEntitlementPolicy ?? null,
+          payload.billingEntitlementPolicy ?? 'MEASUREMENT_APPROVED',
           JSON.stringify({
             schemaVersion: 1,
             requiresPurchaseOrder: payload.requiresPurchaseOrder ?? false,
@@ -551,7 +551,7 @@ export class ServiceCatalogRepository {
           input.measurementBasis,
           input.actorIdentityId,
           input.versionNumber,
-          input.billingEntitlementPolicy ?? null,
+          input.billingEntitlementPolicy ?? 'MEASUREMENT_APPROVED',
           JSON.stringify({
             schemaVersion: 1,
             requiresPurchaseOrder: input.requiresPurchaseOrder ?? false,

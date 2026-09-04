@@ -1,4 +1,6 @@
 import { HttpStatus } from '@nestjs/common';
+import { AuthzHttpException } from '../../authorization/errors/authz-http.exception';
+import { InvalidUuidError } from '../../platform/kernel/uuid';
 import { AccountingError } from '../domain/ledger';
 import { AccountingValidationError } from '../domain/ledger.validation';
 import { ACCOUNTING_ERROR_CODES } from '../errors/accounting-error-codes';
@@ -21,10 +23,13 @@ export function accountingNotFound(): AccountingHttpException {
 }
 
 export function mapAccountingDomainError(error: unknown): AccountingHttpException {
+  if (error instanceof AuthzHttpException) {
+    throw error;
+  }
   if (error instanceof AccountingHttpException) {
     return error;
   }
-  if (error instanceof AccountingValidationError) {
+  if (error instanceof InvalidUuidError || error instanceof AccountingValidationError) {
     return new AccountingHttpException(
       HttpStatus.BAD_REQUEST,
       ACCOUNTING_ERROR_CODES.VALIDATION_FAILED,
