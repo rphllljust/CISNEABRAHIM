@@ -26,6 +26,8 @@ import { BackgroundWorkerService } from './services/background-worker.service';
     BackgroundJobEnqueueService,
     BackgroundJobHandlerRegistry,
     BackgroundWorkerService,
+    NotificationDispatchJobHandler,
+    OperationalAlertScanJobHandler,
   ],
 })
 export class BackgroundJobsModule {}

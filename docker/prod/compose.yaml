@@ -5,6 +5,7 @@
 services:
   postgres:
     image: postgres:18-alpine
+    pull_policy: never
     container_name: cisne_prod_postgres
     restart: unless-stopped
     command:
@@ -29,6 +30,7 @@ services:
 
   minio:
     image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    pull_policy: never
     container_name: cisne_prod_minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
@@ -46,6 +48,7 @@ services:
 
   minio-bootstrap:
     image: minio/mc:RELEASE.2025-04-22T05-26-27Z
+    pull_policy: never
     container_name: cisne_prod_minio_bootstrap
     depends_on:
       minio:
@@ -65,6 +68,7 @@ services:
     networks: [cisne_prod_internal]
 
   api:
+    image: ${CISNE_API_IMAGE:-cisne-api:local}
     build:
       context: ../..
       dockerfile: docker/hml/Dockerfile.api
@@ -90,6 +94,7 @@ services:
     networks: [cisne_prod_internal]
 
   worker:
+    image: ${CISNE_API_IMAGE:-cisne-api:local}
     build:
       context: ../..
       dockerfile: docker/hml/Dockerfile.api
@@ -112,6 +117,7 @@ services:
     networks: [cisne_prod_internal]
 
   web:
+    image: ${CISNE_WEB_IMAGE:-cisne-web:local}
     build:
       context: ../..
       dockerfile: docker/hml/Dockerfile.web
@@ -130,6 +136,7 @@ services:
 
   caddy:
     image: caddy:2.9-alpine
+    pull_policy: never
     container_name: cisne_prod_caddy
     restart: unless-stopped
     ports:

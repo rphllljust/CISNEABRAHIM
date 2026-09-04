@@ -38,6 +38,7 @@
     "test:migration-torture": "vitest run --config vitest.integration.config.ts src/migration-torture.integration.spec.ts"
   },
   "dependencies": {
+    "dotenv": "^16.5.0",
     "drizzle-orm": "^0.45.2",
     "pg": "^8.16.0"
   },
@@ -46,7 +47,6 @@
     "@cisne/tsconfig": "workspace:*",
     "@types/node": "^22.15.29",
     "@types/pg": "^8.15.4",
-    "dotenv": "^16.5.0",
     "drizzle-kit": "^0.31.7",
     "eslint": "^9.28.0",
     "typescript": "^5.8.3",

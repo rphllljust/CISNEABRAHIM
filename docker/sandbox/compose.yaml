@@ -1,0 +1,150 @@
+# CISNE — sandbox hermético p/ gates de release (clean/offline install, upgrade, recovery).
+# Nunca é fonte do deploy de produção; usa IMAGENS já carregadas (docker load) e
+# NÃO baixa nem constrói nada (pull_policy: never, sem blocos build).
+# Rede isolada de egresso: user-defined bridge SEM ip masquerade => containers não
+# alcançam a internet (tentativa de download falha), mas o host alcança as portas publicadas.
+# Uso: docker compose -p cisne_gate_<run> -f docker/sandbox/compose.yaml --env-file <env> up -d
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    pull_policy: never
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${GATE_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${GATE_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${GATE_POSTGRES_DB}
+    volumes:
+      - gate_pg_data:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [gate_internal]
+
+  migrate:
+    image: ${CISNE_API_IMAGE:-cisne-api:local}
+    pull_policy: never
+    restart: 'no'
+    environment:
+      DATABASE_URL: postgresql://${GATE_POSTGRES_USER}:${GATE_POSTGRES_PASSWORD}@postgres:5432/${GATE_POSTGRES_DB}
+    command: ['node', 'packages/database/dist/cli/run-migrate-cli.js']
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [gate_internal]
+
+  bootstrap:
+    image: ${CISNE_API_IMAGE:-cisne-api:local}
+    pull_policy: never
+    restart: 'no'
+    environment:
+      DATABASE_URL: postgresql://${GATE_POSTGRES_USER}:${GATE_POSTGRES_PASSWORD}@postgres:5432/${GATE_POSTGRES_DB}
+      BOOTSTRAP_ADMIN_LOGIN: ${BOOTSTRAP_ADMIN_LOGIN}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD}
+      BOOTSTRAP_CONFIRM: ${BOOTSTRAP_CONFIRM:-I_UNDERSTAND}
+    command: ['node', 'packages/database/dist/cli/run-production-bootstrap.js']
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [gate_internal]
+
+  api:
+    image: ${CISNE_API_IMAGE:-cisne-api:local}
+    pull_policy: never
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      CISNE_ENV: ${GATE_CISNE_ENV:-hml}
+      PORT: '3000'
+      API_HOST: 0.0.0.0
+      DATABASE_URL: postgresql://${GATE_POSTGRES_USER}:${GATE_POSTGRES_PASSWORD}@postgres:5432/${GATE_POSTGRES_DB}
+      JWT_SECRET: ${GATE_JWT_SECRET}
+      JWT_ISSUER: cisne-gate
+      JWT_AUDIENCE: cisne-clients-gate
+      DOCUMENT_DOWNLOAD_TOKEN_SECRET: ${GATE_DOCUMENT_TOKEN_SECRET}
+      OBJECT_STORAGE_PROVIDER: filesystem
+      OBJECT_STORAGE_ROOT: /data/object-storage
+      OBJECT_STORAGE_BUCKET: cisne-gate-documents
+      CORS_ORIGIN: http://127.0.0.1:5174
+      OUTBOX_PUBLISHER_ENABLED: 'false'
+      FEATURE_MODULE_FINANCE: 'true'
+      FEATURE_MODULE_FISCAL: 'true'
+      FEATURE_MODULE_ACCOUNTING: 'true'
+      FEATURE_MODULE_INVENTORY: 'true'
+      FEATURE_MODULE_PAYROLL: 'true'
+      FEATURE_MODULE_PROCUREMENT: 'true'
+      FEATURE_MODULE_SUPPLIERS: 'true'
+      FEATURE_MODULE_CONTRACTS: 'true'
+      FEATURE_MODULE_PEOPLE: 'true'
+      FEATURE_MODULE_RENTALS: 'true'
+      FEATURE_MODULE_TRANSPORT: 'true'
+      FEATURE_MODULE_ALERTS: 'true'
+      FEATURE_MODULE_REPORTS: 'true'
+      FEATURE_MODULE_APPROVAL_MATRIX: 'true'
+      FEATURE_MODULE_OPERATIONAL_PROFITABILITY: 'true'
+    volumes:
+      - gate_object_storage:/data/object-storage
+    ports:
+      - '127.0.0.1:${GATE_API_PORT:-3100}:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:3000/api/v1/health/live']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+    networks: [gate_internal]
+
+  worker:
+    image: ${CISNE_API_IMAGE:-cisne-api:local}
+    pull_policy: never
+    restart: unless-stopped
+    command: ['node', 'apps/api/dist/worker/main.js']
+    environment:
+      NODE_ENV: production
+      CISNE_ENV: ${GATE_CISNE_ENV:-hml}
+      DATABASE_URL: postgresql://${GATE_POSTGRES_USER}:${GATE_POSTGRES_PASSWORD}@postgres:5432/${GATE_POSTGRES_DB}
+      JWT_SECRET: ${GATE_JWT_SECRET}
+      DOCUMENT_DOWNLOAD_TOKEN_SECRET: ${GATE_DOCUMENT_TOKEN_SECRET}
+      OUTBOX_PUBLISHER_ENABLED: 'true'
+    healthcheck:
+      test: ['CMD-SHELL', 'pgrep -f "worker/main.js" >/dev/null || exit 1']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [gate_internal]
+
+  web:
+    image: ${CISNE_WEB_IMAGE:-cisne-web:local}
+    pull_policy: never
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:${GATE_WEB_PORT:-5174}:80'
+    depends_on:
+      - api
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1/']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [gate_internal]
+
+networks:
+  gate_internal:
+    name: cisne_gate_internal_${GATE_RUN_ID:-local}
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.enable_ip_masquerade: "false"
+
+volumes:
+  gate_pg_data:
+    name: cisne_gate_pg_${GATE_RUN_ID:-local}
+  gate_object_storage:
+    name: cisne_gate_storage_${GATE_RUN_ID:-local}
