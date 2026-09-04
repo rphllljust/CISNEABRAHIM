@@ -16,6 +16,8 @@
     "test:visual:update": "playwright test --update-snapshots"
   },
   "dependencies": {
+    "@fontsource/ibm-plex-mono": "^5.2.5",
+    "@fontsource/inter": "^5.2.5",
     "lucide-react": "^1.37.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

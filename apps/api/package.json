@@ -66,7 +66,9 @@
     "@nestjs/common": "^11.1.2",
     "@nestjs/core": "^11.1.2",
     "@nestjs/platform-fastify": "^11.1.2",
+    "dotenv": "^16.5.0",
     "pdfkit": "^0.20.1",
+    "pg": "^8.16.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
   },

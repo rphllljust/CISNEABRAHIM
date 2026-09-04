@@ -1,0 +1,64 @@
+# Build context hygiene for docker/{hml,prod} images (context = repo root).
+# Never ship secrets, dev machines' scratch, caches, or prebuilt artifacts into
+# a builder layer: images rebuild everything from the workspace manifests.
+
+# VCS
+.git
+.gitignore
+.gitattributes
+
+# Secrets and local environment — never enter a build context/layer
+.env
+.env.*
+secrets/
+credentials.json
+service-account*.json
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Standalone export repos (gitignored; not part of monorepo builds)
+cisne-backend/
+cisne-frontend/
+cisne-infra/
+
+# Dependencies and caches
+node_modules/
+**/node_modules/
+.turbo/
+.pnpm-store/
+*.tsbuildinfo
+.eslintcache
+
+# Builds — regenerated inside the image
+apps/api/dist/
+apps/web/dist/
+packages/database/dist/
+dist/
+build/
+out/
+coverage/
+.playwright/
+playwright-report/
+test-results/
+
+# Local scratch
+tmp/
+temp/
+.backup/
+artifacts/
+.runtime/
+.object-storage/
+.object-storage-*/
+**/.object-storage/
+**/.object-storage-*/
+*.log
+gate-output.json
+gate-output-fresh.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

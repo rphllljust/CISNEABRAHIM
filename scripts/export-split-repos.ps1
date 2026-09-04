@@ -2,7 +2,7 @@
 $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $PSScriptRoot
 if (-not (Test-Path (Join-Path $Root 'pnpm-workspace.yaml'))) {
-  $Root = 'c:\CISNEABRAHIM'
+  throw "Monorepo root not found near script ($Root). Run from a checkout that contains pnpm-workspace.yaml."
 }
 
 $Templates = Join-Path $PSScriptRoot 'split-repos\templates'
