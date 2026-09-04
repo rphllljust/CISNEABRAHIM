@@ -7,10 +7,19 @@ import { AppModule } from './app.module';
 import { loadAuthConfig } from './auth/config/auth.config';
 import { SecurityHeadersInterceptor } from './infrastructure/http/security-headers.interceptor';
 import { isCorsOriginAllowed } from './infrastructure/http/cors-origin-policy';
+import { collectRuntimeConfigErrors } from './platform/runtime-config/runtime-config';
 
 config({ path: resolve(__dirname, '../../../.env') });
 
 async function bootstrap(): Promise<void> {
+  // Fail fast on invalid/missing required configuration BEFORE the HTTP
+  // listener binds. Never reach the first request with a broken config.
+  const configErrors = collectRuntimeConfigErrors('api', process.env);
+  if (configErrors.length > 0) {
+    console.error(`CONFIGURATION_ERROR\n${configErrors.join('\n')}`);
+    process.exit(1);
+  }
+
   const host = process.env['API_HOST'] ?? '0.0.0.0';
   const port = Number(process.env['PORT'] ?? 3000);
   const authConfig = loadAuthConfig();

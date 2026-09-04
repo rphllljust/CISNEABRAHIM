@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
@@ -13,6 +14,32 @@ export type DocumentStorageConfig = {
   s3SecretAccessKey?: string;
   s3ForcePathStyle: boolean;
 };
+
+/**
+ * DOCUMENT_DOWNLOAD_TOKEN_SECRET signs download URLs. It never falls back to a
+ * hardcoded constant: production-like runtimes must provide the secret (direct
+ * or via JWT_SECRET), while dev/test processes get an ephemeral random key
+ * (valid only within the process, matching the pre-existing test semantics).
+ */
+function resolveDownloadTokenSecret(
+  explicit: string | undefined,
+  jwtSecret: string | undefined,
+  env: NodeJS.ProcessEnv = process.env,
+): string {
+  if (explicit) {
+    return explicit;
+  }
+  if (jwtSecret) {
+    return jwtSecret;
+  }
+  const isProductionLike = env['NODE_ENV'] === 'production' || env['CISNE_ENV'] === 'production';
+  if (isProductionLike) {
+    throw new Error(
+      'CONFIGURATION_ERROR: DOCUMENT_DOWNLOAD_TOKEN_SECRET (or JWT_SECRET) is required when NODE_ENV/CISNE_ENV is production.',
+    );
+  }
+  return randomBytes(32).toString('hex');
+}
 
 function readTrimmed(envName: string): string | undefined {
   const raw = process.env[envName];
@@ -71,16 +98,14 @@ function readS3ForcePathStyle(s3Endpoint: string | undefined): boolean {
 export function loadDocumentStorageConfig(): DocumentStorageConfig {
   const provider = process.env['OBJECT_STORAGE_PROVIDER'] === 's3' ? 's3' : 'filesystem';
   const jwtSecret = readTrimmed('JWT_SECRET');
-  const downloadTokenSecret =
-    readTrimmed('DOCUMENT_DOWNLOAD_TOKEN_SECRET') ??
-    jwtSecret ??
-    'test-download-token-secret';
+  const downloadTokenSecret = resolveDownloadTokenSecret(
+    readTrimmed('DOCUMENT_DOWNLOAD_TOKEN_SECRET'),
+    jwtSecret,
+  );
   const s3Endpoint =
     readTrimmed('OBJECT_STORAGE_S3_ENDPOINT') ?? readTrimmed('OBJECT_STORAGE_ENDPOINT');
   const s3Region =
-    readTrimmed('OBJECT_STORAGE_S3_REGION') ??
-    readTrimmed('OBJECT_STORAGE_REGION') ??
-    'us-east-1';
+    readTrimmed('OBJECT_STORAGE_S3_REGION') ?? readTrimmed('OBJECT_STORAGE_REGION') ?? 'us-east-1';
   const s3AccessKeyId =
     readTrimmed('OBJECT_STORAGE_S3_ACCESS_KEY_ID') ?? readTrimmed('S3_ACCESS_KEY_ID');
   const s3SecretAccessKey =
