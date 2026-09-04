@@ -20,6 +20,7 @@ import type {
   ProductionReadinessDecision,
   ReadinessCheck,
   ReadinessCheckId,
+  ReadinessCheckStatus,
   ReadinessGateResult,
   SupportModel,
 } from './readiness-types';
@@ -35,7 +36,16 @@ export type ReadinessGateInput = {
   pilotReport?: PilotStatusReport;
   pilotMetrics?: PilotMetricsInput;
   pilotStartedAt?: string;
+  engineeringEvidence?: EngineeringEvidenceOverrides;
 };
+
+/**
+ * Per-check engineering evidence (e.g. produced by CI) that overrides the
+ * static baseline statuses in buildEngineeringChecks.
+ */
+export type EngineeringEvidenceOverrides = Partial<Record<ReadinessCheckId, ReadinessCheckStatus>>;
+
+const ENGINEERING_EVIDENCE_FILE_ENV = 'READINESS_ENGINEERING_EVIDENCE_FILE';
 
 function check(
   id: ReadinessCheckId,
@@ -63,7 +73,10 @@ export function loadSupportModel(env: NodeJS.ProcessEnv = process.env): SupportM
   };
 }
 
-export function buildEngineeringChecks(env: NodeJS.ProcessEnv = process.env): ReadinessCheck[] {
+export function buildEngineeringChecks(
+  env: NodeJS.ProcessEnv = process.env,
+  overrides: EngineeringEvidenceOverrides = {},
+): ReadinessCheck[] {
   const checks: ReadinessCheck[] = [];
   const engineeringPass = (id: ReadinessCheckId, label: string, prompt: string, detail: string) =>
     checks.push(check(id, label, 'PASS', `Prompt ${prompt}`, detail, false));
@@ -130,7 +143,42 @@ export function buildEngineeringChecks(env: NodeJS.ProcessEnv = process.env): Re
     ),
   );
 
+  for (const entry of checks) {
+    const override = overrides[entry.id];
+    if (override) {
+      entry.status = override;
+    }
+  }
+
   return checks;
+}
+
+/** Loads per-check engineering evidence from a JSON file referenced by env. */
+export function loadEngineeringEvidenceOverrides(env: NodeJS.ProcessEnv): EngineeringEvidenceOverrides {
+  const file = env[ENGINEERING_EVIDENCE_FILE_ENV];
+  if (!file) {
+    return {};
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(readFileSync(resolve(file), 'utf8'));
+  } catch (error) {
+    throw new Error(
+      `READINESS_ENGINEERING_EVIDENCE_FILE cannot be read/parsed: ${file} (${(error as Error).message})`,
+    );
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error(`READINESS_ENGINEERING_EVIDENCE_FILE must contain an object of { checkId: status }: ${file}`);
+  }
+  const statuses = new Set<ReadinessCheckStatus>(['PASS', 'FAIL', 'CONDITIONAL']);
+  const overrides: EngineeringEvidenceOverrides = {};
+  for (const [id, status] of Object.entries(parsed as Record<string, unknown>)) {
+    if (typeof status !== 'string' || !statuses.has(status as ReadinessCheckStatus)) {
+      throw new Error(`Invalid engineering evidence status for "${id}": ${String(status)}`);
+    }
+    overrides[id as ReadinessCheckId] = status as ReadinessCheckStatus;
+  }
+  return overrides;
 }
 
 export function evaluateExternalIntegrationsCheck(_env: NodeJS.ProcessEnv = process.env): ReadinessCheck {
@@ -187,7 +235,15 @@ export function evaluateReadinessGate(input: ReadinessGateInput = {}): Readiness
   const env = input.env ?? process.env;
   const evaluationTime = input.evaluationTime ?? new Date();
   const notes: string[] = [];
-  const engineeringChecks = buildEngineeringChecks(env);
+  const engineeringChecks = buildEngineeringChecks(
+    env,
+    // Real per-check evidence wins over the static baseline statuses: an
+    // explicitly supplied evidence map and/or the READINESS_ENGINEERING_EVIDENCE_FILE.
+    {
+      ...loadEngineeringEvidenceOverrides(env),
+      ...(input.engineeringEvidence ?? {}),
+    },
+  );
   const productionChecks: ReadinessCheck[] = [];
   const productionBlockers: string[] = [];
 
