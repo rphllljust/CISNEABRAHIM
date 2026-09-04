@@ -11467,3 +11467,29 @@ NOTES:
   Proxima rodada: Comercial (Contratos UI) e/ou Payroll (mapas de erro/estados).
 WORKING TREE: DIRTY (WIP anterior mantido) | NEXT: proxima rodada do programa
 ```
+```text
+PROMPT: BUSINESS FRONTEND GAP CLOSURE — Rodada 4 (Payroll + CreateRecordForm compartilhado)
+TITLE: Payroll: mapas de erro por codigo real, acoes por status do periodo, ack idempotente, resultados honestos; CreateRecordForm (VersionedActionForm) com banner de conflito/periodo fechado
+STARTED_AT: 2026-09-04T13:40:00-04:00
+FINISHED_AT: 2026-09-04T14:05:00-04:00
+STATUS: PASS (Rodada 4; programa ativo — proximas rodadas)
+CLASSIFICATION: Fechamento frontend-only com contratos existentes; sem regra de negocio/endpoint/capability novos; /app/access-admin intocado.
+SCOPE:
+  - payroll-api mapper: PAYROLL_VALIDATION_FAILED, INVALID_AMOUNT, INVALID_EVENT_KIND, PERIOD_CLOSED, PERIOD_NOT_OPEN, PERIOD_NOT_CALCULATED, PERIOD_NOT_CLOSED, FORMULA_NOT_DECIDED, OPERATIONS_COUPLING_FORBIDDEN; 401/403 e >=500 antes do switch (5xx nunca mais 'VALIDATION_FAILED'); response tipada com idempotent.
+  - PayrollPage: Calcular OPEN|CALCULATED, Fechar CALCULATED, Reabrir CLOSED (status reais do backend); reset + sucesso no card de contrato; notice de ack idempotente no card de evento; bloco de resultados com fases loading/erro/negado/vazio-real (sem falso vazio).
+  - VersionedActionForm (CreateRecordForm): conflito de versao / periodo fechado exibem banner com recarregar (onConflictReload/onSuccess opcionais); nunca limpa campos em silencio.
+  - Helpers puros + specs: period-action-state, is-idempotent-ack.
+RESULT:
+  FALSE SUCCESS/empty (Payroll) e 409-degradado em CreateRecordForm — fechados.
+QUALITY GATES (Rodada 4):
+  typecheck web: exit 0
+  specs novas: period-action-state 5/5, is-idempotent-ack 3/3 + financial-ui 2/2 (10/10)
+  Regressao compartilhada: idempotency-retry.ui 4/4 + ui.components 20/20 (24/24)
+  build web: PASS (dist gerado)
+NOTES:
+  Modulos apps/web/src/payroll e financial-ui estavam UNTRACKED (WIP anterior); commit da rodada os introduz com as correcoes.
+  Restricao honesta: postagem contabil em fechar/reabrir e engolida pelo backend (tryPost*), sem codigo ACCOUNTING_* no HTTP — nao inventado.
+  Commits: feat(web) 2e92506.
+  Proxima rodada: Comercial (Contratos UI) e/ou Finance (reverse/tesouraria/recon/collections).
+WORKING TREE: DIRTY (WIP anterior mantido) | NEXT: proxima rodada do programa
+```
