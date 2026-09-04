@@ -8,6 +8,8 @@ import { loadAuthConfig } from './auth/config/auth.config';
 import { SecurityHeadersInterceptor } from './infrastructure/http/security-headers.interceptor';
 import { isCorsOriginAllowed } from './infrastructure/http/cors-origin-policy';
 import { collectRuntimeConfigErrors } from './platform/runtime-config/runtime-config';
+import { ApiExceptionFilter } from './infrastructure/http/api-exception.filter';
+import { InvalidUuidFilter } from './infrastructure/http/invalid-uuid.filter';
 
 config({ path: resolve(__dirname, '../../../.env') });
 
@@ -39,6 +41,7 @@ async function bootstrap(): Promise<void> {
     allowedHeaders: ['Authorization', 'Content-Type', 'X-Correlation-Id', 'X-Request-Id'],
   });
   app.useGlobalInterceptors(new SecurityHeadersInterceptor());
+  app.useGlobalFilters(new ApiExceptionFilter(), new InvalidUuidFilter());
 
   await app.listen({ port, host });
 }
