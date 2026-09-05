@@ -2,6 +2,7 @@ import { assertUuid } from '../../platform/kernel/uuid';
 import { assertCurrencyCode } from '../../platform/kernel/money-math';
 import {
   AccountingError,
+  JOURNAL_SOURCE_KINDS,
   assertAccountClass,
   assertAccountingAmount,
   assertBalancedEntry,
@@ -195,4 +196,93 @@ export function validateClosePeriodInput(input: { rowVersion: number; reason: st
 
 export function validateReopenPeriodInput(input: { rowVersion: number; reason: string }) {
   return validateClosePeriodInput(input);
+}
+
+const PERIOD_STATUS_FILTERS = new Set(['OPEN', 'CLOSED']);
+const JOURNAL_STATUS_FILTERS = new Set(['DRAFT', 'POSTED']);
+const JOURNAL_KIND_FILTERS = new Set(['ENTRY', 'REVERSAL']);
+const SOURCE_KIND_FILTERS = new Set(Object.values(JOURNAL_SOURCE_KINDS));
+
+export function requireNonEmptyText(value: string | undefined | null, field: string): string {
+  return requireNonEmpty(value, field);
+}
+
+export function optionalWhitelist(value: string | undefined | null, allowed: ReadonlySet<string>, field: string): string | undefined {
+  const trimmed = value?.trim() ?? '';
+  if (trimmed === '') {
+    return undefined;
+  }
+  const normalized = trimmed.toUpperCase();
+  if (!allowed.has(normalized)) {
+    throw new AccountingValidationError(field);
+  }
+  return normalized;
+}
+
+export function requirePage(value: unknown, field: string): number {
+  const numeric = typeof value === 'string' && value.trim() !== '' ? Number(value) : value;
+  if (typeof numeric !== 'number' || !Number.isInteger(numeric) || numeric < 0) {
+    throw new AccountingValidationError(field);
+  }
+  return numeric;
+}
+
+export function requirePageSize(value: unknown, field: string): number {
+  const numeric = typeof value === 'string' && value.trim() !== '' ? Number(value) : value;
+  if (typeof numeric !== 'number' || !Number.isInteger(numeric) || numeric < 1 || numeric > 200) {
+    throw new AccountingValidationError(field);
+  }
+  return numeric;
+}
+
+export function optionalDateFilter(value: string | undefined | null, field: string): string | undefined {
+  const trimmed = value?.trim() ?? '';
+  if (trimmed === '') {
+    return undefined;
+  }
+  return requireDate(trimmed, field);
+}
+
+export function optionalPeriodStatus(value: string | undefined | null): string | undefined {
+  return optionalWhitelist(value, PERIOD_STATUS_FILTERS, 'status');
+}
+
+export function optionalJournalStatus(value: string | undefined | null): string | undefined {
+  return optionalWhitelist(value, JOURNAL_STATUS_FILTERS, 'status');
+}
+
+export function optionalJournalKind(value: string | undefined | null): string | undefined {
+  return optionalWhitelist(value, JOURNAL_KIND_FILTERS, 'kind');
+}
+
+export function optionalSourceKind(value: string | undefined | null): string | undefined {
+  return optionalWhitelist(value, SOURCE_KIND_FILTERS, 'sourceKind');
+}
+
+export type JournalListQuery = {
+  periodId?: string;
+  status?: string;
+  kind?: string;
+  occurredFrom?: string;
+  occurredTo?: string;
+  sourceKind?: string;
+  accountId?: string;
+  page: number;
+  pageSize: number;
+};
+
+export function validateJournalListQuery(
+  input: Omit<JournalListQuery, 'page' | 'pageSize'> & { page?: unknown; pageSize?: unknown },
+): JournalListQuery {
+  return {
+    periodId: input.periodId,
+    status: optionalJournalStatus(input.status),
+    kind: optionalJournalKind(input.kind),
+    occurredFrom: optionalDateFilter(input.occurredFrom, 'occurredFrom'),
+    occurredTo: optionalDateFilter(input.occurredTo, 'occurredTo'),
+    sourceKind: optionalSourceKind(input.sourceKind),
+    accountId: input.accountId,
+    page: requirePage(input.page, 'page'),
+    pageSize: requirePageSize(input.pageSize, 'pageSize'),
+  };
 }

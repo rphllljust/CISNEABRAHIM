@@ -118,6 +118,18 @@ export function mapAccountingDomainError(error: unknown): AccountingHttpExceptio
         ACCOUNTING_ERROR_CODES.DATE_OUTSIDE_PERIOD,
         'Occurred date is outside the accounting period.',
       );
+    case 'ACCOUNTING_ACCOUNT_INACTIVE':
+      return new AccountingHttpException(
+        HttpStatus.CONFLICT,
+        ACCOUNTING_ERROR_CODES.ACCOUNT_INACTIVE,
+        'Inactive accounts reject new postings. Reactivate the account or use another analytical account.',
+      );
+    case 'ACCOUNTING_ACCOUNT_SYNTHETIC':
+      return new AccountingHttpException(
+        HttpStatus.CONFLICT,
+        ACCOUNTING_ERROR_CODES.ACCOUNT_SYNTHETIC,
+        'Synthetic accounts (with children) reject direct postings. Use an analytical account.',
+      );
     case 'ACCOUNTING_ACCOUNT_CHART_MISMATCH':
       return new AccountingHttpException(
         HttpStatus.CONFLICT,

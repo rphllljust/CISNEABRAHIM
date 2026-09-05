@@ -678,6 +678,11 @@ $$;`);
       await applySqlFile(pool, '0074_access_administration.sql');
     }
 
+    const hasJournalEntryNumber = await columnExists(pool, 'acc', 'journal_entries', 'entry_number');
+    if (!hasJournalEntryNumber) {
+      await applySqlFile(pool, '0075_accounting_entry_number.sql');
+    }
+
     await syncDrizzleJournal(pool);
   } finally {
     await pool.end();

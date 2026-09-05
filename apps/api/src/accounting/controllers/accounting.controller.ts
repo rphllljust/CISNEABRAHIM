@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { CurrentAuth } from '../../auth/decorators/current-auth.decorator';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import type { AccessTokenClaims } from '../../auth/services/token.service';
@@ -36,9 +36,97 @@ export class AccountingController {
     );
   }
 
+  @Get('charts')
+  listCharts(@CurrentAuth() auth: AccessTokenClaims, @Query('unitId') unitId: string) {
+    return this.accountingAccess.listCharts({ identityId: auth.sub, sessionId: auth.sid }, unitId);
+  }
+
   @Get('charts/:chartId')
   getChart(@CurrentAuth() auth: AccessTokenClaims, @Param('chartId') chartId: string) {
     return this.accountingAccess.getChart({ identityId: auth.sub, sessionId: auth.sid }, chartId);
+  }
+
+  @Get('charts/:chartId/accounts')
+  listAccounts(@CurrentAuth() auth: AccessTokenClaims, @Param('chartId') chartId: string) {
+    return this.accountingAccess.listAccounts({ identityId: auth.sub, sessionId: auth.sid }, chartId);
+  }
+
+  @Patch('charts/:chartId/accounts/:accountId')
+  @HttpCode(200)
+  updateAccount(
+    @CurrentAuth() auth: AccessTokenClaims,
+    @Param('chartId') chartId: string,
+    @Param('accountId') accountId: string,
+    @Body() body: { name?: string | null; status?: string | null },
+  ) {
+    return this.accountingAccess.updateAccount(
+      { identityId: auth.sub, sessionId: auth.sid },
+      chartId,
+      accountId,
+      { name: body?.name, status: body?.status },
+    );
+  }
+
+  @Get('charts/:chartId/periods')
+  listPeriods(
+    @CurrentAuth() auth: AccessTokenClaims,
+    @Param('chartId') chartId: string,
+    @Query('status') status?: string,
+  ) {
+    return this.accountingAccess.listPeriods(
+      { identityId: auth.sub, sessionId: auth.sid },
+      chartId,
+      status,
+    );
+  }
+
+  @Get('charts/:chartId/journals')
+  listJournals(
+    @CurrentAuth() auth: AccessTokenClaims,
+    @Param('chartId') chartId: string,
+    @Query('periodId') periodId?: string,
+    @Query('status') status?: string,
+    @Query('kind') kind?: string,
+    @Query('occurredFrom') occurredFrom?: string,
+    @Query('occurredTo') occurredTo?: string,
+    @Query('sourceKind') sourceKind?: string,
+    @Query('accountId') accountId?: string,
+    @Query('page') page = '0',
+    @Query('pageSize') pageSize = '30',
+  ) {
+    return this.accountingAccess.listJournals(
+      { identityId: auth.sub, sessionId: auth.sid },
+      chartId,
+      { periodId, status, kind, occurredFrom, occurredTo, sourceKind, accountId, page, pageSize },
+    );
+  }
+
+  @Get('periods/:periodId/ledger')
+  accountLedger(
+    @CurrentAuth() auth: AccessTokenClaims,
+    @Param('periodId') periodId: string,
+    @Query('accountId') accountId: string,
+    @Query('page') page = '0',
+    @Query('pageSize') pageSize = '30',
+  ) {
+    return this.accountingAccess.accountLedger(
+      { identityId: auth.sub, sessionId: auth.sid },
+      periodId,
+      accountId,
+      page,
+      pageSize,
+    );
+  }
+
+  @Get('periods/:periodId/close-runs')
+  listPeriodCloseRuns(
+    @CurrentAuth() auth: AccessTokenClaims,
+    @Param('periodId') periodId: string,
+  ) {
+    return this.accountingAccess.listPeriodCloseRuns(
+      { identityId: auth.sub, sessionId: auth.sid },
+      periodId,
+    );
   }
 
   @Post('charts/:chartId/accounts')

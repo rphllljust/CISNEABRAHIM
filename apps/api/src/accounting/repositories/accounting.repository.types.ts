@@ -84,6 +84,7 @@ export type JournalEntryRow = {
   source_reference: string;
   idempotency_key: string;
   reverses_entry_id: string | null;
+  entry_number: number | null;
   posted_at: string | null;
   posted_by_identity_id: string | null;
   row_version: number;
@@ -208,4 +209,58 @@ export type LedgerMovementRow = {
   direction: string;
   amount: string;
   line_description: string | null;
+};
+
+export type EnrichedJournalLineRow = JournalEntryLineRow & {
+  account_code: string;
+  account_name: string;
+  account_class: string;
+  account_status: string;
+};
+
+export type AccountingJournalListItem = {
+  entry: JournalEntryRow;
+  lines: EnrichedJournalLineRow[];
+};
+
+export type JournalListPageInput = {
+  chartId?: string;
+  periodId?: string;
+  status?: string;
+  kind?: string;
+  occurredFrom?: string;
+  occurredTo?: string;
+  sourceKind?: string;
+  accountId?: string;
+  page: number;
+  pageSize: number;
+};
+
+export type JournalListPageResult = {
+  items: AccountingJournalListItem[];
+  total: number;
+};
+
+export type PeriodCloseRunDetailRow = {
+  id: string;
+  period_id: string;
+  policy_id: string;
+  status: string;
+  created_at: string;
+  created_by_identity_id: string;
+};
+
+export type PeriodCloseCheckDetailRow = {
+  id: string;
+  close_run_id: string;
+  kind: string;
+  result: string;
+  blocking: boolean;
+  observed_count: number;
+  detail: string;
+};
+
+export type AccountPostability = {
+  account: AccountingAccountRow | null;
+  hasChildren: boolean;
 };

@@ -55,6 +55,10 @@ export type JournalLineResponse = {
   id: string;
   lineNumber: number;
   accountId: string;
+  accountCode?: string;
+  accountName?: string;
+  accountClass?: string;
+  accountStatus?: string;
   direction: string;
   amount: string;
   description: string | null;
@@ -75,6 +79,7 @@ export type JournalResponse = {
   sourceReference: string;
   idempotencyKey: string;
   reversesEntryId: string | null;
+  entryNumber: number | null;
   postedAt: string | null;
   rowVersion: number;
   debitTotal: string;
@@ -158,6 +163,7 @@ export function toJournalResponse(aggregate: JournalAggregate): JournalResponse 
     sourceReference: aggregate.entry.source_reference,
     idempotencyKey: aggregate.entry.idempotency_key,
     reversesEntryId: aggregate.entry.reverses_entry_id,
+    entryNumber: aggregate.entry.entry_number,
     postedAt: aggregate.entry.posted_at,
     rowVersion: aggregate.entry.row_version,
     debitTotal: formatMoneyAmountForApi(reconstruction.totalDebits) ?? reconstruction.totalDebits,
@@ -191,8 +197,15 @@ export function toLedgerReconstructionResponse(
   };
 }
 
-function toLineResponse(line: JournalEntryLineRow): JournalLineResponse {
-  return {
+function toLineResponse(
+  line: JournalEntryLineRow & {
+    account_code?: string;
+    account_name?: string;
+    account_class?: string;
+    account_status?: string;
+  },
+): JournalLineResponse {
+  const response: JournalLineResponse = {
     id: line.id,
     lineNumber: line.line_number,
     accountId: line.account_id,
@@ -200,4 +213,11 @@ function toLineResponse(line: JournalEntryLineRow): JournalLineResponse {
     amount: formatMoneyAmountForApi(line.amount) ?? line.amount,
     description: line.description,
   };
+  if (line.account_code !== undefined) {
+    response.accountCode = line.account_code;
+    response.accountName = line.account_name;
+    response.accountClass = line.account_class;
+    response.accountStatus = line.account_status;
+  }
+  return response;
 }

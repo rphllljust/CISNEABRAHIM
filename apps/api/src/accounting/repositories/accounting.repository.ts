@@ -22,8 +22,11 @@ import {
   type PeriodCloseObservations,
   type PeriodClosePolicy,
 } from '../domain/period-close';
+import { assertAccountPostable } from '../domain/accounting-semantics';
 import type {
+  AccountPostability,
   AccountingAccountRow,
+  AccountingJournalListItem,
   AccountingPeriodRow,
   ChartOfAccountsRow,
   ClosePeriodPersistenceInput,
@@ -31,11 +34,16 @@ import type {
   CreateChartPersistenceInput,
   CreatePeriodPersistenceInput,
   DraftJournalPersistenceInput,
+  EnrichedJournalLineRow,
   JournalAggregate,
   JournalEntryLineRow,
   JournalEntryRow,
+  JournalListPageInput,
+  JournalListPageResult,
   LedgerMovementRow,
+  PeriodCloseCheckDetailRow,
   PeriodClosePolicyRow,
+  PeriodCloseRunDetailRow,
   PostedLineFactRow,
   PostJournalPersistenceInput,
   ReplaceJournalLinesPersistenceInput,
@@ -70,7 +78,7 @@ const PERIOD_RETURNING = `
 const ENTRY_RETURNING = `
   id, chart_id, period_id, unit_id, status::text AS status, kind::text AS kind, description,
   occurred_on::text AS occurred_on, currency_code, source_kind::text AS source_kind, source_id,
-  source_reference, idempotency_key, reverses_entry_id, posted_at, posted_by_identity_id,
+  source_reference, idempotency_key, reverses_entry_id, entry_number, posted_at, posted_by_identity_id,
   row_version, created_at, updated_at, created_by_identity_id, updated_by_identity_id
 `;
 
@@ -753,9 +761,15 @@ export class AccountingRepository {
         description: line.description,
       })),
     );
+    await this.assertEntryLinesPostableNow(client, entry.id, entry.kind);
     const posted = await client.query<JournalEntryRow>(
       `UPDATE acc.journal_entries
        SET status = 'POSTED',
+           entry_number = (
+             SELECT COALESCE(MAX(je.entry_number), 0) + 1
+             FROM acc.journal_entries je
+             WHERE je.period_id = $3 AND je.entry_number IS NOT NULL
+           ),
            posted_at = NOW(),
            posted_by_identity_id = $2,
            row_version = row_version + 1,
@@ -763,7 +777,7 @@ export class AccountingRepository {
            updated_by_identity_id = $2
        WHERE id = $1
        RETURNING ${ENTRY_RETURNING}`,
-      [entry.id, input.actorIdentityId],
+      [entry.id, input.actorIdentityId, entry.period_id],
     );
     return { entry: posted.rows[0]!, lines };
   }
@@ -790,6 +804,7 @@ export class AccountingRepository {
       if (account.rows[0].chart_id !== entry.chart_id) {
         throw new AccountingError('ACCOUNTING_ACCOUNT_CHART_MISMATCH');
       }
+      await this.assertAccountPostableNow(client, account.rows[0], entry);
       await client.query(
         `INSERT INTO acc.journal_entry_lines (
            journal_entry_id, line_number, account_id, direction, amount, description
@@ -803,6 +818,61 @@ export class AccountingRepository {
           line.description ?? null,
         ],
       );
+    }
+  }
+
+  /**
+   * Conta precisa estar ATIVA e ser ANALÍTICA (sem filhos) para receber
+   * escrituração de entrada ENTRY. Estornos (REVERSAL) restauram histórico e
+   * podem referenciar contas posteriormente inativadas.
+   */
+  private async assertAccountPostableNow(
+    client: PoolClient,
+    account: AccountingAccountRow,
+    entry: Pick<JournalEntryRow, 'kind'>,
+  ): Promise<void> {
+    if (entry.kind === JOURNAL_KINDS.Reversal) {
+      return;
+    }
+    const children = await client.query<{ has_children: boolean }>(
+      `SELECT EXISTS(
+         SELECT 1 FROM acc.accounting_accounts WHERE parent_id = $1
+       ) AS has_children`,
+      [account.id],
+    );
+    assertAccountPostable({
+      status: account.status,
+      hasChildren: children.rows[0]?.has_children ?? false,
+    });
+  }
+
+  /**
+   * Revalida no momento do POST que todas as contas das linhas continuam
+   * postáveis (entrada ENTRY). Uma conta inativada/sintetizada entre o rascunho
+   * e a postagem bloqueia a efetivação.
+   */
+  private async assertEntryLinesPostableNow(
+    client: PoolClient,
+    journalEntryId: string,
+    kind: string,
+  ): Promise<void> {
+    if (kind === JOURNAL_KINDS.Reversal) {
+      return;
+    }
+    const rows = await client.query<{
+      account_id: string;
+      status: string;
+      has_children: boolean;
+    }>(
+      `SELECT l.account_id, a.status::text AS status,
+              EXISTS(SELECT 1 FROM acc.accounting_accounts c WHERE c.parent_id = a.id) AS has_children
+       FROM acc.journal_entry_lines l
+       INNER JOIN acc.accounting_accounts a ON a.id = l.account_id
+       WHERE l.journal_entry_id = $1`,
+      [journalEntryId],
+    );
+    for (const row of rows.rows) {
+      assertAccountPostable({ status: row.status, hasChildren: row.has_children });
     }
   }
 
@@ -1083,6 +1153,238 @@ export class AccountingRepository {
     }
     const lines = await this.listLines(result.rows[0].id);
     return { entry: result.rows[0], lines };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Leitura / listagens (projeções do ledger para a UI) — ordenação determinística.
+  // ---------------------------------------------------------------------------
+
+  async listChartsByUnit(unitId: string): Promise<ChartOfAccountsRow[]> {
+    const result = await this.pool().query<ChartOfAccountsRow>(
+      `SELECT ${CHART_RETURNING}
+       FROM acc.charts_of_accounts
+       WHERE unit_id = $1
+       ORDER BY code, name`,
+      [unitId],
+    );
+    return result.rows;
+  }
+
+  async listPeriodsByChart(chartId: string, status?: string): Promise<AccountingPeriodRow[]> {
+    const statusFilter = status ? `AND status = $2::acc.period_status` : '';
+    const result = await this.pool().query<AccountingPeriodRow>(
+      `SELECT ${PERIOD_RETURNING}
+       FROM acc.accounting_periods
+       WHERE chart_id = $1 ${statusFilter}
+       ORDER BY starts_on DESC, code`,
+      status ? [chartId, status] : [chartId],
+    );
+    return result.rows;
+  }
+
+  async findAccountPostability(accountId: string): Promise<AccountPostability> {
+    const account = await this.findAccountById(accountId);
+    if (!account) {
+      return { account: null, hasChildren: false };
+    }
+    const children = await this.pool().query<{ has_children: boolean }>(
+      `SELECT EXISTS(SELECT 1 FROM acc.accounting_accounts WHERE parent_id = $1) AS has_children`,
+      [accountId],
+    );
+    return { account, hasChildren: children.rows[0]?.has_children ?? false };
+  }
+
+  async listJournalPage(input: JournalListPageInput): Promise<JournalListPageResult> {
+    const conditions: string[] = [];
+    const params: unknown[] = [];
+    const push = (sql: string, value: unknown) => {
+      params.push(value);
+      conditions.push(sql.replace('?', `$${params.length}`));
+    };
+    if (input.chartId) {
+      push('e.chart_id = ?', input.chartId);
+    }
+    if (input.periodId) {
+      push('e.period_id = ?', input.periodId);
+    }
+    if (input.status) {
+      push('e.status = ?::acc.journal_status', input.status);
+    }
+    if (input.kind) {
+      push('e.kind = ?::acc.journal_kind', input.kind);
+    }
+    if (input.occurredFrom) {
+      push('e.occurred_on >= ?::date', input.occurredFrom);
+    }
+    if (input.occurredTo) {
+      push('e.occurred_on <= ?::date', input.occurredTo);
+    }
+    if (input.sourceKind) {
+      push('e.source_kind = ?::acc.journal_source_kind', input.sourceKind);
+    }
+    if (input.accountId) {
+      push(
+        `EXISTS (SELECT 1 FROM acc.journal_entry_lines account_line
+                 WHERE account_line.journal_entry_id = e.id AND account_line.account_id = ?)`,
+        input.accountId,
+      );
+    }
+    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const count = await this.pool().query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM acc.journal_entries e ${where}`,
+      params,
+    );
+    const total = Number(count.rows[0]?.count ?? '0');
+    const pageParams = [...params, input.pageSize, input.page * input.pageSize];
+    const entries = await this.pool().query<JournalEntryRow>(
+      `SELECT ${ENTRY_RETURNING}
+       FROM acc.journal_entries e
+       ${where}
+       ORDER BY e.occurred_on ASC, e.created_at ASC, e.id ASC
+       LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+      pageParams,
+    );
+    const items: AccountingJournalListItem[] = [];
+    if (entries.rows.length > 0) {
+      const entryIds = entries.rows.map((entry) => entry.id);
+      const lines = await this.pool().query<EnrichedJournalLineRow>(
+        `SELECT l.id, l.journal_entry_id, l.line_number, l.account_id, l.direction::text AS direction,
+                l.amount::text AS amount, l.description, l.created_at,
+                a.code AS account_code, a.name AS account_name, a.class::text AS account_class,
+                a.status::text AS account_status
+         FROM acc.journal_entry_lines l
+         INNER JOIN acc.accounting_accounts a ON a.id = l.account_id
+         WHERE l.journal_entry_id = ANY($1::uuid[])
+         ORDER BY l.journal_entry_id, l.line_number`,
+        [entryIds],
+      );
+      const linesByEntry = new Map<string, EnrichedJournalLineRow[]>();
+      for (const line of lines.rows) {
+        const bucket = linesByEntry.get(line.journal_entry_id) ?? [];
+        bucket.push(line);
+        linesByEntry.set(line.journal_entry_id, bucket);
+      }
+      for (const entry of entries.rows) {
+        items.push({ entry, lines: linesByEntry.get(entry.id) ?? [] });
+      }
+    }
+    return { items, total };
+  }
+
+  async listLedgerMovementsPage(
+    periodId: string,
+    accountId: string,
+    page: number,
+    pageSize: number,
+  ): Promise<{ items: LedgerMovementRow[]; total: number }> {
+    const count = await this.pool().query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count
+       FROM acc.posted_journal_lines l
+       WHERE l.period_id = $1 AND l.account_id = $2`,
+      [periodId, accountId],
+    );
+    const total = Number(count.rows[0]?.count ?? '0');
+    const result = await this.pool().query<LedgerMovementRow>(
+      `SELECT l.journal_entry_id, l.occurred_on::text AS occurred_on, e.description, e.source_reference,
+              e.kind::text AS kind, l.line_number, l.direction::text AS direction, l.amount::text AS amount,
+              l.line_description
+       FROM acc.posted_journal_lines l
+       INNER JOIN acc.journal_entries e ON e.id = l.journal_entry_id
+       WHERE l.period_id = $1 AND l.account_id = $2
+       ORDER BY l.occurred_on, e.posted_at, e.id, l.line_number
+       LIMIT $3 OFFSET $4`,
+      [periodId, accountId, pageSize, page * pageSize],
+    );
+    return { items: result.rows, total };
+  }
+
+  async listAllLedgerMovements(
+    periodId: string,
+    accountId: string,
+  ): Promise<LedgerMovementRow[]> {
+    const result = await this.pool().query<LedgerMovementRow>(
+      `SELECT l.journal_entry_id, l.occurred_on::text AS occurred_on, e.description, e.source_reference,
+              e.kind::text AS kind, l.line_number, l.direction::text AS direction, l.amount::text AS amount,
+              l.line_description
+       FROM acc.posted_journal_lines l
+       INNER JOIN acc.journal_entries e ON e.id = l.journal_entry_id
+       WHERE l.period_id = $1 AND l.account_id = $2
+       ORDER BY l.occurred_on, e.posted_at, e.id, l.line_number`,
+      [periodId, accountId],
+    );
+    return result.rows;
+  }
+
+  async listPeriodCloseRuns(periodId: string): Promise<{
+    runs: Array<{ run: PeriodCloseRunDetailRow; checks: PeriodCloseCheckDetailRow[] }>;
+  }> {
+    const runs = await this.pool().query<PeriodCloseRunDetailRow>(
+      `SELECT id, period_id, policy_id, status::text AS status, created_at, created_by_identity_id
+       FROM acc.period_close_runs
+       WHERE period_id = $1
+       ORDER BY created_at DESC, id DESC`,
+      [periodId],
+    );
+    const grouped: Array<{ run: PeriodCloseRunDetailRow; checks: PeriodCloseCheckDetailRow[] }> = [];
+    if (runs.rows.length > 0) {
+      const runIds = runs.rows.map((run) => run.id);
+      const checks = await this.pool().query<PeriodCloseCheckDetailRow>(
+        `SELECT id, close_run_id, kind::text AS kind, result::text AS result, blocking,
+                observed_count, detail
+         FROM acc.period_close_check_results
+         WHERE close_run_id = ANY($1::uuid[])
+         ORDER BY close_run_id, kind`,
+        [runIds],
+      );
+      const checksByRun = new Map<string, PeriodCloseCheckDetailRow[]>();
+      for (const check of checks.rows) {
+        const bucket = checksByRun.get(check.close_run_id) ?? [];
+        bucket.push(check);
+        checksByRun.set(check.close_run_id, bucket);
+      }
+      for (const run of runs.rows) {
+        grouped.push({ run, checks: checksByRun.get(run.id) ?? [] });
+      }
+    }
+    return { runs: grouped };
+  }
+
+  async updateAccount(input: {
+    accountId: string;
+    name?: string;
+    status?: string;
+    actorIdentityId: string;
+  }): Promise<AccountingAccountRow> {
+    const sets: string[] = [];
+    const params: unknown[] = [input.accountId];
+    if (input.name !== undefined && input.name !== null) {
+      sets.push('name = $' + (params.length + 1));
+      params.push(input.name.trim());
+    }
+    if (input.status !== undefined && input.status !== null) {
+      sets.push('status = $' + (params.length + 1) + '::acc.account_status');
+      params.push(input.status);
+    }
+    if (sets.length === 0) {
+      const current = await this.findAccountById(input.accountId);
+      if (!current) {
+        throw new AccountingError('ACCOUNTING_ACCOUNT_NOT_FOUND');
+      }
+      return current;
+    }
+    sets.push('updated_at = NOW()', `updated_by_identity_id = $${params.length + 1}`);
+    params.push(input.actorIdentityId);
+    const result = await this.pool().query<AccountingAccountRow>(
+      `UPDATE acc.accounting_accounts
+       SET ${sets.join(', ')}
+       WHERE id = $1
+       RETURNING ${ACCOUNT_RETURNING}`,
+      params,
+    );
+    if (!result.rows[0]) {
+      throw new AccountingError('ACCOUNTING_ACCOUNT_NOT_FOUND');
+    }
+    return result.rows[0];
   }
 }
 
