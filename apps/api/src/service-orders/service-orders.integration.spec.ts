@@ -51,7 +51,7 @@ import { ServiceOrdersAccessService } from './services/service-orders-access.ser
 
 const UNIT_A = 'unit-so-a';
 const TEST_CNPJ = '11222333000181';
-const TEST_CNPJ_ALT = '11897171000181';
+const TEST_CNPJ_ALT = '11222333000181';
 
 async function grantServiceOrderAdmin(pool: Pool, identityId: string, grantedBy: string): Promise<void> {
   const actions = [
@@ -62,6 +62,7 @@ async function grantServiceOrderAdmin(pool: Pool, identityId: string, grantedBy:
     AUTHZ_ACTIONS.ServiceOrdersServiceOrderPrepare,
     AUTHZ_ACTIONS.ServiceOrdersServiceOrderRelease,
     AUTHZ_ACTIONS.ServiceOrdersServiceOrderCancel,
+    AUTHZ_ACTIONS.ServiceOrdersServiceOrderReopen,
     AUTHZ_ACTIONS.RequestsServiceRequestCreate,
     AUTHZ_ACTIONS.RequestsServiceRequestRead,
     AUTHZ_ACTIONS.RequestsServiceRequestUpdate,
@@ -519,6 +520,23 @@ describe('Service orders PostgreSQL integration', () => {
     ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.CLIENT_NOT_FOUND });
   });
 
+  it('denies create against an inactive client', async () => {
+    const { actor } = await seedActor();
+    const client = await seedClient(actor);
+    const publishedService = await seedPublishedService(actor);
+    await clientAccess.deactivate(actor, client.id, client.version, 'Inativo');
+
+    await expect(
+      serviceOrdersAccess.create(actor, {
+        origin: SERVICE_ORDER_ORIGINS.AuthorizedDirect,
+        unitId: UNIT_A,
+        clientId: client.id,
+        serviceDefinitionId: publishedService.serviceDefinitionId,
+        serviceDefinitionVersionId: publishedService.id,
+      }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.CLIENT_INACTIVE });
+  });
+
   it('denies release for inactive client', async () => {
     const { actor } = await seedActor();
     const { client, created } = await createDraftWithService(actor);
@@ -543,6 +561,9 @@ describe('Service orders PostgreSQL integration', () => {
 
     expect(released.status).toBe(SERVICE_ORDER_STATUSES.Released);
     expect(released.releasedAt).not.toBeNull();
+    expect(created.createdByIdentityId).toBe(actor.identityId);
+    expect(released.releasedByIdentityId).toBe(actor.identityId);
+    expect(released.createdByIdentityId).toBe(released.releasedByIdentityId);
     expect(released.historyEvents.map((event) => event.eventType)).toEqual(
       expect.arrayContaining(['CREATED', 'PREPARED', 'RELEASED']),
     );
@@ -807,6 +828,56 @@ describe('Service orders PostgreSQL integration', () => {
     );
   });
 
+  it('reopens a cancelled service order with mandatory justification and audit', async () => {
+    const { actor } = await seedActor();
+    const { created } = await createDraftWithService(actor);
+    const prepared = await serviceOrdersAccess.prepare(actor, created.id, {
+      rowVersion: created.rowVersion,
+    });
+    const released = await serviceOrdersAccess.release(actor, prepared.id, {
+      rowVersion: prepared.rowVersion,
+    });
+    const cancelled = await serviceOrdersAccess.cancel(actor, released.id, {
+      rowVersion: released.rowVersion,
+      cancellationReason: 'Liberação revertida',
+    });
+
+    const otherLogin = normalizeLoginIdentifier(`so-reopen-deny-${crypto.randomUUID()}@cisne.invalid`);
+    const passwordHash = await hashPassword(AUTH_TEST_PASSWORD);
+    const { identityId: otherId } = await insertIdentity(pool, otherLogin, passwordHash);
+
+    await expect(
+      serviceOrdersAccess.reopen({ identityId: otherId, sessionId: 'sid' }, cancelled.id, {
+        rowVersion: cancelled.rowVersion,
+        reopenReason: 'Tentativa sem autoridade máxima.',
+      }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.DENIED });
+
+    await expect(
+      serviceOrdersAccess.reopen(actor, cancelled.id, {
+        rowVersion: cancelled.rowVersion,
+        reopenReason: '   ',
+      }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.REOPEN_JUSTIFICATION_REQUIRED });
+
+    const reopened = await serviceOrdersAccess.reopen(actor, cancelled.id, {
+      rowVersion: cancelled.rowVersion,
+      reopenReason: 'Cliente confirmou execução e a OS precisa voltar ao fluxo.',
+    });
+    expect(reopened.status).toBe(SERVICE_ORDER_STATUSES.Released);
+    expect(reopened.reopenedByIdentityId).toBe(actor.identityId);
+    expect(reopened.reopenReason).toContain('Cliente confirmou');
+    expect(reopened.historyEvents.map((event) => event.eventType)).toContain('REOPENED');
+
+    const audit = await pool.query<{ action: string }>(
+      `SELECT action FROM audit.security_audit_events WHERE resource_id = $1`,
+      [cancelled.id],
+    );
+    expect(audit.rows.map((row) => row.action)).toContain(
+      SECURITY_AUDIT_ACTIONS.ServiceOrdersServiceOrderReopen,
+    );
+  });
+
   it('rejects invalid lifecycle transitions from wrong states', async () => {
     const { actor } = await seedActor();
     const { created } = await createDraftWithService(actor);
@@ -870,6 +941,10 @@ describe('Service orders PostgreSQL integration', () => {
         rowVersion: prepared.rowVersion,
         cancellationReason: 'Sem permissão',
       }),
+    ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.DENIED });
+
+    await expect(
+      serviceOrdersAccess.release(otherActor, prepared.id, { rowVersion: prepared.rowVersion }),
     ).rejects.toMatchObject({ code: SERVICE_ORDERS_ERROR_CODES.DENIED });
   });
 });

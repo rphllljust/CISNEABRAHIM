@@ -12,7 +12,7 @@ PRODUCTION READINESS: NO-GO — único blocker oficial: PILOT_OBSERVATION_WINDOW
 GO-LIVE / HYPERCARE: BLOCKED (Prompts 93 e 94) até EXIT_READY do piloto (janela 14d; saída 13 set 2026)
 ```
 
-O monorepo contém backend NestJS (`@cisne/api`) e frontend React (`@cisne/web`) com módulos empresariais reais: clientes, solicitações, propostas, pedidos de compra, ordens de serviço, execução, medições, faturamento, documentos, autorização, auditoria, notificações e integrações ACL (ERP/rastreio desligados até confirmação).
+O monorepo contém backend NestJS (`@cisne/api`) e frontend React (`@cisne/web`) com módulos empresariais reais: clientes, solicitações, propostas, pedidos de compra, ordens de serviço, execução, medições, faturamento, documentos, autorização, auditoria e notificações. O SISTEMA CISNE RONDÔNIA é o sistema empresarial centralizado (SRC-004 / BR-042): não haverá conexão com ERP; ACL de ERP permanece desligada. Rastreio e demais canais não-ERP seguem desligados até confirmação.
 
 **Não** equivale a go-live em produção. Sign-off empresarial, RPO/RTO (DDP-016) e UAT humano (dois administradores) estão registrados em `readiness-evidence.json`. O gate de produção permanece **NO-GO** enquanto o piloto não completar a janela de observação e não houver autorização de exit.
 
@@ -45,6 +45,19 @@ O processo de prompts incrementais **não promete ausência total de erros**. El
 - Implementação bloqueada enquanto faltar informação crítica (`NOT_READY_FOR_IMPLEMENTATION`).
 
 Detalhes: [`docs/00-governance/engineering-principles.md`](docs/00-governance/engineering-principles.md), [`docs/00-governance/execution-protocol.md`](docs/00-governance/execution-protocol.md).
+
+## Estrutura do repositório
+
+Monorepo único (pnpm + Turbo). Front, API e banco ficam neste Git; não há três repositórios-fonte.
+
+| Papel | Caminho | Pacote |
+| ----- | ------- | ------ |
+| Frontend | [`apps/web/`](apps/web/) | `@cisne/web` (React) |
+| Backend / API | [`apps/api/`](apps/api/) | `@cisne/api` (NestJS) |
+| Banco de dados | [`packages/database/`](packages/database/) | `@cisne/database` (schema Drizzle, migrations SQL, seeds) |
+| PostgreSQL local / HML | [`docker/`](docker/) | Compose (não é um terceiro app) |
+
+`cisne-backend/`, `cisne-frontend/` e `cisne-infra/` na raiz, se existirem no disco, são **cópias exportadas** (`scripts/split-repos`). Estão no `.gitignore` e **não sobem no GitHub**. A fonte de verdade é `apps/` + `packages/`.
 
 ## Estrutura documental
 

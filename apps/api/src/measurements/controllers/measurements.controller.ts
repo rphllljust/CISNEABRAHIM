@@ -165,4 +165,20 @@ export class MeasurementsController {
       validateRejectMeasurementInput(request.body),
     );
   }
+
+  @Post(':measurementId/resubmit')
+  @HttpCode(200)
+  resubmit(
+    @CurrentAuth() auth: AccessTokenClaims,
+    @Param('serviceOrderId') serviceOrderId: string,
+    @Param('measurementId') measurementId: string,
+    @Req() request: FastifyRequest,
+  ) {
+    return this.measurementsAccess.resubmit(
+      { identityId: auth.sub, sessionId: auth.sid },
+      serviceOrderId,
+      measurementId,
+      parseTransitionBody(request.body),
+    );
+  }
 }

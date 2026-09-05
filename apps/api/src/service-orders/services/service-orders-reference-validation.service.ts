@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ServiceOrdersRepository } from '../repositories/service-orders.repository';
 import {
+  serviceOrdersClientInactive,
   serviceOrdersClientNotFound,
   serviceOrdersUnitNotRegistered,
 } from './service-orders-access.errors';
@@ -20,6 +21,16 @@ export class ServiceOrdersReferenceValidationService {
     const client = await this.repository.findClientById(clientId);
     if (!client) {
       throw serviceOrdersClientNotFound();
+    }
+  }
+
+  async assertClientActive(clientId: string): Promise<void> {
+    const client = await this.repository.findClientById(clientId);
+    if (!client) {
+      throw serviceOrdersClientNotFound();
+    }
+    if (client.status !== 'ACTIVE') {
+      throw serviceOrdersClientInactive('Client must be active.');
     }
   }
 }

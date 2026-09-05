@@ -5,15 +5,6 @@ export const CLIENT_STATUSES = {
 
 export type ClientStatus = (typeof CLIENT_STATUSES)[keyof typeof CLIENT_STATUSES];
 
-export const PURCHASE_ORDER_REQUIREMENTS = {
-  NotRequired: 'NOT_REQUIRED',
-  BeforeExecution: 'BEFORE_EXECUTION',
-  BeforeBilling: 'BEFORE_BILLING',
-} as const;
-
-export type PurchaseOrderRequirement =
-  (typeof PURCHASE_ORDER_REQUIREMENTS)[keyof typeof PURCHASE_ORDER_REQUIREMENTS];
-
 export const CONTACT_PURPOSES = {
   Operational: 'operational',
   Commercial: 'commercial',
@@ -58,7 +49,6 @@ export type Client = {
   taxId: string;
   externalErpId: string | null;
   status: ClientStatus;
-  purchaseOrderRequirement: PurchaseOrderRequirement;
   version: number;
   createdAt: string;
   updatedAt: string;
@@ -72,8 +62,6 @@ export type ClientListResponse = {
   items: Client[];
   limit: number;
   offset: number;
-  total: number;
-  summary: { total: number; active: number; inactive: number; purchaseOrderRequired: number };
 };
 
 export type CreateClientPayload = {

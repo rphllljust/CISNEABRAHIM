@@ -9,6 +9,7 @@ import { OutboxDomainEventWriter } from '../../platform/outbox/services/outbox-d
 import { SERVICE_REQUEST_STATUSES } from '../../requests/domain/service-request';
 import {
   lockServiceRequestForConversion,
+  markServiceRequestAdditionalConversion,
   markServiceRequestConverted,
 } from '../../requests/application/service-request-conversion.persistence';
 import { SERVICE_ORDER_STATUSES } from '../domain/service-order';
@@ -116,6 +117,8 @@ export class ServiceOrdersRepository {
          so.cancelled_at, so.cancelled_by_identity_id, so.cancellation_reason,
          so.started_at, so.started_by_identity_id, so.paused_at, so.paused_by_identity_id,
          so.completed_at, so.completed_by_identity_id,
+         so.status_before_cancel, so.reopened_at, so.reopened_by_identity_id, so.reopen_reason,
+         so.status_before_reopen,
          so.row_version, so.created_at, so.updated_at, so.created_by_identity_id, so.updated_by_identity_id
        FROM ${parts.fromClause}
        WHERE ${parts.whereClause}
@@ -146,6 +149,7 @@ export class ServiceOrdersRepository {
     trade_name: string | null;
     normalized_tax_id: string;
     status: string;
+    purchase_order_requirement: string;
   } | null> {
     const result = await this.pool().query<{
       id: string;
@@ -153,8 +157,10 @@ export class ServiceOrdersRepository {
       trade_name: string | null;
       normalized_tax_id: string;
       status: string;
+      purchase_order_requirement: string;
     }>(
-      `SELECT id, legal_name, trade_name, normalized_tax_id, status::text AS status
+      `SELECT id, legal_name, trade_name, normalized_tax_id, status::text AS status,
+              COALESCE(purchase_order_requirement::text, 'NOT_REQUIRED') AS purchase_order_requirement
        FROM rpt.read_clients WHERE id = $1`,
       [clientId],
     );
@@ -258,7 +264,9 @@ export class ServiceOrdersRepository {
          sdv.archetype::text AS archetype,
          sdv.measurement_mode::text AS measurement_mode,
          sdv.measurement_basis::text AS measurement_basis,
-         sdv.default_unit_code
+         sdv.default_unit_code,
+         sdv.commercial_config,
+         sdv.billing_entitlement_policy::text AS billing_entitlement_policy
        FROM cat.service_definitions sd
        INNER JOIN cat.service_definition_versions sdv ON sdv.service_definition_id = sd.id
        WHERE sd.id = $1
@@ -356,11 +364,49 @@ export class ServiceOrdersRepository {
         return { outcome: 'version_conflict' };
       }
       if (request.status === SERVICE_REQUEST_STATUSES.Converted) {
-        await client.query('ROLLBACK');
-        return {
-          outcome: 'already_converted',
-          serviceOrderId: request.converted_service_order_id!,
-        };
+        if (!request.service_definition_id) {
+          await client.query('ROLLBACK');
+          return { outcome: 'invalid_state' };
+        }
+        const serviceOrder = await this.insertServiceOrder(client, {
+          internalCode: input.internalCode,
+          orderNumber: input.orderNumber,
+          unitId: request.unit_id,
+          origin: 'SERVICE_REQUEST',
+          clientId: request.client_id,
+          clientSnapshot: input.clientSnapshot,
+          serviceDefinitionId: request.service_definition_id,
+          serviceDefinitionVersionId: request.service_definition_version_id,
+          serviceSnapshot: input.serviceSnapshot,
+          description: request.description,
+          location: request.location,
+          priority: request.priority,
+          operationalNotes: request.operational_notes,
+          serviceRequestId: request.id,
+          proposalId: request.proposal_id,
+          proposalSnapshot: input.proposalSnapshot,
+          purchaseOrderId: request.purchase_order_id,
+          purchaseOrderSnapshot: input.purchaseOrderSnapshot,
+          rcNumber: input.rcNumber,
+          contractId: input.contractId ?? null,
+          contractReference: input.contractReference ?? null,
+          contractSnapshot: input.contractSnapshot ?? null,
+          actorIdentityId: input.actorIdentityId,
+          historyEventType: 'CONVERTED_FROM_SERVICE_REQUEST',
+          historyPayload: { serviceRequestId: request.id, requestCode: request.request_code },
+        });
+        const updated = await markServiceRequestAdditionalConversion(client, {
+          serviceRequestId: input.serviceRequestId,
+          rowVersion: input.rowVersion,
+          actorIdentityId: input.actorIdentityId,
+          serviceOrderId: serviceOrder.id,
+        });
+        if (!updated) {
+          await client.query('ROLLBACK');
+          return { outcome: 'version_conflict' };
+        }
+        await client.query('COMMIT');
+        return { outcome: 'converted', serviceOrder };
       }
       if (request.status !== SERVICE_REQUEST_STATUSES.Approved) {
         await client.query('ROLLBACK');
@@ -535,6 +581,7 @@ export class ServiceOrdersRepository {
            purchase_order_id = CASE WHEN $15::text = '__UNSET__' THEN purchase_order_id WHEN $15 IS NULL THEN NULL ELSE $15::uuid END,
            purchase_order_snapshot = CASE WHEN $16::text = '__UNSET__' THEN purchase_order_snapshot WHEN $16 IS NULL THEN NULL ELSE $16::jsonb END,
            rc_number = CASE WHEN $17::text = '__UNSET__' THEN rc_number WHEN $17 IS NULL THEN NULL ELSE $17 END,
+           contract_id = CASE WHEN $20::text = '__UNSET__' THEN contract_id WHEN $20 IS NULL THEN NULL ELSE $20::uuid END,
            contract_reference = CASE WHEN $18::text = '__UNSET__' THEN contract_reference WHEN $18 IS NULL THEN NULL ELSE $18 END,
            contract_snapshot = CASE WHEN $19::text = '__UNSET__' THEN contract_snapshot WHEN $19 IS NULL THEN NULL ELSE $19::jsonb END,
            updated_by_identity_id = $3,
@@ -580,6 +627,7 @@ export class ServiceOrdersRepository {
             : input.contractSnapshot
               ? JSON.stringify(input.contractSnapshot)
               : null,
+          input.contractId === undefined ? '__UNSET__' : input.contractId,
         ],
       );
       const updated = result.rows[0];
@@ -666,6 +714,7 @@ export class ServiceOrdersRepository {
           fromStatus: input.currentStatus,
           toStatus: input.nextStatus,
           ...(input.cancellationReason ? { cancellationReason: input.cancellationReason } : {}),
+          ...(input.reopenReason ? { reopenReason: input.reopenReason } : {}),
         },
         actorIdentityId: input.actorIdentityId,
       });

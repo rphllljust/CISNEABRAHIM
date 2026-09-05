@@ -24,8 +24,11 @@ import {
   assertServiceOrderReleasePreconditions,
   ServiceOrderReleaseError,
 } from '../domain/service-order-release';
+import { assertPurchaseOrderRequirement, BillingEntitlementError } from '../../billing/domain/billing-entitlement';
 import {
   assertTransition,
+  assertReopenJustification,
+  resolveReopenStatus,
   ServiceOrderStateError,
   type ServiceOrderTransition,
 } from '../domain/service-order.state-machine';
@@ -40,8 +43,10 @@ import type { ListServiceOrdersQuery } from '../domain/service-order-list.query'
 import type {
   CancelServiceOrderInput,
   CreateServiceOrderInput,
+  ReopenServiceOrderInput,
   UpdateServiceOrderInput,
 } from '../domain/service-order.validation';
+import { ServiceOrderValidationError } from '../domain/service-order.validation';
 import type { ServiceOrderStatus } from '../domain/service-order';
 import { ServiceOrdersRepository } from '../repositories/service-orders.repository';
 import type { ServiceOrderRow } from '../repositories/service-orders.repository.types';
@@ -56,6 +61,8 @@ import {
   serviceOrdersAccessNotFound,
   serviceOrdersClientNotFound,
   serviceOrdersInvalidState,
+  serviceOrdersPurchaseOrderRequired,
+  serviceOrdersReopenJustificationRequired,
   serviceOrdersServiceNotFound,
   serviceOrdersVersionConflict,
 } from './service-orders-access.errors';
@@ -63,6 +70,7 @@ import {
   assertValidServiceOrderId,
   resolveCancelServiceOrderInput,
   resolveCreateServiceOrderInput,
+  resolveReopenServiceOrderInput,
   resolveRowVersionInput,
   resolveServiceOrderListQuery,
   resolveUpdateServiceOrderInput,
@@ -90,7 +98,7 @@ export class ServiceOrdersAccessService {
     await this.authz.assertCreateAction(actor, validated.unitId, validated.clientId);
 
     if (validated.clientId) {
-      await this.referenceValidation.assertClientExists(validated.clientId);
+      await this.referenceValidation.assertClientActive(validated.clientId);
     }
 
     if (validated.origin === SERVICE_ORDER_ORIGINS.Proposal) {
@@ -277,6 +285,7 @@ export class ServiceOrdersAccessService {
     };
 
     if (validated.clientId) {
+      await this.referenceValidation.assertClientActive(validated.clientId);
       const client = await this.repository.findClientById(validated.clientId);
       if (!client) {
         throw serviceOrdersClientNotFound();
@@ -335,9 +344,36 @@ export class ServiceOrdersAccessService {
     }
 
     if (validated.contractReference !== undefined) {
-      persistence.contractSnapshot = validated.contractReference
-        ? { contractReference: validated.contractReference, snapshottedAt: new Date().toISOString() }
-        : null;
+      const effectiveClientId =
+        validated.clientId !== undefined ? validated.clientId : current.client_id;
+      if (validated.contractReference && effectiveClientId) {
+        const resolved = await this.contractOperationalValidation.tryResolveContractForOperationalUse(
+          effectiveClientId,
+          validated.contractReference,
+        );
+        if (resolved) {
+          persistence.contractId = resolved.contract.id;
+          persistence.contractSnapshot = { ...resolved.snapshot };
+          persistence.contractReference =
+            resolved.snapshot.contractNumber ?? validated.contractReference;
+        } else {
+          persistence.contractId = null;
+          persistence.contractSnapshot = buildServiceOrderContractSnapshot({
+            contractReference: validated.contractReference,
+            paymentTerms: null,
+          });
+        }
+      } else {
+        persistence.contractSnapshot = validated.contractReference
+          ? buildServiceOrderContractSnapshot({
+              contractReference: validated.contractReference,
+              paymentTerms: null,
+            })
+          : null;
+        if (validated.contractReference === null || validated.contractReference === '') {
+          persistence.contractId = null;
+        }
+      }
     }
 
     const updated = await this.repository.update(persistence);
@@ -401,9 +437,18 @@ export class ServiceOrdersAccessService {
         current,
         client ? { id: client.id, status: client.status as ClientStatus } : null,
       );
+      assertPurchaseOrderRequirement({
+        requirement: client?.purchase_order_requirement,
+        phase: 'EXECUTION',
+        purchaseOrderId: current.purchase_order_id,
+        catalogRequiresPurchaseOrder: current.service_snapshot?.['requiresPurchaseOrder'] === true,
+      });
     } catch (error) {
       if (error instanceof ServiceOrderReleaseError) {
         throw mapServiceOrderReleaseError(error);
+      }
+      if (error instanceof BillingEntitlementError && error.code === 'PURCHASE_ORDER_REQUIRED') {
+        throw serviceOrdersPurchaseOrderRequired();
       }
       throw error;
     }
@@ -456,6 +501,77 @@ export class ServiceOrdersAccessService {
       AUTHZ_ACTIONS.ServiceOrdersServiceOrderCancel,
       validated.cancellationReason,
     );
+  }
+
+  async reopen(
+    actor: IdentityAuthzContext,
+    serviceOrderId: string,
+    input: ReopenServiceOrderInput,
+  ): Promise<ServiceOrderDetailResponse> {
+    assertValidServiceOrderId(serviceOrderId);
+    const current = await this.requireServiceOrder(
+      actor,
+      serviceOrderId,
+      AUTHZ_ACTIONS.ServiceOrdersServiceOrderReopen,
+    );
+
+    let validated: ReopenServiceOrderInput;
+    let nextStatus: ServiceOrderStatus;
+    let reopenReason: string;
+    try {
+      validated = resolveReopenServiceOrderInput(input);
+      reopenReason = assertReopenJustification(validated.reopenReason);
+      nextStatus = resolveReopenStatus({
+        currentStatus: current.status as ServiceOrderStatus,
+        statusBeforeCancel: current.status_before_cancel as ServiceOrderStatus | null,
+      });
+    } catch (error) {
+      if (error instanceof ServiceOrderValidationError) {
+        throw serviceOrdersReopenJustificationRequired();
+      }
+      if (error instanceof ServiceOrderStateError) {
+        if (error.code === 'REOPEN_JUSTIFICATION_REQUIRED') {
+          throw serviceOrdersReopenJustificationRequired();
+        }
+        throw serviceOrdersInvalidState();
+      }
+      throw error;
+    }
+
+    const updated = await this.repository.transition({
+      serviceOrderId,
+      rowVersion: validated.rowVersion,
+      actorIdentityId: actor.identityId,
+      currentStatus: current.status,
+      nextStatus,
+      transition: 'reopen',
+      reopenReason,
+    });
+
+    if (updated === 'VERSION_CONFLICT') {
+      throw serviceOrdersVersionConflict();
+    }
+    if (updated === 'INVALID_STATE') {
+      throw serviceOrdersInvalidState();
+    }
+
+    await this.securityAudit.record({
+      actorIdentityId: actor.identityId,
+      actorSessionId: actor.sessionId,
+      action: SECURITY_AUDIT_ACTIONS.ServiceOrdersServiceOrderReopen,
+      resourceType: SECURITY_AUDIT_RESOURCE_TYPES.ServiceOrdersServiceOrder,
+      resourceId: serviceOrderId,
+      outcome: SECURITY_AUDIT_OUTCOMES.Success,
+      classification: SECURITY_AUDIT_CLASSIFICATIONS.Standard,
+      metadata: {
+        fromStatus: current.status,
+        toStatus: nextStatus,
+        reopenReason,
+      },
+    });
+
+    const history = await this.repository.listHistoryEvents(serviceOrderId);
+    return toServiceOrderDetailResponse(updated, history);
   }
 
   private async transition(

@@ -319,7 +319,7 @@ describe('Measurements PostgreSQL integration', () => {
     expect(updated.adjustments).toHaveLength(1);
   });
 
-  it('submits and approves measurement with separation of duties', async () => {
+  it('submits and approves measurement with the same maximum authority', async () => {
     const { actor: preparer } = await seedActor();
     const { completed } = await seedCompletedOrder(preparer);
     const measurement = await measurementsAccess.create(preparer, completed.id);
@@ -334,22 +334,12 @@ describe('Measurements PostgreSQL integration', () => {
     });
     expect(reviewed.status).toBe(MEASUREMENT_STATUSES.UnderReview);
 
-    await expect(
-      measurementsAccess.approve(preparer, completed.id, measurement.id, {
-        rowVersion: reviewed.rowVersion,
-      }),
-    ).rejects.toMatchObject({ code: MEASUREMENTS_ERROR_CODES.SEPARATION_OF_DUTIES_VIOLATION });
-
-    const login = normalizeLoginIdentifier(`msr-reviewer-${crypto.randomUUID()}@cisne.invalid`);
-    const passwordHash = await hashPassword(AUTH_TEST_PASSWORD);
-    const { identityId: reviewerId } = await insertIdentity(pool, login, passwordHash);
-    await grantMeasurementAdmin(pool, reviewerId, preparer.identityId);
-    const reviewer = { identityId: reviewerId, sessionId: 'sid-reviewer' };
-
-    const approved = await measurementsAccess.approve(reviewer, completed.id, measurement.id, {
+    const approved = await measurementsAccess.approve(preparer, completed.id, measurement.id, {
       rowVersion: reviewed.rowVersion,
     });
     expect(approved.status).toBe(MEASUREMENT_STATUSES.Approved);
+    expect(approved.submittedByIdentityId).toBe(preparer.identityId);
+    expect(approved.decidedByIdentityId).toBe(preparer.identityId);
     expect(approved.commercialReferenceSnapshot.capturedAt).toBeTruthy();
   });
 
@@ -375,6 +365,13 @@ describe('Measurements PostgreSQL integration', () => {
       rejectionReason: 'Evidência insuficiente.',
     });
     expect(rejected.status).toBe(MEASUREMENT_STATUSES.Rejected);
+
+    const resubmitted = await measurementsAccess.resubmit(actor, completed.id, measurement.id, {
+      rowVersion: rejected.rowVersion,
+    });
+    expect(resubmitted.status).toBe(MEASUREMENT_STATUSES.Draft);
+    expect(resubmitted.historyEvents.map((event) => event.eventType)).toContain('REJECTED');
+    expect(resubmitted.historyEvents.map((event) => event.eventType)).toContain('RESUBMITTED');
   });
 
   it('returns version conflict on stale row version', async () => {
@@ -451,6 +448,28 @@ describe('Measurements PostgreSQL integration', () => {
     },
     30_000,
   );
+
+  it('denies a third party from approving a measurement', async () => {
+    const { actor } = await seedActor();
+    const { completed } = await seedCompletedOrder(actor);
+    const measurement = await measurementsAccess.create(actor, completed.id);
+    const submitted = await measurementsAccess.submit(actor, completed.id, measurement.id, {
+      rowVersion: measurement.rowVersion,
+    });
+    const reviewed = await measurementsAccess.startReview(actor, completed.id, measurement.id, {
+      rowVersion: submitted.rowVersion,
+    });
+
+    const login = normalizeLoginIdentifier(`msr-approve-deny-${crypto.randomUUID()}@cisne.invalid`);
+    const passwordHash = await hashPassword(AUTH_TEST_PASSWORD);
+    const { identityId } = await insertIdentity(pool, login, passwordHash);
+
+    await expect(
+      measurementsAccess.approve({ identityId, sessionId: 'sid' }, completed.id, measurement.id, {
+        rowVersion: reviewed.rowVersion,
+      }),
+    ).rejects.toMatchObject({ code: MEASUREMENTS_ERROR_CODES.DENIED });
+  });
 
   it('denies unauthorized measurement read', async () => {
     const { actor } = await seedActor();

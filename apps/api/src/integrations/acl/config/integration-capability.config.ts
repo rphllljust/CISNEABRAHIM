@@ -12,14 +12,9 @@ function readBooleanEnv(name: string): boolean {
   return process.env[name] === 'true';
 }
 
+/** SRC-004 / BR-042: conexão com ERP é REJECTED. Env não liga adapter. */
 export function isErpIntegrationConfigured(): boolean {
-  return (
-    readBooleanEnv('ERP_INTEGRATION_CONFIGURED') &&
-    typeof process.env['ERP_PROVIDER_ID'] === 'string' &&
-    process.env['ERP_PROVIDER_ID'].length > 0 &&
-    typeof process.env['ERP_API_BASE_URL'] === 'string' &&
-    process.env['ERP_API_BASE_URL'].length > 0
-  );
+  return false;
 }
 
 export function isTrackingIntegrationConfigured(): boolean {
@@ -39,7 +34,7 @@ export function loadIntegrationCapabilitySnapshot(): IntegrationCapabilitySnapsh
   return {
     erp: {
       configured: erpConfigured,
-      enabled: erpConfigured && process.env['ERP_INTEGRATION_ENABLED'] !== 'false',
+      enabled: false,
     },
     tracking: {
       configured: trackingConfigured,

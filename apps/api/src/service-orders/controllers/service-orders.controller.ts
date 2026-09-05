@@ -7,6 +7,7 @@ import {
   parseCancelServiceOrderInput,
   parseCreateServiceOrderInput,
   parseListServiceOrdersQuery,
+  parseReopenServiceOrderInput,
   parseRowVersionBody,
   parseUpdateServiceOrderInput,
 } from '../dto/service-orders.dto';
@@ -118,6 +119,29 @@ export class ServiceOrdersController {
     try {
       const input = parseCancelServiceOrderInput(request.body);
       return this.serviceOrdersAccess.cancel(
+        { identityId: auth.sub, sessionId: auth.sid },
+        serviceOrderId,
+        input,
+      );
+    } catch {
+      throw new ServiceOrdersHttpException(
+        400,
+        SERVICE_ORDERS_ERROR_CODES.VALIDATION_FAILED,
+        'Invalid request body.',
+      );
+    }
+  }
+
+  @Post(':serviceOrderId/reopen')
+  @HttpCode(200)
+  reopen(
+    @CurrentAuth() auth: AccessTokenClaims,
+    @Param('serviceOrderId') serviceOrderId: string,
+    @Req() request: FastifyRequest,
+  ) {
+    try {
+      const input = parseReopenServiceOrderInput(request.body);
+      return this.serviceOrdersAccess.reopen(
         { identityId: auth.sub, sessionId: auth.sid },
         serviceOrderId,
         input,

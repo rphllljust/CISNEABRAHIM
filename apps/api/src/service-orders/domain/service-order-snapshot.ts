@@ -9,6 +9,8 @@ export type ServiceSnapshotSource = {
   measurement_mode: string;
   measurement_basis: string;
   default_unit_code: string | null;
+  commercial_config?: Record<string, unknown> | null;
+  billing_entitlement_policy?: string | null;
 };
 
 export type ServiceSnapshotAllowedUnit = {
@@ -72,6 +74,8 @@ export type ServiceOrderServiceSnapshot = {
       sortOrder: number;
     }>;
   };
+  billingEntitlementPolicy: string;
+  requiresPurchaseOrder: boolean;
   snapshottedAt: string;
 };
 
@@ -113,13 +117,15 @@ export function buildServiceOrderServiceSnapshot(input: {
         minQuantity: requirement.min_quantity,
         sortOrder: requirement.sort_order,
       })),
-      labor: input.laborRequirements.map((requirement) => ({
+        labor: input.laborRequirements.map((requirement) => ({
         laborTypeCode: requirement.labor_type_code,
         requirementLevel: requirement.requirement_level,
         minQuantity: requirement.min_quantity,
         sortOrder: requirement.sort_order,
       })),
     },
+    billingEntitlementPolicy: input.source.billing_entitlement_policy ?? 'MEASUREMENT_APPROVED',
+    requiresPurchaseOrder: input.source.commercial_config?.['requiresPurchaseOrder'] === true,
     snapshottedAt: new Date().toISOString(),
   };
 }

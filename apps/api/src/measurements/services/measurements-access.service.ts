@@ -478,12 +478,29 @@ export class MeasurementsAccessService {
     );
   }
 
+  async resubmit(
+    actor: IdentityAuthzContext,
+    serviceOrderId: string,
+    measurementId: string,
+    input: RowVersionCommandInput,
+  ) {
+    return this.runTransition(
+      actor,
+      serviceOrderId,
+      measurementId,
+      input,
+      'resubmit',
+      AUTHZ_ACTIONS.MeasurementsMeasurementUpdate,
+      SECURITY_AUDIT_ACTIONS.MeasurementsMeasurementUpdate,
+    );
+  }
+
   private async runTransition(
     actor: IdentityAuthzContext,
     serviceOrderId: string,
     measurementId: string,
     input: RowVersionCommandInput,
-    transition: 'submit' | 'startReview' | 'approve' | 'reject',
+    transition: 'submit' | 'startReview' | 'approve' | 'reject' | 'resubmit',
     action: AuthzAction,
     auditAction: (typeof SECURITY_AUDIT_ACTIONS)[keyof typeof SECURITY_AUDIT_ACTIONS],
     precondition?: (order: ServiceOrderRow, measurement: MeasurementRow) => Promise<void> | void,
@@ -506,7 +523,9 @@ export class MeasurementsAccessService {
           ? MEASUREMENT_COMMANDS.StartReview
           : transition === 'approve'
             ? MEASUREMENT_COMMANDS.Approve
-            : MEASUREMENT_COMMANDS.Reject;
+            : transition === 'resubmit'
+              ? MEASUREMENT_COMMANDS.Resubmit
+              : MEASUREMENT_COMMANDS.Reject;
 
     if (validated.idempotencyKey) {
       const existing = await this.measurementsRepository.findIdempotency(

@@ -117,6 +117,22 @@ export function serviceOrdersClientInactive(
   );
 }
 
+export function serviceOrdersPurchaseOrderRequired(): ServiceOrdersHttpException {
+  return new ServiceOrdersHttpException(
+    HttpStatus.CONFLICT,
+    SERVICE_ORDERS_ERROR_CODES.PURCHASE_ORDER_REQUIRED,
+    'A purchase order is required before this operation.',
+  );
+}
+
+export function serviceOrdersReopenJustificationRequired(): ServiceOrdersHttpException {
+  return new ServiceOrdersHttpException(
+    HttpStatus.BAD_REQUEST,
+    SERVICE_ORDERS_ERROR_CODES.REOPEN_JUSTIFICATION_REQUIRED,
+    'Reopening a service order requires a justification.',
+  );
+}
+
 export function serviceOrdersServiceRequired(): ServiceOrdersHttpException {
   return new ServiceOrdersHttpException(
     HttpStatus.CONFLICT,

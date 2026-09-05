@@ -86,9 +86,7 @@ describe('module-boundary-rules', () => {
     expect(ACL_PROVIDER_CLASSIFICATION.UnconfiguredErpProvider).toBe(
       PROVIDER_IMPLEMENTATION_CLASS.Unconfigured,
     );
-    expect(ACL_PROVIDER_CLASSIFICATION.DygnusErpAdapter).not.toBe(
-      PROVIDER_IMPLEMENTATION_CLASS.RealProvider,
-    );
+    expect('DygnusErpAdapter' in ACL_PROVIDER_CLASSIFICATION).toBe(false);
   });
 
   it('has zero circular import violations and zero cross-context private table access', () => {

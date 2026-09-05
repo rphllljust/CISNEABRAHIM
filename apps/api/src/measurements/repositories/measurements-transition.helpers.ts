@@ -11,6 +11,8 @@ export function measurementTransitionSql(transition: MeasurementTransitionInput[
       return 'decided_at = NOW(), decided_by_identity_id = $4, rejection_reason = NULL';
     case 'reject':
       return 'decided_at = NOW(), decided_by_identity_id = $4, rejection_reason = $6';
+    case 'resubmit':
+      return 'submitted_at = NULL, submitted_by_identity_id = NULL, review_started_at = NULL, review_started_by_identity_id = NULL';
   }
 }
 
@@ -26,5 +28,7 @@ export function measurementHistoryEventForTransition(
       return MEASUREMENT_HISTORY_EVENTS.Approved;
     case 'reject':
       return MEASUREMENT_HISTORY_EVENTS.Rejected;
+    case 'resubmit':
+      return MEASUREMENT_HISTORY_EVENTS.Resubmitted;
   }
 }

@@ -49,6 +49,11 @@ export type CancelServiceOrderInput = {
   cancellationReason: string;
 };
 
+export type ReopenServiceOrderInput = {
+  rowVersion: number;
+  reopenReason: string;
+};
+
 export type RowVersionInput = {
   rowVersion: number;
 };
@@ -151,6 +156,17 @@ export function validateCancelServiceOrderInput(
     throw new ServiceOrderValidationError('cancellationReason');
   }
   return { rowVersion: input.rowVersion, cancellationReason };
+}
+
+export function validateReopenServiceOrderInput(
+  input: ReopenServiceOrderInput,
+): ReopenServiceOrderInput {
+  validateRowVersionBody(input);
+  const reopenReason = input.reopenReason?.trim();
+  if (!reopenReason) {
+    throw new ServiceOrderValidationError('reopenReason');
+  }
+  return { rowVersion: input.rowVersion, reopenReason };
 }
 
 export { CatalogValidationError };

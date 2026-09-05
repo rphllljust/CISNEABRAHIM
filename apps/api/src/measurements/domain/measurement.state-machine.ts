@@ -30,6 +30,10 @@ const TRANSITIONS: Record<
     from: [MEASUREMENT_STATUSES.UnderReview],
     to: MEASUREMENT_STATUSES.Rejected,
   },
+  resubmit: {
+    from: [MEASUREMENT_STATUSES.Rejected],
+    to: MEASUREMENT_STATUSES.Draft,
+  },
 };
 
 export function assertTransition(

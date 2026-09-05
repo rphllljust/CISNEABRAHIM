@@ -16,6 +16,9 @@ describe('measurement state machine', () => {
     expect(assertTransition(MEASUREMENT_STATUSES.UnderReview, 'reject')).toBe(
       MEASUREMENT_STATUSES.Rejected,
     );
+    expect(assertTransition(MEASUREMENT_STATUSES.Rejected, 'resubmit')).toBe(
+      MEASUREMENT_STATUSES.Draft,
+    );
   });
 
   it('rejects invalid transitions', () => {

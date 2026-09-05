@@ -152,7 +152,7 @@ export type MeasurementTransitionInput = {
   actorIdentityId: string;
   currentStatus: string;
   nextStatus: string;
-  transition: 'submit' | 'startReview' | 'approve' | 'reject';
+  transition: 'submit' | 'startReview' | 'approve' | 'reject' | 'resubmit';
   commandName: string;
   idempotencyKey?: string;
   rejectionReason?: string;

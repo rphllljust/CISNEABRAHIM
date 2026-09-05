@@ -67,7 +67,6 @@ export const GATED_API_PATH_PREFIXES: ReadonlyArray<{ prefix: string; moduleId: 
   { prefix: 'authz/approval-matrices', moduleId: 'approval-matrix' },
   { prefix: 'commercial/contracts', moduleId: 'contracts' },
   { prefix: 'supplier-invoices', moduleId: 'procurement' },
-  { prefix: 'three-way-matches', moduleId: 'procurement' },
   { prefix: 'procurement', moduleId: 'procurement' },
   { prefix: 'suppliers', moduleId: 'suppliers' },
   { prefix: 'accounting', moduleId: 'accounting' },

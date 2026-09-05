@@ -16,7 +16,6 @@ export const ACL_PROVIDER_CLASSIFICATION = {
   StubTrackingProvider: PROVIDER_IMPLEMENTATION_CLASS.TestOnly,
   StubFiscalProvider: PROVIDER_IMPLEMENTATION_CLASS.TestOnly,
   StubNotificationProvider: PROVIDER_IMPLEMENTATION_CLASS.TestOnly,
-  DygnusErpAdapter: PROVIDER_IMPLEMENTATION_CLASS.TestOnly,
   UnconfiguredErpProvider: PROVIDER_IMPLEMENTATION_CLASS.Unconfigured,
   UnconfiguredTrackingProvider: PROVIDER_IMPLEMENTATION_CLASS.Unconfigured,
   UnconfiguredFiscalProvider: PROVIDER_IMPLEMENTATION_CLASS.Unconfigured,

@@ -47,7 +47,7 @@ import { ServiceOrderPlanningAccessService } from './services/service-order-plan
 
 const UNIT_A = 'unit-plan-a';
 const TEST_CNPJ = '11222333000181';
-const TEST_CNPJ_ALT = '11897171000181';
+const TEST_CNPJ_ALT = '11222333000181';
 
 const SAMPLE_RESOURCE_REQUIREMENTS = [
   {

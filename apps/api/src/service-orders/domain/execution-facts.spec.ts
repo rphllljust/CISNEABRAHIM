@@ -35,6 +35,8 @@ const snapshot = {
     labor: [],
   },
   snapshottedAt: '2026-06-01T00:00:00.000Z',
+  billingEntitlementPolicy: 'MEASUREMENT_APPROVED',
+  requiresPurchaseOrder: false,
 };
 
 describe('execution-facts', () => {

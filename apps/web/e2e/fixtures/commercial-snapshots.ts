@@ -16,7 +16,6 @@ import {
 } from '../../src/purchase-orders/types/purchase-order.types';
 import {
   CLIENT_STATUSES,
-  PURCHASE_ORDER_REQUIREMENTS,
   type Client,
   type ClientListResponse,
 } from '../../src/clients/types/client.types';
@@ -38,7 +37,6 @@ const VISUAL_CLIENT: Client = {
   updatedAt: '2026-08-25T16:00:00.000Z',
   deactivatedAt: null,
   deactivationReason: null,
-  purchaseOrderRequirement: PURCHASE_ORDER_REQUIREMENTS.NotRequired,
   contacts: [],
   addresses: [],
 };
@@ -47,8 +45,6 @@ export const COMMERCIAL_CLIENTS_SNAPSHOT: ClientListResponse = {
   items: [VISUAL_CLIENT],
   limit: 100,
   offset: 0,
-  total: 1,
-  summary: { total: 1, active: 1, inactive: 0, purchaseOrderRequired: 0 },
 };
 
 const VISUAL_PROPOSAL: Proposal = {

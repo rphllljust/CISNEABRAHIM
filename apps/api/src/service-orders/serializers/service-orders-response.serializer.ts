@@ -34,7 +34,13 @@ export type ServiceOrderResponse = {
   preparedAt: string | null;
   releasedAt: string | null;
   cancelledAt: string | null;
+  cancelledByIdentityId: string | null;
   cancellationReason: string | null;
+  reopenedAt: string | null;
+  reopenedByIdentityId: string | null;
+  reopenReason: string | null;
+  createdByIdentityId: string;
+  releasedByIdentityId: string | null;
   startedAt: string | null;
   pausedAt: string | null;
   completedAt: string | null;
@@ -77,7 +83,13 @@ export function toServiceOrderResponse(row: ServiceOrderRow): ServiceOrderRespon
     preparedAt: row.prepared_at,
     releasedAt: row.released_at,
     cancelledAt: row.cancelled_at,
+    cancelledByIdentityId: row.cancelled_by_identity_id,
     cancellationReason: row.cancellation_reason,
+    reopenedAt: row.reopened_at,
+    reopenedByIdentityId: row.reopened_by_identity_id,
+    reopenReason: row.reopen_reason,
+    createdByIdentityId: row.created_by_identity_id,
+    releasedByIdentityId: row.released_by_identity_id,
     startedAt: row.started_at,
     pausedAt: row.paused_at,
     completedAt: row.completed_at,

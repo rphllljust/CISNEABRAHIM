@@ -82,3 +82,30 @@ export const TERMINAL_SERVICE_ORDER_STATUSES = new Set<ServiceOrderStatus>([
 export function isTerminalServiceOrderStatus(status: ServiceOrderStatus): boolean {
   return TERMINAL_SERVICE_ORDER_STATUSES.has(status);
 }
+
+export function assertReopenJustification(reason: string | undefined | null): string {
+  const trimmed = typeof reason === 'string' ? reason.trim() : '';
+  if (trimmed.length === 0) {
+    throw new ServiceOrderStateError('REOPEN_JUSTIFICATION_REQUIRED');
+  }
+  return trimmed;
+}
+
+export function resolveReopenStatus(input: {
+  currentStatus: ServiceOrderStatus;
+  statusBeforeCancel: ServiceOrderStatus | null;
+}): ServiceOrderStatus {
+  if (input.currentStatus === SERVICE_ORDER_STATUSES.Cancelled) {
+    if (
+      !input.statusBeforeCancel ||
+      input.statusBeforeCancel === SERVICE_ORDER_STATUSES.Cancelled
+    ) {
+      throw new ServiceOrderStateError('INVALID_STATE_TRANSITION');
+    }
+    return input.statusBeforeCancel;
+  }
+  if (input.currentStatus === SERVICE_ORDER_STATUSES.Completed) {
+    return SERVICE_ORDER_STATUSES.InExecution;
+  }
+  throw new ServiceOrderStateError('INVALID_STATE_TRANSITION');
+}

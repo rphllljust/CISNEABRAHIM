@@ -14,4 +14,21 @@ describe('integration capability config', () => {
     expect(snapshot.erp).toEqual({ configured: false, enabled: false });
     expect(snapshot.tracking).toEqual({ configured: false, enabled: false });
   });
+
+  it('keeps ERP disabled even when env claims a provider is configured', () => {
+    process.env['ERP_INTEGRATION_CONFIGURED'] = 'true';
+    process.env['ERP_INTEGRATION_ENABLED'] = 'true';
+    process.env['ERP_PROVIDER_ID'] = 'any-vendor';
+    process.env['ERP_API_BASE_URL'] = 'https://erp.example';
+
+    expect(loadIntegrationCapabilitySnapshot().erp).toEqual({
+      configured: false,
+      enabled: false,
+    });
+
+    delete process.env['ERP_INTEGRATION_CONFIGURED'];
+    delete process.env['ERP_INTEGRATION_ENABLED'];
+    delete process.env['ERP_PROVIDER_ID'];
+    delete process.env['ERP_API_BASE_URL'];
+  });
 });

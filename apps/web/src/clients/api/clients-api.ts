@@ -7,7 +7,6 @@ import {
   type ClientListResponse,
   type ClientStatus,
   type CreateClientPayload,
-  type PurchaseOrderRequirement,
   type UpdateClientPayload,
 } from '../types/client.types';
 
@@ -115,8 +114,6 @@ export type ListClientsParams = {
   limit: number;
   offset: number;
   status?: ClientStatus;
-  search?: string;
-  purchaseOrderRequirement?: PurchaseOrderRequirement;
 };
 
 export function buildListClientsQuery(params: ListClientsParams): string {
@@ -125,12 +122,6 @@ export function buildListClientsQuery(params: ListClientsParams): string {
   search.set('offset', String(params.offset));
   if (params.status) {
     search.set('status', params.status);
-  }
-  if (params.search && params.search.trim().length > 0) {
-    search.set('search', params.search.trim());
-  }
-  if (params.purchaseOrderRequirement) {
-    search.set('purchaseOrderRequirement', params.purchaseOrderRequirement);
   }
   return search.toString();
 }

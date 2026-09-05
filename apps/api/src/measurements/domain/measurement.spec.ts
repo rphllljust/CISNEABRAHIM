@@ -20,6 +20,8 @@ const SNAPSHOT: ServiceOrderServiceSnapshot = {
   allowedUnits: [{ unitCode: 'M3', isDefault: true, sortOrder: 0 }],
   requirements: { execution: [], resources: [], labor: [] },
   snapshottedAt: new Date().toISOString(),
+  billingEntitlementPolicy: 'MEASUREMENT_APPROVED',
+  requiresPurchaseOrder: false,
 };
 
 describe('measurement quantity rules', () => {

@@ -13,6 +13,7 @@ export const MEASUREMENT_TRANSITIONS = {
   StartReview: 'startReview',
   Approve: 'approve',
   Reject: 'reject',
+  Resubmit: 'resubmit',
 } as const;
 
 export type MeasurementTransition =
@@ -24,6 +25,7 @@ export const MEASUREMENT_COMMANDS = {
   Approve: 'APPROVE',
   Reject: 'REJECT',
   Regenerate: 'REGENERATE',
+  Resubmit: 'RESUBMIT',
 } as const;
 
 export type MeasurementCommandName =
@@ -38,6 +40,7 @@ export const MEASUREMENT_HISTORY_EVENTS = {
   ReviewStarted: 'REVIEW_STARTED',
   Approved: 'APPROVED',
   Rejected: 'REJECTED',
+  Resubmitted: 'RESUBMITTED',
 } as const;
 
 export const MEASUREMENT_EDITABLE_STATUSES = new Set<MeasurementStatus>([
@@ -46,7 +49,6 @@ export const MEASUREMENT_EDITABLE_STATUSES = new Set<MeasurementStatus>([
 
 export const TERMINAL_MEASUREMENT_STATUSES = new Set<MeasurementStatus>([
   MEASUREMENT_STATUSES.Approved,
-  MEASUREMENT_STATUSES.Rejected,
 ]);
 
 export class MeasurementError extends Error {
@@ -132,8 +134,7 @@ export function assertMeasurementHasItems(itemCount: number): void {
   }
 }
 
-export function assertSeparationOfDuties(submittedBy: string | null, decidedBy: string): void {
-  if (submittedBy && submittedBy === decidedBy) {
-    throw new MeasurementError('SEPARATION_OF_DUTIES_VIOLATION');
-  }
+export function assertSeparationOfDuties(_submittedBy: string | null, _decidedBy: string): void {
+  // SRC-008 / R1: a mesma autoridade máxima pode registrar e aprovar.
+  // Campos submittedBy e decidedBy permanecem separados para segregação futura.
 }

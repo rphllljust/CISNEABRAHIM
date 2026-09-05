@@ -32,6 +32,7 @@ export const SERVICE_ORDER_HISTORY_EVENTS = {
   Paused: 'PAUSED',
   Resumed: 'RESUMED',
   Completed: 'COMPLETED',
+  Reopened: 'REOPENED',
 } as const;
 
 export type ServiceOrderHistoryEventType =

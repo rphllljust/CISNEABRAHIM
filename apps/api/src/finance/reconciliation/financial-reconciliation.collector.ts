@@ -7,10 +7,9 @@ import {
 } from '../domain/continuous-reconciliation';
 
 /**
- * Read-side collector: materializes the normalized economic facts the
- * reconciliation engine consumes, directly from the canonical ledger tables
- * (no new ledgers, no writes). Every downstream fact keeps a stable
- * sourceReference so the chain is traceable.
+ * Read-side collector: materializes normalized economic facts for the
+ * reconciliation engine. Cross-context billing and accounting data is read
+ * only through published rpt.* contracts (DR-008); fin.* is owned by FINANCE.
  */
 
 type Row = Record<string, unknown>;
@@ -57,7 +56,7 @@ export async function collectEconomicFacts(pool: Pool): Promise<EconomicFact[]> 
   const billing = await rows(
     pool,
     `SELECT id, total_amount AS amount, currency_code, document_number
-       FROM bil.billing_documents
+       FROM rpt.read_billing_documents
       WHERE total_amount > 0`,
   );
   for (const row of billing) {
@@ -162,8 +161,8 @@ export async function collectEconomicFacts(pool: Pool): Promise<EconomicFact[]> 
     pool,
     `SELECT je.id, je.source_kind, je.source_id, je.source_reference,
             l.direction, l.amount
-       FROM acc.journal_entries je
-       JOIN acc.journal_entry_lines l ON l.journal_entry_id = je.id
+       FROM rpt.read_journal_entries je
+       JOIN rpt.read_journal_entry_lines l ON l.journal_entry_id = je.id
       WHERE je.status = 'POSTED'`,
   );
   const journals = new Map<string, EconomicFact>();

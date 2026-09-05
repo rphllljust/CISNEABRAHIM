@@ -36,6 +36,11 @@ export type ServiceOrderRow = {
   paused_by_identity_id: string | null;
   completed_at: string | null;
   completed_by_identity_id: string | null;
+  status_before_cancel: string | null;
+  reopened_at: string | null;
+  reopened_by_identity_id: string | null;
+  reopen_reason: string | null;
+  status_before_reopen: string | null;
   row_version: number;
   created_at: string;
   updated_at: string;
@@ -120,6 +125,7 @@ export type UpdateServiceOrderPersistenceInput = {
   purchaseOrderId?: string | null;
   purchaseOrderSnapshot?: Record<string, unknown> | null;
   rcNumber?: string | null;
+  contractId?: string | null;
   contractReference?: string | null;
   contractSnapshot?: Record<string, unknown> | null;
 };
@@ -137,7 +143,9 @@ export type TransitionServiceOrderPersistenceInput = {
     | 'start'
     | 'pause'
     | 'resume'
-    | 'complete';
+    | 'complete'
+    | 'reopen';
   clientSnapshot?: Record<string, unknown> | null;
   cancellationReason?: string | null;
+  reopenReason?: string | null;
 };

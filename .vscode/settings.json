@@ -1,0 +1,25 @@
+{
+  "files.exclude": {
+    "cisne-backend": true,
+    "cisne-frontend": true,
+    "cisne-infra": true,
+    ".turbo": true,
+    "node_modules": true,
+    "artifacts": true,
+    "tmp": true,
+    ".object-storage-dev-seed": true,
+    ".object-storage": true,
+    ".backup": true,
+    ".runtime": true,
+    ".pilot": true
+  },
+  "search.exclude": {
+    "cisne-backend": true,
+    "cisne-frontend": true,
+    "cisne-infra": true,
+    ".turbo": true,
+    "node_modules": true,
+    "artifacts": true,
+    "tmp": true
+  }
+}

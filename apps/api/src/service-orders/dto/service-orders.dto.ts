@@ -5,6 +5,7 @@ import {
   validateCreateStatus,
   type CancelServiceOrderInput,
   type CreateServiceOrderInput,
+  type ReopenServiceOrderInput,
   type UpdateServiceOrderInput,
 } from '../domain/service-order.validation';
 import { assertNoPrivilegedFields } from '../../security/domain/forbidden-payload-fields';
@@ -129,6 +130,16 @@ export function parseCancelServiceOrderInput(body: unknown): CancelServiceOrderI
   const cancellationReason =
     typeof record['cancellationReason'] === 'string' ? record['cancellationReason'] : '';
   return { rowVersion, cancellationReason };
+}
+
+export function parseReopenServiceOrderInput(body: unknown): ReopenServiceOrderInput {
+  if (!body || typeof body !== 'object') {
+    throw new Error('INVALID_BODY');
+  }
+  const record = body as Record<string, unknown>;
+  const { rowVersion } = parseRowVersionBody(record);
+  const reopenReason = typeof record['reopenReason'] === 'string' ? record['reopenReason'] : '';
+  return { rowVersion, reopenReason };
 }
 
 export function parseServiceOrderId(serviceOrderId: string): string {

@@ -15,15 +15,18 @@ import {
   ServiceOrderValidationError,
   validateCancelServiceOrderInput,
   validateCreateServiceOrderInput,
+  validateReopenServiceOrderInput,
   validateRowVersionBody,
   validateUpdateServiceOrderInput,
   type CancelServiceOrderInput,
   type CreateServiceOrderInput,
+  type ReopenServiceOrderInput,
   type UpdateServiceOrderInput,
 } from '../domain/service-order.validation';
 import {
   mapServiceOrderMutabilityError,
   serviceOrdersAccessNotFound,
+  serviceOrdersReopenJustificationRequired,
   serviceOrdersValidationFailed,
 } from './service-orders-access.errors';
 
@@ -74,6 +77,20 @@ export function resolveCancelServiceOrderInput(input: CancelServiceOrderInput): 
     return validateCancelServiceOrderInput(input);
   } catch (error) {
     if (error instanceof ServiceOrderValidationError) {
+      throw serviceOrdersValidationFailed();
+    }
+    throw error;
+  }
+}
+
+export function resolveReopenServiceOrderInput(input: ReopenServiceOrderInput): ReopenServiceOrderInput {
+  try {
+    return validateReopenServiceOrderInput(input);
+  } catch (error) {
+    if (error instanceof ServiceOrderValidationError) {
+      if (error.field === 'reopenReason') {
+        throw serviceOrdersReopenJustificationRequired();
+      }
       throw serviceOrdersValidationFailed();
     }
     throw error;
