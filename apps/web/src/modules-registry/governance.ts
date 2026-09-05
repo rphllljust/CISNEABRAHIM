@@ -9,6 +9,7 @@ import type { ModuleRegistryStatus, ModuleRegistrySummary } from './types';
 export type ModuleStatusCopy = {
   label: string;
   hint: string;
+  meaning: string;
   tone: 'success' | 'info' | 'neutral';
 };
 
@@ -16,16 +17,21 @@ export const MODULE_STATUS_COPY: Record<ModuleRegistryStatus, ModuleStatusCopy> 
   available: {
     label: 'Disponível',
     hint: 'Sem gate de release. Operação sujeita a autorização.',
+    meaning:
+      'Disponível no escopo atual: o módulo não possui gate de feature. Isso NÃO significa ativação manual — não existe ativação manual fora da flag de release.',
     tone: 'success',
   },
   enabled: {
     label: 'Habilitado',
     hint: 'Liberado pela flag de release. Operação sujeita a autorização.',
+    meaning:
+      'Habilitado por flag de release: o gate do módulo está ligado (flag exatamente "true"). Só aparece em módulos que possuem gate de release.',
     tone: 'info',
   },
   not_released: {
     label: 'Não liberado',
     hint: 'Aguardando liberação do release-scope.',
+    meaning: 'Ainda não liberado: módulo com gate de release fora do escopo atual ou com a flag desabilitada.',
     tone: 'neutral',
   },
 };

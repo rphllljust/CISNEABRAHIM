@@ -33,6 +33,10 @@ services:
     environment:
       DATABASE_URL: postgresql://${HML_POSTGRES_USER}:${HML_POSTGRES_PASSWORD}@postgres:5432/${HML_POSTGRES_DB}
       OBJECT_STORAGE_ROOT: /data/object-storage
+      # Identidade do artefato em execução (endpoint /observability/artifact).
+      ARTIFACT_RELEASE: ${ARTIFACT_RELEASE:-unknown}
+      ARTIFACT_COMMIT: ${ARTIFACT_COMMIT:-unknown}
+      ARTIFACT_BUILD: ${ARTIFACT_BUILD:-unknown}
     volumes:
       - cisne_hml_object_storage:/data/object-storage
     depends_on:

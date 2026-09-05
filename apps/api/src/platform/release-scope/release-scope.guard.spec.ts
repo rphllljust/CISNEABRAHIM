@@ -39,6 +39,11 @@ describe('ReleaseScopeGuard', () => {
   });
 
   it('blocks finance, accounting and contracts when flags are off', () => {
+    // Determinismo independente do ambiente: o guard deve bloquear com flag
+    // ausente, ainda que o host de teste exporte FEATURE_MODULE_* = true.
+    for (const key of [FEATURE_FLAG_ENV.finance, FEATURE_FLAG_ENV.accounting, FEATURE_FLAG_ENV.contracts]) {
+      delete process.env[key];
+    }
     const guard = new ReleaseScopeGuard();
     expect(() => guard.canActivate(contextWithUrl('/api/v1/finance/receivables'))).toThrow(
       ReleaseScopeHttpException,

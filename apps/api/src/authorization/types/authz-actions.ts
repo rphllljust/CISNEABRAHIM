@@ -10,6 +10,7 @@ export const AUTHZ_ACTIONS = {
   ApprovalMatrixManage: 'authz:approval-matrix:manage',
   ApprovalMatrixRead: 'authz:approval-matrix:read',
   PlatformDiagnosticsRead: 'platform:diagnostics:read',
+  PlatformModuleRegistryRead: 'platform:module-registry:read',
   ScopedRecordRead: 'authz:scoped-record:read',
   ScopedRecordList: 'authz:scoped-record:list',
   ScopedRecordUpdate: 'authz:scoped-record:update',

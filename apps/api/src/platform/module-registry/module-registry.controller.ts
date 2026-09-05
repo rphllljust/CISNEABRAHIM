@@ -12,9 +12,11 @@ import { buildModuleRegistrySummary, findModuleRegistryEntry } from './module-re
  *
  * - GET /api/v1/modules/registry          => governance summary (no technical
  *   capabilities/resources/routes exposed to ordinary authenticated users).
- * - GET /api/v1/modules/registry/:code    => technical detail, only for users
- *   with the access-admin read capability (PDP enforces; hiding the menu is
- *   never the security boundary).
+ * - GET /api/v1/modules/registry/:code    => technical detail, gated by the
+ *   platform-scoped capability platform:module-registry:read (PDP enforces;
+ *   hiding the menu is never the security boundary). Detalhe técnico do
+ *   registry NÃO compartilha o privilégio authz:access-admin:read do console
+ *   de Access Administration.
  */
 @Controller('modules/registry')
 @UseGuards(JwtAuthGuard)
@@ -33,7 +35,10 @@ export class ModuleRegistryController {
   ): Promise<ReturnType<typeof findModuleRegistryEntry>> {
     const decision = await this.pdp.decide(
       { identityId: auth.sub, sessionId: auth.sid },
-      { action: AUTHZ_ACTIONS.AccessAdminRead, resourceType: AUTHZ_RESOURCE_TYPES.AccessAdmin },
+      {
+        action: AUTHZ_ACTIONS.PlatformModuleRegistryRead,
+        resourceType: AUTHZ_RESOURCE_TYPES.Platform,
+      },
     );
     if (decision.result !== 'ALLOW') {
       throw new ForbiddenException({ error: { code: 'AUTHZ_DENIED', message: 'Access denied.' } });

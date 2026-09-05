@@ -23,6 +23,13 @@ type RegistrySummary = {
   dependencies: string[];
 };
 
+type RegistryDetail = RegistrySummary & {
+  featureFlag: string | null;
+  capabilities: string[];
+  resources: string[];
+  routes: string[];
+};
+
 describe('Enterprise module registry E2E', () => {
   let app: NestFastifyApplication;
   let pool: Pool;
@@ -72,18 +79,20 @@ describe('Enterprise module registry E2E', () => {
     return parseAuthTokenResponse(response.body).accessToken;
   }
 
-  it('requires authentication (401 without a token)', async () => {
-    const response = await app.inject({ method: 'GET', url: '/api/v1/modules/registry' });
-    expect(response.statusCode).toBe(401);
+  async function getAs(token: string, url: string): Promise<{ statusCode: number; body: string }> {
+    return app.inject({ method: 'GET', url, headers: { authorization: `Bearer ${token}` } });
+  }
+
+  it('requires authentication (401 without a token) on summary and detail', async () => {
+    const summary = await app.inject({ method: 'GET', url: '/api/v1/modules/registry' });
+    expect(summary.statusCode).toBe(401);
+    const detail = await app.inject({ method: 'GET', url: '/api/v1/modules/registry/clients' });
+    expect(detail.statusCode).toBe(401);
   });
 
   it('lists governance summaries to any authenticated client (no technical fields)', async () => {
     const token = await loginWithGrants();
-    const response = await app.inject({
-      method: 'GET',
-      url: '/api/v1/modules/registry',
-      headers: { authorization: `Bearer ${token}` },
-    });
+    const response = await getAs(token, '/api/v1/modules/registry');
     expect(response.statusCode).toBe(200);
     const entries = JSON.parse(response.body) as RegistrySummary[];
     const codes = new Set(entries.map((entry) => entry.moduleCode));
@@ -97,51 +106,55 @@ describe('Enterprise module registry E2E', () => {
     }
   });
 
-  it('exposes technical detail only to access-admin readers and 404 for unknown modules', async () => {
+  it('separates module-registry technical read from Access Administration (no shared privilege)', async () => {
+    // (a) Usuário sem capability alguma: detail 403.
     const plainToken = await loginWithGrants();
-    const forbidden = await app.inject({
-      method: 'GET',
-      url: '/api/v1/modules/registry/clients',
-      headers: { authorization: `Bearer ${plainToken}` },
-    });
+    const forbidden = await getAs(plainToken, '/api/v1/modules/registry/clients');
     expect(forbidden.statusCode).toBe(403);
 
-    const adminToken = await loginWithGrants([
+    // (b) Leitor do console de Access Administration (authz:access-admin:read)
+    // NÃO obtém o detalhe técnico do registry: capabilities não compartilham privilégio.
+    const accessAdminToken = await loginWithGrants([
       { action: AUTHZ_ACTIONS.AccessAdminRead, resourceType: AUTHZ_RESOURCE_TYPES.AccessAdmin },
     ]);
-    const known = await app.inject({
-      method: 'GET',
-      url: '/api/v1/modules/registry/clients',
-      headers: { authorization: `Bearer ${adminToken}` },
-    });
+    const deniedForAccessAdmin = await getAs(accessAdminToken, '/api/v1/modules/registry/clients');
+    expect(deniedForAccessAdmin.statusCode).toBe(403);
+    // E o console de Access Administration segue liberado para ele (controle não quebrado).
+    const consoleCatalog = await getAs(accessAdminToken, '/api/v1/authz/access-admin/catalog');
+    expect(consoleCatalog.statusCode).toBe(200);
+
+    // (c) Leitor técnico do registry (platform:module-registry:read) obtém o detail,
+    // mas NÃO ganha o console de Access Administration (sem privilege escalation).
+    const registryReaderToken = await loginWithGrants([
+      { action: AUTHZ_ACTIONS.PlatformModuleRegistryRead, resourceType: AUTHZ_RESOURCE_TYPES.Platform },
+    ]);
+    const known = await getAs(registryReaderToken, '/api/v1/modules/registry/clients');
     expect(known.statusCode).toBe(200);
-    const detail = JSON.parse(known.body) as RegistrySummary & { capabilities: string[]; routes: string[]; featureFlag: string | null };
+    const detail = JSON.parse(known.body) as RegistryDetail;
     expect(detail.moduleCode).toBe('clients');
     expect(detail.capabilities.length).toBeGreaterThan(0);
     expect(detail.featureFlag).toBeNull();
 
-    const unknown = await app.inject({
-      method: 'GET',
-      url: '/api/v1/modules/registry/not-a-cisne-module',
-      headers: { authorization: `Bearer ${adminToken}` },
-    });
+    const escalated = await getAs(registryReaderToken, '/api/v1/authz/access-admin/catalog');
+    expect(escalated.statusCode).toBe(403);
+    const escalatedGrants = await getAs(registryReaderToken, '/api/v1/authz/access-admin/grants');
+    expect(escalatedGrants.statusCode).toBe(403);
+
+    // (d) unknown module -> 404 para quem tem a capability de leitura técnica.
+    const unknown = await getAs(registryReaderToken, '/api/v1/modules/registry/not-a-cisne-module');
     expect(unknown.statusCode).toBe(404);
   });
 
   it('reports not_released for a gated module when its feature flag is off', async () => {
     const token = await loginWithGrants([
-      { action: AUTHZ_ACTIONS.AccessAdminRead, resourceType: AUTHZ_RESOURCE_TYPES.AccessAdmin },
+      { action: AUTHZ_ACTIONS.PlatformModuleRegistryRead, resourceType: AUTHZ_RESOURCE_TYPES.Platform },
     ]);
     const previous = process.env['FEATURE_MODULE_FINANCE'];
     process.env['FEATURE_MODULE_FINANCE'] = 'false';
     try {
-      const response = await app.inject({
-        method: 'GET',
-        url: '/api/v1/modules/registry/finance',
-        headers: { authorization: `Bearer ${token}` },
-      });
+      const response = await getAs(token, '/api/v1/modules/registry/finance');
       expect(response.statusCode).toBe(200);
-      const entry = JSON.parse(response.body) as RegistrySummary & { featureFlag: string | null };
+      const entry = JSON.parse(response.body) as RegistryDetail;
       expect(entry.status).toBe('not_released');
       expect(entry.availability).toBe(false);
       expect(entry.featureFlag).toBe('FEATURE_MODULE_FINANCE');

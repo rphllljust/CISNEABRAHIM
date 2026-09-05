@@ -60,6 +60,7 @@ describe('governance helpers (registry)', () => {
     for (const copy of Object.values(MODULE_STATUS_COPY)) {
       expect(copy.label.length).toBeGreaterThan(0);
       expect(copy.hint.length).toBeGreaterThan(0);
+      expect(copy.meaning.length).toBeGreaterThan(copy.hint.length);
     }
   });
 

@@ -4,6 +4,7 @@ import { RequireAuthz } from '../../authorization/decorators/require-authz.decor
 import { AuthorizationGuard } from '../../authorization/guards/authorization.guard';
 import { AUTHZ_ACTIONS } from '../../authorization/types/authz-actions';
 import { AUTHZ_RESOURCE_TYPES } from '../../authorization/types/authz-resources';
+import { buildArtifactIdentitySnapshot } from '../artifact/artifact-identity';
 import {
   ObservabilityMetricsService,
   type ObservabilityMetricsResponse,
@@ -37,5 +38,20 @@ export class ObservabilityController {
   })
   async getTechnicalAlerts(): Promise<TechnicalAlertsResponse> {
     return this.technicalAlerts.evaluate();
+  }
+
+  /**
+   * Identidade do artefato em execução (prova HML SHA / artefato aprovado /
+   * produção SHA). Endpoint autenticado e autorizado (platform:diagnostics:read);
+   * expõe somente campos whitelisted sanitizados por buildArtifactIdentitySnapshot
+   * — nunca segredos ou conteúdo arbitrário de ambiente.
+   */
+  @Get('artifact')
+  @RequireAuthz({
+    action: AUTHZ_ACTIONS.PlatformDiagnosticsRead,
+    resourceType: AUTHZ_RESOURCE_TYPES.Platform,
+  })
+  getArtifactIdentity() {
+    return buildArtifactIdentitySnapshot(process.env);
   }
 }

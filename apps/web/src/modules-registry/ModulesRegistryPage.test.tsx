@@ -147,6 +147,14 @@ describe('ModulesRegistryPage — governança do registry', () => {
     expect(within(moduleRegion).getAllByRole('article')).toHaveLength(6);
     expect(screen.getAllByRole('button', { name: 'Ver detalhes' })).toHaveLength(6);
     expect(screen.getByText('Exibindo 6 de 6 módulos.')).toBeInTheDocument();
+
+    // Semântica inequívoca no frontend: available e enabled NÃO são sinônimos.
+    const legend = screen.getByRole('region', { name: 'Legenda de status de módulos' });
+    expect(within(legend).getByText('Significado dos status')).toBeInTheDocument();
+    expect(within(legend).getByText(/Disponível no escopo atual: o módulo não possui gate de feature/i)).toBeInTheDocument();
+    expect(within(legend).getByText(/NÃO significa ativação manual/i)).toBeInTheDocument();
+    expect(within(legend).getByText(/Habilitado por flag de release/i)).toBeInTheDocument();
+    expect(within(legend).getByText(/Ainda não liberado: módulo com gate de release fora do escopo/i)).toBeInTheDocument();
   });
 
   it('filters by search text and restores the full list via Limpar filtros', async () => {
@@ -238,7 +246,12 @@ describe('ModulesRegistryPage — governança do registry', () => {
 
     const dialog = await screen.findByRole('dialog');
     expect(await within(dialog).findByText('Detalhes técnicos restritos')).toBeInTheDocument();
-    expect(within(dialog).getByText(/permissão de leitura de administração de acesso/i)).toBeInTheDocument();
+    expect(
+      within(dialog).getByText(/permissão específica de leitura técnica do registry/i),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByText(/separada do console de administração de acesso/i),
+    ).toBeInTheDocument();
     // Resumo de governança continua disponível no drawer.
     expect(within(dialog).getByText(/Documentos fiscais/i)).toBeInTheDocument();
     expect(within(dialog).queryByText('/api/v1/fiscal')).not.toBeInTheDocument();

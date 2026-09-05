@@ -122,6 +122,29 @@ function GovernanceKpis({ items }: { items: ModuleRegistrySummary[] }) {
   );
 }
 
+function StatusLegend() {
+  const entries = (Object.keys(MODULE_STATUS_COPY) as ModuleRegistryStatus[]).map((status) => ({
+    status,
+    copy: MODULE_STATUS_COPY[status],
+  }));
+  return (
+    <section
+      aria-label="Legenda de status de módulos"
+      className="mb-6 rounded-xl bg-white px-5 py-4 shadow-sm ring-1 ring-gray-900/5"
+    >
+      <h2 className="text-sm font-semibold tracking-tight text-gray-900">Significado dos status</h2>
+      <ul className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-3">
+        {entries.map(({ status, copy }) => (
+          <li key={status} className="rounded-lg bg-gray-50 p-3">
+            <StatusBadge label={copy.label} tone={statusTone(status)} description={copy.hint} />
+            <p className="mt-2 text-xs leading-relaxed text-gray-600">{copy.meaning}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 function RegistryFiltersBar({
   filters,
   domains,
@@ -339,9 +362,9 @@ function ModuleDetailDrawerContent({
     return (
       <div className="space-y-4">
         <Alert tone="warning" title="Detalhes técnicos restritos">
-          Os detalhes técnicos deste módulo exigem a permissão de leitura de administração de acesso.
-          Solicite acesso ao administrador da plataforma. O resumo de governança permanece disponível
-          abaixo.
+          Os detalhes técnicos deste módulo exigem permissão específica de leitura técnica do registry
+          (separada do console de administração de acesso). Solicite acesso ao administrador da
+          plataforma. O resumo de governança permanece disponível abaixo.
         </Alert>
         <div className="rounded-lg bg-gray-50 p-4">
           <div className="flex items-start justify-between gap-3">
@@ -577,6 +600,7 @@ export function ModulesRegistryPage() {
       {phase === 'ready' ? (
         <>
           <GovernanceKpis items={summaries} />
+          <StatusLegend />
           <RegistryFiltersBar
             filters={effectiveFilters}
             domains={domains}
