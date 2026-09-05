@@ -3,37 +3,55 @@ import { AUTHZ_RESOURCE_TYPES } from '../../authorization/types/authz-resources'
 import { FEATURE_FLAG_ENV, type GatedModuleId } from '../release-scope/release-1-scope';
 import { isReleaseModuleEnabled } from '../release-scope/feature-flags';
 
-/**
- * Enterprise module registry (server-side, read-only).
- *
- * This is a projection over the canonical sources — the authorization catalog
- * (AUTHZ_ACTIONS / AUTHZ_RESOURCE_TYPES) and the release-scope feature flags —
- * NOT a duplicate catalog and NOT a place for business rules. Capabilities and
- * resources come from canonical values only, so a client cannot invent modules
- * or capabilities (CLIENT-INVENTED MODULES = 0).
- */
+export type ModuleRegistryDomain =
+  | 'Operacional'
+  | 'Comercial'
+  | 'Financeiro'
+  | 'Contábil'
+  | 'Fiscal'
+  | 'Recursos'
+  | 'Suprimentos'
+  | 'Sistema';
 
-export type ModuleRegistryEntry = {
-  moduleCode: string;
-  name: string;
-  capabilities: string[];
-  resources: string[];
-  availableFeatures: string[];
-  routes: string[];
-  status: 'active' | 'disabled';
-};
+export type ModuleRegistryStatus = 'available' | 'enabled' | 'not_released';
 
 export type ModuleRegistryDefinition = {
   moduleCode: string;
   name: string;
+  description: string;
+  domain: ModuleRegistryDomain;
   authzDomains: string[];
-  /** Optional explicit canonical capabilities (must exist in AUTHZ_ACTIONS). */
   declaredCapabilities?: string[];
-  /** Optional explicit canonical resources (must exist in AUTHZ_RESOURCE_TYPES). */
   declaredResources?: string[];
-  /** Release-scope gated module id (feature flag). Base modules omit it. */
   gatedModuleId?: GatedModuleId;
   routes: string[];
+  dependencies?: string[];
+};
+
+export type ModuleRegistryDetail = {
+  moduleCode: string;
+  name: string;
+  description: string;
+  domain: ModuleRegistryDomain;
+  status: ModuleRegistryStatus;
+  availability: boolean;
+  reasons: string[];
+  featureFlag: string | null;
+  dependencies: string[];
+  capabilities: string[];
+  resources: string[];
+  routes: string[];
+};
+
+export type ModuleRegistrySummary = {
+  moduleCode: string;
+  name: string;
+  description: string;
+  domain: ModuleRegistryDomain;
+  status: ModuleRegistryStatus;
+  availability: boolean;
+  reasons: string[];
+  dependencies: string[];
 };
 
 const ALL_ACTIONS = new Set<string>(Object.values(AUTHZ_ACTIONS));
@@ -44,147 +62,29 @@ function byAuthzDomain(domains: string[], values: Iterable<string>): string[] {
 }
 
 export const MODULE_REGISTRY_DEFINITIONS: ModuleRegistryDefinition[] = [
-  { moduleCode: 'clients', name: 'Clientes', authzDomains: ['client'], routes: ['/api/v1/clients'] },
-  {
-    moduleCode: 'catalog',
-    name: 'Catálogo de serviços e unidades',
-    authzDomains: ['catalog'],
-    routes: ['/api/v1/catalog'],
-  },
-  {
-    moduleCode: 'requests',
-    name: 'Solicitações de serviço',
-    authzDomains: ['requests'],
-    routes: ['/api/v1/requests/service-requests'],
-  },
-  {
-    moduleCode: 'service-orders',
-    name: 'Ordens de serviço (planejamento, execução, medição)',
-    authzDomains: ['service-orders', 'measurements'],
-    routes: ['/api/v1/service-orders'],
-  },
-  {
-    moduleCode: 'commercial',
-    name: 'Comercial (propostas, pedidos de compra, contratos)',
-    authzDomains: ['commercial'],
-    routes: ['/api/v1/commercial', '/api/v1/supplier-invoices'],
-  },
-  {
-    moduleCode: 'documents',
-    name: 'Documentos',
-    authzDomains: ['documents'],
-    routes: ['/api/v1/documents'],
-  },
-  {
-    moduleCode: 'resources',
-    name: 'Ativos e recursos',
-    authzDomains: ['resources'],
-    routes: ['/api/v1/resources'],
-  },
-  {
-    moduleCode: 'people',
-    name: 'Pessoas',
-    authzDomains: ['people'],
-    gatedModuleId: 'people',
-    routes: ['/api/v1/people'],
-  },
-  {
-    moduleCode: 'finance',
-    name: 'Financeiro',
-    authzDomains: ['finance', 'billing'],
-    gatedModuleId: 'finance',
-    routes: ['/api/v1/finance'],
-  },
-  {
-    moduleCode: 'accounting',
-    name: 'Contabilidade',
-    authzDomains: ['accounting'],
-    gatedModuleId: 'accounting',
-    routes: ['/api/v1/accounting'],
-  },
-  {
-    moduleCode: 'fiscal',
-    name: 'Fiscal',
-    authzDomains: ['fiscal'],
-    gatedModuleId: 'fiscal',
-    routes: ['/api/v1/fiscal'],
-  },
-  {
-    moduleCode: 'inventory',
-    name: 'Estoque',
-    authzDomains: ['inventory'],
-    gatedModuleId: 'inventory',
-    routes: ['/api/v1/inventory'],
-  },
-  {
-    moduleCode: 'payroll',
-    name: 'Folha de pagamento',
-    authzDomains: ['payroll'],
-    gatedModuleId: 'payroll',
-    routes: ['/api/v1/payroll'],
-  },
-  {
-    moduleCode: 'procurement',
-    name: 'Compras e suprimentos',
-    authzDomains: ['procurement'],
-    gatedModuleId: 'procurement',
-    routes: ['/api/v1/procurement'],
-  },
-  {
-    moduleCode: 'suppliers',
-    name: 'Fornecedores',
-    authzDomains: ['supplier'],
-    gatedModuleId: 'suppliers',
-    routes: ['/api/v1/suppliers'],
-  },
-  {
-    moduleCode: 'contracts',
-    name: 'Contratos comerciais',
-    authzDomains: ['commercial'],
-    gatedModuleId: 'contracts',
-    routes: ['/api/v1/commercial/contracts'],
-  },
-  {
-    moduleCode: 'issuer',
-    name: 'Cadastro e emissão (própria empresa)',
-    authzDomains: ['issuer'],
-    routes: ['/api/v1/establishments', '/api/v1/issuer/establishments'],
-  },
-  {
-    moduleCode: 'alerts',
-    name: 'Alertas',
-    authzDomains: [],
-    gatedModuleId: 'alerts',
-    routes: ['/api/v1/alerts'],
-  },
-  {
-    moduleCode: 'reports',
-    name: 'Relatórios',
-    authzDomains: [],
-    gatedModuleId: 'reports',
-    routes: ['/api/v1/reports'],
-  },
-  {
-    moduleCode: 'approval-matrix',
-    name: 'Matrizes de aprovação',
-    authzDomains: ['authz'],
-    gatedModuleId: 'approval-matrix',
-    routes: ['/api/v1/authz/approval-matrices'],
-  },
-  {
-    moduleCode: 'operational-profitability',
-    name: 'Rentabilidade operacional',
-    authzDomains: [],
-    gatedModuleId: 'operational-profitability',
-    routes: ['/api/v1/analytics/operational-profitability'],
-  },
+  { moduleCode: 'clients', name: 'Clientes', description: 'Cadastro e ciclo de vida dos clientes atendidos pelo Cisne.', domain: 'Comercial', authzDomains: ['client'], routes: ['/api/v1/clients'] },
+  { moduleCode: 'catalog', name: 'Catálogo de serviços e unidades', description: 'Serviços, unidades de medida e precificação oferecidos.', domain: 'Comercial', authzDomains: ['catalog'], routes: ['/api/v1/catalog'] },
+  { moduleCode: 'requests', name: 'Solicitações de serviço', description: 'Entrada controlada da demanda até a conversão em ordem de serviço.', domain: 'Operacional', authzDomains: ['requests'], routes: ['/api/v1/requests/service-requests'] },
+  { moduleCode: 'service-orders', name: 'Ordens de serviço', description: 'Planejamento, execução, medição e faturamento interno das ordens de serviço.', domain: 'Operacional', authzDomains: ['service-orders', 'measurements', 'billing'], routes: ['/api/v1/service-orders'] },
+  { moduleCode: 'commercial', name: 'Comercial', description: 'Propostas, pedidos de compra e contratos comerciais.', domain: 'Comercial', authzDomains: ['commercial'], routes: ['/api/v1/commercial', '/api/v1/supplier-invoices'] },
+  { moduleCode: 'documents', name: 'Documentos', description: 'Gestão documental com versionamento, armazenamento e download seguro.', domain: 'Sistema', authzDomains: ['documents'], routes: ['/api/v1/documents'] },
+  { moduleCode: 'resources', name: 'Ativos e recursos', description: 'Tipos de recursos, ativos físicos e tipos de mão de obra.', domain: 'Recursos', authzDomains: ['resources'], routes: ['/api/v1/resources'] },
+  { moduleCode: 'people', name: 'Pessoas', description: 'Cadastro de pessoas vinculadas à operação.', domain: 'Recursos', authzDomains: ['people'], gatedModuleId: 'people', routes: ['/api/v1/people'] },
+  { moduleCode: 'finance', name: 'Financeiro', description: 'Contas a receber, a pagar, tesouraria, despesas e orçamento.', domain: 'Financeiro', authzDomains: ['finance'], gatedModuleId: 'finance', routes: ['/api/v1/finance'] },
+  { moduleCode: 'accounting', name: 'Contabilidade', description: 'Plano de contas, lançamentos, relatórios contábeis e fechamento de período.', domain: 'Contábil', authzDomains: ['accounting'], gatedModuleId: 'accounting', routes: ['/api/v1/accounting'] },
+  { moduleCode: 'fiscal', name: 'Fiscal', description: 'Documentos fiscais, motor de tributos e obrigações tributárias.', domain: 'Fiscal', authzDomains: ['fiscal'], gatedModuleId: 'fiscal', routes: ['/api/v1/fiscal'] },
+  { moduleCode: 'inventory', name: 'Estoque', description: 'Itens, saldos, movimentações e custeio de estoque.', domain: 'Suprimentos', authzDomains: ['inventory'], gatedModuleId: 'inventory', routes: ['/api/v1/inventory'] },
+  { moduleCode: 'payroll', name: 'Folha de pagamento', description: 'Contratos, períodos e regras versionadas de folha.', domain: 'Recursos', authzDomains: ['payroll'], gatedModuleId: 'payroll', routes: ['/api/v1/payroll'] },
+  { moduleCode: 'procurement', name: 'Compras e suprimentos', description: 'Requisições, pedidos, recebimento e conferência (three-way match).', domain: 'Suprimentos', authzDomains: ['procurement'], gatedModuleId: 'procurement', routes: ['/api/v1/procurement'] },
+  { moduleCode: 'suppliers', name: 'Fornecedores', description: 'Cadastro e versionamento de fornecedores.', domain: 'Suprimentos', authzDomains: ['supplier'], gatedModuleId: 'suppliers', routes: ['/api/v1/suppliers'] },
+  { moduleCode: 'contracts', name: 'Contratos comerciais', description: 'Vigência, versionamento imutável e expiração de contratos.', domain: 'Comercial', authzDomains: ['commercial'], gatedModuleId: 'contracts', routes: ['/api/v1/commercial/contracts'] },
+  { moduleCode: 'issuer', name: 'Cadastro e emissão', description: 'Cadastro da própria empresa (legal entity, estabelecimento e CNPJ emissor).', domain: 'Fiscal', authzDomains: ['issuer'], routes: ['/api/v1/establishments', '/api/v1/issuer/establishments'] },
+  { moduleCode: 'alerts', name: 'Alertas', description: 'Alertas operacionais e de negócio.', domain: 'Sistema', authzDomains: [], gatedModuleId: 'alerts', routes: ['/api/v1/alerts'] },
+  { moduleCode: 'reports', name: 'Relatórios', description: 'Relatórios e exportações operacionais.', domain: 'Sistema', authzDomains: [], gatedModuleId: 'reports', routes: ['/api/v1/reports'] },
+  { moduleCode: 'approval-matrix', name: 'Matrizes de aprovação', description: 'Regras de aprovação financeira por matriz.', domain: 'Financeiro', authzDomains: ['authz'], gatedModuleId: 'approval-matrix', routes: ['/api/v1/authz/approval-matrices'] },
+  { moduleCode: 'operational-profitability', name: 'Rentabilidade operacional', description: 'Análise de rentabilidade por ordem de serviço.', domain: 'Contábil', authzDomains: [], gatedModuleId: 'operational-profitability', routes: ['/api/v1/analytics/operational-profitability'] },
 ];
 
-/**
- * Validates a registry definition set: every advertised capability/resource
- * must exist in the canonical authorization catalog. Throws on any invented
- * capability, resource or module code (defense: CLIENT-INVENTED MODULES = 0).
- */
 export function assertRegistryDefinitions(definitions: ModuleRegistryDefinition[]): void {
   for (const definition of definitions) {
     if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(definition.moduleCode)) {
@@ -192,6 +92,9 @@ export function assertRegistryDefinitions(definitions: ModuleRegistryDefinition[
     }
     if (definition.routes.length === 0 || definition.routes.some((route) => !route.startsWith('/api/v1/'))) {
       throw new Error(`MODULE_REGISTRY_INVALID_ROUTES: ${definition.moduleCode}`);
+    }
+    if (definition.name.trim().length === 0 || definition.description.trim().length === 0) {
+      throw new Error(`MODULE_REGISTRY_INVALID_LABEL: ${definition.moduleCode}`);
     }
     for (const capability of definition.declaredCapabilities ?? []) {
       if (!ALL_ACTIONS.has(capability)) {
@@ -206,34 +109,62 @@ export function assertRegistryDefinitions(definitions: ModuleRegistryDefinition[
   }
 }
 
+function statusFor(definition: ModuleRegistryDefinition, env: NodeJS.ProcessEnv): ModuleRegistryStatus {
+  if (definition.gatedModuleId === undefined) {
+    return 'available';
+  }
+  return isReleaseModuleEnabled(definition.gatedModuleId, env) ? 'enabled' : 'not_released';
+}
+
+function reasonsFor(status: ModuleRegistryStatus, definition: ModuleRegistryDefinition): string[] {
+  if (status === 'not_released') {
+    return definition.gatedModuleId ? ['FEATURE_DISABLED', 'RELEASE_SCOPE_GATED'] : ['RELEASE_SCOPE_GATED'];
+  }
+  return [];
+}
+
 export function buildModuleRegistry(
   definitions = MODULE_REGISTRY_DEFINITIONS,
   env: NodeJS.ProcessEnv = process.env,
-): ModuleRegistryEntry[] {
+): ModuleRegistryDetail[] {
   assertRegistryDefinitions(definitions);
   return definitions.map((definition) => {
-    const enabled =
-      definition.gatedModuleId === undefined || isReleaseModuleEnabled(definition.gatedModuleId, env);
-    const status = definition.gatedModuleId === undefined || enabled ? 'active' : 'disabled';
+    const status = statusFor(definition, env);
     const derivedCapabilities = byAuthzDomain(definition.authzDomains, ALL_ACTIONS);
     const derivedResources = byAuthzDomain(definition.authzDomains, ALL_RESOURCES);
-    const capabilities = [...new Set([...derivedCapabilities, ...(definition.declaredCapabilities ?? [])])];
-    const resources = [...new Set([...derivedResources, ...(definition.declaredResources ?? [])])];
     return {
       moduleCode: definition.moduleCode,
       name: definition.name,
-      capabilities,
-      resources,
-      availableFeatures: definition.gatedModuleId ? [FEATURE_FLAG_ENV[definition.gatedModuleId]] : [],
-      routes: definition.routes,
+      description: definition.description,
+      domain: definition.domain,
       status,
+      availability: status !== 'not_released',
+      reasons: reasonsFor(status, definition),
+      featureFlag: definition.gatedModuleId ? FEATURE_FLAG_ENV[definition.gatedModuleId] : null,
+      dependencies: definition.dependencies ?? [],
+      capabilities: [...new Set([...derivedCapabilities, ...(definition.declaredCapabilities ?? [])])],
+      resources: [...new Set([...derivedResources, ...(definition.declaredResources ?? [])])],
+      routes: definition.routes,
     };
   });
+}
+
+export function buildModuleRegistrySummary(env: NodeJS.ProcessEnv = process.env): ModuleRegistrySummary[] {
+  return buildModuleRegistry(MODULE_REGISTRY_DEFINITIONS, env).map((entry) => ({
+    moduleCode: entry.moduleCode,
+    name: entry.name,
+    description: entry.description,
+    domain: entry.domain,
+    status: entry.status,
+    availability: entry.availability,
+    reasons: entry.reasons,
+    dependencies: entry.dependencies,
+  }));
 }
 
 export function findModuleRegistryEntry(
   moduleCode: string,
   env: NodeJS.ProcessEnv = process.env,
-): ModuleRegistryEntry | undefined {
+): ModuleRegistryDetail | undefined {
   return buildModuleRegistry(MODULE_REGISTRY_DEFINITIONS, env).find((entry) => entry.moduleCode === moduleCode);
 }

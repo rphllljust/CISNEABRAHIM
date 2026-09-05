@@ -1,24 +1,43 @@
-import { Controller, Get, NotFoundException, Param, UseGuards } from '@nestjs/common';
+import { Controller, ForbiddenException, Get, NotFoundException, Param, UseGuards } from '@nestjs/common';
+import { CurrentAuth } from '../../auth/decorators/current-auth.decorator';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { buildModuleRegistry, findModuleRegistryEntry, MODULE_REGISTRY_DEFINITIONS } from './module-registry';
+import type { AccessTokenClaims } from '../../auth/services/token.service';
+import { PolicyDecisionPointService } from '../../authorization/services/policy-decision-point.service';
+import { AUTHZ_ACTIONS } from '../../authorization/types/authz-actions';
+import { AUTHZ_RESOURCE_TYPES } from '../../authorization/types/authz-resources';
+import { buildModuleRegistrySummary, findModuleRegistryEntry } from './module-registry';
 
 /**
- * Enterprise module registry — read-only metadata for authenticated consumers
- * (the web shell may query it to render navigation/feature availability).
- * It never carries business rules; capabilities/resources are projected from
- * the canonical authorization catalog. Unknown module codes are 404 so a
- * client cannot invent modules.
+ * Enterprise module registry — read-only governance metadata.
+ *
+ * - GET /api/v1/modules/registry          => governance summary (no technical
+ *   capabilities/resources/routes exposed to ordinary authenticated users).
+ * - GET /api/v1/modules/registry/:code    => technical detail, only for users
+ *   with the access-admin read capability (PDP enforces; hiding the menu is
+ *   never the security boundary).
  */
 @Controller('modules/registry')
 @UseGuards(JwtAuthGuard)
 export class ModuleRegistryController {
+  constructor(private readonly pdp: PolicyDecisionPointService) {}
+
   @Get()
-  list(): ReturnType<typeof buildModuleRegistry> {
-    return buildModuleRegistry(MODULE_REGISTRY_DEFINITIONS, process.env);
+  list(): ReturnType<typeof buildModuleRegistrySummary> {
+    return buildModuleRegistrySummary(process.env);
   }
 
   @Get(':moduleCode')
-  get(@Param('moduleCode') moduleCode: string): ReturnType<typeof findModuleRegistryEntry> {
+  async get(
+    @CurrentAuth() auth: AccessTokenClaims,
+    @Param('moduleCode') moduleCode: string,
+  ): Promise<ReturnType<typeof findModuleRegistryEntry>> {
+    const decision = await this.pdp.decide(
+      { identityId: auth.sub, sessionId: auth.sid },
+      { action: AUTHZ_ACTIONS.AccessAdminRead, resourceType: AUTHZ_RESOURCE_TYPES.AccessAdmin },
+    );
+    if (decision.result !== 'ALLOW') {
+      throw new ForbiddenException({ error: { code: 'AUTHZ_DENIED', message: 'Access denied.' } });
+    }
     const entry = findModuleRegistryEntry(moduleCode, process.env);
     if (!entry) {
       throw new NotFoundException({ error: { code: 'MODULE_NOT_FOUND', message: 'Module not registered.' } });

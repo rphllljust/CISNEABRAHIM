@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../../auth/auth.module';
+import { AuthorizationModule } from '../../authorization/authorization.module';
 import { ModuleRegistryController } from './module-registry.controller';
 import { assertRegistryDefinitions, MODULE_REGISTRY_DEFINITIONS } from './module-registry';
 
@@ -8,7 +9,7 @@ import { assertRegistryDefinitions, MODULE_REGISTRY_DEFINITIONS } from './module
 assertRegistryDefinitions(MODULE_REGISTRY_DEFINITIONS);
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, AuthorizationModule],
   controllers: [ModuleRegistryController],
 })
 export class ModuleRegistryModule {}
