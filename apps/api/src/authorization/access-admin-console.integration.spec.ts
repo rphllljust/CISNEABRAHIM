@@ -224,7 +224,7 @@ describe('Access Administration console — full authorization model + effective
        VALUES ($1, 'BRL') RETURNING id`,
       [`TEST_MATRIX_${randomUUID().slice(0, 8).toUpperCase()}`],
     );
-    const matrixId = matrix.rows[0].id;
+    const matrixId = matrix.rows[0]!.id;
     const version = await pool.query<{ id: string }>(
       `INSERT INTO "authorization".approval_matrix_versions
          (matrix_id, version, status, created_by_identity_id)
@@ -235,7 +235,7 @@ describe('Access Administration console — full authorization model + effective
       `INSERT INTO "authorization".approval_matrix_rules
          (version_id, operation, role_code, capability, scope_type, amount_limit, line_number)
        VALUES ($1, 'PURCHASE', 'FINANCIAL_CONTROLLER', 'purchase.approve', 'GLOBAL', 5000.0000, 1)`,
-      [version.rows[0].id],
+      [version.rows[0]!.id],
     );
     await pool.query(
       `INSERT INTO "authorization".approval_role_assignments

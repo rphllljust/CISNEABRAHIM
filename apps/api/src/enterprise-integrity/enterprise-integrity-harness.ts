@@ -31,6 +31,8 @@ import { AuthModule } from '../auth/auth.module';
 import { AUTH_TEST_PASSWORD, applyAuthTestEnv } from '../auth/test/auth-test-env';
 import { normalizeLoginIdentifier } from '../auth/crypto/token-crypto';
 import { AuthorizationModule } from '../authorization/authorization.module';
+import { ApprovalMatrixAccessService } from '../authorization/services/approval-matrix-access.service';
+import { enableCriticalSodFor } from '../authorization/test/critical-sod-harness';
 import { AUTHZ_ACTIONS } from '../authorization/types/authz-actions';
 import { AUTHZ_RESOURCE_TYPES } from '../authorization/types/authz-resources';
 import { AUTHZ_SCOPES } from '../authorization/types/authz-scopes';
@@ -139,6 +141,7 @@ export type EnterpriseIntegrityContext = {
   fiscalGateway: ScriptedFiscalGateway;
   seedAdminActor: () => Promise<UatActor>;
   seedOperationalActor: () => Promise<UatActor>;
+  seedFinancialChecker: () => Promise<UatActor>;
   resetDatabase: () => Promise<void>;
 };
 
@@ -256,7 +259,27 @@ export async function createEnterpriseIntegrityContext(): Promise<EnterpriseInte
     return { identityId, sessionId: 'sid-enterprise-ops' };
   }
 
+  async function seedFinancialChecker(): Promise<UatActor> {
+    const login = normalizeLoginIdentifier(`ent-checker-${crypto.randomUUID()}@cisne.invalid`);
+    const passwordHash = await hashPassword(AUTH_TEST_PASSWORD);
+    const { identityId } = await insertIdentity(pool, login, passwordHash);
+    await grantUatProfile(pool, identityId, identityId, 'control_admin');
+    await grantEnterpriseCapabilities(pool, identityId);
+    const matrices = module.get(ApprovalMatrixAccessService);
+    await enableCriticalSodFor(pool, matrices, identityId);
+    return { identityId, sessionId: 'sid-enterprise-checker' };
+  }
+
   await resetDatabase();
 
-  return { pool, module, services, fiscalGateway, seedAdminActor, seedOperationalActor, resetDatabase };
+  return {
+    pool,
+    module,
+    services,
+    fiscalGateway,
+    seedAdminActor,
+    seedOperationalActor,
+    seedFinancialChecker,
+    resetDatabase,
+  };
 }
