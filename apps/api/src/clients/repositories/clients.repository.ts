@@ -127,25 +127,25 @@ export class ClientsRepository {
   }
 
   async countSummary(): Promise<{ total: number; active: number; inactive: number; purchaseOrderRequired: number }> {
-    type CountRow = { total: string; active: string; inactive: string; purchaseOrderRequired: string };
+    type CountRow = { total: string; active: string; inactive: string; purchase_order_required: string };
     const result = await this.pool().query<CountRow>(
       `SELECT COUNT(*) AS total,
               COUNT(*) FILTER (WHERE status = 'ACTIVE') AS active,
               COUNT(*) FILTER (WHERE status = 'INACTIVE') AS inactive,
-              COUNT(*) FILTER (WHERE purchase_order_requirement <> 'NOT_REQUIRED') AS purchaseOrderRequired
+              COUNT(*) FILTER (WHERE purchase_order_requirement <> 'NOT_REQUIRED') AS purchase_order_required
        FROM pty.clients`,
     );
     const row = result.rows[0] ?? {
       total: '0',
       active: '0',
       inactive: '0',
-      purchaseOrderRequired: '0',
+      purchase_order_required: '0',
     };
     return {
       total: Number.parseInt(row.total, 10),
       active: Number.parseInt(row.active, 10),
       inactive: Number.parseInt(row.inactive, 10),
-      purchaseOrderRequired: Number.parseInt(row.purchaseOrderRequired, 10),
+      purchaseOrderRequired: Number.parseInt(row.purchase_order_required, 10),
     };
   }
   async listWithDetails(
