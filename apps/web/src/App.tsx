@@ -94,13 +94,6 @@ import {
   TrialBalancePage,
 } from './accounting/pages/PeriodReportPages';
 import { PeriodClosePage } from './accounting/pages/PeriodClosePage';
-import { FixedAssetsPage } from './accounting/pages/FixedAssetsPage';
-import { ExpensesPage } from './finance/pages/ExpensesPage';
-import { BudgetsPage } from './finance/pages/BudgetsPage';
-import { CashForecastPage } from './finance/pages/CashForecastPage';
-import { FiscalPeriodsPage } from './fiscal/pages/FiscalPeriodsPage';
-import { TaxAssessmentsPage } from './fiscal/pages/TaxAssessmentsPage';
-import { SuppliersRoute, SuppliersPage } from './suppliers/pages/SuppliersPage';
 import {
   ProcurementRoute,
   ProcurementHubPage,
@@ -549,46 +542,6 @@ export function App() {
                 }
               />
               <Route
-                path="/app/finance/expenses/:expenseId"
-                element={
-                  <FinanceRoute access="expenses">
-                    <ExpensesPage />
-                  </FinanceRoute>
-                }
-              />
-              <Route
-                path="/app/finance/expenses"
-                element={
-                  <FinanceRoute access="expenses">
-                    <ExpensesPage />
-                  </FinanceRoute>
-                }
-              />
-              <Route
-                path="/app/finance/budgets/:budgetId"
-                element={
-                  <FinanceRoute access="budgets">
-                    <BudgetsPage />
-                  </FinanceRoute>
-                }
-              />
-              <Route
-                path="/app/finance/budgets"
-                element={
-                  <FinanceRoute access="budgets">
-                    <BudgetsPage />
-                  </FinanceRoute>
-                }
-              />
-              <Route
-                path="/app/finance/forecast"
-                element={
-                  <FinanceRoute access="forecast">
-                    <CashForecastPage />
-                  </FinanceRoute>
-                }
-              />
-              <Route
                 path="/app/fiscal/documents"
                 element={
                   <FiscalRoute access="documents">
@@ -617,38 +570,6 @@ export function App() {
                 element={
                   <FiscalRoute access="tax">
                     <FiscalTributosPage />
-                  </FiscalRoute>
-                }
-              />
-              <Route
-                path="/app/fiscal/periods/:periodId"
-                element={
-                  <FiscalRoute access="period">
-                    <FiscalPeriodsPage />
-                  </FiscalRoute>
-                }
-              />
-              <Route
-                path="/app/fiscal/periods"
-                element={
-                  <FiscalRoute access="period">
-                    <FiscalPeriodsPage />
-                  </FiscalRoute>
-                }
-              />
-              <Route
-                path="/app/fiscal/assessments/:assessmentId"
-                element={
-                  <FiscalRoute access="tax">
-                    <TaxAssessmentsPage />
-                  </FiscalRoute>
-                }
-              />
-              <Route
-                path="/app/fiscal/assessments"
-                element={
-                  <FiscalRoute access="tax">
-                    <TaxAssessmentsPage />
                   </FiscalRoute>
                 }
               />
@@ -722,38 +643,6 @@ export function App() {
                   <AccountingRoute>
                     <PeriodClosePage />
                   </AccountingRoute>
-                }
-              />
-              <Route
-                path="/app/accounting/fixed-assets/:registerId"
-                element={
-                  <AccountingRoute>
-                    <FixedAssetsPage />
-                  </AccountingRoute>
-                }
-              />
-              <Route
-                path="/app/accounting/fixed-assets"
-                element={
-                  <AccountingRoute>
-                    <FixedAssetsPage />
-                  </AccountingRoute>
-                }
-              />
-              <Route
-                path="/app/suppliers/:supplierId"
-                element={
-                  <SuppliersRoute>
-                    <SuppliersPage />
-                  </SuppliersRoute>
-                }
-              />
-              <Route
-                path="/app/suppliers"
-                element={
-                  <SuppliersRoute>
-                    <SuppliersPage />
-                  </SuppliersRoute>
                 }
               />
               <Route
