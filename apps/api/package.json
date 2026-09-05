@@ -23,7 +23,6 @@
     "hml:smoke": "npx tsx src/ops/hml/cli/run-hml-smoke.ts",
     "hml:deploy": "npx tsx src/ops/hml/cli/run-hml-deploy.ts",
     "hml:grant-pilot-operator": "npx tsx src/ops/hml/cli/grant-hml-pilot-operator.ts",
-    "hml:create-tech-auditor": "npx tsx src/ops/hml/cli/create-hml-tech-auditor.ts",
     "hml:seed-synthetic": "nest build && node dist/synthetic-seed/cli/run-synthetic-business-seed.js",
     "test:cd": "vitest run src/ops/cd",
     "cd:promote": "npx tsx src/ops/cd/cli/run-cd-promote.ts",
