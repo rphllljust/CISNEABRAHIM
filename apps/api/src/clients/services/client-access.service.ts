@@ -115,8 +115,20 @@ export class ClientAccessService {
 
   async list(
     actor: IdentityAuthzContext,
-    query: { limit: number; offset: number; status?: 'ACTIVE' | 'INACTIVE' },
-  ): Promise<{ items: ClientResponse[]; limit: number; offset: number }> {
+    query: {
+      limit: number;
+      offset: number;
+      status?: 'ACTIVE' | 'INACTIVE';
+      search?: string;
+      purchaseOrderRequirement?: 'NOT_REQUIRED' | 'BEFORE_EXECUTION' | 'BEFORE_BILLING';
+    },
+  ): Promise<{
+    items: ClientResponse[];
+    limit: number;
+    offset: number;
+    total: number;
+    summary: { total: number; active: number; inactive: number; purchaseOrderRequired: number };
+  }> {
     const grants = await this.authorizationRepository.findActiveGrants(
       actor.identityId,
       AUTHZ_ACTIONS.ClientList,
@@ -137,18 +149,39 @@ export class ClientAccessService {
       clauses.push(`status = $${params.length + 1}`);
       params.push(query.status);
     }
+    if (query.search) {
+      const escaped = query.search.toLowerCase().replace(/[\\%_]/g, (match) => `\\${match}`);
+      const like = `%${escaped}%`;
+      clauses.push(
+        `(LOWER(legal_name) LIKE $${params.length + 1}
+          OR LOWER(COALESCE(trade_name, '')) LIKE $${params.length + 1}
+          OR regexp_replace(normalized_tax_id, '\\D', '', 'g') LIKE $${params.length + 1})`,
+      );
+      params.push(like);
+    }
+    if (query.purchaseOrderRequirement) {
+      clauses.push(`purchase_order_requirement::text = $${params.length + 1}`);
+      params.push(query.purchaseOrderRequirement);
+    }
 
+    const whereClause = clauses.join(' AND ');
     const items = await this.clientsRepository.listWithDetails(
-      clauses.join(' AND '),
+      whereClause,
       params,
       query.limit,
       query.offset,
     );
+    const [total, summary] = await Promise.all([
+      this.clientsRepository.count(whereClause, params),
+      this.clientsRepository.countSummary(),
+    ]);
 
     return {
       items: items.map(toClientResponse),
       limit: query.limit,
       offset: query.offset,
+      total,
+      summary,
     };
   }
 

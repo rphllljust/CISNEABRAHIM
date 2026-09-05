@@ -3,6 +3,7 @@ import { parseRequestPath } from './request-url';
 import {
   CLIENT_STATUSES,
   CONTACT_PURPOSES,
+  PURCHASE_ORDER_REQUIREMENTS,
   type Client,
 } from '../clients/types/client.types';
 import { createShellFetchMock, MOCK_IDENTITY_ID, MOCK_SESSION_ID } from './shell-fetch-mock';
@@ -53,6 +54,7 @@ export function createClientsFetchMock(options: ClientsFetchMockOptions = {}) {
       updatedAt: '2026-01-01T12:00:00.000Z',
       deactivatedAt: null,
       deactivationReason: null,
+      purchaseOrderRequirement: PURCHASE_ORDER_REQUIREMENTS.NotRequired,
       contacts: [
         {
           id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
@@ -86,14 +88,38 @@ export function createClientsFetchMock(options: ClientsFetchMockOptions = {}) {
       const limit = Number(searchParams.get('limit') ?? '20');
       const offset = Number(searchParams.get('offset') ?? '0');
       const status = searchParams.get('status');
+      const search = searchParams.get('search');
+      const requirement = searchParams.get('purchaseOrderRequirement');
       let items = [...store];
       if (status === CLIENT_STATUSES.Active || status === CLIENT_STATUSES.Inactive) {
         items = items.filter((client) => client.status === status);
       }
+      if (search) {
+        const term = search.toLowerCase();
+        items = items.filter((client) =>
+          client.legalName.toLowerCase().includes(term) ||
+          (client.tradeName ?? '').toLowerCase().includes(term) ||
+          client.taxId.includes(term),
+        );
+      }
+      if (requirement) {
+        items = items.filter((client) => client.purchaseOrderRequirement === requirement);
+      }
+      const total = items.length;
+      const summary = {
+        total: store.length,
+        active: store.filter((client) => client.status === CLIENT_STATUSES.Active).length,
+        inactive: store.filter((client) => client.status === CLIENT_STATUSES.Inactive).length,
+        purchaseOrderRequired: store.filter(
+          (client) => client.purchaseOrderRequirement !== PURCHASE_ORDER_REQUIREMENTS.NotRequired,
+        ).length,
+      };
       return jsonResponse({
         items: items.slice(offset, offset + limit),
         limit,
         offset,
+        total,
+        summary,
       });
     }
 
@@ -126,6 +152,7 @@ export function createClientsFetchMock(options: ClientsFetchMockOptions = {}) {
         updatedAt: new Date().toISOString(),
         deactivatedAt: null,
         deactivationReason: null,
+        purchaseOrderRequirement: PURCHASE_ORDER_REQUIREMENTS.NotRequired,
         contacts: [
           {
             id: crypto.randomUUID(),

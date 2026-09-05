@@ -277,5 +277,39 @@ export function parseListClientsQuery(query: Record<string, unknown>) {
     status = statusRaw;
   }
 
-  return { limit, offset, status };
+  let search: string | undefined;
+  const rawSearch = query['search'];
+  if (rawSearch !== undefined) {
+    if (typeof rawSearch !== 'string') {
+      throw new ClientHttpException(
+        HttpStatus.BAD_REQUEST,
+        CLIENT_ERROR_CODES.VALIDATION_FAILED,
+        'Invalid query parameters.',
+      );
+    }
+    const trimmed = rawSearch.trim();
+    if (trimmed.length > 120) {
+      throw new ClientHttpException(
+        HttpStatus.BAD_REQUEST,
+        CLIENT_ERROR_CODES.VALIDATION_FAILED,
+        'Invalid query parameters.',
+      );
+    }
+    search = trimmed.length > 0 ? trimmed : undefined;
+  }
+
+  let purchaseOrderRequirement: 'NOT_REQUIRED' | 'BEFORE_EXECUTION' | 'BEFORE_BILLING' | undefined;
+  if (query['purchaseOrderRequirement'] !== undefined) {
+    const raw = query['purchaseOrderRequirement'];
+    if (raw !== 'NOT_REQUIRED' && raw !== 'BEFORE_EXECUTION' && raw !== 'BEFORE_BILLING') {
+      throw new ClientHttpException(
+        HttpStatus.BAD_REQUEST,
+        CLIENT_ERROR_CODES.VALIDATION_FAILED,
+        'Invalid query parameters.',
+      );
+    }
+    purchaseOrderRequirement = raw;
+  }
+
+  return { limit, offset, status, search, purchaseOrderRequirement };
 }

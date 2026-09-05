@@ -1,5 +1,8 @@
 import type { ClientStatus, ContactPurpose, AddressPurpose } from '../domain/client-status';
 
+/** Espelha o enum pty.purchase_order_requirement (migration 0071, já aplicada). */
+export type PurchaseOrderRequirement = 'NOT_REQUIRED' | 'BEFORE_EXECUTION' | 'BEFORE_BILLING';
+
 export type ClientContactRow = {
   id: string;
   name: string;
@@ -33,6 +36,7 @@ export type ClientRow = {
   updated_at: string;
   deactivated_at: string | null;
   deactivation_reason: string | null;
+  purchase_order_requirement: PurchaseOrderRequirement;
 };
 
 export type ClientDetail = ClientRow & {
@@ -52,6 +56,7 @@ export type ClientResponse = {
   updatedAt: string;
   deactivatedAt: string | null;
   deactivationReason: string | null;
+  purchaseOrderRequirement: PurchaseOrderRequirement;
   contacts: Array<{
     id: string;
     name: string;
@@ -86,6 +91,7 @@ export function toClientResponse(detail: ClientDetail): ClientResponse {
     updatedAt: detail.updated_at,
     deactivatedAt: detail.deactivated_at,
     deactivationReason: detail.deactivation_reason,
+    purchaseOrderRequirement: detail.purchase_order_requirement,
     contacts: detail.contacts.map((contact) => ({
       id: contact.id,
       name: contact.name,

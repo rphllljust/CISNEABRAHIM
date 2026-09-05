@@ -74,7 +74,8 @@ export class ClientsRepository {
               created_at,
               updated_at,
               deactivated_at,
-              deactivation_reason
+              deactivation_reason,
+               purchase_order_requirement::text
        FROM pty.clients
        WHERE id = $1`,
       [clientId],
@@ -103,7 +104,8 @@ export class ClientsRepository {
               created_at,
               updated_at,
               deactivated_at,
-              deactivation_reason
+              deactivation_reason,
+               purchase_order_requirement::text
        FROM pty.clients
        WHERE ${whereClause}
        ORDER BY created_at ASC, id ASC
@@ -114,6 +116,38 @@ export class ClientsRepository {
     return result.rows;
   }
 
+  async count(whereClause: string, params: unknown[]): Promise<number> {
+    const result = await this.pool().query<{ count: string }>(
+      `SELECT COUNT(*) AS count
+       FROM pty.clients
+       WHERE ${whereClause}`,
+      params,
+    );
+    return Number.parseInt(result.rows[0]?.count ?? '0', 10);
+  }
+
+  async countSummary(): Promise<{ total: number; active: number; inactive: number; purchaseOrderRequired: number }> {
+    type CountRow = { total: string; active: string; inactive: string; purchaseOrderRequired: string };
+    const result = await this.pool().query<CountRow>(
+      `SELECT COUNT(*) AS total,
+              COUNT(*) FILTER (WHERE status = 'ACTIVE') AS active,
+              COUNT(*) FILTER (WHERE status = 'INACTIVE') AS inactive,
+              COUNT(*) FILTER (WHERE purchase_order_requirement <> 'NOT_REQUIRED') AS purchaseOrderRequired
+       FROM pty.clients`,
+    );
+    const row = result.rows[0] ?? {
+      total: '0',
+      active: '0',
+      inactive: '0',
+      purchaseOrderRequired: '0',
+    };
+    return {
+      total: Number.parseInt(row.total, 10),
+      active: Number.parseInt(row.active, 10),
+      inactive: Number.parseInt(row.inactive, 10),
+      purchaseOrderRequired: Number.parseInt(row.purchaseOrderRequired, 10),
+    };
+  }
   async listWithDetails(
     whereClause: string,
     params: unknown[],
