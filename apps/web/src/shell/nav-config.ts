@@ -414,6 +414,18 @@ export const SHELL_NAV_GROUPS: ShellNavGroup[] = [
       },
     ],
   },
+  {
+    id: 'system',
+    label: 'Sistema',
+    items: [
+      {
+        id: 'modules',
+        label: 'Módulos',
+        path: '/app/modules',
+        capabilityId: null,
+      },
+    ],
+  },
 ];
 
 export const SHELL_NAV_ITEMS: ShellNavItem[] = SHELL_NAV_GROUPS.flatMap((group) => group.items);

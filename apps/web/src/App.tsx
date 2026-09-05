@@ -63,6 +63,7 @@ import { OperationalDashboardPage } from './dashboard/pages/OperationalDashboard
 import { AlertCenterPage } from './alerts/pages/AlertCenterPage';
 import { SearchResultsPage } from './search/pages/SearchResultsPage';
 import { ReportsPage } from './reports/pages/ReportsPage';
+import { ModulesRegistryPage } from './modules-registry/ModulesRegistryPage';
 import { LoginPage } from './pages/LoginPage';
 import { PlatformDiagnosticsPage } from './pages/PlatformDiagnosticsPage';
 import { ServiceUnavailablePage } from './pages/ServiceUnavailablePage';
@@ -138,6 +139,7 @@ export function App() {
               <Route path="/app/alerts" element={<AlertCenterPage />} />
               <Route path="/app/search" element={<SearchResultsPage />} />
               <Route path="/app/reports" element={<ReportsPage />} />
+              <Route path="/app/modules" element={<ModulesRegistryPage />} />
               <Route
                 path="/app/access-admin"
                 element={
