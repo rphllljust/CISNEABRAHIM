@@ -1,11 +1,19 @@
-export type ModuleRegistryStatus = 'active' | 'disabled';
+export type ModuleRegistryStatus = 'available' | 'enabled' | 'not_released';
 
-export type ModuleRegistryEntry = {
+export type ModuleRegistrySummary = {
   moduleCode: string;
   name: string;
+  description: string;
+  domain: string;
+  status: ModuleRegistryStatus;
+  availability: boolean;
+  reasons: string[];
+  dependencies: string[];
+};
+
+export type ModuleRegistryDetail = ModuleRegistrySummary & {
+  featureFlag: string | null;
   capabilities: string[];
   resources: string[];
-  availableFeatures: string[];
   routes: string[];
-  status: ModuleRegistryStatus;
 };
