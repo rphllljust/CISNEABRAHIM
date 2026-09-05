@@ -69,13 +69,6 @@ export function buildServiceOrderTransitionFields(input: TransitionServiceOrderP
         sql: 'status_before_cancel = $5::so.service_order_status, cancelled_at = NOW(), cancelled_by_identity_id = $4, cancellation_reason = $6',
         params: [input.cancellationReason ?? null],
       };
-    case 'reopen':
-      return {
-        sql: 'status_before_reopen = $5::so.service_order_status, reopened_at = NOW(), reopened_by_identity_id = $4, reopen_reason = $6, ' +
-          "completed_at = CASE WHEN $5 = 'COMPLETED'::so.service_order_status THEN NULL ELSE completed_at END, " +
-          "completed_by_identity_id = CASE WHEN $5 = 'COMPLETED'::so.service_order_status THEN NULL ELSE completed_by_identity_id END",
-        params: [input.reopenReason ?? null],
-      };
     case 'start':
       return {
         sql: 'started_at = NOW(), started_by_identity_id = $4, paused_at = NULL, paused_by_identity_id = NULL',
@@ -119,8 +112,6 @@ export function historyEventForServiceOrderTransition(
       return 'RESUMED';
     case 'complete':
       return 'COMPLETED';
-    case 'reopen':
-      return 'REOPENED';
     default:
       return transition;
   }
