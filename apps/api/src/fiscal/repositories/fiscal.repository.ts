@@ -23,7 +23,7 @@ import type {
 
 const DOCUMENT_RETURNING = `
   id, unit_id, status::text AS status, source_kind::text AS source_kind, source_id,
-  billing_document_id, description, currency_code, issued_on::text AS issued_on,
+  billing_document_id, establishment_id, description, currency_code, issued_on::text AS issued_on,
   certificate_ref, idempotency_key, row_version, submitted_at, authorized_at, rejected_at,
   cancelled_at, cancel_reason, created_at, updated_at, created_by_identity_id, updated_by_identity_id
 `;
@@ -84,9 +84,10 @@ export class FiscalRepository {
       const created = await client.query<FiscalDocumentRow>(
         `INSERT INTO fis.fiscal_documents (
            unit_id, source_kind, source_id, billing_document_id, description, currency_code,
-           issued_on, certificate_ref, idempotency_key, created_by_identity_id, updated_by_identity_id
+           issued_on, certificate_ref, idempotency_key, created_by_identity_id, updated_by_identity_id,
+           establishment_id
          ) VALUES (
-           $1, $2::fis.fiscal_source_kind, $3, $4, $5, $6, $7::date, $8, $9, $10, $10
+           $1, $2::fis.fiscal_source_kind, $3, $4, $5, $6, $7::date, $8, $9, $10, $10, $11
          )
          RETURNING ${DOCUMENT_RETURNING}`,
         [
@@ -100,6 +101,7 @@ export class FiscalRepository {
           input.certificateRef ?? null,
           input.idempotencyKey,
           input.actorIdentityId,
+          input.establishmentId ?? null,
         ],
       );
       const document = created.rows[0]!;

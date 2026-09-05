@@ -1,4 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
+import { AuthzHttpException } from '../../authorization/errors/authz-http.exception';
 import { FiscalError } from '../domain/fiscal-document';
 import { FiscalPeriodError } from '../domain/fiscal-period';
 import { FiscalValidationError } from '../domain/fiscal-document.validation';
@@ -11,6 +12,9 @@ export function fiscalAccessDenied(): FiscalHttpException {
 }
 
 export function mapFiscalDomainError(error: unknown): FiscalHttpException {
+  if (error instanceof AuthzHttpException) {
+    throw error;
+  }
   if (error instanceof FiscalHttpException) {
     return error;
   }
@@ -61,6 +65,18 @@ export function mapFiscalDomainError(error: unknown): FiscalHttpException {
         HttpStatus.SERVICE_UNAVAILABLE,
         FISCAL_ERROR_CODES.GATEWAY_NOT_CONFIGURED,
         'Fiscal authorization gateway is not configured.',
+      );
+    case 'FISCAL_TRANSMISSION_BLOCKED':
+      return new FiscalHttpException(
+        HttpStatus.FORBIDDEN,
+        FISCAL_ERROR_CODES.TRANSMISSION_BLOCKED,
+        'NF-e transmission is blocked until fiscal credentialing is approved.',
+      );
+    case 'FISCAL_OFFICIAL_AUTHORIZATION_BLOCKED':
+      return new FiscalHttpException(
+        HttpStatus.CONFLICT,
+        FISCAL_ERROR_CODES.OFFICIAL_AUTHORIZATION_BLOCKED,
+        'AUTHORIZED and official DANFE require a SEFAZ authorization protocol.',
       );
     case 'FISCAL_NOT_FOUND':
       return new FiscalHttpException(

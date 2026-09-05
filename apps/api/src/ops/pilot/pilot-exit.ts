@@ -59,6 +59,15 @@ export function hasAuthorizedObservationWaiver(
   return Boolean(waiver?.authorizedBy?.trim() && waiver?.reason?.trim() && waiver.authorizedAt);
 }
 
+export function countOpenPilotBlockers(
+  pilot: Pick<PilotEvidence, 'incidents' | 'criticalErrors'>,
+): number {
+  const incidentBlockers = pilot.incidents.filter(
+    (incident) => incident.severity === 'BLOCKER' || incident.severity === 'CRITICAL',
+  ).length;
+  return incidentBlockers + pilot.criticalErrors.length;
+}
+
 export function isPilotObservationWindowSatisfied(
   pilot: Pick<PilotEvidence, 'startedAt' | 'minObservationDays' | 'observationWaiver'>,
   now = new Date(),

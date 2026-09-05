@@ -8,6 +8,8 @@ import {
 import { SecurityAuditService } from '../../audit/services/security-audit.service';
 import { AUTHZ_ACTIONS } from '../../authorization/types/authz-actions';
 import type { IdentityAuthzContext } from '../../authorization/types/authz-decision';
+import { SodEnforcementService } from '../../authorization/services/sod-enforcement.service';
+import { SOD_DUTIES, resolveSodScope } from '../../authorization/domain/segregation-of-duties';
 import { assertUuid } from '../../platform/kernel/uuid';
 import { TREASURY_ORIGIN_KINDS, TreasuryError } from '../domain/treasury';
 import {
@@ -39,6 +41,7 @@ export class TreasuryAccessService {
     private readonly repository: TreasuryRepository,
     private readonly authz: TreasuryAccessAuthz,
     private readonly securityAudit: SecurityAuditService,
+    private readonly sod: SodEnforcementService,
   ) {}
 
   async openAccount(
@@ -206,6 +209,13 @@ export class TreasuryAccessService {
       unitId: to.unit_id,
     });
     try {
+      const scope = resolveSodScope(from.unit_id);
+      await this.sod.enforce(actor, {
+        duty: SOD_DUTIES.TreasuryTransfer,
+        originatorIdentityId: from.created_by_identity_id,
+        amount: validated.amount,
+        ...scope,
+      });
       const transferred = await this.repository.transfer({
         fromAccountId: validated.fromAccountId,
         toAccountId: validated.toAccountId,
@@ -263,6 +273,13 @@ export class TreasuryAccessService {
     });
     try {
       const validated = validateReverseTreasuryInput(input);
+      const scope = resolveSodScope(row.unit_id);
+      await this.sod.enforce(actor, {
+        duty: SOD_DUTIES.TreasuryReverse,
+        originatorIdentityId: movement.actor_identity_id,
+        amount: validated.amount ?? movement.amount,
+        ...scope,
+      });
       const reversed = await this.repository.reverseMovement({
         transactionId,
         amount: validated.amount,
@@ -320,6 +337,13 @@ export class TreasuryAccessService {
     });
     try {
       const validated = validateReverseTreasuryInput(input);
+      const scope = resolveSodScope(from.unit_id);
+      await this.sod.enforce(actor, {
+        duty: SOD_DUTIES.TreasuryReverse,
+        originatorIdentityId: transfer.actor_identity_id,
+        amount: transfer.amount,
+        ...scope,
+      });
       const reversed = await this.repository.reverseTransfer({
         transferId,
         rowVersionFrom: validated.rowVersion,

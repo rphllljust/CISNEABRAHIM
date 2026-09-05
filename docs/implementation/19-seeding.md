@@ -38,7 +38,9 @@ Pré-condições:
 - `DEVELOPMENT_SYNTHETIC_SEED_CONFIRM=I_UNDERSTAND`
 - Operador DEV existente (`pnpm auth:repair:dev-login`)
 
-Homologação: `CISNE_ENV=hml`, database `cisne_hml`, `HML_SYNTHETIC_SEED_CONFIRM=I_UNDERSTAND`.
+Homologação: `CISNE_ENV=hml`, database `cisne_hml`, `HML_SYNTHETIC_SEED_CONFIRM=I_UNDERSTAND`. O processo de seed pode ter `NODE_ENV=production` (imagem HML) desde que o banco seja `cisne_hml`. Operador: `HML_SMOKE_LOGIN` / `BOOTSTRAP_ADMIN_LOGIN`. Comando: `pnpm --filter @cisne/api seed:synthetic` (Nest build; não usar `tsx` no runner). O fluxo parcial de locação envia janela operacional no `planResource` (mesmo recorte do UAT).
+
+HML 2026-09-03: 15/15 cenários presentes (`medicao-pendente` created; demais already_present).
 
 ```powershell
 $env:DEVELOPMENT_SYNTHETIC_SEED_CONFIRM='I_UNDERSTAND'

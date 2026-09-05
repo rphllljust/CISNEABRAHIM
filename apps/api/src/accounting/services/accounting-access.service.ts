@@ -8,15 +8,30 @@ import {
 import { SecurityAuditService } from '../../audit/services/security-audit.service';
 import { AUTHZ_ACTIONS } from '../../authorization/types/authz-actions';
 import type { IdentityAuthzContext } from '../../authorization/types/authz-decision';
+import { SodEnforcementService } from '../../authorization/services/sod-enforcement.service';
+import { SOD_DUTIES, resolveSodScope } from '../../authorization/domain/segregation-of-duties';
 import type {
   AccountingConfirmedEventInput,
   AccountingLedgerPort,
   AccountingReverseConfirmedEventInput,
 } from '../../platform/bounded-contexts/enterprise-core-ports';
 import { assertUuid } from '../../platform/kernel/uuid';
-import { AccountingError, JOURNAL_DIRECTIONS, assertSourceKind } from '../domain/ledger';
+import {
+  AccountingError,
+  JOURNAL_DIRECTIONS,
+  assertBalancedEntry,
+  assertSourceKind,
+  debitTotal,
+} from '../domain/ledger';
+import { assertAccountPostable, normalBalanceForClass } from '../domain/accounting-semantics';
+import {
+  compareMoneyAmounts,
+  subtractMoneyAmounts,
+  sumMoneyAmounts,
+} from '../../platform/kernel/money-math';
 import {
   POSTING_REQUEST_STATUSES,
+  POSTING_VERSION_STATUSES,
   assertPostingEvent,
   assertPostingOrigin,
   assertPostingRuleConfigured,
@@ -37,7 +52,13 @@ import {
 } from '../domain/posting.validation';
 import { AccountingPostingRepository } from '../repositories/accounting-posting.repository';
 import {
+  AccountingValidationError,
+  requireNonEmptyText,
+  optionalPeriodStatus,
+  requirePage,
+  requirePageSize,
   validateClosePeriodInput,
+  validateJournalListQuery,
   validateReopenPeriodInput,
   validateCreateAccountInput,
   validateCreateChartInput,
@@ -48,6 +69,7 @@ import {
   type CreateChartInput,
   type CreatePeriodInput,
   type DraftJournalInput,
+  type JournalListQuery,
   type ReverseJournalInput,
 } from '../domain/ledger.validation';
 import { AccountingRepository } from '../repositories/accounting.repository';
@@ -71,6 +93,20 @@ import {
   type PostingRuleResponse,
   type PostingRuleVersionResponse,
 } from '../serializers/accounting-posting-response.serializer';
+import {
+  toAccountLedgerResponse,
+  toAccountsListResponse,
+  toChartsListResponse,
+  toCloseRunsResponse,
+  toJournalPageResponse,
+  toPeriodsListResponse,
+  type AccountLedgerResponse,
+  type AccountsListResponse,
+  type ChartsListResponse,
+  type CloseRunsResponse,
+  type JournalPageResponse,
+  type PeriodsListResponse,
+} from '../serializers/accounting-read.serializer';
 import { AccountingAccessAuthz } from './accounting-access.authz';
 import { mapAccountingDomainError } from './accounting-access.errors';
 
@@ -81,6 +117,7 @@ export class AccountingAccessService implements AccountingLedgerPort {
     private readonly postingRepository: AccountingPostingRepository,
     private readonly authz: AccountingAccessAuthz,
     private readonly securityAudit: SecurityAuditService,
+    private readonly sod: SodEnforcementService,
   ) {}
 
   async createChart(actor: IdentityAuthzContext, input: CreateChartInput): Promise<ChartResponse> {
@@ -214,6 +251,12 @@ export class AccountingAccessService implements AccountingLedgerPort {
         id: period.id,
         unitId: period.unit_id,
       });
+      const scope = resolveSodScope(period.unit_id);
+      await this.sod.enforce(actor, {
+        duty: SOD_DUTIES.AccountingPeriodReopen,
+        originatorIdentityId: period.closed_by_identity_id,
+        ...scope,
+      });
       const validated = validateReopenPeriodInput(input);
       const row = await this.repository.reopenPeriod({
         periodId,
@@ -312,6 +355,22 @@ export class AccountingAccessService implements AccountingLedgerPort {
       await this.authz.assertAccountingAction(actor, AUTHZ_ACTIONS.AccountingJournalPost, {
         id: current.entry.id,
         unitId: current.entry.unit_id,
+      });
+      assertBalancedEntry(
+        current.lines.map((line) => ({
+          lineNumber: line.line_number,
+          accountId: line.account_id,
+          direction: line.direction,
+          amount: line.amount,
+          description: line.description,
+        })),
+      );
+      const scope = resolveSodScope(current.entry.unit_id);
+      await this.sod.enforce(actor, {
+        duty: SOD_DUTIES.JournalPost,
+        originatorIdentityId: current.entry.created_by_identity_id,
+        amount: debitTotal(current.lines),
+        ...scope,
       });
       const aggregate = await this.repository.post({
         journalEntryId,
@@ -469,6 +528,16 @@ export class AccountingAccessService implements AccountingLedgerPort {
       if (debit.chart_id !== credit.chart_id) {
         throw new AccountingError('ACCOUNTING_ACCOUNT_CHART_MISMATCH');
       }
+      const debitPostability = await this.repository.findAccountPostability(debit.id);
+      const creditPostability = await this.repository.findAccountPostability(credit.id);
+      assertAccountPostable({
+        status: debitPostability.account?.status ?? '',
+        hasChildren: debitPostability.hasChildren,
+      });
+      assertAccountPostable({
+        status: creditPostability.account?.status ?? '',
+        hasChildren: creditPostability.hasChildren,
+      });
       const validated = validateCreatePostingRuleVersionInput(input);
       const version = await this.postingRepository.createDraftVersion({
         postingRuleId,
@@ -501,6 +570,22 @@ export class AccountingAccessService implements AccountingLedgerPort {
         unitId: rule.unit_id,
       });
       const validated = validatePublishPostingRuleVersionInput(input);
+      if (current.status !== POSTING_VERSION_STATUSES.Published) {
+        const debitPostability = await this.repository.findAccountPostability(
+          current.debit_account_id,
+        );
+        const creditPostability = await this.repository.findAccountPostability(
+          current.credit_account_id,
+        );
+        assertAccountPostable({
+          status: debitPostability.account?.status ?? '',
+          hasChildren: debitPostability.hasChildren,
+        });
+        assertAccountPostable({
+          status: creditPostability.account?.status ?? '',
+          hasChildren: creditPostability.hasChildren,
+        });
+      }
       const published = await this.postingRepository.publishVersion(
         versionId,
         validated.rowVersion,
@@ -702,6 +787,242 @@ export class AccountingAccessService implements AccountingLedgerPort {
     }
   }
 
+  async listCharts(actor: IdentityAuthzContext, unitId: string): Promise<ChartsListResponse> {
+    try {
+      const unit = requireNonEmptyText(unitId, 'unitId');
+      await this.authz.assertAccountingAction(actor, AUTHZ_ACTIONS.AccountingJournalList, {
+        id: unit,
+        unitId: unit,
+      });
+      return toChartsListResponse(unit, await this.repository.listChartsByUnit(unit));
+    } catch (error) {
+      throw mapAccountingDomainError(error);
+    }
+  }
+
+  async listAccounts(
+    actor: IdentityAuthzContext,
+    chartId: string,
+  ): Promise<AccountsListResponse> {
+    assertUuid(chartId, 'chartId');
+    try {
+      const chart = await this.requireChart(chartId);
+      await this.authz.assertAccountingAction(actor, AUTHZ_ACTIONS.AccountingJournalList, {
+        id: chart.id,
+        unitId: chart.unit_id,
+      });
+      return toAccountsListResponse(chart.id, await this.repository.listAccountsByChart(chart.id));
+    } catch (error) {
+      throw mapAccountingDomainError(error);
+    }
+  }
+
+  async listPeriods(
+    actor: IdentityAuthzContext,
+    chartId: string,
+    status?: string,
+  ): Promise<PeriodsListResponse> {
+    assertUuid(chartId, 'chartId');
+    try {
+      const chart = await this.requireChart(chartId);
+      await this.authz.assertAccountingAction(actor, AUTHZ_ACTIONS.AccountingJournalList, {
+        id: chart.id,
+        unitId: chart.unit_id,
+      });
+      const periodStatus = optionalPeriodStatus(status);
+      return toPeriodsListResponse(
+        chart.id,
+        await this.repository.listPeriodsByChart(chart.id, periodStatus),
+      );
+    } catch (error) {
+      throw mapAccountingDomainError(error);
+    }
+  }
+
+  async listJournals(
+    actor: IdentityAuthzContext,
+    chartId: string,
+    query: Omit<JournalListQuery, 'page' | 'pageSize'> & { page?: unknown; pageSize?: unknown },
+  ): Promise<JournalPageResponse> {
+    assertUuid(chartId, 'chartId');
+    try {
+      const validated = validateJournalListQuery(query);
+      if (validated.periodId !== undefined) {
+        assertUuid(validated.periodId, 'periodId');
+      }
+      if (validated.accountId !== undefined) {
+        assertUuid(validated.accountId, 'accountId');
+      }
+      const chart = await this.requireChart(chartId);
+      await this.authz.assertAccountingAction(actor, AUTHZ_ACTIONS.AccountingJournalList, {
+        id: chart.id,
+        unitId: chart.unit_id,
+      });
+      const result = await this.repository.listJournalPage({
+        chartId: chart.id,
+        periodId: validated.periodId,
+        status: validated.status,
+        kind: validated.kind,
+        occurredFrom: validated.occurredFrom,
+        occurredTo: validated.occurredTo,
+        sourceKind: validated.sourceKind,
+        accountId: validated.accountId,
+        page: validated.page,
+        pageSize: validated.pageSize,
+      });
+      return toJournalPageResponse({
+        page: validated.page,
+        pageSize: validated.pageSize,
+        total: result.total,
+        items: result.items,
+      });
+    } catch (error) {
+      throw mapAccountingDomainError(error);
+    }
+  }
+
+  async accountLedger(
+    actor: IdentityAuthzContext,
+    periodId: string,
+    accountId: string,
+    page: unknown,
+    pageSize: unknown,
+  ): Promise<AccountLedgerResponse> {
+    assertUuid(periodId, 'periodId');
+    assertUuid(accountId, 'accountId');
+    try {
+      const pageNumber = requirePage(page, 'page');
+      const pageSizeNumber = requirePageSize(pageSize, 'pageSize');
+      const period = await this.requirePeriod(periodId);
+      await this.authz.assertAccountingAction(actor, AUTHZ_ACTIONS.AccountingJournalList, {
+        id: period.id,
+        unitId: period.unit_id,
+      });
+      const account = await this.repository.findAccountById(accountId);
+      if (!account || account.chart_id !== period.chart_id) {
+        throw new AccountingError('ACCOUNTING_ACCOUNT_NOT_FOUND');
+      }
+      const openingFacts = await this.repository.listPostedLineFacts({
+        chartId: period.chart_id,
+        beforeOn: period.starts_on.slice(0, 10),
+      });
+      const periodFacts = await this.repository.listPostedLineFacts({
+        chartId: period.chart_id,
+        periodId: period.id,
+      });
+      const opening = sumSidesForAccount(openingFacts, accountId);
+      const movement = sumSidesForAccount(periodFacts, accountId);
+      const closingDebits = sumMoneyAmounts([opening.debits, movement.debits]);
+      const closingCredits = sumMoneyAmounts([opening.credits, movement.credits]);
+      const all = await this.repository.listAllLedgerMovements(period.id, accountId);
+      let runningDebits = opening.debits;
+      let runningCredits = opening.credits;
+      const enriched = all.map((row) => {
+        if (row.direction === JOURNAL_DIRECTIONS.Debit) {
+          runningDebits = sumMoneyAmounts([runningDebits, row.amount]);
+        } else {
+          runningCredits = sumMoneyAmounts([runningCredits, row.amount]);
+        }
+        return { ...row, runningBalance: sideBalance(runningDebits, runningCredits) };
+      });
+      const slice = enriched.slice(pageNumber * pageSizeNumber, (pageNumber + 1) * pageSizeNumber);
+      return toAccountLedgerResponse({
+        periodId: period.id,
+        account: {
+          id: account.id,
+          code: account.code,
+          name: account.name,
+          class: account.class,
+          status: account.status,
+          normalBalance: normalBalanceForClass(account.class),
+        },
+        openingBalance: sideBalance(opening.debits, opening.credits),
+        periodDebits: movement.debits,
+        periodCredits: movement.credits,
+        closingBalance: sideBalance(closingDebits, closingCredits),
+        page: pageNumber,
+        pageSize: pageSizeNumber,
+        total: enriched.length,
+        totalPages: Math.ceil(enriched.length / pageSizeNumber),
+        movements: slice,
+      });
+    } catch (error) {
+      throw mapAccountingDomainError(error);
+    }
+  }
+
+  async listPeriodCloseRuns(
+    actor: IdentityAuthzContext,
+    periodId: string,
+  ): Promise<CloseRunsResponse> {
+    assertUuid(periodId, 'periodId');
+    try {
+      const period = await this.requirePeriod(periodId);
+      await this.authz.assertAccountingAction(actor, AUTHZ_ACTIONS.AccountingJournalList, {
+        id: period.id,
+        unitId: period.unit_id,
+      });
+      const { runs } = await this.repository.listPeriodCloseRuns(period.id);
+      return toCloseRunsResponse(period.id, runs);
+    } catch (error) {
+      throw mapAccountingDomainError(error);
+    }
+  }
+
+  async updateAccount(
+    actor: IdentityAuthzContext,
+    chartId: string,
+    accountId: string,
+    input: { name?: string | null; status?: string | null },
+  ): Promise<AccountResponse> {
+    assertUuid(chartId, 'chartId');
+    assertUuid(accountId, 'accountId');
+    try {
+      const chart = await this.requireChart(chartId);
+      await this.authz.assertAccountingAction(actor, AUTHZ_ACTIONS.AccountingChartManage, {
+        id: chart.id,
+        unitId: chart.unit_id,
+      });
+      const current = await this.repository.findAccountById(accountId);
+      if (!current || current.chart_id !== chart.id) {
+        throw new AccountingError('ACCOUNTING_ACCOUNT_NOT_FOUND');
+      }
+      const name = input.name === undefined || input.name === null
+        ? undefined
+        : requireNonEmptyText(input.name, 'name');
+      let status: string | undefined;
+      if (input.status !== undefined && input.status !== null) {
+        const normalized = input.status.trim().toUpperCase();
+        if (normalized !== 'ACTIVE' && normalized !== 'INACTIVE') {
+          throw new AccountingValidationError('status');
+        }
+        status = normalized;
+      }
+      const row = await this.repository.updateAccount({
+        accountId,
+        name,
+        status,
+        actorIdentityId: actor.identityId,
+      });
+      await this.audit(actor, SECURITY_AUDIT_ACTIONS.AccountingChartManage, row.id, {
+        chartId: chart.id,
+        accountId: row.id,
+        code: row.code,
+        previous: {
+          name: current.name,
+          status: current.status,
+        },
+        current: {
+          name: row.name,
+          status: row.status,
+        },
+      });
+      return toAccountResponse(row);
+    } catch (error) {
+      throw mapAccountingDomainError(error);
+    }
+  }
+
   private async requireChart(chartId: string) {
     const row = await this.repository.findChartById(chartId);
     if (!row) {
@@ -743,4 +1064,36 @@ export class AccountingAccessService implements AccountingLedgerPort {
       metadata,
     });
   }
+}
+
+type AccountSideFact = { account_id: string; direction: string; amount: string };
+
+function sumSidesForAccount(facts: AccountSideFact[], accountId: string): {
+  debits: string;
+  credits: string;
+} {
+  let debits = '0.0000';
+  let credits = '0.0000';
+  for (const fact of facts) {
+    if (fact.account_id !== accountId) {
+      continue;
+    }
+    if (fact.direction === JOURNAL_DIRECTIONS.Debit) {
+      debits = sumMoneyAmounts([debits, fact.amount]);
+    } else {
+      credits = sumMoneyAmounts([credits, fact.amount]);
+    }
+  }
+  return { debits, credits };
+}
+
+function sideBalance(debits: string, credits: string): { side: 'DEBIT' | 'CREDIT'; amount: string } {
+  const comparison = compareMoneyAmounts(debits, credits);
+  if (comparison > 0) {
+    return { side: 'DEBIT', amount: subtractMoneyAmounts(debits, credits) };
+  }
+  if (comparison < 0) {
+    return { side: 'CREDIT', amount: subtractMoneyAmounts(credits, debits) };
+  }
+  return { side: 'DEBIT', amount: '0.0000' };
 }

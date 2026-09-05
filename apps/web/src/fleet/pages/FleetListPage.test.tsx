@@ -83,4 +83,25 @@ describe('FleetListPage', () => {
       '/app/service-orders/so-1/planning',
     );
   });
+
+  it('shows empty state when the fleet has no vehicles', async () => {
+    mockListFleetVehicles.mockResolvedValue({
+      items: [],
+      limit: 20,
+      offset: 0,
+      total: 0,
+    });
+    mockGetFleetSummary.mockResolvedValue({
+      total: 0,
+      available: 0,
+      allocated: 0,
+      unavailable: 0,
+    });
+    render(
+      <MemoryRouter>
+        <FleetListPage />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByRole('heading', { name: /nenhum veículo cadastrado na frota/i })).toBeInTheDocument();
+  });
 });

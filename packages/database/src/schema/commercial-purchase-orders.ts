@@ -56,6 +56,15 @@ export const purchaseOrders = comSchema.table(
     pricingStructure: purchaseOrderPricingStructureEnum('pricing_structure').notNull(),
     totalAmount: numeric('total_amount', { precision: 18, scale: 4 }),
     consumedAmount: numeric('consumed_amount', { precision: 18, scale: 4 }).notNull().default('0'),
+    authorizedOverrunAmount: numeric('authorized_overrun_amount', { precision: 18, scale: 4 })
+      .notNull()
+      .default('0'),
+    overrunJustification: text('overrun_justification'),
+    overrunAuthorizedAt: timestamp('overrun_authorized_at', { withTimezone: true }),
+    overrunAuthorizedByIdentityId: uuid('overrun_authorized_by_identity_id').references(
+      () => identities.id,
+      { onDelete: 'restrict' },
+    ),
     itemsLineTotalAmount: numeric('items_line_total_amount', { precision: 18, scale: 4 }),
     paymentTerms: text('payment_terms'),
     paymentMethod: text('payment_method'),

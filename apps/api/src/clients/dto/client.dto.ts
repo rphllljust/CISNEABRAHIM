@@ -2,8 +2,10 @@ import { HttpStatus } from '@nestjs/common';
 import {
   ADDRESS_PURPOSES,
   CONTACT_PURPOSES,
+  isPurchaseOrderRequirement,
   type AddressPurpose,
   type ContactPurpose,
+  type PurchaseOrderRequirement,
 } from '../domain/client-status';
 import { ClientValidationError, assertCreateClientInput, type CreateClientInput } from '../domain/client.validation';
 import { ClientHttpException } from '../errors/client-http.exception';
@@ -142,6 +144,7 @@ export function parseCreateClientInput(body: unknown) {
     externalErpId: parseOptionalString(record['externalErpId']),
     contacts,
     addresses,
+    purchaseOrderRequirement: parsePurchaseOrderRequirement(record['purchaseOrderRequirement']),
   };
 
   try {
@@ -195,6 +198,7 @@ export function parseUpdateClientInput(body: unknown) {
           : parseOptionalString(record['externalErpId']),
     contacts,
     addresses,
+    purchaseOrderRequirement: parsePurchaseOrderRequirement(record['purchaseOrderRequirement']),
   };
 }
 
@@ -222,6 +226,20 @@ export function parseDeactivateClientInput(body: unknown): { reason: string } {
     );
   }
   return { reason };
+}
+
+function parsePurchaseOrderRequirement(value: unknown): PurchaseOrderRequirement | undefined {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  if (typeof value !== 'string' || !isPurchaseOrderRequirement(value)) {
+    throw new ClientHttpException(
+      HttpStatus.BAD_REQUEST,
+      CLIENT_ERROR_CODES.VALIDATION_FAILED,
+      'Invalid request body.',
+    );
+  }
+  return value;
 }
 
 function parsePositiveInt(value: unknown): number | null {

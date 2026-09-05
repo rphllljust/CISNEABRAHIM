@@ -12,6 +12,7 @@ export const ENTERPRISE_CORE_PORT = {
   InventoryStock: Symbol('ENTERPRISE_CORE_PORT.InventoryStock'),
   PayrollContract: Symbol('ENTERPRISE_CORE_PORT.PayrollContract'),
   CommercialSupplier: Symbol('ENTERPRISE_CORE_PORT.CommercialSupplier'),
+  CommercialClient: Symbol('ENTERPRISE_CORE_PORT.CommercialClient'),
 } as const;
 
 export type CommercialSupplierView = {
@@ -25,6 +26,18 @@ export type CommercialSupplierPort = {
   findPublishedById(supplierId: string): Promise<CommercialSupplierView | null>;
   requireActive(supplierId: string): Promise<CommercialSupplierView>;
   assertNotInactive(supplierId: string): Promise<void>;
+};
+
+export type CommercialClientView = {
+  id: string;
+  status: string;
+  purchaseOrderRequirement: string;
+};
+
+export type CommercialClientPort = {
+  findPublishedById(clientId: string): Promise<CommercialClientView | null>;
+  requireActive(clientId: string): Promise<CommercialClientView>;
+  assertNotInactive(clientId: string): Promise<void>;
 };
 
 export type OpenReceivableFromBillingInput = {
@@ -254,4 +267,5 @@ export const ENTERPRISE_CORE_PORT_READINESS = {
   [ENTERPRISE_CORE_PORT.InventoryStock]: BOUNDED_CONTEXT_READINESS[BOUNDED_CONTEXT.Inventory],
   [ENTERPRISE_CORE_PORT.PayrollContract]: BOUNDED_CONTEXT_READINESS[BOUNDED_CONTEXT.Payroll],
   [ENTERPRISE_CORE_PORT.CommercialSupplier]: BOUNDED_CONTEXT_READINESS[BOUNDED_CONTEXT.Commercial],
+  [ENTERPRISE_CORE_PORT.CommercialClient]: BOUNDED_CONTEXT_READINESS[BOUNDED_CONTEXT.Commercial],
 } as const;

@@ -1,4 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
+import { AuthzHttpException } from '../../authorization/errors/authz-http.exception';
 import { SupplierError } from '../../suppliers/domain/supplier';
 import { PayableError } from '../domain/payable';
 import { PayableValidationError } from '../domain/payable.validation';
@@ -18,6 +19,9 @@ export function payableNotFound(): FinanceHttpException {
 }
 
 export function mapPayableDomainError(error: unknown): FinanceHttpException {
+  if (error instanceof AuthzHttpException) {
+    throw error;
+  }
   if (error instanceof SupplierError) {
     if (error.code === 'SUPPLIER_NOT_FOUND') {
       return new FinanceHttpException(

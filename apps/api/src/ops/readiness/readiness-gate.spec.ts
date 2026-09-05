@@ -571,4 +571,40 @@ describe('readiness governance helpers', () => {
     expect(exit.record.pilot.exitAuthorizedBy).toBe('Abrahim Jabour Junior (Administrador)');
     expect(exit.record.pilot.observationWaiver?.originalMinObservationDays).toBe(14);
   });
+
+  it('records an operational snapshot without changing dates, phase, or exit authorization', () => {
+    const startTime = new Date('2026-08-30T22:28:40.517Z');
+    const started = registerPilotStart(
+      createPendingReadinessEvidence(),
+      {
+        authorizedBy: 'release-engineer',
+        responsible: 'sre-oncall',
+        environment: 'pilot-hml',
+        releaseCandidate: RC,
+        startedAt: startTime.toISOString(),
+      },
+      startTime,
+    );
+    expect(started.record.pilot.observationEndsAt).toBe('2026-09-13T22:28:40.517Z');
+
+    const withSnapshot = recordPilotOperationalSnapshot(started.record, {
+      recordedBy: 'release-engineer',
+      snapshot: {
+        ...HEALTHY_OPERATIONAL_SNAPSHOT,
+        httpErrorRate: null,
+        httpLatencyP95Ms: null,
+        httpRequests: null,
+        notes: 'exit-readiness snapshot without live HTTP',
+        source: 'test',
+      },
+    });
+
+    expect(withSnapshot.pilot.phase).toBe(started.record.pilot.phase);
+    expect(withSnapshot.pilot.startedAt).toBe(started.record.pilot.startedAt);
+    expect(withSnapshot.pilot.observationEndsAt).toBe(started.record.pilot.observationEndsAt);
+    expect(withSnapshot.pilot.exitAuthorizedAt).toBeNull();
+    expect(withSnapshot.pilot.exitAuthorizedBy).toBeNull();
+    expect(withSnapshot.pilot.observationWaiver).toBeNull();
+    expect(withSnapshot.pilot.operationalResults).toHaveLength(1);
+  });
 });

@@ -20,6 +20,8 @@ import { AuthModule } from '../auth/auth.module';
 import { AUTH_TEST_PASSWORD, applyAuthTestEnv } from '../auth/test/auth-test-env';
 import { normalizeLoginIdentifier } from '../auth/crypto/token-crypto';
 import { AuthorizationModule } from '../authorization/authorization.module';
+import { ApprovalMatrixAccessService } from '../authorization/services/approval-matrix-access.service';
+import { enableCriticalSodFor } from '../authorization/test/critical-sod-harness';
 import { AUTHZ_ACTIONS } from '../authorization/types/authz-actions';
 import { AUTHZ_RESOURCE_TYPES } from '../authorization/types/authz-resources';
 import { AUTHZ_SCOPES } from '../authorization/types/authz-scopes';
@@ -82,6 +84,7 @@ describe('Payroll to accounting integration PostgreSQL', () => {
   let integration: PayrollAccountingIntegrationService;
   let repository: AccountingRepository;
   let failures: PostingFailureInjection;
+  let matrices: ApprovalMatrixAccessService;
   const testDatabaseUrl = process.env['TEST_DATABASE_URL'];
 
   beforeAll(async () => {
@@ -97,6 +100,7 @@ describe('Payroll to accounting integration PostgreSQL', () => {
     integration = module.get(PayrollAccountingIntegrationService);
     repository = module.get(AccountingRepository);
     failures = module.get(PostingFailureInjection);
+    matrices = module.get(ApprovalMatrixAccessService);
     pool = new Pool({ connectionString: testDatabaseUrl });
   });
 
@@ -119,6 +123,13 @@ describe('Payroll to accounting integration PostgreSQL', () => {
       await grantAll(pool, identityId);
     }
     return { identityId, sessionId: 'test-session' };
+  }
+
+  async function seedSodPair() {
+    const originator = await seedActor();
+    const checker = await seedActor();
+    await enableCriticalSodFor(pool, matrices, [originator.identityId, checker.identityId]);
+    return { originator, checker };
   }
 
   async function seedLedger(actor: { identityId: string; sessionId: string }) {
@@ -169,21 +180,24 @@ describe('Payroll to accounting integration PostgreSQL', () => {
     return accounting.publishPostingRuleVersion(actor, draft.id, { rowVersion: draft.rowVersion });
   }
 
-  async function closeCalculatedPeriod(actor: { identityId: string; sessionId: string }) {
-    const contract = await payroll.createContract(actor, {
+  async function closeCalculatedPeriod(
+    originator: { identityId: string; sessionId: string },
+    closer: { identityId: string; sessionId: string },
+  ) {
+    const contract = await payroll.createContract(originator, {
       unitId: UNIT,
       code: `CTR-${crypto.randomUUID().slice(0, 6)}`,
       displayName: 'Payroll contract',
       startsOn: '2026-01-01',
     });
-    const period = await payroll.openPeriod(actor, {
+    const period = await payroll.openPeriod(originator, {
       unitId: UNIT,
       competenceYear: 2026,
       competenceMonth: 9,
       startsOn: '2026-09-01',
       endsOn: '2026-09-30',
     });
-    await payroll.recordEvent(actor, {
+    await payroll.recordEvent(originator, {
       unitId: UNIT,
       payrollPeriodId: period.id,
       employmentContractId: contract.id,
@@ -193,9 +207,9 @@ describe('Payroll to accounting integration PostgreSQL', () => {
       description: 'Calculated earning',
       idempotencyKey: `earn-${crypto.randomUUID()}`,
     });
-    await payroll.calculatePeriod(actor, period.id, UNIT);
-    const closed = await payroll.closePeriodAuthorized(actor, period.id, UNIT);
-    return { contract, period: closed };
+    await payroll.calculatePeriod(originator, period.id, UNIT);
+    const closed = await payroll.closePeriodAuthorized(closer, period.id, UNIT);
+    return { contract, period: closed, closer };
   }
 
   async function countPosted() {
@@ -206,10 +220,10 @@ describe('Payroll to accounting integration PostgreSQL', () => {
   }
 
   it('posts PayrollClosed through the accounting port without payroll writing acc.*', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSodPair();
     const { debit, credit } = await seedLedger(actor);
     await publishClosedRule(actor, debit.id, credit.id);
-    const { period } = await closeCalculatedPeriod(actor);
+    const { period } = await closeCalculatedPeriod(actor, checker);
     expect(period.status).toBe('CLOSED');
     expect(await countPosted()).toBe(1);
     const posted = await integration.postClosedPeriod(actor, period.id);
@@ -229,12 +243,12 @@ describe('Payroll to accounting integration PostgreSQL', () => {
   });
 
   it('treats duplicate and concurrent closes as one posted journal', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSodPair();
     const { debit, credit } = await seedLedger(actor);
     await publishClosedRule(actor, debit.id, credit.id);
-    const { period } = await closeCalculatedPeriod(actor);
-    const first = await payroll.closePeriodAuthorized(actor, period.id, UNIT);
-    const second = await payroll.closePeriodAuthorized(actor, period.id, UNIT);
+    const { period } = await closeCalculatedPeriod(actor, checker);
+    const first = await payroll.closePeriodAuthorized(checker, period.id, UNIT);
+    const second = await payroll.closePeriodAuthorized(checker, period.id, UNIT);
     expect(first.status).toBe('CLOSED');
     expect(second.status).toBe('CLOSED');
     const concurrent = await Promise.allSettled([
@@ -251,9 +265,9 @@ describe('Payroll to accounting integration PostgreSQL', () => {
   });
 
   it('returns ACCOUNTING_RULE_NOT_CONFIGURED when the closed period has no published rule', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSodPair();
     await seedLedger(actor);
-    const { period } = await closeCalculatedPeriod(actor);
+    const { period } = await closeCalculatedPeriod(actor, checker);
     expect(period.status).toBe('CLOSED');
     expect(await countPosted()).toBe(0);
     await expect(integration.postClosedPeriod(actor, period.id)).rejects.toMatchObject({
@@ -263,10 +277,10 @@ describe('Payroll to accounting integration PostgreSQL', () => {
   });
 
   it('reopens a posted competence with reversal and keeps the original journal', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSodPair();
     const { debit, credit } = await seedLedger(actor);
     await publishClosedRule(actor, debit.id, credit.id);
-    const { contract, period } = await closeCalculatedPeriod(actor);
+    const { contract, period } = await closeCalculatedPeriod(actor, checker);
     const original = await integration.postClosedPeriod(actor, period.id);
     const reopened = await payroll.reopenPeriod(actor, period.id, UNIT);
     expect(reopened.status).toBe('OPEN');
@@ -301,9 +315,9 @@ describe('Payroll to accounting integration PostgreSQL', () => {
   });
 
   it('rolls back injected failures so no partial journal remains and the period stays CLOSED', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSodPair();
     const { debit, credit } = await seedLedger(actor);
-    const { period } = await closeCalculatedPeriod(actor);
+    const { period } = await closeCalculatedPeriod(actor, checker);
     expect(period.status).toBe('CLOSED');
     expect(await countPosted()).toBe(0);
     await publishClosedRule(actor, debit.id, credit.id);
@@ -331,20 +345,20 @@ describe('Payroll to accounting integration PostgreSQL', () => {
   });
 
   it('denies an operational user from requesting payroll accounting posting', async () => {
-    const admin = await seedActor(true);
+    const { originator: admin, checker } = await seedSodPair();
     const stranger = await seedActor(false);
     const { debit, credit } = await seedLedger(admin);
     await publishClosedRule(admin, debit.id, credit.id);
-    const { period } = await closeCalculatedPeriod(admin);
+    const { period } = await closeCalculatedPeriod(admin, checker);
     await expect(integration.postClosedPeriod(stranger, period.id)).rejects.toBeTruthy();
     expect(await countPosted()).toBe(1);
   });
 
   it('reconstructs the ledger as SUM(DEBIT) = SUM(CREDIT) after close and reopen reversal', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSodPair();
     const { chart, debit, credit } = await seedLedger(actor);
     await publishClosedRule(actor, debit.id, credit.id);
-    const { period } = await closeCalculatedPeriod(actor);
+    const { period } = await closeCalculatedPeriod(actor, checker);
     await payroll.reopenPeriod(actor, period.id, UNIT);
     const ledger = await accounting.reconstructLedger(actor, chart.id);
     expect(ledger.balanced).toBe(true);

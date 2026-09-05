@@ -12,6 +12,7 @@ export type PurchaseOrderBalanceSource = {
   totalAmount: string | null;
   lineTotals: Array<string | null | undefined>;
   consumedAmount: string | null;
+  authorizedOverrunAmount?: string | null;
 };
 
 const MONEY_SCALE_FACTOR = 10_000n;
@@ -46,26 +47,65 @@ export function resolvePurchaseOrderAuthorizedAmount(input: PurchaseOrderBalance
   return normalizeMoneyAmount(input.totalAmount);
 }
 
-export function computePurchaseOrderAvailableBalance(input: PurchaseOrderBalanceSource): string {
+function fromScaled(value: bigint): string {
+  const whole = value / MONEY_SCALE_FACTOR;
+  const fraction = (value % MONEY_SCALE_FACTOR).toString().padStart(4, '0').replace(/0+$/, '');
+  return fraction.length > 0 ? `${whole}.${fraction}` : `${whole}`;
+}
+
+export function resolvePurchaseOrderCeiling(input: PurchaseOrderBalanceSource): string {
   const authorized = toScaledAmount(resolvePurchaseOrderAuthorizedAmount(input));
+  const overrun = toScaledAmount(normalizeMoneyAmount(input.authorizedOverrunAmount ?? '0'));
+  return fromScaled(authorized + overrun);
+}
+
+export function computePurchaseOrderAvailableBalance(input: PurchaseOrderBalanceSource): string {
+  const ceiling = toScaledAmount(resolvePurchaseOrderCeiling(input));
   const consumed = toScaledAmount(normalizeMoneyAmount(input.consumedAmount ?? '0'));
-  const available = authorized - consumed;
+  const available = ceiling - consumed;
   if (available < 0n) {
     throw new PurchaseOrderBalanceError('CONSUMED_AMOUNT_EXCEEDS_AUTHORIZED');
   }
-  const whole = available / MONEY_SCALE_FACTOR;
-  const fraction = (available % MONEY_SCALE_FACTOR).toString().padStart(4, '0').replace(/0+$/, '');
-  return fraction.length > 0 ? `${whole}.${fraction}` : `${whole}`;
+  return fromScaled(available);
+}
+
+export function describePurchaseOrderLedger(input: PurchaseOrderBalanceSource): {
+  totalAuthorized: string;
+  billed: string;
+  authorizedOverrun: string;
+  available: string;
+} {
+  return {
+    totalAuthorized: resolvePurchaseOrderAuthorizedAmount(input),
+    billed: normalizeMoneyAmount(input.consumedAmount ?? '0'),
+    authorizedOverrun: normalizeMoneyAmount(input.authorizedOverrunAmount ?? '0'),
+    available: computePurchaseOrderAvailableBalance(input),
+  };
 }
 
 export function assertPurchaseOrderConsumptionAllowed(
   input: PurchaseOrderBalanceSource,
   amount: string,
 ): void {
-  const authorized = toScaledAmount(resolvePurchaseOrderAuthorizedAmount(input));
+  const ceiling = toScaledAmount(resolvePurchaseOrderCeiling(input));
   const consumed = toScaledAmount(normalizeMoneyAmount(input.consumedAmount ?? '0'));
   const delta = toScaledAmount(amount);
-  if (consumed + delta > authorized) {
+  if (consumed + delta > ceiling) {
     throw new PurchaseOrderBalanceError('PURCHASE_ORDER_BALANCE_EXCEEDED');
   }
+}
+
+export function assertPurchaseOrderOverrunAuthorization(input: {
+  amount: string;
+  justification: string;
+}): string {
+  const trimmed = input.justification.trim();
+  if (trimmed.length === 0) {
+    throw new PurchaseOrderBalanceError('OVERRUN_JUSTIFICATION_REQUIRED');
+  }
+  const normalized = normalizeMoneyAmount(input.amount);
+  if (toScaledAmount(normalized) <= 0n) {
+    throw new PurchaseOrderBalanceError('OVERRUN_AMOUNT_REQUIRED');
+  }
+  return normalized;
 }

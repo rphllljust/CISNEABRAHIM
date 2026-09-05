@@ -2,7 +2,7 @@ import type { PoolClient } from 'pg';
 import {
   assertPurchaseOrderConsumptionAllowed,
   PurchaseOrderBalanceError,
-  resolvePurchaseOrderAuthorizedAmount,
+  resolvePurchaseOrderCeiling,
   type PurchaseOrderBalanceSource,
 } from '../domain/purchase-order-balance';
 import { PURCHASE_ORDER_STATUSES } from '../domain/purchase-order';
@@ -13,6 +13,7 @@ type LockedPurchaseOrderRow = {
   pricing_structure: string;
   total_amount: string | null;
   consumed_amount: string;
+  authorized_overrun_amount: string;
   currency_code: string;
 };
 
@@ -42,6 +43,7 @@ async function lockPurchaseOrder(
   const result = await client.query<LockedPurchaseOrderRow>(
     `SELECT id, status::text AS status, pricing_structure::text AS pricing_structure,
             total_amount::text AS total_amount, consumed_amount::text AS consumed_amount,
+            COALESCE(authorized_overrun_amount, 0)::text AS authorized_overrun_amount,
             currency_code
      FROM com.purchase_orders
      WHERE id = $1
@@ -92,6 +94,7 @@ export async function consumePurchaseOrderBalanceForBilling(
     totalAmount: purchaseOrder.total_amount,
     lineTotals,
     consumedAmount: purchaseOrder.consumed_amount,
+    authorizedOverrunAmount: purchaseOrder.authorized_overrun_amount,
   };
 
   try {
@@ -116,8 +119,8 @@ export async function consumePurchaseOrderBalanceForBilling(
     throw new PurchaseOrderConsumptionPersistenceError('PURCHASE_ORDER_CONSUMPTION_FAILED');
   }
 
-  const authorized = resolvePurchaseOrderAuthorizedAmount(balanceSource);
-  if (toScaled(authorized) < toScaled(consumedAfter)) {
+  const ceiling = resolvePurchaseOrderCeiling(balanceSource);
+  if (toScaled(ceiling) < toScaled(consumedAfter)) {
     throw new PurchaseOrderConsumptionPersistenceError('PURCHASE_ORDER_BALANCE_EXCEEDED');
   }
 

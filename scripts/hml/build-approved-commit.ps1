@@ -14,6 +14,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot '..\lib\resolve-cisne-tmp.ps1')
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $envFile = Join-Path $repo '.env.hml'
 if (-not (Test-Path $envFile)) { throw ".env.hml not found at $envFile" }
@@ -21,7 +22,7 @@ if (-not (Test-Path $envFile)) { throw ".env.hml not found at $envFile" }
 $commit = git -C $repo rev-parse --verify "$Commit^{commit}"
 if ($LASTEXITCODE -ne 0) { throw "invalid commit: $Commit" }
 
-$wt = Join-Path $env:TEMP ('cisne-approval-' + $commit.Substring(0, 12))
+$wt = Join-Path (Resolve-CisneTmpRoot -RepoRoot $repo) ('cisne-approval-' + $commit.Substring(0, 12))
 if (Test-Path $wt) { git -C $repo worktree remove --force $wt | Out-Null }
 
 Write-Host "== clean detached worktree at $commit =="

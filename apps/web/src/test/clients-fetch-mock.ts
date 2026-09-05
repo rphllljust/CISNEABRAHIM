@@ -3,6 +3,7 @@ import { parseRequestPath } from './request-url';
 import {
   CLIENT_STATUSES,
   CONTACT_PURPOSES,
+  PURCHASE_ORDER_REQUIREMENTS,
   type Client,
 } from '../clients/types/client.types';
 import { createShellFetchMock, MOCK_IDENTITY_ID, MOCK_SESSION_ID } from './shell-fetch-mock';
@@ -45,7 +46,7 @@ export function createClientsFetchMock(options: ClientsFetchMockOptions = {}) {
       id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
       legalName: 'Cliente Demo LTDA',
       tradeName: 'Demo',
-      taxId: '11897171000181',
+      taxId: '11222333000181',
       externalErpId: null,
       status: CLIENT_STATUSES.Active,
       version: 1,
@@ -53,6 +54,7 @@ export function createClientsFetchMock(options: ClientsFetchMockOptions = {}) {
       updatedAt: '2026-01-01T12:00:00.000Z',
       deactivatedAt: null,
       deactivationReason: null,
+      purchaseOrderRequirement: PURCHASE_ORDER_REQUIREMENTS.NotRequired,
       contacts: [
         {
           id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
@@ -126,6 +128,7 @@ export function createClientsFetchMock(options: ClientsFetchMockOptions = {}) {
         updatedAt: new Date().toISOString(),
         deactivatedAt: null,
         deactivationReason: null,
+        purchaseOrderRequirement: PURCHASE_ORDER_REQUIREMENTS.NotRequired,
         contacts: [
           {
             id: crypto.randomUUID(),

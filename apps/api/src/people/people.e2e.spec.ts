@@ -28,6 +28,7 @@ describe('People E2E', () => {
   let app: NestFastifyApplication;
   let pool: Pool;
   const testDatabaseUrl = process.env['TEST_DATABASE_URL'];
+  const previousPeopleFlag = process.env['FEATURE_MODULE_PEOPLE'];
 
   beforeAll(async () => {
     if (!testDatabaseUrl) {
@@ -35,6 +36,7 @@ describe('People E2E', () => {
     }
 
     applyAuthTestEnv(testDatabaseUrl);
+    process.env['FEATURE_MODULE_PEOPLE'] = 'true';
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -56,6 +58,11 @@ describe('People E2E', () => {
   });
 
   afterAll(async () => {
+    if (previousPeopleFlag === undefined) {
+      delete process.env['FEATURE_MODULE_PEOPLE'];
+    } else {
+      process.env['FEATURE_MODULE_PEOPLE'] = previousPeopleFlag;
+    }
     await pool.end();
     await app.close();
   });

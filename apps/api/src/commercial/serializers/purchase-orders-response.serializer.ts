@@ -77,6 +77,7 @@ export type PurchaseOrderResponse = {
 export type PurchaseOrderBalanceResponse = {
   authorizedAmount: string;
   consumedAmount: string;
+  authorizedOverrunAmount: string;
   availableBalance: string;
 };
 
@@ -162,10 +163,12 @@ function toBalanceResponse(
     totalAmount: purchaseOrder.total_amount,
     lineTotals: items.map((item) => item.line_total_amount),
     consumedAmount: purchaseOrder.consumed_amount,
+    authorizedOverrunAmount: purchaseOrder.authorized_overrun_amount ?? '0',
   };
   return {
     authorizedAmount: formatMoneyAmountForApi(resolvePurchaseOrderAuthorizedAmount(source))!,
     consumedAmount: formatMoneyAmountForApi(purchaseOrder.consumed_amount)!,
+    authorizedOverrunAmount: formatMoneyAmountForApi(source.authorizedOverrunAmount)!,
     availableBalance: formatMoneyAmountForApi(computePurchaseOrderAvailableBalance(source))!,
   };
 }

@@ -41,7 +41,7 @@ const BILLING_COMMAND_IDEMPOTENCY_RETURNING = `
 `;
 
 const BILLING_RECORD_RETURNING = `
-  id, service_order_id, measurement_id, client_id, unit_id, status::text AS status,
+  id, service_order_id, measurement_id, entitlement_policy, client_id, unit_id, status::text AS status,
   proposal_id, purchase_order_id, contract_reference,
   client_legal_name_snapshot, client_tax_id_snapshot, billing_address_snapshot,
   commercial_reference_snapshot, currency_code, payment_terms,
@@ -189,7 +189,9 @@ export class BillingRepository {
     try {
       await client.query('BEGIN');
 
-      await lockMeasurementForBilling(client, input.measurementId);
+      if (input.measurementId) {
+        await lockMeasurementForBilling(client, input.measurementId);
+      }
 
       if (input.idempotencyKey) {
         const cached = await this.findBillingCommandIdempotency(
@@ -207,12 +209,19 @@ export class BillingRepository {
         }
       }
 
-      const existing = await client.query(
-        `SELECT id FROM bil.billing_records
-         WHERE measurement_id = $1 AND status = 'PREPARED'
-         LIMIT 1`,
-        [input.measurementId],
-      );
+      const existing = input.measurementId
+        ? await client.query(
+            `SELECT id FROM bil.billing_records
+             WHERE measurement_id = $1 AND status = 'PREPARED'
+             LIMIT 1`,
+            [input.measurementId],
+          )
+        : await client.query(
+            `SELECT id FROM bil.billing_records
+             WHERE service_order_id = $1 AND status = 'PREPARED'
+             LIMIT 1`,
+            [input.serviceOrderId],
+          );
       if (existing.rows[0]) {
         await client.query('ROLLBACK');
         return { outcome: 'already_exists' };
@@ -220,24 +229,25 @@ export class BillingRepository {
 
       const inserted = await client.query<BillingRecordRow>(
         `INSERT INTO bil.billing_records (
-           service_order_id, measurement_id, client_id, unit_id, status,
+           service_order_id, measurement_id, entitlement_policy, client_id, unit_id, status,
            proposal_id, purchase_order_id, contract_reference,
            client_legal_name_snapshot, client_tax_id_snapshot, billing_address_snapshot,
            commercial_reference_snapshot, currency_code, payment_terms,
            payment_terms_source, payment_terms_authoritative, total_amount,
            prepared_by_identity_id, created_by_identity_id, updated_by_identity_id
          ) VALUES (
-           $1, $2, $3, $4, 'PREPARED',
-           $5, $6, $7,
-           $8, $9, $10::jsonb,
-           $11::jsonb, $12, $13,
-           $14::bil.payment_terms_source, $15, $16,
-           $17, $17, $17
+           $1, $2, $3, $4, $5, 'PREPARED',
+           $6, $7, $8,
+           $9, $10, $11::jsonb,
+           $12::jsonb, $13, $14,
+           $15::bil.payment_terms_source, $16, $17,
+           $18, $18, $18
          )
          RETURNING ${BILLING_RECORD_RETURNING}`,
         [
           input.serviceOrderId,
           input.measurementId,
+          input.entitlementPolicy,
           input.clientId,
           input.unitId,
           input.proposalId,
@@ -286,7 +296,7 @@ export class BillingRepository {
         [
           billingRecord.id,
           BILLING_HISTORY_EVENTS.Prepared,
-          JSON.stringify({ measurementId: input.measurementId, totalAmount: input.totalAmount }),
+          JSON.stringify({ measurementId: input.measurementId, totalAmount: input.totalAmount, entitlementPolicy: input.entitlementPolicy }),
           input.actorIdentityId,
         ],
       );
@@ -456,7 +466,8 @@ export class BillingRepository {
     const pgError = error as { code?: string; constraint?: string };
     return (
       pgError.code === '23505' &&
-      (pgError.constraint?.includes('billing_records_measurement_prepared') ?? false)
+      (pgError.constraint?.includes('billing_records_measurement_prepared') ?? false) ||
+        (pgError.constraint?.includes('billing_records_service_order_prepared') ?? false)
     );
   }
 }

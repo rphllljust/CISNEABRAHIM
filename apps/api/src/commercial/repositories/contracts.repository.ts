@@ -3,7 +3,11 @@ import type { Pool } from 'pg';
 import { DatabaseService } from '../../infrastructure/database/database.service';
 import { queryIsUnitRegistered } from '../../infrastructure/database/reference-lookups';
 import { orderByCreatedAtDesc } from '../../infrastructure/database/sql';
-import { CONTRACT_HISTORY_EVENTS, CONTRACT_STATUSES } from '../domain/contract';
+import {
+  assertContractTransition,
+  CONTRACT_HISTORY_EVENTS,
+  CONTRACT_STATUSES,
+} from '../domain/contract';
 import type {
   ActivateContractPersistenceInput,
   ClientSnapshotSource,
@@ -13,6 +17,7 @@ import type {
   ContractItemRow,
   ContractRow,
   CreateContractPersistenceInput,
+  ExpireContractPersistenceInput,
   ServiceSnapshotSource,
   UpdateContractDraftPersistenceInput,
 } from './contracts.repository.types';
@@ -377,7 +382,10 @@ export class ContractsRepository {
         await client.query('ROLLBACK');
         return 'VERSION_CONFLICT';
       }
-      if (current.status !== CONTRACT_STATUSES.Draft) {
+      if (
+        current.status !== CONTRACT_STATUSES.Draft ||
+        !assertContractTransition(CONTRACT_STATUSES.Draft, CONTRACT_STATUSES.Active)
+      ) {
         await client.query('ROLLBACK');
         return 'INVALID_STATE';
       }
@@ -456,7 +464,10 @@ export class ContractsRepository {
         await client.query('ROLLBACK');
         return 'VERSION_CONFLICT';
       }
-      if (current.status !== CONTRACT_STATUSES.Active) {
+      if (
+        current.status !== CONTRACT_STATUSES.Active ||
+        !assertContractTransition(CONTRACT_STATUSES.Active, CONTRACT_STATUSES.Closed)
+      ) {
         await client.query('ROLLBACK');
         return 'INVALID_STATE';
       }
@@ -495,6 +506,81 @@ export class ContractsRepository {
 
       await client.query('COMMIT');
       return result.rows[0] ?? 'VERSION_CONFLICT';
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Expira contratos ACTIVE vencidos (valid_to < expiredAsOf). Transição
+   * ACTIVE -> EXPIRED persistida com evento de histórico append-only; nunca
+   * reescreve registros históricos nem permite nova transição a partir de
+   * estados terminais.
+   */
+  async markExpired(
+    input: ExpireContractPersistenceInput,
+  ): Promise<ContractRow | 'INVALID_STATE'> {
+    const client = await this.pool().connect();
+    try {
+      await client.query('BEGIN');
+
+      const lock = await client.query<ContractRow>(
+        `${CONTRACT_SELECT} WHERE id = $1 FOR UPDATE`,
+        [input.contractId],
+      );
+      const current = lock.rows[0];
+      if (!current) {
+        await client.query('ROLLBACK');
+        return 'INVALID_STATE';
+      }
+      if (current.status === CONTRACT_STATUSES.Expired) {
+        // Já expirado: idempotente para o runner de expiração.
+        await client.query('ROLLBACK');
+        return current;
+      }
+      if (
+        current.status !== CONTRACT_STATUSES.Active ||
+        !assertContractTransition(CONTRACT_STATUSES.Active, CONTRACT_STATUSES.Expired)
+      ) {
+        await client.query('ROLLBACK');
+        return 'INVALID_STATE';
+      }
+      const expiredAsOf = input.expiredAsOf ?? new Date().toISOString().slice(0, 10);
+      if (!current.valid_to || current.valid_to >= expiredAsOf) {
+        await client.query('ROLLBACK');
+        return 'INVALID_STATE';
+      }
+
+      const result = await client.query<ContractRow>(
+        `UPDATE com.contracts
+         SET
+           status = 'EXPIRED'::com.contract_status,
+           updated_by_identity_id = $2,
+           updated_at = NOW(),
+           row_version = row_version + 1
+         WHERE id = $1
+         RETURNING
+           id, internal_code, client_id, unit_id, contract_number, title, scope_description,
+           valid_from::text AS valid_from, valid_to::text AS valid_to, currency_code,
+           payment_terms, payment_method, commercial_terms, client_snapshot,
+           status::text AS status, activated_at, activated_by_identity_id,
+           closed_at, closed_by_identity_id, closure_reason, row_version,
+           created_at, updated_at, created_by_identity_id, updated_by_identity_id`,
+        [input.contractId, input.actorIdentityId],
+      );
+
+      await insertContractHistoryEvent(client, {
+        contractId: input.contractId,
+        eventType: CONTRACT_HISTORY_EVENTS.Expired,
+        payload: { expiredAsOf, validTo: current.valid_to },
+        actorIdentityId: input.actorIdentityId,
+      });
+
+      await client.query('COMMIT');
+      return result.rows[0] ?? 'INVALID_STATE';
     } catch (error) {
       await client.query('ROLLBACK');
       throw error;

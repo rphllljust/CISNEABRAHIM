@@ -1,10 +1,14 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
+import { AuthzHttpException } from '../../authorization/errors/authz-http.exception';
 import { FiscalPeriodError } from '../domain/fiscal-period';
 import { FiscalPeriodValidationError } from '../domain/fiscal-period.validation';
 import { FISCAL_ERROR_CODES } from '../errors/fiscal-error-codes';
 import { FiscalHttpException } from '../errors/fiscal-http.exception';
 
 export function mapFiscalPeriodDomainError(error: unknown): HttpException {
+  if (error instanceof AuthzHttpException) {
+    throw error;
+  }
   if (error instanceof HttpException) {
     return error;
   }

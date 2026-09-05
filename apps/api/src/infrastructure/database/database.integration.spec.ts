@@ -109,19 +109,36 @@ describe('PostgreSQL integration', () => {
        ORDER BY schemaname, tablename`,
     );
 
+    const ptyTables = result.rows
+      .filter((row) => row.schemaname === 'pty')
+      .map((row) => row.tablename.toLowerCase())
+      .sort();
+    expect(ptyTables).toEqual([...ALLOWED_PTY_TABLES].sort());
+
     for (const row of result.rows) {
       const tableName = row.tablename.toLowerCase();
       if (row.schemaname !== 'pty') {
         expect(FORBIDDEN_BUSINESS_TABLES).not.toContain(tableName);
       }
       expect(ALLOWED_SCHEMAS.has(row.schemaname)).toBe(true);
-      if (row.schemaname === 'pty') {
-        expect(ALLOWED_PTY_TABLES.has(tableName)).toBe(true);
-        continue;
-      }
       if (row.schemaname === 'public') {
         expect(ALLOWED_TECHNICAL_TABLES.has(tableName)).toBe(true);
       }
+    }
+  });
+
+  it('classifies timestamptz calendar dates in UTC, not session TimeZone', async () => {
+    try {
+      await pool.query("SET TIME ZONE 'America/Sao_Paulo'");
+      const result = await pool.query<{ utc_date: string; session_date: string }>(
+        `SELECT
+           ('2026-09-02T01:00:00.000Z'::timestamptz AT TIME ZONE 'UTC')::date::text AS utc_date,
+           ('2026-09-02T01:00:00.000Z'::timestamptz)::date::text AS session_date`,
+      );
+      expect(result.rows[0]?.utc_date).toBe('2026-09-02');
+      expect(result.rows[0]?.session_date).toBe('2026-09-01');
+    } finally {
+      await pool.query("SET TIME ZONE 'UTC'");
     }
   });
 });

@@ -142,7 +142,7 @@ export function PersonEditPage() {
           </select>
         </div>
         <div className="shell-form-field">
-          <label htmlFor={externalErpIdId}>Referência externa (ERP)</label>
+          <label htmlFor={externalErpIdId}>Referência externa (opcional)</label>
           <input
             id={externalErpIdId}
             value={externalErpId}

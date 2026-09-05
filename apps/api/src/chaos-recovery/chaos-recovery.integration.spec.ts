@@ -44,7 +44,27 @@ import { OUTBOX_EVENT_STATUSES } from '../platform/outbox/domain/outbox-status';
 import { OutboxModule } from '../platform/outbox/outbox.module';
 import { OutboxRepository } from '../platform/outbox/repositories/outbox.repository';
 import { OutboxPublisherService } from '../platform/outbox/services/outbox-publisher.service';
+import { OutboxPublisherWorkerService } from '../platform/outbox/services/outbox-publisher.worker.service';
+import { IntegrationInboxProcessorWorkerService } from '../integrations/inbox/services/integration-inbox-processor.worker.service';
 import type { UatActor } from '../uat/uat-vertical-runner';
+
+const previousOutboxPublisherEnabled = process.env['OUTBOX_PUBLISHER_ENABLED'];
+const previousInboxProcessorEnabled = process.env['INBOX_PROCESSOR_ENABLED'];
+process.env['OUTBOX_PUBLISHER_ENABLED'] = 'false';
+process.env['INBOX_PROCESSOR_ENABLED'] = 'false';
+
+function restorePollerEnv(): void {
+  if (previousOutboxPublisherEnabled === undefined) {
+    delete process.env['OUTBOX_PUBLISHER_ENABLED'];
+  } else {
+    process.env['OUTBOX_PUBLISHER_ENABLED'] = previousOutboxPublisherEnabled;
+  }
+  if (previousInboxProcessorEnabled === undefined) {
+    delete process.env['INBOX_PROCESSOR_ENABLED'];
+  } else {
+    process.env['INBOX_PROCESSOR_ENABLED'] = previousInboxProcessorEnabled;
+  }
+}
 
 type TestJobBehavior = 'success' | 'transient' | 'permanent' | 'slow';
 
@@ -85,9 +105,10 @@ async function appendOutboxEvent(
           serviceRequestId: aggregateId,
           unitId: 'unit-chaos',
           clientId: null,
-          submittedAt: new Date().toISOString(),
+          submittedAt: '2026-09-01T00:00:00.000Z',
         }),
-        occurredAt: new Date().toISOString(),
+        occurredAt: '2026-09-01T00:00:00.000Z',
+        availableAt: '2026-09-01T00:00:00.000Z',
         idempotencyKey,
       },
       client,
@@ -99,9 +120,23 @@ async function appendOutboxEvent(
   return idempotencyKey;
 }
 
+async function snapshotOutbox(pool: Pool): Promise<unknown[]> {
+  const result = await pool.query<Record<string, unknown>>(
+    `SELECT status, lease_owner, available_at, attempts, last_error, idempotency_key
+     FROM evt.outbox_events
+     ORDER BY sequence_number`,
+  );
+  return result.rows;
+}
+
 describe('Chaos, async processing & recovery (controlled environment)', () => {
+  afterAll(() => {
+    restorePollerEnv();
+  });
+
   describe('dependencies', () => {
     let context: FailureInjectionTestContext;
+    let dependenciesModule: TestingModule;
     let actor: UatActor;
     let deliveryService: NotificationDeliveryService;
     let channelRegistry: NotificationChannelRegistry;
@@ -114,20 +149,21 @@ describe('Chaos, async processing & recovery (controlled environment)', () => {
       context = await createFailureInjectionTestContext();
       process.env['DATABASE_URL'] = process.env['TEST_DATABASE_URL'];
 
-      const module: TestingModule = await Test.createTestingModule({
+      dependenciesModule = await Test.createTestingModule({
         imports: [DatabaseModule, EventsModule, NotificationsModule, IntegrationsInboxModule],
       }).compile();
-      await module.init();
+      await dependenciesModule.init();
 
-      deliveryService = module.get(NotificationDeliveryService);
-      channelRegistry = module.get(NotificationChannelRegistry);
-      domainEventsRepository = module.get(DomainEventsRepository);
-      inboxReceive = module.get(IntegrationInboxReceiveService);
-      inboxProcessor = module.get(IntegrationInboxProcessorService);
-      inboxRepository = module.get(IntegrationInboxRepository);
+      deliveryService = dependenciesModule.get(NotificationDeliveryService);
+      channelRegistry = dependenciesModule.get(NotificationChannelRegistry);
+      domainEventsRepository = dependenciesModule.get(DomainEventsRepository);
+      inboxReceive = dependenciesModule.get(IntegrationInboxReceiveService);
+      inboxProcessor = dependenciesModule.get(IntegrationInboxProcessorService);
+      inboxRepository = dependenciesModule.get(IntegrationInboxRepository);
     }, 120_000);
 
     afterAll(async () => {
+      await dependenciesModule.close();
       await context.close();
     });
 
@@ -266,6 +302,9 @@ describe('Chaos, async processing & recovery (controlled environment)', () => {
     let inboxReceive: IntegrationInboxReceiveService;
     let inboxProcessor: IntegrationInboxProcessorService;
     let inboxRepository: IntegrationInboxRepository;
+    let outboxPublisherWorker: OutboxPublisherWorkerService;
+    let inboxProcessorWorker: IntegrationInboxProcessorWorkerService;
+    let workerModule: TestingModule;
     const testDatabaseUrl = process.env['TEST_DATABASE_URL'];
 
     beforeAll(async () => {
@@ -283,22 +322,26 @@ describe('Chaos, async processing & recovery (controlled environment)', () => {
       process.env['WORKER_DEFAULT_MAX_ATTEMPTS'] = '3';
       process.env['WORKER_BACKOFF_BASE_MS'] = '10';
       process.env['WORKER_BACKOFF_MAX_MS'] = '100';
+      process.env['OUTBOX_PUBLISHER_ENABLED'] = 'false';
+      process.env['INBOX_PROCESSOR_ENABLED'] = 'false';
 
-      const module: TestingModule = await Test.createTestingModule({
+      workerModule = await Test.createTestingModule({
         imports: [DatabaseModule, OutboxModule, BackgroundJobsModule, IntegrationsInboxModule],
       }).compile();
-      await module.init();
+      await workerModule.init();
 
-      outboxRepository = module.get(OutboxRepository);
-      publisher = module.get(OutboxPublisherService);
-      domainEventsRepository = module.get(DomainEventsRepository);
-      jobsRepository = module.get(BackgroundJobsRepository);
-      enqueueService = module.get(BackgroundJobEnqueueService);
-      worker = module.get(BackgroundWorkerService);
-      registry = module.get(BackgroundJobHandlerRegistry);
-      inboxReceive = module.get(IntegrationInboxReceiveService);
-      inboxProcessor = module.get(IntegrationInboxProcessorService);
-      inboxRepository = module.get(IntegrationInboxRepository);
+      outboxRepository = workerModule.get(OutboxRepository);
+      publisher = workerModule.get(OutboxPublisherService);
+      outboxPublisherWorker = workerModule.get(OutboxPublisherWorkerService);
+      inboxProcessorWorker = workerModule.get(IntegrationInboxProcessorWorkerService);
+      domainEventsRepository = workerModule.get(DomainEventsRepository);
+      jobsRepository = workerModule.get(BackgroundJobsRepository);
+      enqueueService = workerModule.get(BackgroundJobEnqueueService);
+      worker = workerModule.get(BackgroundWorkerService);
+      registry = workerModule.get(BackgroundJobHandlerRegistry);
+      inboxReceive = workerModule.get(IntegrationInboxReceiveService);
+      inboxProcessor = workerModule.get(IntegrationInboxProcessorService);
+      inboxRepository = workerModule.get(IntegrationInboxRepository);
       registry.register(new ChaosIntegrationJobHandler());
       pool = new Pool({ connectionString: testDatabaseUrl });
     }, 120_000);
@@ -317,7 +360,10 @@ describe('Chaos, async processing & recovery (controlled environment)', () => {
     });
 
     afterAll(async () => {
+      await outboxPublisherWorker.stop();
+      await inboxProcessorWorker.stop();
       await worker.stop();
+      await workerModule.close();
       await pool.end();
     });
 
@@ -361,9 +407,10 @@ describe('Chaos, async processing & recovery (controlled environment)', () => {
               measurementId: crypto.randomUUID(),
               serviceOrderId: crypto.randomUUID(),
               unitId: 'unit-chaos-outbox',
-              submittedAt: new Date().toISOString(),
+              submittedAt: '2026-09-01T00:00:00.000Z',
             },
-            occurredAt: new Date().toISOString(),
+            occurredAt: '2026-09-01T00:00:00.000Z',
+            availableAt: '2026-09-01T00:00:00.000Z',
             idempotencyKey,
           },
           client,
@@ -374,6 +421,7 @@ describe('Chaos, async processing & recovery (controlled environment)', () => {
       }
 
       const claimed = await outboxRepository.claimPending('chaos-worker-after-effect', 1, 60_000);
+      expect(claimed, JSON.stringify(await snapshotOutbox(pool))).toHaveLength(1);
       const event = claimed[0]!;
       await domainEventsRepository.recordDomainEvent({
         eventType: event.event_type,
@@ -420,7 +468,7 @@ describe('Chaos, async processing & recovery (controlled environment)', () => {
       const published = await pool.query<{ count: string }>(
         `SELECT COUNT(*)::text AS count FROM evt.outbox_events WHERE status = 'PUBLISHED'`,
       );
-      expect(Number(published.rows[0]?.count)).toBe(8);
+      expect(Number(published.rows[0]?.count), JSON.stringify(await snapshotOutbox(pool))).toBe(8);
 
       for (const key of keys) {
         const row = await outboxRepository.findByIdempotencyKey(key);
@@ -443,7 +491,7 @@ describe('Chaos, async processing & recovery (controlled environment)', () => {
         outboxRepository.claimPending('chaos-outbox-b', 1, 60_000),
       ]);
       const claimed = [...outboxA, ...outboxB];
-      expect(claimed).toHaveLength(1);
+      expect(claimed, JSON.stringify(await snapshotOutbox(pool))).toHaveLength(1);
       await pool.query(
         `UPDATE evt.outbox_events SET lease_expires_at = NOW() - interval '1 second' WHERE id = $1::uuid`,
         [claimed[0]!.id],

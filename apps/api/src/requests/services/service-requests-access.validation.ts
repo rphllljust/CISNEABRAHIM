@@ -8,6 +8,7 @@ import {
   validateLinkServiceRequestDocumentInput,
   validateRejectServiceRequestInput,
   validateRowVersionBody,
+  validateSubmitReady,
   validateUpdateServiceRequestDraftInput,
   type ApproveServiceRequestInput,
   type CancelServiceRequestInput,
@@ -50,6 +51,15 @@ export class ServiceRequestsAccessValidation {
 
   validateRowVersion(input: { rowVersion: number }) {
     return this.guard(() => validateRowVersionBody(input));
+  }
+
+  validateSubmitReady(row: ServiceRequestRow) {
+    return this.guard(() =>
+      validateSubmitReady({
+        description: row.description,
+        serviceDefinitionId: row.service_definition_id,
+      }),
+    );
   }
 
   async assertCreateReferences(

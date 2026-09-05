@@ -3,6 +3,7 @@ import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
 import { AuthorizationModule } from '../authorization/authorization.module';
 import { DatabaseModule } from '../infrastructure/database/database.module';
+import { IssuerRegistryModule } from '../establishments/issuer-registry.module';
 import { ENTERPRISE_CORE_PORT } from '../platform/bounded-contexts/enterprise-core-ports';
 import { FiscalController } from './controllers/fiscal.controller';
 import { FiscalPeriodController } from './controllers/fiscal-period.controller';
@@ -15,6 +16,8 @@ import {
 import { TAX_PAYABLE_FAILURE_INJECTION, TaxPayableFailureInjection } from './domain/tax-payable-failure-injection';
 import { FISCAL_AUTHORIZATION_GATEWAY } from './ports/fiscal-authorization-gateway.port';
 import { FISCAL_CERTIFICATE_PORT } from './ports/fiscal-certificate.port';
+import { FISCAL_CREDENTIALING_PORT } from './ports/fiscal-credentialing.port';
+import { Src006FiscalCredentialing } from './ports/src006-fiscal-credentialing';
 import { UnconfiguredFiscalAuthorizationGateway } from './ports/unconfigured-fiscal-authorization.gateway';
 import { UnconfiguredFiscalCertificatePort } from './ports/unconfigured-fiscal-certificate.port';
 import { FiscalRepository } from './repositories/fiscal.repository';
@@ -37,7 +40,7 @@ import { TaxEngineAccessService } from './services/tax-engine-access.service';
  */
 @Global()
 @Module({
-  imports: [DatabaseModule, AuthModule, AuthorizationModule, AuditModule],
+  imports: [DatabaseModule, AuthModule, AuthorizationModule, AuditModule, IssuerRegistryModule],
   controllers: [FiscalController, TaxEngineController, TaxAssessmentController, FiscalPeriodController],
   providers: [
     FiscalRepository,
@@ -70,6 +73,10 @@ import { TaxEngineAccessService } from './services/tax-engine-access.service';
       useClass: UnconfiguredFiscalCertificatePort,
     },
     {
+      provide: FISCAL_CREDENTIALING_PORT,
+      useClass: Src006FiscalCredentialing,
+    },
+    {
       provide: ENTERPRISE_CORE_PORT.FiscalDocument,
       useExisting: FiscalAccessService,
     },
@@ -83,6 +90,7 @@ import { TaxEngineAccessService } from './services/tax-engine-access.service';
     ENTERPRISE_CORE_PORT.FiscalDocument,
     FISCAL_AUTHORIZATION_GATEWAY,
     FISCAL_CERTIFICATE_PORT,
+    FISCAL_CREDENTIALING_PORT,
   ],
 })
 export class FiscalModule {}

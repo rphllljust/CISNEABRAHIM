@@ -58,7 +58,7 @@ import { ServiceRequestsAccessService } from './services/service-requests-access
 const UNIT_A = 'unit-sr-a';
 const UNIT_B = 'unit-sr-b';
 const TEST_CNPJ = '11222333000181';
-const TEST_CNPJ_ALT = '11897171000181';
+const TEST_CNPJ_ALT = '11222333000181';
 
 async function grantServiceRequestAdmin(
   pool: Pool,
@@ -286,6 +286,11 @@ describe('Service requests PostgreSQL integration', () => {
     });
     expect(rejected.serviceRequest.status).toBe(SERVICE_REQUEST_STATUSES.Rejected);
     expect(rejected.serviceRequest.rejectionReason).toBe('Escopo fora do portfólio');
+    const osCount = await pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM so.service_orders WHERE service_request_id = $1`,
+      [rejectDraft.serviceRequest.id],
+    );
+    expect(osCount.rows[0]?.count).toBe('0');
   });
 
   it('cancels from draft and rejects invalid transitions', async () => {
@@ -471,11 +476,15 @@ describe('Service requests PostgreSQL integration', () => {
     expect(order.rows[0]?.order_number).toMatch(/^OS-/);
     expect(order.rows[0]?.service_snapshot?.['serviceCode']).toBe(publishedService.code);
 
-    await expect(
-      serviceRequestsAccess.convert(actor, created.serviceRequest.id, {
-        rowVersion: converted.serviceRequest.rowVersion,
-      }),
-    ).rejects.toMatchObject({ code: REQUESTS_ERROR_CODES.INVALID_STATE });
+    const second = await serviceRequestsAccess.convert(actor, created.serviceRequest.id, {
+      rowVersion: converted.serviceRequest.rowVersion,
+    });
+    expect(second.serviceRequest.status).toBe(SERVICE_REQUEST_STATUSES.Converted);
+    const orderCount = await pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM so.service_orders WHERE service_request_id = $1`,
+      [created.serviceRequest.id],
+    );
+    expect(orderCount.rows[0]?.count).toBe('2');
 
     const rejectedFlow = await serviceRequestsAccess.create(actor, {
       unitId: UNIT_A,
@@ -784,6 +793,73 @@ describe('Service requests PostgreSQL integration', () => {
       toStatus: SERVICE_REQUEST_STATUSES.Approved,
       priority: SERVICE_REQUEST_PRIORITIES.High,
     });
+  });
+
+  it('rejects submit when draft no longer has description or service', async () => {
+    const { actor } = await seedActor();
+    const created = await serviceRequestsAccess.create(actor, {
+      unitId: UNIT_A,
+      originSource: SERVICE_REQUEST_ORIGINS.Email,
+      externalContact: { name: 'Sem demanda' },
+      description: 'Será removida',
+    });
+
+    const cleared = await serviceRequestsAccess.updateDraft(actor, created.serviceRequest.id, {
+      rowVersion: created.serviceRequest.rowVersion,
+      description: null,
+      serviceDefinitionId: null,
+    });
+
+    await expect(
+      serviceRequestsAccess.submit(actor, created.serviceRequest.id, {
+        rowVersion: cleared.serviceRequest.rowVersion,
+      }),
+    ).rejects.toMatchObject({ code: REQUESTS_ERROR_CODES.VALIDATION_FAILED });
+  });
+
+  it('denies unauthorized convert of an approved request', async () => {
+    const owner = await seedActor();
+    const client = await seedClient(owner.actor);
+    const publishedService = await seedPublishedService(owner.actor);
+    const created = await serviceRequestsAccess.create(owner.actor, {
+      unitId: UNIT_A,
+      originSource: SERVICE_REQUEST_ORIGINS.DirectRequest,
+      clientId: client.id,
+      serviceDefinitionId: publishedService.serviceDefinitionId,
+      serviceDefinitionVersionId: publishedService.id,
+      description: 'Convertida só por autoridade operacional',
+    });
+    const submitted = await serviceRequestsAccess.submit(owner.actor, created.serviceRequest.id, {
+      rowVersion: created.serviceRequest.rowVersion,
+    });
+    const underReview = await serviceRequestsAccess.startReview(owner.actor, created.serviceRequest.id, {
+      rowVersion: submitted.serviceRequest.rowVersion,
+    });
+    const approved = await serviceRequestsAccess.approve(owner.actor, created.serviceRequest.id, {
+      rowVersion: underReview.serviceRequest.rowVersion,
+    });
+
+    const intruderLogin = normalizeLoginIdentifier(`sr-noconvert-${crypto.randomUUID()}@cisne.invalid`);
+    const { identityId: intruderId } = await insertIdentity(
+      pool,
+      intruderLogin,
+      await hashPassword(AUTH_TEST_PASSWORD),
+    );
+    await insertGrant(pool, {
+      identityId: intruderId,
+      action: AUTHZ_ACTIONS.RequestsServiceRequestRead,
+      resourceType: AUTHZ_RESOURCE_TYPES.RequestsServiceRequest,
+      scopeType: AUTHZ_SCOPES.Global,
+      grantedByIdentityId: owner.identityId,
+    });
+
+    await expect(
+      serviceRequestsAccess.convert(
+        { identityId: intruderId, sessionId: 'sid' },
+        created.serviceRequest.id,
+        { rowVersion: approved.serviceRequest.rowVersion },
+      ),
+    ).rejects.toMatchObject({ code: REQUESTS_ERROR_CODES.DENIED });
   });
 
   it('rejects invalid state transitions across the lifecycle', async () => {

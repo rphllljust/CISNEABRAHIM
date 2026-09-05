@@ -149,6 +149,13 @@ export class ServiceRequestsAccessCommands {
     serviceRequestId: string,
     input: { rowVersion: number },
   ): Promise<ServiceRequestDetailResponse> {
+    assertValidServiceRequestId(serviceRequestId);
+    const current = await this.query.requireRecord(
+      actor,
+      serviceRequestId,
+      AUTHZ_ACTIONS.RequestsServiceRequestSubmit,
+    );
+    this.validation.validateSubmitReady(current);
     return this.transition(actor, serviceRequestId, input, 'submit', AUTHZ_ACTIONS.RequestsServiceRequestSubmit);
   }
 

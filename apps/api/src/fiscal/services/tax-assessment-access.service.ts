@@ -8,12 +8,15 @@ import {
 import { SecurityAuditService } from '../../audit/services/security-audit.service';
 import { AUTHZ_ACTIONS } from '../../authorization/types/authz-actions';
 import type { IdentityAuthzContext } from '../../authorization/types/authz-decision';
+import { SodEnforcementService } from '../../authorization/services/sod-enforcement.service';
+import { SOD_DUTIES, resolveSodScope } from '../../authorization/domain/segregation-of-duties';
 import {
   ENTERPRISE_CORE_PORT,
   type FinancePayablePort,
 } from '../../platform/bounded-contexts/enterprise-core-ports';
 import { assertUuid } from '../../platform/kernel/uuid';
 import {
+  TAX_ASSESSMENT_EVENTS,
   TAX_ASSESSMENT_STATUSES,
   TaxAssessmentError,
   assertAssessmentAdjustable,
@@ -61,6 +64,7 @@ export class TaxAssessmentAccessService {
     private readonly authz: TaxEngineAccessAuthz,
     private readonly securityAudit: SecurityAuditService,
     private readonly fiscalPeriods: FiscalPeriodAccessService,
+    private readonly sod: SodEnforcementService,
     @Optional()
     @Inject(ENTERPRISE_CORE_PORT.FinancePayable)
     private readonly payablePort?: FinancePayablePort,
@@ -135,6 +139,17 @@ export class TaxAssessmentAccessService {
       await this.authz.assertTaxEngineAction(actor, AUTHZ_ACTIONS.FiscalTaxAssessmentFinalize, {
         id: current.assessment.id,
         unitId: current.assessment.unit_id,
+      });
+      if (current.assessment.status === TAX_ASSESSMENT_STATUSES.Finalized) {
+        return this.toDetail(current);
+      }
+      const createdEvent = current.events.find((event) => event.event_type === TAX_ASSESSMENT_EVENTS.Created);
+      const scope = resolveSodScope(current.assessment.unit_id);
+      await this.sod.enforce(actor, {
+        duty: SOD_DUTIES.TaxAssessmentFinalize,
+        originatorIdentityId: createdEvent?.actor_identity_id,
+        amount: current.assessment.assessed_amount,
+        ...scope,
       });
       assertAssessmentFinalizable(current.assessment.status);
       if (!current.assessment.supersedes_assessment_id) {
@@ -231,7 +246,7 @@ export class TaxAssessmentAccessService {
         idempotencyKey: validated.idempotencyKey,
         supersedesAssessmentId: assessmentId,
       });
-      return this.finalize(actor, next.id, validated);
+      return next;
     } catch (error) {
       throw mapTaxAssessmentDomainError(error);
     }

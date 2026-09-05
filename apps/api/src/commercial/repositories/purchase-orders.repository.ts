@@ -3,6 +3,7 @@ import type { Pool } from 'pg';
 import { DatabaseService } from '../../infrastructure/database/database.service';
 import { queryIsUnitRegistered } from '../../infrastructure/database/reference-lookups';
 import { orderByCreatedAtDesc } from '../../infrastructure/database/sql';
+import { compareMoneyAmounts, sumMoneyAmounts } from '../domain/money';
 import {
   PURCHASE_ORDER_STATUSES,
   assertTransition,
@@ -42,6 +43,10 @@ const PO_SELECT = `
     pricing_structure::text AS pricing_structure,
     total_amount::text AS total_amount,
     consumed_amount::text AS consumed_amount,
+    COALESCE(authorized_overrun_amount, 0)::text AS authorized_overrun_amount,
+    overrun_justification,
+    overrun_authorized_at,
+    overrun_authorized_by_identity_id,
     items_line_total_amount::text AS items_line_total_amount,
     payment_terms,
     payment_method,
@@ -213,6 +218,8 @@ export class PurchaseOrdersRepository {
            delivery_location, billing_location, currency_code,
            pricing_structure::text AS pricing_structure,
            total_amount::text AS total_amount, consumed_amount::text AS consumed_amount,
+           COALESCE(authorized_overrun_amount, 0)::text AS authorized_overrun_amount,
+           overrun_justification, overrun_authorized_at, overrun_authorized_by_identity_id,
            items_line_total_amount::text AS items_line_total_amount,
            payment_terms, payment_method,
            client_snapshot, commercial_snapshot, original_document_id, status::text AS status,
@@ -430,6 +437,8 @@ export class PurchaseOrdersRepository {
            delivery_location, billing_location, currency_code,
            pricing_structure::text AS pricing_structure,
            total_amount::text AS total_amount, consumed_amount::text AS consumed_amount,
+           COALESCE(authorized_overrun_amount, 0)::text AS authorized_overrun_amount,
+           overrun_justification, overrun_authorized_at, overrun_authorized_by_identity_id,
            items_line_total_amount::text AS items_line_total_amount,
            payment_terms, payment_method,
            client_snapshot, commercial_snapshot, original_document_id, status::text AS status,
@@ -524,6 +533,8 @@ export class PurchaseOrdersRepository {
          delivery_location, billing_location, currency_code,
          pricing_structure::text AS pricing_structure,
          total_amount::text AS total_amount, consumed_amount::text AS consumed_amount,
+         COALESCE(authorized_overrun_amount, 0)::text AS authorized_overrun_amount,
+         overrun_justification, overrun_authorized_at, overrun_authorized_by_identity_id,
          items_line_total_amount::text AS items_line_total_amount,
          payment_terms, payment_method,
          client_snapshot, commercial_snapshot, original_document_id, status::text AS status,
@@ -542,6 +553,100 @@ export class PurchaseOrdersRepository {
       return current.row_version !== rowVersion ? 'VERSION_CONFLICT' : 'INVALID_STATE';
     }
     return result.rows[0]!;
+  }
+
+  async authorizeOverrun(input: {
+    purchaseOrderId: string;
+    rowVersion: number;
+    amount: string;
+    justification: string;
+    actorIdentityId: string;
+  }): Promise<PurchaseOrderRow | 'VERSION_CONFLICT' | 'INVALID_STATE'> {
+    const client = await this.pool().connect();
+    try {
+      await client.query('BEGIN');
+      const locked = await client.query<{
+        total_amount: string;
+        consumed_amount: string;
+        authorized_overrun_amount: string | null;
+        status: string;
+        row_version: number;
+      }>(
+        `SELECT total_amount::text AS total_amount,
+                consumed_amount::text AS consumed_amount,
+                authorized_overrun_amount::text AS authorized_overrun_amount,
+                status::text AS status,
+                row_version
+         FROM com.purchase_orders
+         WHERE id = $1
+         FOR UPDATE`,
+        [input.purchaseOrderId],
+      );
+      const current = locked.rows[0];
+      if (!current || current.row_version !== input.rowVersion) {
+        await client.query('ROLLBACK');
+        return 'VERSION_CONFLICT';
+      }
+      if (current.status !== 'REGISTERED') {
+        await client.query('ROLLBACK');
+        return 'INVALID_STATE';
+      }
+
+      // O overrun é substituído (a autorização mais recente vence), mas o novo
+      // teto (total + overrun autorizado) nunca pode ficar abaixo do valor já
+      // consumido — reautorização menor não pode deixar saldo disponível negativo.
+      const newCeiling = sumMoneyAmounts([current.total_amount, input.amount]);
+      if (compareMoneyAmounts(current.consumed_amount, newCeiling) > 0) {
+        await client.query('ROLLBACK');
+        return 'INVALID_STATE';
+      }
+
+      const result = await client.query<PurchaseOrderRow>(
+        `UPDATE com.purchase_orders
+         SET
+           authorized_overrun_amount = $3::numeric,
+           overrun_justification = $4,
+           overrun_authorized_at = NOW(),
+           overrun_authorized_by_identity_id = $5,
+           updated_by_identity_id = $5,
+           updated_at = NOW(),
+           row_version = row_version + 1
+         WHERE id = $1
+           AND row_version = $2
+           AND status = 'REGISTERED'::com.purchase_order_status
+         RETURNING
+           id, internal_code, client_id, unit_id, po_number, rc_number,
+           issue_date::text AS issue_date, buyer_contact, service_manager,
+           delivery_location, billing_location, currency_code,
+           pricing_structure::text AS pricing_structure,
+           total_amount::text AS total_amount, consumed_amount::text AS consumed_amount,
+           COALESCE(authorized_overrun_amount, 0)::text AS authorized_overrun_amount,
+           overrun_justification, overrun_authorized_at, overrun_authorized_by_identity_id,
+           items_line_total_amount::text AS items_line_total_amount,
+           payment_terms, payment_method,
+           client_snapshot, commercial_snapshot, original_document_id, status::text AS status,
+           registered_at, registered_by_identity_id, cancelled_at,
+           cancelled_by_identity_id, cancellation_reason, row_version, created_at, updated_at`,
+        [
+          input.purchaseOrderId,
+          input.rowVersion,
+          input.amount,
+          input.justification,
+          input.actorIdentityId,
+        ],
+      );
+      if ((result.rowCount ?? 0) === 0) {
+        await client.query('ROLLBACK');
+        return 'VERSION_CONFLICT';
+      }
+      await client.query('COMMIT');
+      return result.rows[0]!;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   async linkDocument(

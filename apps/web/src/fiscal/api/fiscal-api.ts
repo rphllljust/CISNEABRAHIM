@@ -6,7 +6,7 @@ import {
   probeReadAccess,
   requestJson,
 } from '../../financial-ui/enterprise-api';
-import type { FiscalDocument, TaxCalculation, TaxReproduction, TaxRule } from '../types/fiscal.types';
+import type { FiscalDocument, TaxCalculation, TaxReproduction, TaxRule, FiscalPeriod, TaxAssessment } from '../types/fiscal.types';
 
 export { BackofficeApiError };
 
@@ -81,4 +81,89 @@ export async function probeFiscalDocumentReadAccess(signal?: AbortSignal): Promi
 
 export async function probeTaxReadAccess(signal?: AbortSignal): Promise<boolean> {
   return probeReadAccess(`/api/v1/fiscal/tax/calculations/${BACKOFFICE_PROBE_ID}`, signal);
+}
+
+export async function getFiscalPeriod(periodId: string, signal?: AbortSignal): Promise<FiscalPeriod> {
+  return requestJson<FiscalPeriod>(`/api/v1/fiscal/periods/${periodId}`, {
+    method: 'GET',
+    headers: authHeaders(),
+    signal,
+  });
+}
+
+export async function openFiscalPeriod(payload: { unitId: string; periodKey: string }): Promise<FiscalPeriod> {
+  return requestJson<FiscalPeriod>('/api/v1/fiscal/periods', {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function closeFiscalPeriod(periodId: string): Promise<FiscalPeriod> {
+  return requestJson<FiscalPeriod>(`/api/v1/fiscal/periods/${periodId}/close`, {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify({}),
+  });
+}
+
+export async function reopenFiscalPeriod(periodId: string, payload: { reason: string }): Promise<FiscalPeriod> {
+  return requestJson<FiscalPeriod>(`/api/v1/fiscal/periods/${periodId}/reopen`, {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getTaxAssessment(assessmentId: string, signal?: AbortSignal): Promise<TaxAssessment> {
+  return requestJson<TaxAssessment>(`/api/v1/fiscal/tax/assessments/${assessmentId}`, {
+    method: 'GET',
+    headers: authHeaders(),
+    signal,
+  });
+}
+
+export async function createTaxAssessment(payload: Record<string, unknown>): Promise<TaxAssessment> {
+  return requestJson<TaxAssessment>('/api/v1/fiscal/tax/assessments', {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function finalizeTaxAssessment(
+  assessmentId: string,
+  payload: Record<string, unknown>,
+): Promise<TaxAssessment> {
+  return requestJson<TaxAssessment>(`/api/v1/fiscal/tax/assessments/${assessmentId}/finalize`, {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function adjustTaxAssessment(
+  assessmentId: string,
+  payload: Record<string, unknown>,
+): Promise<TaxAssessment> {
+  return requestJson<TaxAssessment>(`/api/v1/fiscal/tax/assessments/${assessmentId}/adjust`, {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function cancelTaxAssessment(
+  assessmentId: string,
+  payload: { reason: string },
+): Promise<TaxAssessment> {
+  return requestJson<TaxAssessment>(`/api/v1/fiscal/tax/assessments/${assessmentId}/cancel`, {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function probeFiscalPeriodReadAccess(signal?: AbortSignal): Promise<boolean> {
+  return probeReadAccess(`/api/v1/fiscal/periods/${BACKOFFICE_PROBE_ID}`, signal);
 }

@@ -13,6 +13,8 @@ import { AuthModule } from '../auth/auth.module';
 import { AUTH_TEST_PASSWORD, applyAuthTestEnv } from '../auth/test/auth-test-env';
 import { normalizeLoginIdentifier } from '../auth/crypto/token-crypto';
 import { AuthorizationModule } from '../authorization/authorization.module';
+import { ApprovalMatrixAccessService } from '../authorization/services/approval-matrix-access.service';
+import { enableCriticalSodFor } from '../authorization/test/critical-sod-harness';
 import { AUTHZ_ACTIONS } from '../authorization/types/authz-actions';
 import { AUTHZ_RESOURCE_TYPES } from '../authorization/types/authz-resources';
 import { AUTHZ_SCOPES } from '../authorization/types/authz-scopes';
@@ -48,6 +50,7 @@ async function grantFinanceAdmin(pool: Pool, identityId: string, grantedBy: stri
 describe('Finance payables PostgreSQL integration', () => {
   let pool: Pool;
   let payablesAccess: PayablesAccessService;
+  let matrices: ApprovalMatrixAccessService;
   const testDatabaseUrl = process.env['TEST_DATABASE_URL'];
 
   beforeAll(async () => {
@@ -59,6 +62,7 @@ describe('Finance payables PostgreSQL integration', () => {
       imports: [AuthModule, AuditModule, AuthorizationModule, FinanceModule],
     }).compile();
     payablesAccess = module.get(PayablesAccessService);
+    matrices = module.get(ApprovalMatrixAccessService);
     pool = new Pool({ connectionString: testDatabaseUrl });
   });
 
@@ -79,6 +83,13 @@ describe('Finance payables PostgreSQL integration', () => {
       await grantFinanceAdmin(pool, identityId, identityId);
     }
     return { identityId, sessionId: 'test-session' };
+  }
+
+  async function seedPayPair() {
+    const originator = await seedActor();
+    const checker = await seedActor();
+    await enableCriticalSodFor(pool, matrices, [originator.identityId, checker.identityId]);
+    return { originator, checker };
   }
 
   async function openPayable(
@@ -148,9 +159,9 @@ describe('Finance payables PostgreSQL integration', () => {
   });
 
   it('posts a full payment and derives PAID', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedPayPair();
     const opened = await openPayable(actor);
-    const paid = await payablesAccess.pay(actor, opened.id, {
+    const paid = await payablesAccess.pay(checker, opened.id, {
       amount: '100.0000',
       rowVersion: opened.rowVersion,
       idempotencyKey: `full-${crypto.randomUUID()}`,
@@ -160,14 +171,14 @@ describe('Finance payables PostgreSQL integration', () => {
     expect(paid.remainingBalance).toBe('0');
     expect(paid.payments).toHaveLength(1);
     expect(paid.payments[0]?.kind).toBe(PAYMENT_KINDS.Payment);
-    expect(paid.payments[0]?.actorIdentityId).toBe(actor.identityId);
+    expect(paid.payments[0]?.actorIdentityId).toBe(checker.identityId);
     expect(paid.payments[0]?.originKind).toBe(PAYABLE_ORIGIN_KINDS.SupplierInvoice);
   });
 
   it('posts a partial payment and derives PARTIALLY_PAID', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedPayPair();
     const opened = await openPayable(actor);
-    const partial = await payablesAccess.pay(actor, opened.id, {
+    const partial = await payablesAccess.pay(checker, opened.id, {
       amount: '40.0000',
       rowVersion: opened.rowVersion,
       idempotencyKey: `partial-${crypto.randomUUID()}`,
@@ -178,16 +189,16 @@ describe('Finance payables PostgreSQL integration', () => {
   });
 
   it('replays duplicate payment command without two baixas', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedPayPair();
     const opened = await openPayable(actor);
     const key = `dup-${crypto.randomUUID()}`;
-    const first = await payablesAccess.pay(actor, opened.id, {
+    const first = await payablesAccess.pay(checker, opened.id, {
       amount: '25.0000',
       rowVersion: opened.rowVersion,
       idempotencyKey: key,
       paymentReference: 'TED-DUP',
     });
-    const second = await payablesAccess.pay(actor, opened.id, {
+    const second = await payablesAccess.pay(checker, opened.id, {
       amount: '25.0000',
       rowVersion: first.rowVersion,
       idempotencyKey: key,
@@ -202,19 +213,72 @@ describe('Finance payables PostgreSQL integration', () => {
     expect(count.rows[0]?.count).toBe('1');
   });
 
+  it('replays a double POST with the original rowVersion as one payment', async () => {
+    const { originator: actor, checker } = await seedPayPair();
+    const opened = await openPayable(actor);
+    const key = `dbl-${crypto.randomUUID()}`;
+    const first = await payablesAccess.pay(checker, opened.id, {
+      amount: '25.0000',
+      rowVersion: opened.rowVersion,
+      idempotencyKey: key,
+      paymentReference: 'TED-DBL',
+    });
+    const second = await payablesAccess.pay(checker, opened.id, {
+      amount: '25.0000',
+      rowVersion: opened.rowVersion,
+      idempotencyKey: key,
+      paymentReference: 'TED-DBL',
+    });
+    expect(second.payments).toHaveLength(1);
+    expect(second.payments[0]?.id).toBe(first.payments[0]?.id);
+    const count = await pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM fin.payments WHERE payable_id = $1`,
+      [opened.id],
+    );
+    expect(count.rows[0]?.count).toBe('1');
+  });
+
+  it('serializes concurrent double POSTs with the same idempotency key to one payment', async () => {
+    const { originator: actor, checker } = await seedPayPair();
+    const opened = await openPayable(actor);
+    const key = `conc-dup-${crypto.randomUUID()}`;
+    const payload = {
+      amount: '25.0000',
+      rowVersion: opened.rowVersion,
+      idempotencyKey: key,
+      paymentReference: 'TED-CONC-DUP',
+    };
+    const results = await Promise.allSettled([
+      payablesAccess.pay(checker, opened.id, payload),
+      payablesAccess.pay(checker, opened.id, payload),
+    ]);
+    const fulfilled = results.filter((result) => result.status === 'fulfilled');
+    expect(fulfilled).toHaveLength(2);
+    const first = (fulfilled[0] as PromiseFulfilledResult<{ payments: Array<{ id: string }> }>).value;
+    const second = (fulfilled[1] as PromiseFulfilledResult<{ payments: Array<{ id: string }> }>).value;
+    expect(first.payments).toHaveLength(1);
+    expect(second.payments).toHaveLength(1);
+    expect(second.payments[0]?.id).toBe(first.payments[0]?.id);
+    const count = await pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM fin.payments WHERE payable_id = $1 AND kind = 'PAYMENT'`,
+      [opened.id],
+    );
+    expect(count.rows[0]?.count).toBe('1');
+  });
+
   it('serializes concurrent baixas on the same installment so it is not paid twice', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedPayPair();
     const opened = await openPayable(actor, { principal: '100.0000' });
     const installmentId = opened.installments[0]!.id;
     const results = await Promise.allSettled([
-      payablesAccess.pay(actor, opened.id, {
+      payablesAccess.pay(checker, opened.id, {
         amount: '100.0000',
         rowVersion: opened.rowVersion,
         idempotencyKey: `c1-${crypto.randomUUID()}`,
         paymentReference: 'TED-C1',
         installmentId,
       }),
-      payablesAccess.pay(actor, opened.id, {
+      payablesAccess.pay(checker, opened.id, {
         amount: '100.0000',
         rowVersion: opened.rowVersion,
         idempotencyKey: `c2-${crypto.randomUUID()}`,
@@ -249,10 +313,10 @@ describe('Finance payables PostgreSQL integration', () => {
   });
 
   it('rejects overpayment without posting a payment row', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedPayPair();
     const opened = await openPayable(actor);
     await expect(
-      payablesAccess.pay(actor, opened.id, {
+      payablesAccess.pay(checker, opened.id, {
         amount: '100.0001',
         rowVersion: opened.rowVersion,
         idempotencyKey: `over-${crypto.randomUUID()}`,
@@ -267,7 +331,7 @@ describe('Finance payables PostgreSQL integration', () => {
   });
 
   it('rejects payment on a cancelled payable', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedPayPair();
     const opened = await openPayable(actor);
     await payablesAccess.cancel(actor, opened.id, {
       rowVersion: opened.rowVersion,
@@ -276,7 +340,7 @@ describe('Finance payables PostgreSQL integration', () => {
     const cancelled = await payablesAccess.getById(actor, opened.id);
     expect(cancelled.status).toBe(PAYABLE_STATUSES.Cancelled);
     await expect(
-      payablesAccess.pay(actor, opened.id, {
+      payablesAccess.pay(checker, opened.id, {
         amount: '10.0000',
         rowVersion: cancelled.rowVersion,
         idempotencyKey: `after-cancel-${crypto.randomUUID()}`,
@@ -303,10 +367,10 @@ describe('Finance payables PostgreSQL integration', () => {
   });
 
   it('rolls back a rejected payment so posted rows stay empty', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedPayPair();
     const opened = await openPayable(actor);
     await expect(
-      payablesAccess.pay(actor, opened.id, {
+      payablesAccess.pay(checker, opened.id, {
         amount: '200.0000',
         rowVersion: opened.rowVersion,
         idempotencyKey: `rollback-${crypto.randomUUID()}`,
@@ -318,9 +382,9 @@ describe('Finance payables PostgreSQL integration', () => {
   });
 
   it('corrects a confirmed payment with reversal instead of silent edit', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedPayPair();
     const opened = await openPayable(actor);
-    const paid = await payablesAccess.pay(actor, opened.id, {
+    const paid = await payablesAccess.pay(checker, opened.id, {
       amount: '40.0000',
       rowVersion: opened.rowVersion,
       idempotencyKey: `rev-src-${crypto.randomUUID()}`,
@@ -352,15 +416,15 @@ describe('Finance payables PostgreSQL integration', () => {
   });
 
   it('reconciles principal minus net payments to remaining balance', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedPayPair();
     const opened = await openPayable(actor, { principal: '250.0000' });
-    const first = await payablesAccess.pay(actor, opened.id, {
+    const first = await payablesAccess.pay(checker, opened.id, {
       amount: '100.0000',
       rowVersion: opened.rowVersion,
       idempotencyKey: `rec-1-${crypto.randomUUID()}`,
       paymentReference: 'TED-REC-1',
     });
-    const second = await payablesAccess.pay(actor, first.id, {
+    const second = await payablesAccess.pay(checker, first.id, {
       amount: '150.0000',
       rowVersion: first.rowVersion,
       idempotencyKey: `rec-2-${crypto.randomUUID()}`,

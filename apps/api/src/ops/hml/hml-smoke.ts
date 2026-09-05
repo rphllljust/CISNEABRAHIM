@@ -134,9 +134,9 @@ export async function runHmlDeploySmoke(
         check(
           endpoint.id,
           endpoint.label,
-          response.status < 500,
+          response.status === 200,
           response.status,
-          response.status < 500 ? 'reachable' : await response.text(),
+          response.status === 200 ? 'authorized list' : await response.text(),
         ),
       );
     }
@@ -165,14 +165,18 @@ export async function runHmlDeploySmoke(
         { method: 'GET', headers: authHeaders },
         timeoutMs,
       );
-      const acceptable = response.status < 500;
+      const acceptable = response.status === 200 || response.status === 404;
       checks.push(
         check(
           endpoint.id,
           endpoint.label,
           acceptable,
           response.status,
-          acceptable ? 'reachable' : await response.text(),
+          response.status === 200
+            ? 'authorized'
+            : response.status === 404
+              ? 'authorized empty nested resource'
+              : await response.text(),
         ),
       );
     }

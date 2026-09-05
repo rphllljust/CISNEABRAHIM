@@ -61,8 +61,10 @@ export type UatVerticalServices = {
   resourceTypesAccess: PhysicalResourceTypesAccessService;
 };
 
-function resolveResourceType(action: string): string {
+export function resolveResourceType(action: string): string {
+  if (action.startsWith('platform:')) return AUTHZ_RESOURCE_TYPES.Platform;
   if (action.startsWith('client:')) return AUTHZ_RESOURCE_TYPES.Client;
+  if (action.startsWith('people:')) return AUTHZ_RESOURCE_TYPES.PeoplePerson;
   if (action.startsWith('catalog:')) return AUTHZ_RESOURCE_TYPES.CatalogService;
   if (action.startsWith('commercial:proposal')) return AUTHZ_RESOURCE_TYPES.CommercialProposal;
   if (action.startsWith('commercial:purchase-order')) return AUTHZ_RESOURCE_TYPES.CommercialPurchaseOrder;
@@ -70,7 +72,9 @@ function resolveResourceType(action: string): string {
   if (action.startsWith('documents:')) return AUTHZ_RESOURCE_TYPES.DocumentsDocument;
   if (action.startsWith('resources:asset')) return AUTHZ_RESOURCE_TYPES.ResourcesAsset;
   if (action.startsWith('resources:resource-type')) return AUTHZ_RESOURCE_TYPES.ResourcesResourceType;
+  if (action.startsWith('resources:labor')) return AUTHZ_RESOURCE_TYPES.ResourcesLaborType;
   if (action.startsWith('billing:')) return AUTHZ_RESOURCE_TYPES.ServiceOrdersServiceOrder;
+  if (action.startsWith('measurements:')) return AUTHZ_RESOURCE_TYPES.ServiceOrdersServiceOrder;
   return AUTHZ_RESOURCE_TYPES.ServiceOrdersServiceOrder;
 }
 

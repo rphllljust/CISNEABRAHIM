@@ -1,4 +1,9 @@
-import type { ClientStatus, ContactPurpose, AddressPurpose } from '../domain/client-status';
+import type {
+  AddressPurpose,
+  ClientStatus,
+  ContactPurpose,
+  PurchaseOrderRequirement,
+} from '../domain/client-status';
 
 export type ClientContactRow = {
   id: string;
@@ -33,6 +38,7 @@ export type ClientRow = {
   updated_at: string;
   deactivated_at: string | null;
   deactivation_reason: string | null;
+  purchase_order_requirement: PurchaseOrderRequirement;
 };
 
 export type ClientDetail = ClientRow & {
@@ -52,6 +58,7 @@ export type ClientResponse = {
   updatedAt: string;
   deactivatedAt: string | null;
   deactivationReason: string | null;
+  purchaseOrderRequirement: PurchaseOrderRequirement;
   contacts: Array<{
     id: string;
     name: string;
@@ -86,6 +93,7 @@ export function toClientResponse(detail: ClientDetail): ClientResponse {
     updatedAt: detail.updated_at,
     deactivatedAt: detail.deactivated_at,
     deactivationReason: detail.deactivation_reason,
+    purchaseOrderRequirement: detail.purchase_order_requirement,
     contacts: detail.contacts.map((contact) => ({
       id: contact.id,
       name: contact.name,

@@ -8,7 +8,7 @@ export class BillingValidationError extends Error {
 }
 
 export type PrepareBillingRecordInput = {
-  measurementId: string;
+  measurementId?: string;
   paymentTerms: string;
   assertedTotalAmount?: string;
   idempotencyKey?: string;
@@ -21,7 +21,9 @@ export type VoidBillingRecordInput = {
 };
 
 export function validatePrepareBillingRecordInput(input: PrepareBillingRecordInput): PrepareBillingRecordInput {
-  assertUuid(input.measurementId, 'measurementId');
+  if (input.measurementId) {
+    assertUuid(input.measurementId, 'measurementId');
+  }
   const paymentTerms = input.paymentTerms?.trim();
   if (!paymentTerms) {
     throw new BillingValidationError('paymentTerms');

@@ -103,6 +103,7 @@ export class CashFlowForecastRepository {
     currencyCode: string,
     asOf: string,
   ): Promise<CashForecastMovementRow[]> {
+    // asOf is a civil UTC date (`asCashForecastIsoDate`); session TimeZone must not shift the cut.
     const result = await this.pool().query<CashForecastMovementRow>(
       `SELECT t.direction::text AS direction, t.amount::text AS amount, t.status::text AS status
        FROM fin.financial_transactions t
@@ -110,7 +111,7 @@ export class CashFlowForecastRepository {
        WHERE a.unit_id = $1
          AND a.currency_code = $2
          AND t.status = 'POSTED'
-         AND t.occurred_at::date <= $3::date`,
+         AND (t.occurred_at AT TIME ZONE 'UTC')::date <= $3::date`,
       [unitId, currencyCode, asOf],
     );
     return result.rows;

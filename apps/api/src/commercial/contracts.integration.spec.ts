@@ -41,7 +41,7 @@ import { ServiceOrdersAccessService } from '../service-orders/services/service-o
 
 const UNIT_A = 'unit-ctr-a';
 const TEST_CNPJ = '11222333000181';
-const TEST_CNPJ_ALT = '11897171000181';
+const TEST_CNPJ_ALT = '11222333000181';
 
 async function grantContractAdmin(pool: Pool, identityId: string, grantedBy: string): Promise<void> {
   for (const action of [
@@ -53,6 +53,7 @@ async function grantContractAdmin(pool: Pool, identityId: string, grantedBy: str
     AUTHZ_ACTIONS.CommercialContractClose,
     AUTHZ_ACTIONS.ClientCreate,
     AUTHZ_ACTIONS.ClientRead,
+    AUTHZ_ACTIONS.ClientDeactivate,
     AUTHZ_ACTIONS.CatalogServiceCreate,
     AUTHZ_ACTIONS.CatalogServiceRead,
     AUTHZ_ACTIONS.CatalogServicePublish,
@@ -286,5 +287,53 @@ describe('Commercial contracts PostgreSQL integration', () => {
         contractReference: contractNumber,
       }),
     ).rejects.toMatchObject({ code: COMMERCIAL_ERROR_CODES.CONTRACT_CLOSED });
+  });
+
+  it('rejects activation when the counterparty is inactive', async () => {
+    const { actor } = await seedActor();
+    const client = await seedClient(actor);
+    const created = await contractsAccess.create(actor, {
+      clientId: client.id,
+      unitId: UNIT_A,
+      contractNumber: `CTR-INACT-${crypto.randomUUID().slice(0, 8)}`,
+      title: 'Contrato com cliente inativo',
+      validFrom: '2020-01-01',
+      validTo: '2030-12-31',
+      items: [],
+    });
+
+    await clientAccess.deactivate(actor, client.id, client.version, 'Cliente inativo');
+
+    await expect(
+      contractsAccess.activate(actor, created.contract.id, {
+        rowVersion: created.contract.rowVersion,
+      }),
+    ).rejects.toMatchObject({ code: COMMERCIAL_ERROR_CODES.CLIENT_INACTIVE });
+  });
+
+  it('rejects concurrent activate with stale rowVersion', async () => {
+    const { actor } = await seedActor();
+    const client = await seedClient(actor);
+    const created = await contractsAccess.create(actor, {
+      clientId: client.id,
+      unitId: UNIT_A,
+      contractNumber: `CTR-ACT-${crypto.randomUUID().slice(0, 8)}`,
+      title: 'Ativação concorrente',
+      validFrom: '2020-01-01',
+      validTo: '2030-12-31',
+      items: [],
+    });
+
+    await contractsAccess.activate(actor, created.contract.id, {
+      rowVersion: created.contract.rowVersion,
+    });
+
+    await expect(
+      contractsAccess.activate(actor, created.contract.id, {
+        rowVersion: created.contract.rowVersion,
+      }),
+    ).rejects.toMatchObject({
+      code: COMMERCIAL_ERROR_CODES.CONTRACT_INVALID_STATE,
+    });
   });
 });

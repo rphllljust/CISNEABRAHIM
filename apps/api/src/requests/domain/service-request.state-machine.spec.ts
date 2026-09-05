@@ -37,6 +37,9 @@ describe('service-request.state-machine', () => {
     expect(assertTransition(SERVICE_REQUEST_STATUSES.Approved, 'convert')).toBe(
       SERVICE_REQUEST_STATUSES.Converted,
     );
+    expect(assertTransition(SERVICE_REQUEST_STATUSES.Converted, 'convert')).toBe(
+      SERVICE_REQUEST_STATUSES.Converted,
+    );
   });
 
   it('allows reject from under review', () => {
@@ -72,19 +75,19 @@ describe('service-request.state-machine', () => {
     }
   });
 
-  it('blocks conversion unless approved', () => {
+  it('blocks conversion unless approved or already converted', () => {
     for (const status of [
       SERVICE_REQUEST_STATUSES.Draft,
       SERVICE_REQUEST_STATUSES.Submitted,
       SERVICE_REQUEST_STATUSES.UnderReview,
       SERVICE_REQUEST_STATUSES.Rejected,
       SERVICE_REQUEST_STATUSES.Cancelled,
-      SERVICE_REQUEST_STATUSES.Converted,
     ]) {
       expect(() => assertConvertible(status)).toThrow(ServiceRequestStateError);
     }
 
     expect(() => assertConvertible(SERVICE_REQUEST_STATUSES.Approved)).not.toThrow();
+    expect(() => assertConvertible(SERVICE_REQUEST_STATUSES.Converted)).not.toThrow();
   });
 
   it('maps workflow transitions to history event types', () => {

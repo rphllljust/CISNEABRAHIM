@@ -1,4 +1,5 @@
-import { HttpStatus } from '@nestjs/common';
+import { HttpException, HttpStatus } from '@nestjs/common';
+import { AuthzHttpException } from '../../authorization/errors/authz-http.exception';
 import { PayrollError } from '../domain/payroll';
 import { PayrollValidationError } from '../domain/payroll.validation';
 import { PAYROLL_ERROR_CODES } from '../errors/payroll-error-codes';
@@ -9,8 +10,14 @@ export function payrollAccessDenied(): PayrollHttpException {
 }
 
 export function mapPayrollDomainError(error: unknown): PayrollHttpException {
+  if (error instanceof AuthzHttpException) {
+    throw error;
+  }
   if (error instanceof PayrollHttpException) {
     return error;
+  }
+  if (error instanceof HttpException) {
+    throw error;
   }
   if (error instanceof PayrollValidationError) {
     return new PayrollHttpException(

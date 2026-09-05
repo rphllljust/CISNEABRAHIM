@@ -23,9 +23,8 @@ export const billingRecords = bilSchema.table('billing_records', {
   serviceOrderId: uuid('service_order_id')
     .notNull()
     .references(() => serviceOrders.id),
-  measurementId: uuid('measurement_id')
-    .notNull()
-    .references(() => measurements.id),
+  measurementId: uuid('measurement_id').references(() => measurements.id),
+  entitlementPolicy: text('entitlement_policy').notNull().default('MEASUREMENT_APPROVED'),
   clientId: uuid('client_id')
     .notNull()
     .references(() => clients.id),
@@ -67,9 +66,7 @@ export const billingItems = bilSchema.table('billing_items', {
     .notNull()
     .references(() => billingRecords.id, { onDelete: 'cascade' }),
   lineNumber: integer('line_number').notNull(),
-  measurementItemId: uuid('measurement_item_id')
-    .notNull()
-    .references(() => measurementItems.id),
+  measurementItemId: uuid('measurement_item_id').references(() => measurementItems.id),
   sourceExecutionEntryId: uuid('source_execution_entry_id').references(() => executionEntries.id),
   unitCode: text('unit_code').notNull(),
   quantity: numeric('quantity', { precision: 18, scale: 6 }).notNull(),

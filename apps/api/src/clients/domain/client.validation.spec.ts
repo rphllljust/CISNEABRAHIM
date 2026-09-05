@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CONTACT_PURPOSES } from './client-status';
+import { CONTACT_PURPOSES, PURCHASE_ORDER_REQUIREMENTS } from './client-status';
 import {
   assertCreateClientInput,
   assertDeactivationReason,
@@ -17,17 +17,17 @@ describe('client.validation', () => {
   it('requires legal name, valid CNPJ and operational contact', () => {
     const normalized = assertCreateClientInput({
       legalName: 'Empresa Teste LTDA',
-      taxId: '11.897.171/0001-81',
+      taxId: '11.222.333/0001-81',
       contacts: [validContact],
     });
-    expect(normalized).toBe('11897171000181');
+    expect(normalized).toBe('11222333000181');
   });
 
   it('rejects missing operational usable contact', () => {
     expect(() =>
       assertCreateClientInput({
         legalName: 'Empresa Teste LTDA',
-        taxId: '11897171000181',
+        taxId: '11222333000181',
         contacts: [{ name: 'Sem canal', purpose: CONTACT_PURPOSES.Operational }],
       }),
     ).toThrow(ClientValidationError);
@@ -45,7 +45,7 @@ describe('client.validation', () => {
     expect(() =>
       assertCreateClientInput({
         legalName: '   ',
-        taxId: '11897171000181',
+        taxId: '11222333000181',
         contacts: [validContact],
       }),
     ).toThrow(ClientValidationError);
@@ -75,17 +75,39 @@ describe('client.validation', () => {
     expect(() =>
       assertCreateClientInput({
         legalName: 'Empresa',
-        taxId: '11897171000181',
+        taxId: '11222333000181',
         contacts: [],
       }),
     ).toThrow(ClientValidationError);
+  });
+
+  it('rejects unknown purchase order requirement', () => {
+    expect(() =>
+      assertCreateClientInput({
+        legalName: 'Empresa',
+        taxId: '11222333000181',
+        contacts: [validContact],
+        purchaseOrderRequirement: 'ALWAYS' as never,
+      }),
+    ).toThrow(ClientValidationError);
+  });
+
+  it('accepts existing purchase order requirement values', () => {
+    expect(() =>
+      assertCreateClientInput({
+        legalName: 'Empresa',
+        taxId: '11222333000181',
+        contacts: [validContact],
+        purchaseOrderRequirement: PURCHASE_ORDER_REQUIREMENTS.BeforeExecution,
+      }),
+    ).not.toThrow();
   });
 
   it('rejects unusable operational contact without phone or email', () => {
     expect(() =>
       assertCreateClientInput({
         legalName: 'Empresa',
-        taxId: '11897171000181',
+        taxId: '11222333000181',
         contacts: [{ name: 'Sem canal', purpose: CONTACT_PURPOSES.Operational }],
       }),
     ).toThrow(ClientValidationError);

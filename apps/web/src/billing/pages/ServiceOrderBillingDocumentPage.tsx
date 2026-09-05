@@ -28,6 +28,7 @@ import {
   resolveBillingRecordTermsDivergence,
 } from '../utils/billing-document-preview';
 import { formatDatePtBr, formatPaymentDueHint, formatTaxId } from '../utils/billing-format';
+import { formatAddressLine } from '../utils/billing-document-format';
 import {
   buildCommercialTermsDivergence,
   readCommercialReferenceLabel,
@@ -158,6 +159,15 @@ export function ServiceOrderBillingDocumentPage() {
         documentNumber: activeDocument?.documentNumber ?? null,
         purchaseOrderNumber: poNumber,
         commercialReferenceLabel,
+        // Emissor sempre do documento emitido (originado no registro backend);
+        // sem documento emitido o preview não inventa identidade fiscal.
+        emitter: activeDocument
+          ? {
+              legalName: activeDocument.emitterLegalName,
+              taxId: activeDocument.emitterTaxId,
+              addressLine: formatAddressLine(activeDocument.emitterAddressSnapshot ?? {}),
+            }
+          : null,
       })
     : null;
 

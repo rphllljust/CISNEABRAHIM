@@ -17,6 +17,7 @@ if (process.env['HML_SYNTHETIC_SEED_CONFIRM'] !== 'I_UNDERSTAND') {
 
 const steps = [
   ['pnpm', ['--filter', '@cisne/database', 'bootstrap:production']],
+  ['pnpm', ['--filter', '@cisne/api', 'hml:grant-pilot-operator']],
   ['pnpm', ['db:seed:portfolio']],
 ];
 

@@ -49,7 +49,7 @@ export async function evaluateUatProfileChecks(
           input.clientAccess.create(input.executor, {
             legalName: 'Executor Should Not Create LTDA',
             tradeName: 'Denied',
-            taxId: '11897171000181',
+            taxId: '11222333000181',
             contacts: [{ name: 'X', purpose: CONTACT_PURPOSES.Operational, phone: '69999990001' }],
             addresses: [
               {
@@ -89,10 +89,22 @@ export async function evaluateUatProfileChecks(
     {
       profileId: 'finance' as UatProfileId,
       action: 'billing:prepare',
+      expected: 'DENY' as const,
+      run: () =>
+        expectDenied(() =>
+          input.billingAccess.prepare(input.finance, input.billableServiceOrderId, {
+            measurementId: input.approvedMeasurementId,
+            paymentTerms: '30 DDL',
+          }),
+        ),
+    },
+    {
+      profileId: 'control_admin' as UatProfileId,
+      action: 'billing:prepare',
       expected: 'ALLOW' as const,
       run: () =>
         expectAllowed(() =>
-          input.billingAccess.prepare(input.finance, input.billableServiceOrderId, {
+          input.billingAccess.prepare(input.controlAdmin, input.billableServiceOrderId, {
             measurementId: input.approvedMeasurementId,
             paymentTerms: '30 DDL',
           }),

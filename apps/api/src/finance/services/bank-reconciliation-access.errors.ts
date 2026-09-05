@@ -1,4 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
+import { AuthzHttpException } from '../../authorization/errors/authz-http.exception';
 import { BankReconciliationError } from '../domain/bank-reconciliation';
 import { BankReconciliationValidationError } from '../domain/bank-reconciliation.validation';
 import { FINANCE_ERROR_CODES } from '../errors/finance-error-codes';
@@ -9,6 +10,9 @@ export function bankReconAccessDenied(): FinanceHttpException {
 }
 
 export function mapBankReconciliationError(error: unknown): FinanceHttpException {
+  if (error instanceof AuthzHttpException) {
+    throw error;
+  }
   if (error instanceof FinanceHttpException) {
     return error;
   }

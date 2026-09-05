@@ -13,6 +13,8 @@ import { AuthModule } from '../auth/auth.module';
 import { AUTH_TEST_PASSWORD, applyAuthTestEnv } from '../auth/test/auth-test-env';
 import { normalizeLoginIdentifier } from '../auth/crypto/token-crypto';
 import { AuthorizationModule } from '../authorization/authorization.module';
+import { ApprovalMatrixAccessService } from '../authorization/services/approval-matrix-access.service';
+import { enableCriticalSodFor } from '../authorization/test/critical-sod-harness';
 import { AUTHZ_ACTIONS } from '../authorization/types/authz-actions';
 import { AUTHZ_RESOURCE_TYPES } from '../authorization/types/authz-resources';
 import { AUTHZ_SCOPES } from '../authorization/types/authz-scopes';
@@ -64,6 +66,7 @@ describe('Finance cash flow forecast PostgreSQL integration', () => {
   let receivables: ReceivablesAccessService;
   let payables: PayablesAccessService;
   let treasury: TreasuryAccessService;
+  let matrices: ApprovalMatrixAccessService;
   const testDatabaseUrl = process.env['TEST_DATABASE_URL'];
 
   beforeAll(async () => {
@@ -78,6 +81,7 @@ describe('Finance cash flow forecast PostgreSQL integration', () => {
     receivables = module.get(ReceivablesAccessService);
     payables = module.get(PayablesAccessService);
     treasury = module.get(TreasuryAccessService);
+    matrices = module.get(ApprovalMatrixAccessService);
     pool = new Pool({ connectionString: testDatabaseUrl });
   });
 
@@ -98,6 +102,13 @@ describe('Finance cash flow forecast PostgreSQL integration', () => {
       await grantAll(pool, identityId);
     }
     return { identityId, sessionId: 'test-session' };
+  }
+
+  async function seedSodPair() {
+    const originator = await seedActor();
+    const checker = await seedActor();
+    await enableCriticalSodFor(pool, matrices, checker.identityId);
+    return { originator, checker };
   }
 
   async function openReceivable(
@@ -177,7 +188,7 @@ describe('Finance cash flow forecast PostgreSQL integration', () => {
   });
 
   it('projects due dates, installments, overdue, cancellations, partials and reconciles without false realized', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSodPair();
     const account = await treasury.openAccount(actor, {
       unitId: UNIT,
       kind: FINANCIAL_ACCOUNT_KINDS.Bank,
@@ -186,6 +197,7 @@ describe('Finance cash flow forecast PostgreSQL integration', () => {
       currencyCode: 'BRL',
       bank: { bankCode: '001', agency: '1234', accountNumber: '0001-9' },
     });
+    // openingAmount stamps occurred_at as now and is excluded from a historical asOf.
     await treasury.postMovement(actor, account.id, {
       direction: FINANCIAL_DIRECTIONS.Credit,
       amount: '500.0000',
@@ -207,7 +219,7 @@ describe('Finance cash flow forecast PostgreSQL integration', () => {
       ],
     });
     const overdueInstallment = receivable.installments.find((item) => item.installmentNumber === 1);
-    await receivables.settle(actor, receivable.id, {
+    await receivables.settle(checker, receivable.id, {
       amount: '40.0000',
       rowVersion: receivable.rowVersion,
       idempotencyKey: `st-${crypto.randomUUID()}`,
@@ -232,7 +244,7 @@ describe('Finance cash flow forecast PostgreSQL integration', () => {
       ],
     });
     const dueInstallment = payable.installments.find((item) => item.installmentNumber === 1);
-    await payables.pay(actor, payable.id, {
+    await payables.pay(checker, payable.id, {
       amount: '20.0000',
       rowVersion: payable.rowVersion,
       idempotencyKey: `pay-${crypto.randomUUID()}`,
@@ -296,5 +308,32 @@ describe('Finance cash flow forecast PostgreSQL integration', () => {
     expect(result.reconciliation.payableForecast).toBe('130.0000');
     expect(result.reconciliation.balanced).toBe(true);
     expect(result.falseRealizedValues).toBe(0);
+  });
+
+  it('excludes openingAmount stamped at now from a historical asOf', async () => {
+    const actor = await seedActor();
+    await treasury.openAccount(actor, {
+      unitId: UNIT,
+      kind: FINANCIAL_ACCOUNT_KINDS.Bank,
+      code: `BAN-${crypto.randomUUID().slice(0, 8)}`,
+      name: 'Conta operacional',
+      currencyCode: 'BRL',
+      openingAmount: '500.0000',
+      bank: { bankCode: '001', agency: '1234', accountNumber: '0001-9' },
+    });
+    await openReceivable(actor, {
+      principal: '100.0000',
+      dueDate: '2020-06-01',
+    });
+
+    const result = await forecast.project(actor, {
+      unitId: UNIT,
+      currencyCode: 'BRL',
+      asOf: '2020-01-01',
+      horizonEndsOn: '2020-12-31',
+    });
+
+    expect(result.status).toBe(CASH_FORECAST_STATUSES.Projected);
+    expect(result.realized.cashBalance).toBe('0.0000');
   });
 });

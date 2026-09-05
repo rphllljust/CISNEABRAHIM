@@ -35,10 +35,14 @@ describe('ServiceRequestsListPage', () => {
     });
   });
 
-  it('shows loading state initially', () => {
+  it('shows loading state initially', async () => {
     vi.stubGlobal('fetch', createRequestsFetchMock());
     renderWithProviders(<ServiceRequestsListPage />);
     expect(screen.getByText(/carregando solicitações/i)).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: 'SR-2026-DEMO01' })).toBeInTheDocument();
+    });
   });
 
   it('filters by status via backend query', async () => {

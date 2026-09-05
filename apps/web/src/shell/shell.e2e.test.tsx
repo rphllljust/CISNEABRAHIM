@@ -32,6 +32,11 @@ describe('protected application shell', () => {
     expect(screen.queryByRole('link', { name: /contas a receber/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /documentos fiscais/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /plano de contas/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^despesas$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^fornecedores$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^compras$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^estoque$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^folha$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /^pessoas$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /^locações$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /^transporte$/i })).not.toBeInTheDocument();
@@ -50,6 +55,21 @@ describe('protected application shell', () => {
     });
     expect(screen.getByText(/não faz parte da Release 1/i)).toBeInTheDocument();
   });
+
+  it.each(['/app/inventory', '/app/payroll', '/app/procurement', '/app/suppliers'])(
+    'blocks fail-closed deep link %s',
+    async (path) => {
+      vi.stubGlobal('fetch', createShellFetchMock());
+      tokenStore.setTokens('access-token', 'refresh-token');
+      window.history.pushState({}, '', path);
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: /acesso negado/i })).toBeInTheDocument();
+      });
+      expect(screen.getByText(/não faz parte da Release 1/i)).toBeInTheDocument();
+    },
+  );
 
   it('redirects absent sessions to login', async () => {
     vi.stubGlobal('fetch', createShellFetchMock());

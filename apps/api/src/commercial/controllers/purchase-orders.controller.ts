@@ -14,6 +14,7 @@ import { CurrentAuth } from '../../auth/decorators/current-auth.decorator';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import type { AccessTokenClaims } from '../../auth/services/token.service';
 import {
+  parseAuthorizePurchaseOrderOverrunInput,
   parseCancelPurchaseOrderInput,
   parseCreatePurchaseOrderInput,
   parseLinkPurchaseOrderDocumentInput,
@@ -114,6 +115,29 @@ export class PurchaseOrdersController {
     try {
       const input = parseCancelPurchaseOrderInput(request.body);
       return this.purchaseOrdersAccess.cancel(
+        { identityId: auth.sub, sessionId: auth.sid },
+        purchaseOrderId,
+        input,
+      );
+    } catch {
+      throw new CommercialHttpException(
+        400,
+        COMMERCIAL_ERROR_CODES.VALIDATION_FAILED,
+        'Invalid request body.',
+      );
+    }
+  }
+
+  @Post(':purchaseOrderId/authorize-overrun')
+  @HttpCode(200)
+  authorizeOverrun(
+    @CurrentAuth() auth: AccessTokenClaims,
+    @Param('purchaseOrderId') purchaseOrderId: string,
+    @Req() request: FastifyRequest,
+  ) {
+    try {
+      const input = parseAuthorizePurchaseOrderOverrunInput(request.body);
+      return this.purchaseOrdersAccess.authorizeOverrun(
         { identityId: auth.sub, sessionId: auth.sid },
         purchaseOrderId,
         input,

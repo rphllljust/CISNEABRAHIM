@@ -35,7 +35,7 @@ confirmed_business_rules: 16
 | AWAITING_RESPONSE | 2026-08-29 | Questionário vazio | Prompt 28 |
 | ANALYZED_BLOCKED | 2026-08-29 | 14 bloqueadores | Prompt 29-A inicial |
 | BLOCKED_BY_SIGNATURE_ONLY | 2026-08-29 | 1 bloqueador (assinatura) | Prompt 29-A corretivo — decisões Q01–Q15 registradas |
-| APPROVED | 2026-08-29 | `LIBERADO` | Aprovação formal Abrahim Jabour Junior (Administrador) |
+| ALIGNED_FROM_LATER_SOURCES | 2026-09-03 | Cadastro/SoT/R1/gates fiscais | SRC-004, SRC-006, SRC-007, DDP-020, DDP-023, DDP-026 — sem nova assinatura; Q01–Q15 preservados |
 
 ---
 
@@ -75,7 +75,7 @@ Registro: `business-rules-register.md` — **BR-025, BR-026..BR-040** (`CONFIRME
 | Regra | Condição |
 | ----- | -------- |
 | BR-041 | Aplica quando módulos Contrato/PO estiverem implementados |
-| SoT híbrido ERP | ERP/fiscal permanece autoridade de domínios externos quando integração existir; sem integração fictícia |
+| SoT híbrido ERP | **SUPERSEDED por SRC-004 / SC-001** — não haverá conexão com ERP; CISNE é o sistema centralizado. Texto histórico de Q04 permanece abaixo. |
 | Contatos com PII | Minimização e autorização backend (DDP-039 legal ainda OPEN) |
 
 ### OUT OF RELEASE 1
@@ -86,6 +86,8 @@ Registro: `business-rules-register.md` — **BR-025, BR-026..BR-040** (`CONFIRME
 | CRM (funil, campanhas, lead scoring) | `NOT_IN_RELEASE_1` |
 | Grupo econômico complexo | `NOT_IN_RELEASE_1` (compatibilidade arquitetural preservada) |
 | Enum cliente interno/externo | `REJECTED` para Release 1 |
+| Módulos dedicados locação / transporte | `OUT_OF_RELEASE_1` (DDP-026) |
+| Emissão fiscal oficial (NF-e/NFS-e) | `OUT_OF_RELEASE_1` + fail-closed; SRC-007 gates; SRC-006 `NÃO CREDENCIADO` |
 
 ### RESOLVED BUSINESS DECISIONS
 
@@ -94,7 +96,7 @@ Registro: `business-rules-register.md` — **BR-025, BR-026..BR-040** (`CONFIRME
 | Q01 | Clientes no Release 1 — SIM (cadastro mínimo interno) |
 | Q02 | Apenas PJ; CNPJ obrigatório |
 | Q03 | CNPJ único global; normalizar para dígitos na comparação |
-| Q04 | SoT híbrido: CISNE master operacional; ERP opcional futuro via `externalErpId` |
+| Q04 | SoT híbrido: CISNE master operacional; ERP opcional futuro via `externalErpId` — **parte ERP futuro SUPERSEDED por SRC-004 / SC-001** (2026-09-03) |
 | Q05 | Sem classificação interno/externo no Client; CISNE ≠ Client |
 | Q06 | Obrigatórios: razão social, CNPJ, ≥1 contato operacional |
 | Q07 | PF fora do Release 1 |
@@ -114,10 +116,10 @@ Registro: `business-rules-register.md` — **BR-025, BR-026..BR-040** (`CONFIRME
 
 | ID | Tema | Nota |
 | -- | ---- | ---- |
-| DDP-020 | SoT de OS, PO, medição, fatura, pagamento | Fora do escopo deste prompt |
+| DDP-020 | SoT de OS, PO, medição, fatura interna, documentos | Alinhado 2026-09-03 via DDP-020 + SRC-004 — CISNE; pagamento/WhatsApp/NF oficial residuais |
 | DDP-015 | Papéis empresariais completos | Parcialmente coberto por capabilities Cliente |
 | DDP-039 | Validação legal LGPD | PENDING_LEGAL_VALIDATION |
-| DDP-001..019, 021+ | Demais domínios | Inalterados |
+| DDP-001, 003–013, 021–022, 024+ | Demais temas do questionário §§4–13, 16–17 | Continuam `OPEN` — **não** preenchidos por inferência |
 
 ### CONFLICTS
 
@@ -203,14 +205,16 @@ Proprietários/controladores: Abrahim Jabour Junior (aprovador SRC-002); Monica 
 
 | Item | Resposta | Detalhe / condição / evidência |
 | ---- | -------- | ------------------------------ |
-| Lista de tipos de serviço | `CONFIRMED` / `REJECTED` / `CONDITIONAL` / `UNKNOWN` | |
-| Taxonomia fixa ou configurável | `CONFIRMED` / `REJECTED` / `CONDITIONAL` / `UNKNOWN` | |
-| Locação no primeiro release | `CONFIRMED` / `REJECTED` / `CONDITIONAL` / `UNKNOWN` | |
-| Transporte no primeiro release | `CONFIRMED` / `REJECTED` / `CONDITIONAL` / `UNKNOWN` | |
-| Representação comercial no primeiro release | `CONFIRMED` / `REJECTED` / `CONDITIONAL` / `UNKNOWN` | |
-| Outras verticais citadas em SRC-001 | `CONFIRMED` / `REJECTED` / `CONDITIONAL` / `UNKNOWN` | |
+| Lista de tipos de serviço | `UNKNOWN` | DDP-001 permanece `OPEN` — taxonomia de OS não inventada |
+| Taxonomia fixa ou configurável | `UNKNOWN` | DDP-001 permanece `OPEN` |
+| Locação no primeiro release | `CONDITIONAL` | DDP-026: **não** entra como módulo dedicado (`FEATURE_MODULE_RENTALS` fail-closed). OS genérica da R1 pode operar serviço de locação (UAT-UX `locacao`). |
+| Transporte no primeiro release | `CONDITIONAL` | DDP-026: **não** entra como módulo dedicado (`FEATURE_MODULE_TRANSPORT` fail-closed). OS genérica da R1 pode operar serviço de transporte (UAT-UX `transporte`). |
+| Representação comercial no primeiro release | `REJECTED` | Fora da superfície DDP-026 / `release-1-closed-scope.md` |
+| Outras verticais citadas em SRC-001 | `CONDITIONAL` | Verticais dedicadas `OUT_OF_RELEASE_1`. OS genérica R1 não autoriza essas verticais como módulos de produto. |
 
-**DDP relacionados:** DDP-001, DDP-026 · **Módulos:** OS, Solicitações, Recursos
+**DDP relacionados:** DDP-001 (`OPEN`), DDP-026 (`ANSWERED`) · **Módulos:** OS, Solicitações, Recursos
+
+**Nota posterior (2026-09-03):** preenchimento de verticais a partir de DDP-026 / `release-1-closed-scope.md`. A lista de tipos de OS **não** foi inventada.
 
 ---
 
@@ -397,13 +401,15 @@ Proprietários/controladores: Abrahim Jabour Junior (aprovador SRC-002); Monica 
 
 | Item | Resposta | Detalhe / condição / evidência |
 | ---- | -------- | ------------------------------ |
-| Gatilho de faturamento | `CONFIRMED` / `REJECTED` / `CONDITIONAL` / `UNKNOWN` | |
-| Faturamento depende de medição aprovada | `CONFIRMED` / `REJECTED` / `CONDITIONAL` / `UNKNOWN` | |
-| Sistema emite NF-e oficial | `CONFIRMED` / `REJECTED` / `CONDITIONAL` / `UNKNOWN` | |
-| Registro de documento fiscal externo | `CONFIRMED` / `REJECTED` / `CONDITIONAL` / `UNKNOWN` | |
-| Recibo / fatura não fiscal apenas | `CONFIRMED` / `REJECTED` / `CONDITIONAL` / `UNKNOWN` | |
+| Gatilho de faturamento | `UNKNOWN` | DDP-011 permanece `OPEN` |
+| Faturamento depende de medição aprovada | `UNKNOWN` | DDP-011 permanece `OPEN` |
+| Sistema emite NF-e oficial | `CONDITIONAL` | SRC-007: só após credenciamento aprovado + protocolo SEFAZ. SRC-006 (03/09/2026): `NÃO CREDENCIADO` ⇒ transmissão `BLOCKED`. R1: `FEATURE_MODULE_FISCAL` fail-closed. |
+| Registro de documento fiscal externo | `UNKNOWN` | DDP-023 residual `OPEN` |
+| Recibo / fatura não fiscal apenas | `CONFIRMED` | Release 1: `BillingDocument` / Nota Fatura interna; não constitui NF-e/NFS-e (DDP-023, `release-1-closed-scope.md`) |
 
 **DDP relacionados:** DDP-011, DDP-023, BR-019 · **Módulo:** Faturamento
+
+**Nota posterior (2026-09-03, SRC-007):** o item “Sistema emite NF-e oficial” não foi respondido neste questionário. SRC-007 confirma apenas os gates: transmissão bloqueada sem credenciamento aprovado; `AUTHORIZED` e DANFE oficial exigem protocolo SEFAZ; legendas de rascunho/homologação; produção somente após autorização oficial. Não autoriza emissão agora (SRC-006: `NÃO CREDENCIADO`).
 
 ---
 
@@ -413,10 +419,10 @@ Proprietários/controladores: Abrahim Jabour Junior (aprovador SRC-002); Monica 
 
 | Item | Resposta | Detalhe / condição / evidência |
 | ---- | -------- | ------------------------------ |
-| Tipos de nota no escopo | `CONFIRMED` / `REJECTED` / `CONDITIONAL` / `UNKNOWN` | |
-| Emissor (sistema vs ERP externo) | `CONFIRMED` / `REJECTED` / `CONDITIONAL` / `UNKNOWN` | |
-| Cancelamento de nota | `CONFIRMED` / `REJECTED` / `CONDITIONAL` / `UNKNOWN` | |
-| Alteração pós-emissão | `CONFIRMED` / `REJECTED` / `CONDITIONAL` / `UNKNOWN` | |
+| Tipos de nota no escopo | `CONDITIONAL` | R1: Nota Fatura interna (`BillingDocument`). NF-e/NFS-e oficiais fora da R1 / fail-closed (DDP-023, SRC-007) |
+| Emissor (sistema vs ERP externo) | `CONFIRMED` | CISNE emite o documento interno. ERP como emissor `REJECTED` (SRC-004 / BR-042). SEFAZ só autoriza via port quando houver protocolo (BR-044) |
+| Cancelamento de nota | `UNKNOWN` | DDP-004 permanece `OPEN` |
+| Alteração pós-emissão | `CONDITIONAL` | Sem protocolo SEFAZ não há DANFE oficial nem `AUTHORIZED` (BR-044). Núcleo fiscal: documento autorizado imutável. Cancelamento oficial não decidido. |
 
 **DDP relacionados:** DDP-011, DDP-023 · **Módulo:** Faturamento
 
@@ -483,18 +489,20 @@ Proprietários/controladores: Abrahim Jabour Junior (aprovador SRC-002); Monica 
 
 **Decisão registrada (Q04 — DDP-020 escopo CLIENTE):** Modelo híbrido desacoplado. CISNE = master operacional do Cliente. ERP/fiscal = autoridade de domínios externos quando integração existir. `externalErpId` opcional; nunca PK.
 
+**Nota posterior (SRC-004, 2026-09-03, SC-001 RESOLVED):** a parte “ERP opcional futuro / conexão” desta Q04 foi substituída. Não haverá conexão com ERP. O SISTEMA CISNE RONDÔNIA é o sistema empresarial centralizado. BR-030 e BR-031 permanecem.
+
 | Conceito | Resposta | Sistema autoritativo |
 | -------- | -------- | -------------------- |
-| Cadastro de cliente | `CONFIRMED` | **CISNE** (identidade operacional interna); ERP opcional como réplica futura |
-| OS | `UNKNOWN` | DDP-020 — fora escopo desta resolução |
-| Saldo de PO | `UNKNOWN` | DDP-009, DDP-020 OPEN |
-| Medição | `UNKNOWN` | DDP-010 OPEN |
-| Fatura / NF | `UNKNOWN` | DDP-023 OPEN |
-| Pagamento | `UNKNOWN` | DDP-012 OPEN |
-| Documentos binários | `UNKNOWN` | DDP-013 OPEN |
-| Mensagens WhatsApp | `UNKNOWN` | DDP-021 OPEN |
+| Cadastro de cliente | `CONFIRMED` | **CISNE** (identidade operacional interna). Sem conexão ERP (SRC-004 / BR-042) |
+| OS | `CONFIRMED` | **CISNE** (DDP-020, 2026-09-01; SRC-004) |
+| Saldo de PO | `CONFIRMED` | **CISNE** (DDP-020). Regras de cardinalidade/estouro (DDP-009) permanecem `OPEN` |
+| Medição | `CONFIRMED` | **CISNE** (DDP-020). Quem mede/aprova (DDP-010) permanece `OPEN` |
+| Fatura / NF | `CONDITIONAL` | Fatura interna (`BillingDocument`): **CISNE**. Documento fiscal oficial: CISNE SoT + autorização SEFAZ via port (DDP-023, SRC-007); módulo fail-closed na R1 |
+| Pagamento | `CONDITIONAL` | CISNE é SoT nativo quando o módulo financeiro estiver exposto. DDP-012 (como registrar/conciliar) permanece `OPEN`. `FEATURE_MODULE_FINANCE` fail-closed na R1 |
+| Documentos binários | `CONFIRMED` | **CISNE** (DDP-020). Tipos obrigatórios (DDP-013) permanecem `OPEN` |
+| Mensagens WhatsApp | `UNKNOWN` | DDP-021 permanece `OPEN` |
 
-**DDP relacionados:** DDP-014, **DDP-020 (ANSWERED_FOR_CLIENT_SCOPE)**, DDP-021
+**DDP relacionados:** DDP-014, **DDP-020 (`ANSWERED` — CISNE centralizado, SRC-004)**, DDP-021, DDP-023
 
 ---
 
@@ -506,15 +514,15 @@ Proprietários/controladores: Abrahim Jabour Junior (aprovador SRC-002); Monica 
 
 | Item | Resposta | Detalhe / condição / evidência |
 | ---- | -------- | ------------------------------ |
-| Verticais incluídas | `UNKNOWN` | Locação candidata (BR-020); DDP-026 parcial |
+| Verticais incluídas | `CONDITIONAL` | DDP-026: OS genérica na R1. Módulos dedicados locação/transporte `OUT_OF_RELEASE_1` |
 | Módulos incluídos — **Clientes** | `CONFIRMED` | Q01 — cadastro PJ mínimo |
-| Módulos incluídos — demais | `UNKNOWN` | Solicitações · OS · etc. |
-| Módulos explicitamente fora | `CONFIRMED` | Cliente PF; CRM; ERP completo |
-| Integrações no primeiro release | `UNKNOWN` | DDP-014 OPEN; sem integração ERP fictícia |
+| Módulos incluídos — demais | `CONFIRMED` | DDP-026 / `release-1-closed-scope.md`: autenticação, solicitações, propostas/PO de cliente, catálogo, ativos/frota, OS, planejamento, execução, medição, faturamento interno |
+| Módulos explicitamente fora | `CONFIRMED` | Cliente PF; CRM; ERP; financeiro/fiscal/contábil/estoque/folha/suprimentos/contratos/pessoas/alertas/relatórios como módulos de produto da R1 (flags fail-closed) |
+| Integrações no primeiro release | `CONDITIONAL` | ERP `REJECTED` (SRC-004). SEFAZ/prefeitura, banco, rastreador, WhatsApp permanecem `OPEN` e desligados |
 | PWA / mobile obrigatório | `UNKNOWN` | DDP-025 OPEN |
-| Data alvo (se houver) | `UNKNOWN` | |
+| Data alvo (se houver) | `CONDITIONAL` | Produção `NO-GO` até `EXIT_READY` do piloto (janela 14d; saída 13 set 2026). Não é data de go-live autorizada. |
 
-**DDP relacionados:** DDP-026 (parcial — Clientes confirmado), DDP-025
+**DDP relacionados:** DDP-026 (`ANSWERED` — fatia operacional R1, 2026-09-02), DDP-025
 
 ---
 
@@ -541,3 +549,7 @@ Proprietários/controladores: Abrahim Jabour Junior (aprovador SRC-002); Monica 
 | DDPs respondidos | DDP-028 ANSWERED; DDP-020 CLIENT_SCOPE; DDP-041 ANSWERED |
 | Conflitos abertos (`SC-*`) | 0 empresariais; MAP-001/002 FIXED |
 | Gate automatizado | `pnpm gate:src-002` → **PASS** |
+
+### Nota posterior — SRC-004 (2026-09-03)
+
+A parte “ERP opcional futuro / SoT híbrido” da Q04 foi substituída por SRC-004 (`SC-001` `RESOLVED`). O texto histórico desta fonte **não** foi apagado. BR-030 e BR-031 permanecem. BR-042 (`CONFIRMED`) registra: sem conexão ERP; CISNE centralizado.

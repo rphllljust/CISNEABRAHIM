@@ -27,11 +27,24 @@ describe('release feature flags', () => {
     expect(listReleaseFeatureFlags(env).accounting).toBe(false);
   });
 
+  it('keeps fiscal fail-closed independently of internal billing routes', () => {
+    expect(isReleaseModuleEnabled('fiscal', {})).toBe(false);
+    expect(isReleaseModuleEnabled('fiscal', { [FEATURE_FLAG_ENV.fiscal]: 'true ' })).toBe(false);
+    expect(matchGatedApiPath('/api/v1/fiscal/documents')).toBe('fiscal');
+    expect(matchGatedApiPath('/api/v1/service-orders/1/billing-records')).toBeNull();
+  });
+
   it('does not treat customer proposals or PO as gated contracts', () => {
     expect(matchGatedApiPath('/api/v1/commercial/proposals')).toBeNull();
     expect(matchGatedApiPath('/api/v1/commercial/purchase-orders')).toBeNull();
     expect(matchGatedApiPath('/api/v1/commercial/contracts')).toBe('contracts');
     expect(matchGatedApiPath('/api/v1/service-orders/1/billing-records')).toBeNull();
     expect(matchGatedApiPath('/api/v1/fiscal/documents')).toBe('fiscal');
+    expect(matchGatedApiPath('/api/v1/inventory/balances/1/2')).toBe('inventory');
+    expect(matchGatedApiPath('/api/v1/payroll/periods/1')).toBe('payroll');
+    expect(matchGatedApiPath('/api/v1/procurement/requests/1')).toBe('procurement');
+    expect(matchGatedApiPath('/api/v1/supplier-invoices/1')).toBe('procurement');
+    expect(matchGatedApiPath('/api/v1/three-way-matches/1')).toBe('procurement');
+    expect(matchGatedApiPath('/api/v1/suppliers/1')).toBe('suppliers');
   });
 });

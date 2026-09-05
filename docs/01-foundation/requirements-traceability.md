@@ -4,7 +4,7 @@
 | ------------ | ------------------------------------------------------------------------------------ |
 | Document ID  | RTM-001                                                                              |
 | Policy       | [`../00-governance/traceability-policy.md`](../00-governance/traceability-policy.md) |
-| Last updated | 2026-09-02 (Release 1 closed scope)                                                  |
+| Last updated | 2026-09-03 (SRC-008 autoridade operacional; PILOT EXIT READINESS snapshot) |
 | Rule         | Colunas inaplicáveis = `TBD`. Proibido inventar para completar.                      |
 
 Cadeia:
@@ -421,3 +421,198 @@ Classificação: **correção de engenharia de teste**. O contrato produtivo de 
 | Estratégia L1/L3 | regressão de domínio financeiro | unit forecast + treasury; lint; typecheck; diff check | 9/9 PASS; gates PASS |
 
 Resultado estrutural: zero arquivo funcional alterado em `apps/api/src/finance`; somente teste e harness permanecem no diff desta correção.
+
+## Debug completo de integração — 2026-09-02
+
+Classificação: **correção de engenharia**. Interpretação: `asOf` do forecast é data civil UTC, igual a `asCashForecastIsoDate` e ao recorte de conciliação bancária. Nenhuma regra empresarial nova foi confirmada.
+
+| ORIGEM | CAUSA | CORREÇÃO | TESTE / GATE | RESULTADO |
+| ------ | ----- | -------- | ------------ | --------- |
+| registro `CASH FLOW FORECAST`; evidência terminal 101420 | `openingAmount` persiste `occurred_at = now()`; `asOf` histórico exclui o crédito e o saldo realizado fica `0` | recorte `(occurred_at AT TIME ZONE 'UTC')::date`; regressão opening-now vs crédito datado | `cash-flow-forecast.integration.spec.ts` 4/4; unit 3/3; treasury 8/8 | PASS |
+| schema `pty` (`clients.ts`, `suppliers.ts`); evidência terminal 101420 | allowlist do probe ainda era só clientes; `supplier_addresses` e demais `supplier_*` falhavam o `toContain` | conjunto exato das 7 tabelas `pty` | `database.integration.spec.ts` 4/4 | PASS |
+| ADR-TECH-007; evidência terminal 101421 | `afterAll` chamava `endTrackedTestDatabasePools` inexistente | confirmação: serializer em HEAD só encerra o pool do lock; 34 suítes eram o mesmo TypeError | enterprise integrity 3/3; serializer sem a chamada | PASS |
+
+## Validação da suíte de integração e flake de outbox — 2026-09-02
+
+Classificação: **correção de isolamento de teste**. O poller produtivo do outbox permanece enabled-unless-false. Nenhuma regra empresarial nova.
+
+| ORIGEM | CAUSA | CORREÇÃO | TESTE / GATE | RESULTADO |
+| ------ | ----- | -------- | ------------ | --------- |
+| outbox transactional; evidência suíte 79 arquivos | `module.init()` ligava `OutboxPublisherWorkerService`, que disputava `claimPending` com o `publishBatch` do teste e deixava `PROCESSING` | `OUTBOX_PUBLISHER_ENABLED=false` no describe de chaos; stop + restore no afterAll | chaos-recovery + transactional-outbox, 3× 20/20 | PASS |
+| débito da etapa anterior | suíte cheia não tinha sido reexecutada após o debug de forecast/pty | reexecução 79 arquivos | 78/79; única falha = flake acima | evidência usada para o debug |
+
+## Reexecução da suíte de integração após isolamento do poller — 2026-09-03
+
+Classificação: **evidência de engenharia**. Nenhuma alteração de implementação nesta etapa.
+
+| ESCOPO VALIDADO | TESTE / GATE | RESULTADO |
+| --------------- | ------------ | --------- |
+| Suíte de integração API após isolamento do poller de outbox | 79 arquivos, 617 cenários | 79/79 PASS; 617/617 PASS; 2237.73s; exit 0 |
+
+## Debug fullstack do backoffice financeiro — 2026-09-03
+
+Classificação: **correção de engenharia de UI**. Frontend não é boundary de segurança. Nenhuma regra empresarial nova.
+
+| ORIGEM | CAUSA | CORREÇÃO | TESTE / GATE | RESULTADO |
+| ------ | ----- | -------- | ------------ | --------- |
+| ADR-TECH-007; UI finance | `MoneyActionForm` liberava `inflight` no `finally` após 409; segundo clique no diálogo reenviava settle | lock permanece em `version_conflict` até cancelar/recarregar; `confirmDisabled` | `finance-backoffice.ui.test.tsx` 3× 9/9; `financial-ui.test.ts` 3× 2/2 | PASS |
+| suítes unitárias pós-integração | regressão estática/unitária | reexecução sem alteração de domínio | API 736/736; database 21/21; web 348/349 antes da correção | PASS com 1 falha isolada e corrigida |
+
+## Boundary de double POST financeiro — 2026-09-03
+
+Classificação: **evidência de engenharia**. Nenhuma alteração de implementação. Frontend não é boundary.
+
+| ORIGEM | CAUSA | CORREÇÃO | TESTE / GATE | RESULTADO |
+| ------ | ----- | -------- | ------------ | --------- |
+| settle/pay; incidente UI de double-submit | replay existente usava `rowVersion` já incrementado; o double POST real reenvia a versão original | specs com a mesma `idempotency_key` + `rowVersion` original, sequencial e concorrente | receivables 13/13; payables 15/15 | PASS |
+
+## SRC-003 — cadastro da operadora — 2026-09-03
+
+Classificação: **fato empresarial declarado**. Não é regra `CONFIRMED`. Não fecha DDP-023 residual. Não autoriza emissão oficial nem exit do piloto.
+
+| SOURCE | EVIDENCE | BUSINESS RULE | IMPLEMENTATION | TEST | ACCEPTANCE |
+| ------ | -------- | ------------- | -------------- | ---- | ---------- |
+| SRC-003 | CNPJ 11.897.171/0001-81; razão social + EPP; situação Ativa; abertura 05/05/2010; Porto Velho - RO; e-mail e telefone | — (não operacional isoladamente; confirma identidade SRC-002) | nenhum código alterado | N/A | registro em `source-registry.md`; sem gateway SEFAZ |
+| SRC-002 ∩ SRC-003 | mesmo CNPJ da operadora | BR-032 (CISNE ≠ Client) permanece | emitente interno já usava este CNPJ | N/A | operadora não cadastrada como Client |
+
+## SRC-004 — sistema centralizado sem ERP — 2026-09-03
+
+Classificação: **fato empresarial / decisão**. Recorte: sem conexão ERP; CISNE centralizado. Não fecha DDP-023 residual. Não autoriza emissão oficial nem exit do piloto.
+
+| SOURCE | EVIDENCE | BUSINESS RULE | IMPLEMENTATION | TEST | ACCEPTANCE |
+| ------ | -------- | ------------- | -------------- | ---- | ---------- |
+| SRC-004 | texto verbatim do responsável: sem ERP; sistema centralizado | BR-042 `CONFIRMED` | nenhum código alterado; ACL ERP permanece desligada | N/A | registro em `source-registry.md`; SC-001 `RESOLVED` |
+| SRC-002 Q04 ∩ SRC-004 | SoT híbrido / ERP opcional futuro vs sem conexão | BR-030 e BR-031 permanecem; parte ERP futuro substituída | `externalErpId` defensivo, nunca PK | N/A | DDP-014 recorte ERP `REJECTED`; DDP-020 reforçado |
+
+## SRC-005/SRC-006 — consultas cadastrais federal e estadual — 2026-09-03
+
+Classificação: **fatos cadastrais em snapshots fornecidos**. Não são requisitos fiscais normativos e não autorizam emissão oficial nem exit do piloto.
+
+| SOURCE | EVIDENCE | BUSINESS RULE / DECISION | IMPLEMENTATION | TEST | ACCEPTANCE |
+| ------ | -------- | ------------------------ | -------------- | ---- | ---------- |
+| SRC-005, páginas 1–3 | CNPJ, nome empresarial, EPP como porte, abertura, endereço, contato, situação ATIVA, 1 CNAE principal + 48 secundários | Nenhuma regra nova; corrobora identidade SRC-002/SRC-003 | Catálogo de 49 CNAEs já coincidia; nenhuma ampliação de escopo | `cisne-service-portfolio-baseline.spec.ts` | Conjunto cadastral confrontado; autenticidade não reconsultada on-line |
+| SRC-006, páginas 1–2 | IE, NIRE, endereço, status estadual, início estadual, regime exibido e mesmos 49 CNAEs | DDP-023 permanece `PARTIALLY_ANSWERED`; RISK-025 `OPEN` | Nenhum cálculo tributário ou gateway ativado | N/A | Campos vazios não tratados como ausência; anomalias de renderização registradas |
+| SRC-005 ∩ SRC-006 | Rua dos Farrapos, 5000, São Francisco, CEP 76813-284 | Fato cadastral corroborado | Configuração do emitente de faturamento interno corrigida; disclaimer não fiscal preservado | testes direcionados de billing API/web | Documento interno exibe endereço cadastral sem se declarar fiscal |
+| SRC-006, página 1 | Situação NF-e `NÃO CREDENCIADO` em 03/09/2026 | DDP-023 residual `OPEN`; RISK-012/RISK-025; SRC-007 / BR-043 | `FEATURE_MODULE_FISCAL` e gateway permanecem desligados | gate de feature flags/readiness | Produção continua `NO-GO`; nenhuma inferência sobre NFS-e |
+
+## SRC-007 — gates de transmissão NF-e, autorização e legendas DANFE — 2026-09-03
+
+Classificação: **fato empresarial / decisão**. Recorte: credenciamento, protocolo SEFAZ e legendas. Não fecha DDP-023 residual tributário. Não autoriza emissão oficial nem exit do piloto.
+
+| SOURCE | EVIDENCE | BUSINESS RULE | IMPLEMENTATION | TEST | ACCEPTANCE |
+| ------ | -------- | ------------- | -------------- | ---- | ---------- |
+| SRC-007 | texto verbatim: transmissão `BLOCKED` sem credenciamento aprovado | BR-043 `CONFIRMED` | `Src006FiscalCredentialing` fail-closed; `assertFiscalTransmissionAllowed` antes do gateway | `fiscal-credentialing.spec`; `fiscal.integration` transmission blocked | `FEATURE_MODULE_FISCAL` permanece off; SRC-006 `NÃO CREDENCIADO` |
+| SRC-007 | texto verbatim: sem protocolo SEFAZ, `fiscalStatus` ≠ `AUTHORIZED` e DANFE oficial `BLOCKED` | BR-044 `CONFIRMED` | `assertOfficialAuthorizationAllowed` antes de persistir `AUTHORIZED` | `fiscal.integration` refuse AUTHORIZED without protocol | DDP-023 residual tributário `OPEN` |
+| SRC-007 | legendas DRAFT / HOMOLOGAÇÃO / PRODUÇÃO somente após autorização oficial | BR-045 `CONFIRMED` | `validityLegend` + `officialDanfe` no serializer e na UI gated | unit + `fiscal-backoffice.ui.test` | rascunho `SEM VALIDADE FISCAL`; DANFE oficial `BLOCKED` no default |
+| SRC-006 ∩ SRC-007 | `NÃO CREDENCIADO` + transmissão exige credenciamento aprovado | BR-043 aplica o snapshot | gateway permanece unconfigured | N/A | nenhum `SC-*`; transmissão atual `BLOCKED` |
+
+## Alinhamento SRC-002 com fontes posteriores — 2026-09-03
+
+Classificação: **alinhamento documental**. Preencheu apenas células do questionário que já tinham fonte autorizada. Não inventou tipo de OS, gatilho de faturamento, maker-checker, PO nem medição. Não autoriza go-live.
+
+| SOURCE | EVIDENCE | BUSINESS RULE / DECISION | IMPLEMENTATION | TEST | ACCEPTANCE |
+| ------ | -------- | ------------------------ | -------------- | ---- | ---------- |
+| DDP-026 | fatia R1 e verticais dedicadas fora | SRC-002 §2 e §20 alinhados | nenhum código alterado | N/A | módulos dedicados locação/transporte `OUT_OF_RELEASE_1` |
+| DDP-020 + SRC-004 | CISNE SoT centralizado | SRC-002 §19 OS/PO/medição/documentos `CONFIRMED` CISNE | nenhum código alterado | N/A | pagamento/WhatsApp/NF oficial residuais explícitos |
+| DDP-023 + SRC-007 + SRC-006 | Billing interno ≠ NF oficial; gates; `NÃO CREDENCIADO` | SRC-002 §14/§15 | nenhum código alterado | N/A | `FEATURE_MODULE_FISCAL` desligado; produção `NO-GO` |
+
+## SRC-008 — autoridade operacional — 2026-09-03
+
+Classificação: **fato empresarial / decisão**. Recorte: autoridade máxima equivalente, solicitação≠OS, máquina de estados/reabertura, PO configurável, medição real, desacoplamento de faturamento. Não fecha DDP-001 nem residual tributário de DDP-023. Não autoriza go-live.
+
+| SOURCE | EVIDENCE | BUSINESS RULE | IMPLEMENTATION | TEST | ACCEPTANCE |
+| ------ | -------- | ------------- | -------------- | ---- | ---------- |
+| SRC-008 | duas autoridades máximas equivalentes; backend; sem SoD obrigatória entre elas | BR-046 `CONFIRMED` | capabilities `OPERATIONAL_AUTHORITY_ACTIONS`; grants UAT `control_admin`; PDP sem nomes | unit `operational-authority.spec`; integração deny third-party | DDP-015 parcial; DDP-022 `ANSWERED` |
+| SRC-008 | solicitação ≠ OS; 1→N; WhatsApp = origem | BR-047 `CONFIRMED` | conversão adicional; unique OS×request removido | request reject sem OS; 2ª conversão | DDP-002/021 parciais |
+| SRC-008 | estados, cancelamento sem apagar, reabertura com justificativa | BR-048 `CONFIRMED` | `POST .../reopen`; `status_before_cancel`; audit fields | reopen com/sem justificativa; cancel auditado | DDP-003/004/005 parciais |
+| SRC-008 | PO não global; estouro bloqueado; override auditado | BR-049 `CONFIRMED` | `purchase_order_requirement`; `authorized_overrun_amount` | saldo suficiente; exceed; override | DDP-009 parcial |
+| SRC-008 | medição = executado; recusa preservada; R1 mesma pessoa pode aprovar | BR-050 `CONFIRMED` | SoD R1 no-op; `resubmit` | reject+resubmit; same-person approve | DDP-010 parcial |
+| SRC-008 | direito a faturar ≠ billing interno ≠ fiscal | BR-051 `CONFIRMED` | `billing_entitlement_policy`; measurement_id nullable | bloqueio sem medição aprovada; preço fixo | DDP-011 parcial; DDP-023 residual `OPEN` |
+
+## Fechamento técnico dos núcleos operacionais — 2026-09-03
+
+Classificação: **interpretação de engenharia** sobre regras já confirmadas. Não inventou campo comercial, renovação, SLA, ANTT, fiscal ou aceite do cliente. Não autoriza go-live.
+
+| SOURCE | EVIDENCE | BUSINESS RULE | IMPLEMENTATION | TEST | ACCEPTANCE |
+| ------ | -------- | ------------- | -------------- | ---- | ---------- |
+| SRC-002 / BR-033, BR-034, BR-036 | cliente sem exclusão física; AuthZ backend; inativação | BR-033/034/036 | listagem por grant Client; `purchase_order_requirement` via API existente; `requireActive` | clients unit/integration/audit-closure | exclusão física continua ausente; inativação preferida |
+| SRC-008 / BR-037, BR-046 | cliente ACTIVE na OS; autoridade operacional | BR-037/046 | `assertClientActive` na criação/atualização da OS; PDP classifica deny operacional como `SECURITY_CRITICAL` | SO create inactive; `operational-authority.spec` | intake sem cliente permanece permitido |
+| SRC-008 / BR-047 | solicitação ≠ OS implícita | BR-047 | submit exige demanda mínima; convert exige grant | submit vazio; convert sem AuthZ | nenhuma OS implícita |
+| modelo comercial existente | totais e quantidade | sem regra comercial nova | qty > 0; qty×preço=linha em proposta/PO | `proposal.validation.spec` | margem/desconto/imposto permanecem OPEN |
+| DDP-026 | contratos/locação/transporte fora da R1 | DDP-026 | HTTP contratos continua fail-closed; operacional resolve referência quando existir | contracts integration | EXPIRED automático, renovação e ANTT permanecem OPEN |
+| SRC-007 / DDP-023 | billing interno ≠ fiscal | BR-043..045 | `FEATURE_MODULE_FISCAL` fail-closed | `feature-flags.spec` | nenhuma autorização fiscal simulada |
+
+## SOD hardening — 2026-09-03
+
+Classificação: **interpretação de engenharia** (ED-006). Prompt 08 SOD-001..012 permanece CANDIDATE/PENDING. Nenhuma regra empresarial nova `CONFIRMED`. SRC-008 / BR-046 / BR-050 continuam a permitir as duas autoridades equivalentes na OS e na medição.
+
+| SOURCE | EVIDENCE | BUSINESS RULE | IMPLEMENTATION | TEST | ACCEPTANCE |
+| ------ | -------- | ------------- | -------------- | ---- | ---------- |
+| Pedido autorizado SOD HARDENING; Prompt 08 AUTHZ-SOD-001 | catálogo por capability/papel, sem nomes | SOD documental CANDIDATE; ED-006 | `SodEnforcementService` + matriz role/capability/scope | unit SOD; integração enforcement; HTTP e2e bypass | SOD: PASS; CRITICAL CONFLICTS: 0; AUTHORIZATION BYPASS: 0 |
+| SRC-008 | BR-046 / BR-050 | CONFIRMED (exceção) | pares OS create/release e medição submit/approve ausentes do catálogo SOD | `sodDutyConflictsWithOperationalAuthority` | não aplicar maker-checker operacional |
+
+## ENTERPRISE UI CATCH-UP — 2026-09-03
+
+Classificação: **interpretação de engenharia**. Completa telas para endpoints backend já existentes nos módulos priorizados. Não inventa listagem onde a API não lista. Não recalcula dinheiro, imposto, folha ou custeio no navegador. Não liga `FEATURE_MODULE_*`. Nenhuma regra empresarial nova `CONFIRMED`. FIFO/média, fórmulas oficiais de folha e alíquotas fiscais permanecem `UNDECIDED` / residual DDP-023.
+
+| SOURCE | EVIDENCE | BUSINESS RULE | IMPLEMENTATION | TEST | ACCEPTANCE |
+| ------ | -------- | ------------- | -------------- | ---- | ---------- |
+| Pedido autorizado ENTERPRISE UI CATCH-UP; ED-005 | backend financeiro/fiscal/contábil/estoque/folha/compras/fornecedores/frota já existia | nenhuma BR nova; módulos fora da R1 continuam fail-closed | rotas `/app/finance/expenses|budgets|forecast`, períodos/obrigações fiscais, imobilizado, fornecedores, compras (incl. nota e conferência tripla), estoque, folha; cobrança no título a receber; lookup-by-id | `enterprise-ui-catchup.ui.test.tsx`; `feature-flags.test.ts`; `shell.e2e.test.tsx`; `FleetListPage.test.tsx` | UI COVERAGE: PASS; BACKEND WITHOUT REQUIRED UI: 0; BROKEN ROUTES: 0; CRITICAL UX DEFECTS: 0 |
+| ED-005 | flags exatamente `true` | fail-closed | `GATED_WEB_PATH_PREFIXES` inclui inventory/payroll/procurement/suppliers; API `three-way-matches` passa a ser procurement | deep links `/app/inventory` etc. redirecionam para no-access; `matchGatedApiPath('/api/v1/three-way-matches/1')` | flags não foram ligadas; produção permanece NO-GO |
+
+## PILOT EXIT READINESS — 2026-09-03
+
+Classificação: **interpretação de engenharia**. Não encerra o piloto. Não fabrica evidência de HTTP de 14 dias. Não aplica waiver. Nenhuma regra empresarial nova `CONFIRMED`. Produção permanece NO-GO.
+
+| SOURCE | EVIDENCE | BUSINESS RULE | IMPLEMENTATION | TEST | ACCEPTANCE |
+| ------ | -------- | ------------- | -------------- | ---- | ---------- |
+| Pedido autorizado PILOT EXIT READINESS; OPS-PILOT-001 | `readiness-evidence.json` phase OBSERVATION; snapshot `2026-09-03T08:48:54.530Z` | nenhuma BR nova | `readiness:pilot-snapshot` append-only; HTTP live só via env explícita | `pilot-observation.spec.ts`; `readiness-gate.spec.ts` | ENGINEERING READY: YES; PILOT COMPLETE: NO; EXIT READY: NO |
+| Janela 14d `2026-08-30T22:28:40.517Z` → `2026-09-13T22:28:40.517Z` | gate `PILOT_OBSERVATION_WINDOW_NOT_COMPLETED` | — | datas não alteradas; waiver null | `pnpm readiness:gate` | PILOT_STATUS = OBSERVATION |
+
+## PRE-PRODUCTION CORRECTION GATE — 2026-09-03
+
+Classificação: **interpretação de engenharia**. Nenhuma feature nova. Nenhuma regra empresarial nova `CONFIRMED`. A janela aberta de 14 dias do piloto não é falha de engenharia. Produção permanece NO-GO. `FEATURE_MODULE_*` não foi ligado globalmente.
+
+| SOURCE | EVIDENCE | BUSINESS RULE | IMPLEMENTATION | TEST | ACCEPTANCE |
+| ------ | -------- | ------------- | -------------- | ---- | ---------- |
+| Pedido autorizado PRE-PRODUCTION CORRECTION GATE | SoD, AuthZ negativa, bypass HTTP, UI, security, E2E empresarial | nenhuma BR nova | correções de teste/harness; invariante FIXED_PRICE sem `measurementItemId`; CLI `commitSha ?? null` | API E2E 23/64; integração 80/636; unit API 186/769; web 91/363 | SOD: PASS; UI: PASS; SECURITY: PASS; ENTERPRISE E2E: PASS; CRITICAL DEFECTS: 0 |
+| ReleaseScopeGuard fail-closed | `people.e2e` 403 sem flag | ED-005 | flag `FEATURE_MODULE_PEOPLE=true` só no `beforeAll` do e2e; restore no `afterAll` | `people.e2e.spec.ts` 2/2 | módulo People continua gated fora do teste |
+| OPS-PILOT-001; janela 14d | `readiness:engineering` READY; `readiness:gate` NO-GO | — | datas e waiver inalterados | `PILOT_OBSERVATION_WINDOW_NOT_COMPLETED` | ENGINEERING: READY; PRODUCTION: NO_GO |
+
+## PILOT PATH HARDENING — 2026-09-03
+
+Classificação: **interpretação de engenharia**. Fecha lacunas operacionais do caminho de produção (HML, snapshot, DR) sem ERP, sem fiscal e sem go-live. Nenhuma regra empresarial nova `CONFIRMED`.
+
+| SOURCE | EVIDENCE | BUSINESS RULE | IMPLEMENTATION | TEST | ACCEPTANCE |
+| ------ | -------- | ------------- | -------------- | ---- | ---------- |
+| Pedido autorizado “resolver lacunas para produção”; OPS-PILOT-001 | snapshot `2026-09-03T15:47:50.565Z`; HML schemas 29 | nenhuma BR nova | snapshot usa `PILOT_DATABASE_URL`/HML; HTTP live via metrics ou smoke timed; `ensure-migrations` aplica 0000–0002 em DB vazio | `pilot-observation.spec.ts` 8/8; smoke HML PASS | worker HML=0; HTTP n=14 registrado; serie 14d continua ausente |
+| Prompt 85 | `apps/api/.backup/dr-drill-validate/status/latest.json` | — | `application_host_loss` isolado em `cisne_local_test` | DR PASS | nao e restore postgres de perda total |
+| SRC-004 | ERP permanece rejeitado | BR-042 | nenhum adapter ERP ligado | — | FEATURE_MODULE_FISCAL off; Prompt 93 nao executado |
+
+## HML PILOT OPERATOR — 2026-09-03
+
+Classificação: **interpretação de engenharia**. Operação do piloto no HML. Nenhuma regra empresarial nova `CONFIRMED`. Produção permanece NO-GO.
+
+| SOURCE | EVIDENCE | BUSINESS RULE | IMPLEMENTATION | TEST | ACCEPTANCE |
+| ------ | -------- | ------------- | -------------- | ---- | ---------- |
+| Pedido autorizado trabalhar piloto no HML; OPS-HML-001; OPS-PILOT-001 | bootstrap sem papéis; smoke 403 em listas | nenhuma BR nova | `hml:grant-pilot-operator`; listagens no perfil `control_admin`; smoke exige 200 | `hml-pilot-operator.spec.ts` 2/2; `hml-smoke.spec.ts` 4/4; smoke live 11/11 | 77 grants em HML; listas 200; nested 404 sem OS |
+| Snapshot `2026-09-03T16:46:03.644Z` | HTTP n=31 errorRate=0.355 p95=251ms | — | fase/datas/waiver inalterados | `readiness:pilot-snapshot` | EXIT READY: NO; PRODUCTION: NO-GO |
+
+## HML SYNTHETIC SEED — 2026-09-03
+
+Classificação: **interpretação de engenharia**. Massa operacional sintética no HML. Nenhuma regra empresarial nova `CONFIRMED`. Produção permanece NO-GO.
+
+| SOURCE | EVIDENCE | BUSINESS RULE | IMPLEMENTATION | TEST | ACCEPTANCE |
+| ------ | -------- | ------------- | -------------- | ---- | ---------- |
+| Pedido autorizado semear HML; OPS-HML-001 | `seed:synthetic` JSON 15/15 | nenhuma BR nova | seed HML com janela contratada no `planResource` de locação; compensação alinhada ao schema | smoke live 11/11 (nested 200) | clients 15; OS 9; measurements 5; billing 3 |
+| Snapshot `2026-09-03T19:07:16.475Z` | HTTP n=46 errorRate≈0.239 p95=191ms; worker_pending=47 NOTIFICATION | — | fase/datas/waiver inalterados | `readiness:pilot-snapshot` | EXIT READY: NO; PRODUCTION: NO-GO |
+
+## BACKOFFICE MATURITY HARDENING — 2026-09-03
+
+Classificação: **interpretação de engenharia**. Fecha o furo de tesouraria na matriz e grava BR-043..045 no backend. Não liga `FEATURE_MODULE_*`. Não inventa alíquota, FIFO, fórmula de folha nem credenciamento. Produção permanece NO-GO.
+
+| SOURCE | EVIDENCE | BUSINESS RULE | IMPLEMENTATION | TEST | ACCEPTANCE |
+| ------ | -------- | ------------- | -------------- | ---- | ---------- |
+| Scorecard financeiro 7.0; ED-006 | transferência tesouraria sem matriz | nenhuma BR nova; SOD CANDIDATE | `SOD_DUTIES.TreasuryTransfer` / `TreasuryReverse` no opener/ator original | `treasury.integration` 9/9; SOD 6/6 | opener não transfere; checker distinto |
+| SRC-006 ∩ SRC-007 | `NÃO CREDENCIADO` | BR-043..045 `CONFIRMED` | port default SRC-006; submit bloqueia; AUTHORIZED exige protocolo; legendas na resposta/UI gated | `fiscal-credentialing.spec` 4/4; `fiscal.integration` 6/6; `fiscal-accounting` 9/9 | Fiscal produto permanece 4.0; flag off |
+| ED-005 | ledger/estoque/folha/compras fora da R1 | — | nenhuma exposição nova; custeio e folha oficial permanecem `UNDECIDED` | — | scores 7.0 / 6.2 de superfície R1 inalterados |

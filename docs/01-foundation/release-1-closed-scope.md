@@ -68,6 +68,10 @@ Verticais locação/transporte como **produto dedicado** permanecem `FUTURE_SCOP
 
 Texto obrigatório no documento interno: não constitui NF-e, NFS-e nem documento fiscal autorizado.
 
+SRC-007 / BR-043..BR-045: transmissão de NF-e `BLOCKED` sem credenciamento aprovado; `AUTHORIZED` e DANFE oficial `BLOCKED` sem protocolo SEFAZ; rascunho `SEM VALIDADE FISCAL`; homologação `AMBIENTE DE HOMOLOGAÇÃO - SEM VALOR FISCAL`; produção oficial somente após autorização. Isto **não** liga `FEATURE_MODULE_FISCAL`.
+
+SRC-008 / BR-046..BR-051: autoridade operacional máxima nas superfícies R1 já listadas (solicitação, OS, medição, PO, faturamento interno). Não amplia módulos e não autoriza emissão fiscal oficial.
+
 ## Fail-closed
 
 1. Flag só habilita com valor exato `true`.

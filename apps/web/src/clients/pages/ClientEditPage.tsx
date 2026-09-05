@@ -188,7 +188,7 @@ export function ClientEditPage() {
           />
         </div>
         <div className="form-field">
-          <label htmlFor={externalErpIdId}>Referência ERP externa</label>
+          <label htmlFor={externalErpIdId}>Referência externa (opcional)</label>
           <input
             id={externalErpIdId}
             value={externalErpId}

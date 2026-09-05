@@ -8,6 +8,8 @@ import {
 import { SecurityAuditService } from '../../audit/services/security-audit.service';
 import { AUTHZ_ACTIONS } from '../../authorization/types/authz-actions';
 import type { IdentityAuthzContext } from '../../authorization/types/authz-decision';
+import { SodEnforcementService } from '../../authorization/services/sod-enforcement.service';
+import { SOD_DUTIES, resolveSodScope } from '../../authorization/domain/segregation-of-duties';
 import { assertUuid } from '../../platform/kernel/uuid';
 import {
   AUTO_EXACT_MATCH_CRITERIA,
@@ -68,6 +70,7 @@ export class BankReconciliationAccessService {
     private readonly treasuryRepository: TreasuryRepository,
     private readonly authz: TreasuryAccessAuthz,
     private readonly securityAudit: SecurityAuditService,
+    private readonly sod: SodEnforcementService,
   ) {}
 
   async importStatement(
@@ -483,6 +486,14 @@ export class BankReconciliationAccessService {
       }
       await this.requireStatement(actor, recon.bank_statement_id, AUTHZ_ACTIONS.FinanceReconciliationConfirm);
       assertReconciliationConfirmable(recon.status);
+      if (recon.status !== RECONCILIATION_STATUSES.Confirmed) {
+        const scope = resolveSodScope(recon.unit_id);
+        await this.sod.enforce(actor, {
+          duty: SOD_DUTIES.ReconciliationConfirm,
+          originatorIdentityId: recon.created_by_identity_id,
+          ...scope,
+        });
+      }
       if (recon.status === RECONCILIATION_STATUSES.Confirmed) {
         const matches = await this.repository.listActiveMatches(recon.bank_statement_id);
         return toReconciliationResponse(

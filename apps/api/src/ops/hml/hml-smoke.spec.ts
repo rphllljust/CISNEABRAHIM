@@ -77,6 +77,38 @@ describe('hml-smoke', () => {
     expect(result.status).toBe('FAIL');
   });
 
+  it('fails when an authorized list returns 403', async () => {
+    const fetchImpl = async (input: string | URL, init?: RequestInit): Promise<Response> => {
+      const url = String(input);
+      if (url.endsWith('/health/live') || url.endsWith('/health/ready')) {
+        return new Response(JSON.stringify({ status: 'ok' }), { status: 200 });
+      }
+      if (url.endsWith('/auth/login')) {
+        return new Response(JSON.stringify({ accessToken: 'smoke-token' }), { status: 200 });
+      }
+      if (url.endsWith('/observability/metrics')) {
+        return new Response(JSON.stringify({ http: { requests: 1 } }), { status: 200 });
+      }
+      if (url.endsWith('/api/v1/clients')) {
+        return new Response(JSON.stringify({ error: 'forbidden' }), { status: 403 });
+      }
+      if (init?.headers && new Headers(init.headers).get('authorization')) {
+        return new Response(JSON.stringify({ items: [] }), { status: 200 });
+      }
+      return new Response('unexpected', { status: 500 });
+    };
+
+    const result = await runHmlDeploySmoke(
+      { baseUrl: 'http://hml-api.invalid', login: 'x', password: 'y' },
+      fetchImpl as typeof fetch,
+    );
+
+    expect(result.status).toBe('FAIL');
+    const clients = result.checks.find((check) => check.id === 'clients');
+    expect(clients?.passed).toBe(false);
+    expect(clients?.statusCode).toBe(403);
+  });
+
   it('accepts observability 403 as authorization-protected endpoint', async () => {
     const fetchImpl = async (input: string | URL, init?: RequestInit): Promise<Response> => {
       const url = String(input);

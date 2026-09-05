@@ -18,6 +18,7 @@ import {
 } from '../../assets/types/physical-asset.types';
 import { formatAssetPaginationRange } from '../../assets/utils/asset-operational-status';
 import { getFleetSummary, listFleetVehicles } from '../api/fleet-api';
+import { EmptyState } from '../../ui';
 import {
   FilterCard,
   ModuleDeniedState,
@@ -274,15 +275,11 @@ export function FleetListPage() {
       ) : null}
 
       {isEmptyList ? (
-        <p className="text-sm text-gray-500" role="status">
-          Nenhum veículo cadastrado na frota.
-        </p>
+        <EmptyState title="Nenhum veículo cadastrado na frota." />
       ) : null}
 
       {isEmptyFiltered ? (
-        <p className="text-sm text-gray-500" role="status">
-          Nenhum veículo encontrado para os filtros selecionados.
-        </p>
+        <EmptyState title="Nenhum veículo encontrado para os filtros selecionados." />
       ) : null}
 
       {items.length > 0 ? (

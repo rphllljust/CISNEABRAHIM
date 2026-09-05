@@ -68,3 +68,9 @@ Enquanto a fase for `FOUNDATION` e o código funcional estiver `NOT STARTED`:
 ## Parada obrigatória
 
 Ao concluir o prompt atual: atualizar rastreabilidade, atualizar o registro de execução, apresentar o relatório no formato exigido e parar. Não iniciar o prompt seguinte.
+
+## Pasta de trabalho (obrigatório)
+
+A raiz operacional é o clone do repositório (`C:\CISNEABRAHIM`). Rascunho, worktree isolada, dump SQL, log de agente e arquivo temporário do projeto ficam em `C:\CISNEABRAHIM\tmp\` (já no `.gitignore`).
+
+Não gravar trabalho do CISNE em `%TEMP%`, `C:\Users\rphll\AppData\...` nem em qualquer caminho sob o perfil do usuário do Windows.

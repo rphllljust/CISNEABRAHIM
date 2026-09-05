@@ -15,7 +15,8 @@ import { type PurchaseOrderRuleType } from '../../commercial/domain/purchase-ord
 import { PurchaseOrdersRepository } from '../../commercial/repositories/purchase-orders.repository';
 import { ServiceOrdersRepository } from '../../service-orders/repositories/service-orders.repository';
 import type { ServiceOrderRow } from '../../service-orders/repositories/service-orders.repository.types';
-import { BILLING_EMITTER_CONFIG } from '../config/billing-emitter.config';
+import { IssuerRegistryService } from '../../establishments/services/issuer-registry.service';
+import { mapRegistryError } from '../../establishments/services/establishment-registry-access.errors';
 import { assertBillingRecordPrepared } from '../domain/billing';
 import { assertBillingRecordIssuable } from '../domain/billing-document';
 import { assertPurchaseOrderBillingCompliance } from '../domain/purchase-order-billing-compliance';
@@ -45,7 +46,7 @@ import {
   mapBillingDomainError,
   mapPurchaseOrderBillingComplianceError,
 } from './billing-document-access.errors';
-import { BillingDocumentArtifactService } from './billing-document-artifact.service';
+import { BillingDocumentArtifactService, type BillingEmitterReference } from './billing-document-artifact.service';
 import {
   resolveCancelBillingDocumentInput,
   resolveIssueBillingDocumentInput,
@@ -63,6 +64,7 @@ export class BillingDocumentAccessService {
     private readonly artifactService: BillingDocumentArtifactService,
     private readonly securityAudit: SecurityAuditService,
     private readonly objectStorage: ObjectStorageService,
+    private readonly issuerRegistry: IssuerRegistryService,
     @Optional()
     @Inject(ENTERPRISE_CORE_PORT.FinanceReceivable)
     private readonly receivablePort?: FinanceReceivablePort,
@@ -124,6 +126,7 @@ export class BillingDocumentAccessService {
       ? await this.billingDocumentRepository.findPurchaseOrderNumber(billingRecord.purchase_order_id)
       : null;
     const issuedAt = new Date().toISOString();
+    const emitter = await this.resolveEmitter();
 
     try {
       await this.assertPurchaseOrderBillingCompliance(
@@ -152,13 +155,14 @@ export class BillingDocumentAccessService {
           actorIdentityId: actor.identityId,
           idempotencyKey: validated.idempotencyKey,
           versionNumber: 1,
-          emitterLegalName: BILLING_EMITTER_CONFIG.legalName,
-          emitterTaxId: BILLING_EMITTER_CONFIG.taxId,
-          emitterAddressSnapshot: BILLING_EMITTER_CONFIG.address,
+          emitterLegalName: emitter.legalName,
+          emitterTaxId: emitter.taxId,
+          emitterAddressSnapshot: emitter.address,
         },
         async (allocation) =>
           this.artifactService.persistArtifact({
             allocation,
+            emitter,
             billingRecord,
             billingItems,
             purchaseOrderNumber,
@@ -241,6 +245,7 @@ export class BillingDocumentAccessService {
       ? await this.billingDocumentRepository.findPurchaseOrderNumber(billingRecord.purchase_order_id)
       : null;
     const issuedAt = new Date().toISOString();
+    const emitter = await this.resolveEmitter();
 
     try {
       await this.assertPurchaseOrderBillingCompliance(
@@ -267,9 +272,9 @@ export class BillingDocumentAccessService {
           issuedAt,
           actorIdentityId: actor.identityId,
           versionNumber: previous.version_number + 1,
-          emitterLegalName: BILLING_EMITTER_CONFIG.legalName,
-          emitterTaxId: BILLING_EMITTER_CONFIG.taxId,
-          emitterAddressSnapshot: BILLING_EMITTER_CONFIG.address,
+          emitterLegalName: emitter.legalName,
+          emitterTaxId: emitter.taxId,
+          emitterAddressSnapshot: emitter.address,
           previousDocumentId: billingDocumentId,
           previousRowVersion: validated.rowVersion,
           replaceReason: validated.replaceReason,
@@ -277,6 +282,7 @@ export class BillingDocumentAccessService {
         async (allocation) =>
           this.artifactService.persistArtifact({
             allocation,
+            emitter,
             billingRecord,
             billingItems,
             purchaseOrderNumber,
@@ -451,5 +457,32 @@ export class BillingDocumentAccessService {
       classification: SECURITY_AUDIT_CLASSIFICATIONS.Standard,
       metadata,
     });
+  }
+
+  /**
+   * Emissor do documento de cobrança resolvido do registry (Legal Entity
+   * Establishment Master). Nunca hardcoded: sem CNPJ ativo registrado o
+   * documento não pode ser emitido.
+   */
+  private async resolveEmitter(): Promise<BillingEmitterReference> {
+    try {
+      const issuer = await this.issuerRegistry.resolveDefaultIssuer();
+      return {
+        legalName: issuer.legalName,
+        taxId: issuer.normalizedCnpj,
+        address: {
+          street: issuer.street,
+          number: issuer.number,
+          complement: issuer.complement,
+          district: issuer.district,
+          city: issuer.city,
+          state: issuer.state,
+          postalCode: issuer.postalCode,
+          countryCode: issuer.country ?? 'BR',
+        },
+      };
+    } catch (error) {
+      throw mapRegistryError(error);
+    }
   }
 }

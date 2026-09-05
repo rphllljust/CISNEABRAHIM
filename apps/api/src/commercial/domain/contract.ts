@@ -48,3 +48,27 @@ export function assertContractTransition(from: ContractStatus, to: ContractStatu
   };
   return allowed[from].includes(to);
 }
+
+/** Status efetivo na data: um contrato ACTIVE além do valid_to é tratado como EXPIRED. */
+export function effectiveContractStatus(
+  contract: { status: ContractStatus; validTo: string | null },
+  asOf: Date = new Date(),
+): ContractStatus {
+  if (contract.status === CONTRACT_STATUSES.Active && contract.validTo) {
+    const today = asOf.toISOString().slice(0, 10);
+    if (today > contract.validTo) {
+      return CONTRACT_STATUSES.Expired;
+    }
+  }
+  return contract.status;
+}
+
+/**
+ * Histórico de contrato é append-only: eventos jamais são reescritos e estados
+ * terminais (CLOSED/EXPIRED) nunca originam transição. Guarda declarativa para
+ * proteger contra alteração de registros históricos.
+ */
+export function assertNoContractHistoryRewrite(): void {
+  throw new Error('CONTRACT_HISTORY_IMMUTABLE: contract history is append-only');
+}
+

@@ -8,6 +8,8 @@ import {
 import { SecurityAuditService } from '../../audit/services/security-audit.service';
 import { AUTHZ_ACTIONS } from '../../authorization/types/authz-actions';
 import type { IdentityAuthzContext } from '../../authorization/types/authz-decision';
+import { SodEnforcementService } from '../../authorization/services/sod-enforcement.service';
+import { SOD_DUTIES, resolveSodScope } from '../../authorization/domain/segregation-of-duties';
 import type { FiscalDocumentPort } from '../../platform/bounded-contexts/enterprise-core-ports';
 import { assertUuid } from '../../platform/kernel/uuid';
 import {
@@ -24,16 +26,30 @@ import {
   type CreateFiscalDocumentInput,
 } from '../domain/fiscal-document.validation';
 import {
+  assertFiscalTransmissionAllowed,
+  assertOfficialAuthorizationAllowed,
+} from '../domain/fiscal-credentialing';
+import {
   FISCAL_AUTHORIZATION_GATEWAY,
   type FiscalAuthorizationGateway,
 } from '../ports/fiscal-authorization-gateway.port';
 import { FISCAL_CERTIFICATE_PORT, type FiscalCertificatePort } from '../ports/fiscal-certificate.port';
+import {
+  FISCAL_CREDENTIALING_PORT,
+  type FiscalCredentialingPort,
+} from '../ports/fiscal-credentialing.port';
 import { FiscalRepository } from '../repositories/fiscal.repository';
+import type { FiscalAggregate } from '../repositories/fiscal.repository.types';
 import { toFiscalDocumentResponse, type FiscalDocumentResponse } from '../serializers/fiscal-response.serializer';
 import { FiscalAccessAuthz } from './fiscal-access.authz';
 import { FiscalAccountingIntegrationService } from './fiscal-accounting-integration.service';
 import { FiscalPeriodAccessService } from './fiscal-period-access.service';
 import { mapFiscalDomainError } from './fiscal-access.errors';
+import { IssuerRegistryService } from '../../establishments/services/issuer-registry.service';
+import { IssuerHttpException } from '../../establishments/errors/issuer-http.exception';
+import { LegalEstablishmentError } from '../../establishments/domain/legal-establishment';
+import { mapRegistryError } from '../../establishments/services/establishment-registry-access.errors';
+import { FISCAL_PARTY_ROLES } from '../domain/fiscal-document';
 
 @Injectable()
 export class FiscalAccessService implements FiscalDocumentPort {
@@ -43,8 +59,11 @@ export class FiscalAccessService implements FiscalDocumentPort {
     private readonly securityAudit: SecurityAuditService,
     @Inject(FISCAL_AUTHORIZATION_GATEWAY) private readonly gateway: FiscalAuthorizationGateway,
     @Inject(FISCAL_CERTIFICATE_PORT) private readonly certificates: FiscalCertificatePort,
+    @Inject(FISCAL_CREDENTIALING_PORT) private readonly credentialing: FiscalCredentialingPort,
     private readonly accountingIntegration: FiscalAccountingIntegrationService,
     private readonly fiscalPeriods: FiscalPeriodAccessService,
+    private readonly sod: SodEnforcementService,
+    private readonly issuerRegistry: IssuerRegistryService,
   ) {}
 
   async createDraft(
@@ -59,17 +78,45 @@ export class FiscalAccessService implements FiscalDocumentPort {
       });
       await this.certificates.resolve(validated.certificateRef);
       await this.fiscalPeriods.assertOrdinaryWriteAllowed(validated.unitId, validated.issuedOn);
+      let parties = validated.parties;
+      const establishmentId = validated.establishmentId;
+      if (establishmentId) {
+        // FiscalDocument referencia o estabelecimento emissor do registry:
+        // o emissor é sempre resolvido do cadastro (nunca hardcoded).
+        const issuer = await this.issuerRegistry.resolveEstablishmentIssuer(establishmentId);
+        parties = [
+          {
+            role: FISCAL_PARTY_ROLES.Issuer,
+            legalName: issuer.legalName,
+            taxIdentifier: issuer.normalizedCnpj,
+            partySnapshot: {
+              establishmentId: issuer.establishmentId,
+              establishmentCode: issuer.code,
+            },
+          },
+          ...validated.parties.filter((party) => party.role !== FISCAL_PARTY_ROLES.Issuer),
+        ];
+      }
       const aggregate = await this.repository.createDraft({
         ...validated,
+        parties,
+        establishmentId,
         taxDetails: validated.taxDetails ?? [],
         actorIdentityId: actor.identityId,
       });
       await this.audit(actor, SECURITY_AUDIT_ACTIONS.FiscalDocumentDraft, aggregate.document.id, {
         sourceKind: validated.sourceKind,
         billingDocumentId: validated.billingDocumentId ?? null,
+        establishmentId: establishmentId ?? null,
       });
-      return toFiscalDocumentResponse(aggregate);
+      return this.toResponse(aggregate);
     } catch (error) {
+      if (error instanceof IssuerHttpException) {
+        throw error;
+      }
+      if (error instanceof LegalEstablishmentError) {
+        throw mapRegistryError(error);
+      }
       throw mapFiscalDomainError(error);
     }
   }
@@ -111,7 +158,7 @@ export class FiscalAccessService implements FiscalDocumentPort {
         items: validated.items,
         taxDetails: validated.taxDetails ?? [],
       });
-      return toFiscalDocumentResponse(aggregate);
+      return this.toResponse(aggregate);
     } catch (error) {
       throw mapFiscalDomainError(error);
     }
@@ -151,13 +198,20 @@ export class FiscalAccessService implements FiscalDocumentPort {
         id: current.document.id,
         unitId: current.document.unit_id,
       });
+      if (current.document.status === FISCAL_STATUSES.Authorized) {
+        return this.toResponse(current);
+      }
+      const scope = resolveSodScope(current.document.unit_id);
+      await this.sod.enforce(actor, {
+        duty: SOD_DUTIES.FiscalSubmit,
+        originatorIdentityId: current.document.created_by_identity_id,
+        ...scope,
+      });
       await this.fiscalPeriods.assertOrdinaryWriteAllowed(
         current.document.unit_id,
         current.document.issued_on,
       );
-      if (current.document.status === FISCAL_STATUSES.Authorized) {
-        return toFiscalDocumentResponse(current);
-      }
+      assertFiscalTransmissionAllowed(this.credentialing.snapshot());
       const result = await this.gateway.submit({
         fiscalDocumentId: current.document.id,
         unitId: current.document.unit_id,
@@ -236,7 +290,7 @@ export class FiscalAccessService implements FiscalDocumentPort {
         aggregate.document.id,
         validated.reason,
       );
-      return toFiscalDocumentResponse(aggregate);
+      return this.toResponse(aggregate);
     } catch (error) {
       throw mapFiscalDomainError(error);
     }
@@ -250,7 +304,7 @@ export class FiscalAccessService implements FiscalDocumentPort {
         id: aggregate.document.id,
         unitId: aggregate.document.unit_id,
       });
-      return toFiscalDocumentResponse(aggregate);
+      return this.toResponse(aggregate);
     } catch (error) {
       throw mapFiscalDomainError(error);
     }
@@ -325,7 +379,7 @@ export class FiscalAccessService implements FiscalDocumentPort {
         nextStatus,
         eventType: eventType ?? eventTypeForStatus(nextStatus),
       });
-      return toFiscalDocumentResponse(aggregate);
+      return this.toResponse(aggregate);
     } catch (error) {
       throw mapFiscalDomainError(error);
     }
@@ -343,6 +397,12 @@ export class FiscalAccessService implements FiscalDocumentPort {
     },
   ): Promise<FiscalDocumentResponse> {
     const current = await this.requireDocument(fiscalDocumentId);
+    if (result.outcome === FISCAL_GATEWAY_OUTCOMES.Authorized) {
+      assertOfficialAuthorizationAllowed({
+        approved: this.credentialing.snapshot().approved,
+        protocolCode: result.protocolCode,
+      });
+    }
     const nextStatus = nextStatusFromGateway(result.outcome);
     const eventType =
       result.outcome === FISCAL_GATEWAY_OUTCOMES.Timeout
@@ -371,7 +431,11 @@ export class FiscalAccessService implements FiscalDocumentPort {
       });
       await this.accountingIntegration.tryPostAuthorizedDocument(actor, aggregate.document.id);
     }
-    return toFiscalDocumentResponse(aggregate);
+    return this.toResponse(aggregate);
+  }
+
+  private toResponse(aggregate: FiscalAggregate): FiscalDocumentResponse {
+    return toFiscalDocumentResponse(aggregate, this.credentialing.snapshot());
   }
 
   private async requireDocument(fiscalDocumentId: string) {

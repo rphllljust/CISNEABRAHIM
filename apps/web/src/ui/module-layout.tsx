@@ -35,7 +35,7 @@ export function ModuleTableCard({ children, className }: { children: ReactNode; 
   return (
     <div
       className={cn(
-        'mb-6 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5',
+        'mb-6 overflow-x-auto rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5',
         className,
       )}
     >

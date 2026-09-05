@@ -1,4 +1,10 @@
-import { CONTACT_PURPOSES, type AddressPurpose, type ContactPurpose } from './client-status';
+import {
+  CONTACT_PURPOSES,
+  isPurchaseOrderRequirement,
+  type AddressPurpose,
+  type ContactPurpose,
+  type PurchaseOrderRequirement,
+} from './client-status';
 import { isValidCnpjFormat, normalizeCnpj } from './cnpj';
 
 export type ClientContactInput = {
@@ -27,7 +33,7 @@ export type CreateClientInput = {
   externalErpId?: string;
   contacts: ClientContactInput[];
   addresses?: ClientAddressInput[];
-  notes?: string;
+  purchaseOrderRequirement?: PurchaseOrderRequirement;
 };
 
 export type UpdateClientInput = {
@@ -37,6 +43,7 @@ export type UpdateClientInput = {
   externalErpId?: string | null;
   contacts?: ClientContactInput[];
   addresses?: ClientAddressInput[];
+  purchaseOrderRequirement?: PurchaseOrderRequirement;
 };
 
 export type ClientValidationErrorCode =
@@ -46,7 +53,8 @@ export type ClientValidationErrorCode =
   | 'CONTACT_NOT_USABLE'
   | 'VERSION_REQUIRED'
   | 'VERSION_INVALID'
-  | 'DEACTIVATION_REASON_REQUIRED';
+  | 'DEACTIVATION_REASON_REQUIRED'
+  | 'PURCHASE_ORDER_REQUIREMENT_INVALID';
 
 export class ClientValidationError extends Error {
   constructor(readonly code: ClientValidationErrorCode) {
@@ -98,6 +106,13 @@ export function assertCreateClientInput(input: CreateClientInput): string {
     }
   }
 
+  if (
+    input.purchaseOrderRequirement !== undefined &&
+    !isPurchaseOrderRequirement(input.purchaseOrderRequirement)
+  ) {
+    throw new ClientValidationError('PURCHASE_ORDER_REQUIREMENT_INVALID');
+  }
+
   return normalizedTaxId;
 }
 
@@ -121,6 +136,13 @@ export function assertUpdateClientInput(input: UpdateClientInput): void {
     if (!hasOperational) {
       throw new ClientValidationError('CONTACT_NOT_USABLE');
     }
+  }
+
+  if (
+    input.purchaseOrderRequirement !== undefined &&
+    !isPurchaseOrderRequirement(input.purchaseOrderRequirement)
+  ) {
+    throw new ClientValidationError('PURCHASE_ORDER_REQUIREMENT_INVALID');
   }
 }
 

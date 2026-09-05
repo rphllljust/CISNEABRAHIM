@@ -26,7 +26,7 @@ import { CLIENT_ERROR_CODES } from './errors/client-error-codes';
 import { ClientHttpException } from './errors/client-http.exception';
 import { ClientAccessService } from './services/client-access.service';
 
-const CONCURRENT_CNPJ = '11897171000181';
+const CONCURRENT_CNPJ = '11222333000181';
 
 async function grantClientAdmin(pool: Pool, identityId: string, grantedBy: string): Promise<void> {
   for (const action of [
@@ -86,7 +86,7 @@ describe('Clients audit closure (Prompt 29-B)', () => {
     const actor = { identityId: adminId, sessionId: 'sid' };
     const payload = {
       legalName: 'Concorrente LTDA',
-      taxId: '11.897.171/0001-81',
+      taxId: '11.222.333/0001-81',
       contacts: [
         {
           name: 'Ops',
@@ -221,9 +221,8 @@ describe('Clients audit closure (Prompt 29-B)', () => {
     });
 
     const employee = { identityId: employeeId, sessionId: 'sid' };
-    await expect(clientAccess.list(employee, { limit: 20, offset: 0 })).rejects.toMatchObject({
-      code: CLIENT_ERROR_CODES.DENIED,
-    });
+    const scopedList = await clientAccess.list(employee, { limit: 20, offset: 0 });
+    expect(scopedList.items.map((item) => item.id)).toEqual([clientA.id]);
     await expect(clientAccess.getById(employee, clientB.id)).rejects.toBeInstanceOf(
       ClientHttpException,
     );

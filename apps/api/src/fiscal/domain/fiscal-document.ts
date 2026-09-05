@@ -146,12 +146,21 @@ export function eventTypeForStatus(status: string): string {
   }
 }
 
-export function assertParties(parties: FiscalPartyDraft[]): void {
+export function assertParties(
+  parties: FiscalPartyDraft[],
+  options?: { requireIssuer?: boolean },
+): void {
+  const requireIssuer = options?.requireIssuer ?? true;
   const roles = parties.map((party) => party.role);
-  if (
-    roles.filter((role) => role === FISCAL_PARTY_ROLES.Issuer).length !== 1 ||
-    roles.filter((role) => role === FISCAL_PARTY_ROLES.Recipient).length !== 1
-  ) {
+  const issuers = roles.filter((role) => role === FISCAL_PARTY_ROLES.Issuer).length;
+  const recipients = roles.filter((role) => role === FISCAL_PARTY_ROLES.Recipient).length;
+  if (requireIssuer) {
+    if (issuers !== 1 || recipients !== 1) {
+      throw new FiscalError('FISCAL_PARTIES_REQUIRED');
+    }
+  } else if (recipients !== 1 || issuers > 1) {
+    // Issuer deferido ao registry (establishment emissor): deve haver
+    // exatamente um destinatário e no máximo um emissor a ser substituído.
     throw new FiscalError('FISCAL_PARTIES_REQUIRED');
   }
   for (const party of parties) {

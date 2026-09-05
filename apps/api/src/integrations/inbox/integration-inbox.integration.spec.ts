@@ -16,6 +16,7 @@ import { IntegrationInboxReceiveService } from './services/integration-inbox-rec
 
 describe('Integration inbox PostgreSQL integration', () => {
   let pool: Pool;
+  let module: TestingModule;
   let receiveService: IntegrationInboxReceiveService;
   let processor: IntegrationInboxProcessorService;
   let repository: IntegrationInboxRepository;
@@ -27,8 +28,9 @@ describe('Integration inbox PostgreSQL integration', () => {
     }
 
     process.env['DATABASE_URL'] = testDatabaseUrl;
+    process.env['INBOX_PROCESSOR_ENABLED'] = 'false';
 
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       imports: [DatabaseModule, IntegrationsInboxModule],
     }).compile();
 
@@ -51,6 +53,7 @@ describe('Integration inbox PostgreSQL integration', () => {
   });
 
   afterAll(async () => {
+    await module.close();
     await pool.end();
   });
 

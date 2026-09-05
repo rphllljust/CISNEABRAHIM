@@ -16,6 +16,7 @@ import type {
   IncomeStatement,
   BalanceSheet,
   TrialBalance,
+  FixedAssetRegister,
 } from '../types/accounting.types';
 
 export { BackofficeApiError };
@@ -132,4 +133,88 @@ export async function reopenPeriod(
 
 export async function probeAccountingReadAccess(signal?: AbortSignal): Promise<boolean> {
   return probeReadAccess(`/api/v1/accounting/charts/${BACKOFFICE_PROBE_ID}`, signal);
+}
+
+export async function getFixedAsset(registerId: string, signal?: AbortSignal): Promise<FixedAssetRegister> {
+  return requestJson<FixedAssetRegister>(`/api/v1/accounting/fixed-assets/${registerId}`, {
+    method: 'GET',
+    headers: authHeaders(),
+    signal,
+  });
+}
+
+export async function lookupFixedAsset(
+  query: { unitId: string; operationalAssetId: string },
+  signal?: AbortSignal,
+): Promise<FixedAssetRegister> {
+  const params = new URLSearchParams(query);
+  return requestJson<FixedAssetRegister>(`/api/v1/accounting/fixed-assets?${params.toString()}`, {
+    method: 'GET',
+    headers: authHeaders(),
+    signal,
+  });
+}
+
+export async function registerFixedAsset(payload: Record<string, unknown>): Promise<FixedAssetRegister> {
+  return requestJson<FixedAssetRegister>('/api/v1/accounting/fixed-assets', {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function acquireFixedAsset(
+  registerId: string,
+  payload: Record<string, unknown>,
+): Promise<FixedAssetRegister> {
+  return requestJson<FixedAssetRegister>(`/api/v1/accounting/fixed-assets/${registerId}/acquire`, {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function disposeFixedAsset(
+  registerId: string,
+  payload: Record<string, unknown>,
+): Promise<FixedAssetRegister> {
+  return requestJson<FixedAssetRegister>(`/api/v1/accounting/fixed-assets/${registerId}/dispose`, {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function depreciateFixedAsset(registerId: string): Promise<FixedAssetRegister> {
+  return requestJson<FixedAssetRegister>(`/api/v1/accounting/fixed-assets/${registerId}/depreciate`, {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify({}),
+  });
+}
+
+export async function transferFixedAsset(
+  registerId: string,
+  payload: Record<string, unknown>,
+): Promise<FixedAssetRegister> {
+  return requestJson<FixedAssetRegister>(`/api/v1/accounting/fixed-assets/${registerId}/transfer`, {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function reverseFixedAssetAcquisition(
+  registerId: string,
+  payload: { reason: string },
+): Promise<FixedAssetRegister> {
+  return requestJson<FixedAssetRegister>(`/api/v1/accounting/fixed-assets/${registerId}/reverse`, {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function probeFixedAssetReadAccess(signal?: AbortSignal): Promise<boolean> {
+  return probeReadAccess(`/api/v1/accounting/fixed-assets/${BACKOFFICE_PROBE_ID}`, signal);
 }

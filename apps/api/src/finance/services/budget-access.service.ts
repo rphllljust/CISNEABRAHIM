@@ -8,6 +8,8 @@ import {
 import { SecurityAuditService } from '../../audit/services/security-audit.service';
 import { AUTHZ_ACTIONS } from '../../authorization/types/authz-actions';
 import type { IdentityAuthzContext } from '../../authorization/types/authz-decision';
+import { SodEnforcementService } from '../../authorization/services/sod-enforcement.service';
+import { SOD_DUTIES, resolveSodScope } from '../../authorization/domain/segregation-of-duties';
 import { assertUuid } from '../../platform/kernel/uuid';
 import {
   BudgetError,
@@ -42,6 +44,7 @@ export class BudgetAccessService {
     private readonly repository: BudgetRepository,
     private readonly authz: BudgetAccessAuthz,
     private readonly securityAudit: SecurityAuditService,
+    private readonly sod: SodEnforcementService,
   ) {}
 
   async create(actor: IdentityAuthzContext, input: CreateBudgetInput): Promise<BudgetResponse> {
@@ -152,6 +155,12 @@ export class BudgetAccessService {
         lines.push(...(await this.repository.listLines(period.id)));
       }
       assertBudgetHasApprovingContent(periods.length, lines.length);
+      const scope = resolveSodScope(budget.unit_id);
+      await this.sod.enforce(actor, {
+        duty: SOD_DUTIES.BudgetApprove,
+        originatorIdentityId: draft.created_by_identity_id,
+        ...scope,
+      });
       await this.repository.approveVersion({
         versionId: draft.id,
         actorIdentityId: actor.identityId,

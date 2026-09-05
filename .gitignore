@@ -78,7 +78,7 @@ vendor/
 *.db
 *.mdb
 
-# Temporary uploads and scratch
+# Temporary uploads and scratch (repo tmp/ — never %TEMP% / user profile)
 tmp/
 temp/
 uploads/tmp/

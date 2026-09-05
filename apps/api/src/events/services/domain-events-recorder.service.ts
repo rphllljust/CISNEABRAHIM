@@ -129,7 +129,7 @@ export class DomainEventsRecorderService {
   async recordBillingReady(input: {
     billingRecordId: string;
     serviceOrderId: string;
-    measurementId: string;
+    measurementId: string | null;
     unitId: string;
     totalAmount: string;
     preparedAt: string;

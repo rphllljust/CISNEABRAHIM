@@ -29,6 +29,26 @@ describe('purchase-order.validation', () => {
     expect(result.items[0]?.lineTotal).toBe('9351.0000');
   });
 
+  it('rejects non-positive quantity', () => {
+    expect(() =>
+      validateCreatePurchaseOrderInput({
+        clientId: crypto.randomUUID(),
+        unitId: 'unit-a',
+        poNumber: '41926266',
+        pricingStructure: PURCHASE_ORDER_PRICING_STRUCTURES.LineItems,
+        items: [
+          {
+            lineNumber: 1,
+            description: 'Locação',
+            quantity: '0',
+            unitPrice: '9351.0000',
+            lineTotal: '0.0000',
+          },
+        ],
+      }),
+    ).toThrow(PurchaseOrderValidationError);
+  });
+
   it('rejects mismatched line totals', () => {
     expect(() =>
       validateCreatePurchaseOrderInput({

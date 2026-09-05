@@ -30,7 +30,7 @@ const IMPORT_RETURNING = `
 `;
 const RECON_RETURNING = `
   id, unit_id, bank_statement_id, bank_statement_line_id, status::text AS status,
-  match_method::text AS match_method, match_criteria
+  match_method::text AS match_method, match_criteria, created_by_identity_id
 `;
 const MATCH_RETURNING = `
   m.id, m.reconciliation_id, m.bank_statement_line_id, m.target_kind::text AS target_kind,

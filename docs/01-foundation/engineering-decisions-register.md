@@ -5,7 +5,7 @@
 | Document ID | ED-REG-001 |
 | Source      | SRC-000    |
 
-Decisões de governança ED-001..004 estão `ACCEPTED`. ED-005 (Release 1 fail-closed) `ACCEPTED` em 2026-09-02. Stack tecnológica documentada em ADR-TECH (Prompt 10).
+Decisões de governança ED-001..004 estão `ACCEPTED`. ED-005 (Release 1 fail-closed) `ACCEPTED` em 2026-09-02. ED-006 (SOD crítica por role/capability/scope/matriz) `ACCEPTED` em 2026-09-03. Stack tecnológica documentada em ADR-TECH (Prompt 10).
 
 Template: [`../templates/engineering-decision-template.md`](../templates/engineering-decision-template.md).
 
@@ -71,6 +71,21 @@ Ver [`../11-technology/adr/`](../11-technology/adr/) — ADR-TECH-001..007, todo
 | SOURCE / prompt       | Prompt autorizado 2026-09-02; R1-SCOPE-001; DDP-026; DDP-023                                                                                                   |
 | Date                  | 2026-09-02                                                                                                                                                     |
 | Revisit when          | Autorização explícita de um módulo posterior com fonte e flag nomeada.                                                                                         |
+
+## ED-006 — Segregation of Duties crítica no backend (role + capability + scope + matriz)
+
+| Campo                 | Valor |
+| --------------------- | ----- |
+| ID                    | ED-006 |
+| Title                 | SOD crítica no backend via role, capability, scope e matriz de aprovação |
+| Status                | `ACCEPTED` |
+| Decision              | Operações críticas de fornecedor, compra, despesa, pagamento, tesouraria (transferência/estorno), baixa, conciliação, ajuste contábil, reabertura de período, fiscal e folha exigem atores distintos (criar/aprovar, solicitar/pagar, preparar/confirmar, lançar/aprovar ajuste). A autoridade é o backend. A política usa código de papel, capability, escopo e matriz publicada — nunca nomes de pessoas. |
+| Why                   | Pedido autorizado de endurecimento SOD; SEC-REQ de autorização no backend; Prompt 08 SOD-001..012 permanece CANDIDATE/PENDING e não vira CONFIRMED. SRC-008 / BR-046 / BR-050: as duas autoridades operacionais equivalentes podem criar/liberar a própria OS e aprovar a própria medição — esses pares ficam fora do catálogo SOD. |
+| Consequences          | `SodEnforcementService` fail-closed; autoaprovação e checker de outro unit scope são 403; posting/close/finalize idempotentes não substituem o checker no ato efetivo. Ajuste fiscal não auto-finaliza no mesmo comando. |
+| Alternatives rejected | Hardcode de usuários; SOD só no frontend; aplicar SOD aos pares SRC-008 de OS/medição. |
+| SOURCE / prompt       | Pedido autorizado 2026-09-03 (SOD HARDENING); Prompt 08 AUTHZ-SOD-001 CANDIDATE; SRC-008 BR-046/BR-050 CONFIRMED (exceção operacional). |
+| Date                  | 2026-09-03 |
+| Revisit when          | Fonte empresarial confirmar SOD operacional OS/medição, ou alçadas distintas por papel além de FINANCIAL_CONTROLLER. |
 
 ## Não decidido (exemplos explícitos)
 

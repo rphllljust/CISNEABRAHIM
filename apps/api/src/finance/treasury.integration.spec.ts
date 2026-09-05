@@ -13,9 +13,12 @@ import { AuthModule } from '../auth/auth.module';
 import { AUTH_TEST_PASSWORD, applyAuthTestEnv } from '../auth/test/auth-test-env';
 import { normalizeLoginIdentifier } from '../auth/crypto/token-crypto';
 import { AuthorizationModule } from '../authorization/authorization.module';
+import { ApprovalMatrixAccessService } from '../authorization/services/approval-matrix-access.service';
+import { enableCriticalSodFor } from '../authorization/test/critical-sod-harness';
 import { AUTHZ_ACTIONS } from '../authorization/types/authz-actions';
 import { AUTHZ_RESOURCE_TYPES } from '../authorization/types/authz-resources';
 import { AUTHZ_SCOPES } from '../authorization/types/authz-scopes';
+import { AUTHZ_ERROR_CODES } from '../authorization/errors/authz-error-codes';
 import { FINANCIAL_ACCOUNT_KINDS, FINANCIAL_DIRECTIONS, TREASURY_ORIGIN_KINDS } from './domain/treasury';
 import { FINANCE_ERROR_CODES } from './errors/finance-error-codes';
 import { FinanceHttpException } from './errors/finance-http.exception';
@@ -47,6 +50,7 @@ async function grantTreasuryAdmin(pool: Pool, identityId: string, grantedBy: str
 describe('Finance treasury PostgreSQL integration', () => {
   let pool: Pool;
   let treasuryAccess: TreasuryAccessService;
+  let matrices: ApprovalMatrixAccessService;
   const testDatabaseUrl = process.env['TEST_DATABASE_URL'];
 
   beforeAll(async () => {
@@ -58,6 +62,7 @@ describe('Finance treasury PostgreSQL integration', () => {
       imports: [AuthModule, AuditModule, AuthorizationModule, FinanceModule],
     }).compile();
     treasuryAccess = module.get(TreasuryAccessService);
+    matrices = module.get(ApprovalMatrixAccessService);
     pool = new Pool({ connectionString: testDatabaseUrl });
   });
 
@@ -78,6 +83,13 @@ describe('Finance treasury PostgreSQL integration', () => {
       await grantTreasuryAdmin(pool, identityId, identityId);
     }
     return { identityId, sessionId: 'test-session' };
+  }
+
+  async function seedTreasuryPair() {
+    const originator = await seedActor();
+    const checker = await seedActor();
+    await enableCriticalSodFor(pool, matrices, [originator.identityId, checker.identityId]);
+    return { originator, checker };
   }
 
   async function openPair(actor: { identityId: string; sessionId: string }, opening = '100.0000') {
@@ -113,9 +125,9 @@ describe('Finance treasury PostgreSQL integration', () => {
   });
 
   it('transfers debit source and credit destination in one logical transaction', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedTreasuryPair();
     const { bank, cash } = await openPair(actor);
-    const transfer = await treasuryAccess.transfer(actor, {
+    const transfer = await treasuryAccess.transfer(checker, {
       fromAccountId: bank.id,
       toAccountId: cash.id,
       amount: '40.0000',
@@ -140,7 +152,7 @@ describe('Finance treasury PostgreSQL integration', () => {
   });
 
   it('replays duplicate transfer command without a second pair of legs', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedTreasuryPair();
     const { bank, cash } = await openPair(actor);
     const key = `dup-${crypto.randomUUID()}`;
     const payload = {
@@ -154,10 +166,10 @@ describe('Finance treasury PostgreSQL integration', () => {
       originId: actor.identityId,
       originReference: 'TED-DUP',
     };
-    const first = await treasuryAccess.transfer(actor, payload);
+    const first = await treasuryAccess.transfer(checker, payload);
     const sourceAfter = await treasuryAccess.getById(actor, bank.id);
     const destAfter = await treasuryAccess.getById(actor, cash.id);
-    const second = await treasuryAccess.transfer(actor, {
+    const second = await treasuryAccess.transfer(checker, {
       ...payload,
       rowVersionFrom: sourceAfter.rowVersion,
       rowVersionTo: destAfter.rowVersion,
@@ -172,10 +184,10 @@ describe('Finance treasury PostgreSQL integration', () => {
   });
 
   it('serializes concurrent transfers so the same funds are not spent twice', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedTreasuryPair();
     const { bank, cash } = await openPair(actor, '100.0000');
     const results = await Promise.allSettled([
-      treasuryAccess.transfer(actor, {
+      treasuryAccess.transfer(checker, {
         fromAccountId: bank.id,
         toAccountId: cash.id,
         amount: '100.0000',
@@ -186,7 +198,7 @@ describe('Finance treasury PostgreSQL integration', () => {
         originId: actor.identityId,
         originReference: 'TED-C1',
       }),
-      treasuryAccess.transfer(actor, {
+      treasuryAccess.transfer(checker, {
         fromAccountId: bank.id,
         toAccountId: cash.id,
         amount: '100.0000',
@@ -219,10 +231,10 @@ describe('Finance treasury PostgreSQL integration', () => {
   });
 
   it('rejects insufficient balance when overdraft is not allowed and rolls back', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedTreasuryPair();
     const { bank, cash } = await openPair(actor, '30.0000');
     await expect(
-      treasuryAccess.transfer(actor, {
+      treasuryAccess.transfer(checker, {
         fromAccountId: bank.id,
         toAccountId: cash.id,
         amount: '30.0001',
@@ -266,9 +278,9 @@ describe('Finance treasury PostgreSQL integration', () => {
   });
 
   it('reverses a confirmed transfer with compensating legs instead of deleting', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedTreasuryPair();
     const { bank, cash } = await openPair(actor);
-    const transfer = await treasuryAccess.transfer(actor, {
+    const transfer = await treasuryAccess.transfer(checker, {
       fromAccountId: bank.id,
       toAccountId: cash.id,
       amount: '40.0000',
@@ -301,8 +313,26 @@ describe('Finance treasury PostgreSQL integration', () => {
     expect(restoredCash.balance).toBe('0');
   });
 
+  it('forbids the account opener from transferring their own funds', async () => {
+    const { originator: actor } = await seedTreasuryPair();
+    const { bank, cash } = await openPair(actor);
+    await expect(
+      treasuryAccess.transfer(actor, {
+        fromAccountId: bank.id,
+        toAccountId: cash.id,
+        amount: '10.0000',
+        rowVersionFrom: bank.rowVersion,
+        rowVersionTo: cash.rowVersion,
+        idempotencyKey: `self-${crypto.randomUUID()}`,
+        reference: 'TED-SELF',
+        originId: actor.identityId,
+        originReference: 'TED-SELF',
+      }),
+    ).rejects.toMatchObject({ code: AUTHZ_ERROR_CODES.APPROVAL_SELF_APPROVAL });
+  });
+
   it('reconciles each account as credits minus debits', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedTreasuryPair();
     const { bank, cash } = await openPair(actor, '250.0000');
     const fundedCash = await treasuryAccess.postMovement(actor, cash.id, {
       direction: FINANCIAL_DIRECTIONS.Credit,
@@ -314,7 +344,7 @@ describe('Finance treasury PostgreSQL integration', () => {
       originId: actor.identityId,
       originReference: 'SUPRIMENTO',
     });
-    await treasuryAccess.transfer(actor, {
+    await treasuryAccess.transfer(checker, {
       fromAccountId: bank.id,
       toAccountId: fundedCash.id,
       amount: '100.0000',

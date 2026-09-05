@@ -15,6 +15,8 @@ import { AuthModule } from '../auth/auth.module';
 import { AUTH_TEST_PASSWORD, applyAuthTestEnv } from '../auth/test/auth-test-env';
 import { normalizeLoginIdentifier } from '../auth/crypto/token-crypto';
 import { AuthorizationModule } from '../authorization/authorization.module';
+import { ApprovalMatrixAccessService } from '../authorization/services/approval-matrix-access.service';
+import { enableCriticalSodFor } from '../authorization/test/critical-sod-harness';
 import { AUTHZ_ACTIONS } from '../authorization/types/authz-actions';
 import { AUTHZ_RESOURCE_TYPES } from '../authorization/types/authz-resources';
 import { AUTHZ_SCOPES } from '../authorization/types/authz-scopes';
@@ -72,6 +74,7 @@ describe('Three-way match PostgreSQL integration', () => {
   let matches: ThreeWayMatchAccessService;
   let suppliers: SupplierAccessService;
   let payables: PayablesAccessService;
+  let matrices: ApprovalMatrixAccessService;
   const testDatabaseUrl = process.env['TEST_DATABASE_URL'];
 
   beforeAll(async () => {
@@ -87,6 +90,7 @@ describe('Three-way match PostgreSQL integration', () => {
     matches = module.get(ThreeWayMatchAccessService);
     suppliers = module.get(SupplierAccessService);
     payables = module.get(PayablesAccessService);
+    matrices = module.get(ApprovalMatrixAccessService);
     pool = new Pool({ connectionString: testDatabaseUrl });
   });
 
@@ -127,7 +131,9 @@ describe('Three-way match PostgreSQL integration', () => {
       lines: [{ description: 'Item conferido', quantity, unitAmount: '1' }],
     });
     const submitted = await procurement.submitRequest(actor, created.id, { version: created.version });
-    const approved = await procurement.approveRequest(actor, created.id, { version: submitted.version });
+    const checker = await seedActor();
+    await enableCriticalSodFor(pool, matrices, checker.identityId);
+    const approved = await procurement.approveRequest(checker, created.id, { version: submitted.version });
     const order = await procurement.issueOrder(actor, approved.id, {
       version: approved.version,
       supplierId: supplier.id,

@@ -12,6 +12,8 @@ import type { IdentityAuthzContext } from '../../authorization/types/authz-decis
 import { toResourceContextFromAccounting } from '../../authorization/scope/scope-matcher';
 import { assertPolicyAndGrantScope } from '../../authorization/services/domain-grant-authz.helper';
 import { PolicyDecisionPointService } from '../../authorization/services/policy-decision-point.service';
+import { SodEnforcementService } from '../../authorization/services/sod-enforcement.service';
+import { SOD_DUTIES, resolveSodScope } from '../../authorization/domain/segregation-of-duties';
 import { AuthorizationRepository } from '../../authorization/repositories/authorization.repository';
 import type { AuthzAction } from '../../authorization/types/authz-actions';
 import { assertUuid } from '../../platform/kernel/uuid';
@@ -42,6 +44,7 @@ export class FiscalPeriodAccessService {
     private readonly authorizationRepository: AuthorizationRepository,
     private readonly policyDecisionPoint: PolicyDecisionPointService,
     private readonly securityAudit: SecurityAuditService,
+    private readonly sod: SodEnforcementService,
   ) {}
 
   async open(actor: IdentityAuthzContext, input: OpenFiscalPeriodInput): Promise<FiscalPeriodResponse> {
@@ -104,6 +107,12 @@ export class FiscalPeriodAccessService {
       await this.assertPeriodAction(actor, AUTHZ_ACTIONS.FiscalPeriodReopen, {
         id: current.id,
         unitId: current.unit_id,
+      });
+      const scope = resolveSodScope(current.unit_id);
+      await this.sod.enforce(actor, {
+        duty: SOD_DUTIES.FiscalPeriodReopen,
+        originatorIdentityId: current.closed_by_identity_id,
+        ...scope,
       });
       const reopened = await this.repository.reopen({
         periodId,

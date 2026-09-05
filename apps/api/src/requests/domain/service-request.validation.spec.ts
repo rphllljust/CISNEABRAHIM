@@ -9,6 +9,7 @@ import {
   ServiceRequestValidationError,
   validateCreateServiceRequestInput,
   validateRejectServiceRequestInput,
+  validateSubmitReady,
 } from './service-request.validation';
 
 describe('service-request.state-machine', () => {
@@ -45,6 +46,15 @@ describe('service-request.validation', () => {
       description: 'Locação de equipamento',
     });
     expect(result.externalContact.phone).toBe('69999990000');
+  });
+
+  it('blocks submit without description or service', () => {
+    expect(() => validateSubmitReady({ description: '   ', serviceDefinitionId: null })).toThrow(
+      ServiceRequestValidationError,
+    );
+    expect(() =>
+      validateSubmitReady({ description: 'Demanda mínima', serviceDefinitionId: null }),
+    ).not.toThrow();
   });
 
   it('requires rejection reason', () => {

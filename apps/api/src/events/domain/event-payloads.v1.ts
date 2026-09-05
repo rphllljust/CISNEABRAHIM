@@ -53,7 +53,7 @@ export type MeasurementApprovedPayloadV1 = PayloadBase & {
 export type BillingReadyPayloadV1 = PayloadBase & {
   billingRecordId: string;
   serviceOrderId: string;
-  measurementId: string;
+  measurementId: string | null;
   unitId: string;
   totalAmount: string;
   preparedAt: string;

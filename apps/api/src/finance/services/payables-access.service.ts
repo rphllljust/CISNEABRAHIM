@@ -8,6 +8,8 @@ import {
 import { SecurityAuditService } from '../../audit/services/security-audit.service';
 import { AUTHZ_ACTIONS } from '../../authorization/types/authz-actions';
 import type { IdentityAuthzContext } from '../../authorization/types/authz-decision';
+import { SodEnforcementService } from '../../authorization/services/sod-enforcement.service';
+import { SOD_DUTIES, resolveSodScope } from '../../authorization/domain/segregation-of-duties';
 import type {
   CommercialSupplierPort,
   FinancePayablePort,
@@ -48,6 +50,7 @@ export class PayablesAccessService implements FinancePayablePort {
     private readonly repository: PayablesRepository,
     private readonly authz: PayablesAccessAuthz,
     private readonly securityAudit: SecurityAuditService,
+    private readonly sod: SodEnforcementService,
     @Inject(ENTERPRISE_CORE_PORT.CommercialSupplier)
     private readonly suppliers: CommercialSupplierPort,
   ) {}
@@ -215,6 +218,17 @@ export class PayablesAccessService implements FinancePayablePort {
     });
     try {
       const validated = validatePayPayableInput(input);
+      const originatorIdentityId =
+        row.origin_kind === PAYABLE_ORIGIN_KINDS.OperationalExpense
+          ? row.counterparty_id
+          : row.created_by_identity_id;
+      const scope = resolveSodScope(row.unit_id);
+      await this.sod.enforce(actor, {
+        duty: SOD_DUTIES.PayablePay,
+        originatorIdentityId,
+        amount: validated.amount,
+        ...scope,
+      });
       const paid = await this.repository.pay({
         payableId,
         amount: validated.amount,
@@ -266,6 +280,15 @@ export class PayablesAccessService implements FinancePayablePort {
     });
     try {
       const validated = validateReversePaymentInput(input);
+      const payments = await this.repository.listPayments(payableId);
+      const source = payments.find((payment) => payment.id === paymentId);
+      const scope = resolveSodScope(row.unit_id);
+      await this.sod.enforce(actor, {
+        duty: SOD_DUTIES.PayableReverse,
+        originatorIdentityId: source?.actor_identity_id,
+        amount: validated.amount ?? source?.amount,
+        ...scope,
+      });
       const reversed = await this.repository.reverse({
         payableId,
         paymentId,

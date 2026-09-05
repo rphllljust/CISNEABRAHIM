@@ -13,6 +13,8 @@ import { AuthModule } from '../auth/auth.module';
 import { AUTH_TEST_PASSWORD, applyAuthTestEnv } from '../auth/test/auth-test-env';
 import { normalizeLoginIdentifier } from '../auth/crypto/token-crypto';
 import { AuthorizationModule } from '../authorization/authorization.module';
+import { ApprovalMatrixAccessService } from '../authorization/services/approval-matrix-access.service';
+import { enableCriticalSodFor } from '../authorization/test/critical-sod-harness';
 import { AUTHZ_ACTIONS } from '../authorization/types/authz-actions';
 import { AUTHZ_RESOURCE_TYPES } from '../authorization/types/authz-resources';
 import { AUTHZ_SCOPES } from '../authorization/types/authz-scopes';
@@ -45,6 +47,7 @@ async function grantFinanceAdmin(pool: Pool, identityId: string, grantedBy: stri
 describe('Finance receivables PostgreSQL integration', () => {
   let pool: Pool;
   let receivablesAccess: ReceivablesAccessService;
+  let matrices: ApprovalMatrixAccessService;
   const testDatabaseUrl = process.env['TEST_DATABASE_URL'];
 
   beforeAll(async () => {
@@ -56,6 +59,7 @@ describe('Finance receivables PostgreSQL integration', () => {
       imports: [AuthModule, AuditModule, AuthorizationModule, FinanceModule],
     }).compile();
     receivablesAccess = module.get(ReceivablesAccessService);
+    matrices = module.get(ApprovalMatrixAccessService);
     pool = new Pool({ connectionString: testDatabaseUrl });
   });
 
@@ -76,6 +80,13 @@ describe('Finance receivables PostgreSQL integration', () => {
       await grantFinanceAdmin(pool, identityId, identityId);
     }
     return { identityId, sessionId: 'test-session' };
+  }
+
+  async function seedSettlePair() {
+    const originator = await seedActor();
+    const checker = await seedActor();
+    await enableCriticalSodFor(pool, matrices, [originator.identityId, checker.identityId]);
+    return { originator, checker };
   }
 
   async function openReceivable(
@@ -111,9 +122,9 @@ describe('Finance receivables PostgreSQL integration', () => {
   });
 
   it('posts a full payment and derives PAID from settlements', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSettlePair();
     const opened = await openReceivable(actor);
-    const paid = await receivablesAccess.settle(actor, opened.id, {
+    const paid = await receivablesAccess.settle(checker, opened.id, {
       amount: '100.0000',
       rowVersion: opened.rowVersion,
       idempotencyKey: `full-${crypto.randomUUID()}`,
@@ -124,9 +135,9 @@ describe('Finance receivables PostgreSQL integration', () => {
   });
 
   it('posts a partial payment and derives PARTIALLY_PAID', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSettlePair();
     const opened = await openReceivable(actor);
-    const partial = await receivablesAccess.settle(actor, opened.id, {
+    const partial = await receivablesAccess.settle(checker, opened.id, {
       amount: '40.0000',
       rowVersion: opened.rowVersion,
       idempotencyKey: `partial-${crypto.randomUUID()}`,
@@ -136,15 +147,15 @@ describe('Finance receivables PostgreSQL integration', () => {
   });
 
   it('replays duplicate settlement with the same idempotency key without two baixas', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSettlePair();
     const opened = await openReceivable(actor);
     const key = `dup-${crypto.randomUUID()}`;
-    const first = await receivablesAccess.settle(actor, opened.id, {
+    const first = await receivablesAccess.settle(checker, opened.id, {
       amount: '25.0000',
       rowVersion: opened.rowVersion,
       idempotencyKey: key,
     });
-    const second = await receivablesAccess.settle(actor, opened.id, {
+    const second = await receivablesAccess.settle(checker, opened.id, {
       amount: '25.0000',
       rowVersion: first.rowVersion,
       idempotencyKey: key,
@@ -158,16 +169,66 @@ describe('Finance receivables PostgreSQL integration', () => {
     expect(count.rows[0]?.count).toBe('1');
   });
 
+  it('replays a double POST with the original rowVersion as one settlement', async () => {
+    const { originator: actor, checker } = await seedSettlePair();
+    const opened = await openReceivable(actor);
+    const key = `dbl-${crypto.randomUUID()}`;
+    const first = await receivablesAccess.settle(checker, opened.id, {
+      amount: '25.0000',
+      rowVersion: opened.rowVersion,
+      idempotencyKey: key,
+    });
+    const second = await receivablesAccess.settle(checker, opened.id, {
+      amount: '25.0000',
+      rowVersion: opened.rowVersion,
+      idempotencyKey: key,
+    });
+    expect(second.settlements).toHaveLength(1);
+    expect(second.settlements[0]?.id).toBe(first.settlements[0]?.id);
+    const count = await pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM fin.settlements WHERE receivable_id = $1`,
+      [opened.id],
+    );
+    expect(count.rows[0]?.count).toBe('1');
+  });
+
+  it('serializes concurrent double POSTs with the same idempotency key to one settlement', async () => {
+    const { originator: actor, checker } = await seedSettlePair();
+    const opened = await openReceivable(actor);
+    const key = `conc-dup-${crypto.randomUUID()}`;
+    const payload = {
+      amount: '25.0000',
+      rowVersion: opened.rowVersion,
+      idempotencyKey: key,
+    };
+    const results = await Promise.allSettled([
+      receivablesAccess.settle(checker, opened.id, payload),
+      receivablesAccess.settle(checker, opened.id, payload),
+    ]);
+    const fulfilled = results.filter((result) => result.status === 'fulfilled');
+    expect(fulfilled).toHaveLength(2);
+    const first = (fulfilled[0] as PromiseFulfilledResult<{ settlements: Array<{ id: string }> }>).value;
+    const second = (fulfilled[1] as PromiseFulfilledResult<{ settlements: Array<{ id: string }> }>).value;
+    expect(first.settlements).toHaveLength(1);
+    expect(second.settlements).toHaveLength(1);
+    expect(second.settlements[0]?.id).toBe(first.settlements[0]?.id);
+    const count = await pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM fin.settlements WHERE receivable_id = $1`,
+      [opened.id],
+    );
+    expect(count.rows[0]?.count).toBe('1');
+  });
+
   it('serializes concurrent settlements so remaining never goes negative', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSettlePair();
     const opened = await openReceivable(actor, '100.0000');
     const results = await Promise.allSettled([
-      receivablesAccess.settle(actor, opened.id, {
+      receivablesAccess.settle(checker, opened.id, {
         amount: '100.0000',
         rowVersion: opened.rowVersion,
         idempotencyKey: `c1-${crypto.randomUUID()}`,
       }),
-      receivablesAccess.settle(actor, opened.id, {
+      receivablesAccess.settle(checker, opened.id, {
         amount: '100.0000',
         rowVersion: opened.rowVersion,
         idempotencyKey: `c2-${crypto.randomUUID()}`,
@@ -192,10 +253,10 @@ describe('Finance receivables PostgreSQL integration', () => {
   });
 
   it('rejects overpayment without an explicit overpay rule', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSettlePair();
     const opened = await openReceivable(actor);
     await expect(
-      receivablesAccess.settle(actor, opened.id, {
+      receivablesAccess.settle(checker, opened.id, {
         amount: '100.0001',
         rowVersion: opened.rowVersion,
         idempotencyKey: `over-${crypto.randomUUID()}`,
@@ -209,7 +270,7 @@ describe('Finance receivables PostgreSQL integration', () => {
   });
 
   it('rejects settlement on a cancelled receivable', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSettlePair();
     const opened = await openReceivable(actor);
     await receivablesAccess.cancel(actor, opened.id, {
       rowVersion: opened.rowVersion,
@@ -217,7 +278,7 @@ describe('Finance receivables PostgreSQL integration', () => {
     });
     const cancelled = await receivablesAccess.getById(actor, opened.id);
     await expect(
-      receivablesAccess.settle(actor, opened.id, {
+      receivablesAccess.settle(checker, opened.id, {
         amount: '10.0000',
         rowVersion: cancelled.rowVersion,
         idempotencyKey: `after-cancel-${crypto.randomUUID()}`,
@@ -226,10 +287,10 @@ describe('Finance receivables PostgreSQL integration', () => {
   });
 
   it('rejects stale rowVersion on settlement', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSettlePair();
     const opened = await openReceivable(actor);
     await expect(
-      receivablesAccess.settle(actor, opened.id, {
+      receivablesAccess.settle(checker, opened.id, {
         amount: '10.0000',
         rowVersion: opened.rowVersion + 5,
         idempotencyKey: `stale-${crypto.randomUUID()}`,
@@ -251,10 +312,10 @@ describe('Finance receivables PostgreSQL integration', () => {
   });
 
   it('rolls back a rejected settlement so posted rows stay empty', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSettlePair();
     const opened = await openReceivable(actor);
     await expect(
-      receivablesAccess.settle(actor, opened.id, {
+      receivablesAccess.settle(checker, opened.id, {
         amount: '200.0000',
         rowVersion: opened.rowVersion,
         idempotencyKey: `rollback-${crypto.randomUUID()}`,
@@ -268,14 +329,14 @@ describe('Finance receivables PostgreSQL integration', () => {
   });
 
   it('reconciles principal minus posted settlements to remaining balance', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSettlePair();
     const opened = await openReceivable(actor, '250.0000');
-    const first = await receivablesAccess.settle(actor, opened.id, {
+    const first = await receivablesAccess.settle(checker, opened.id, {
       amount: '100.0000',
       rowVersion: opened.rowVersion,
       idempotencyKey: `rec-1-${crypto.randomUUID()}`,
     });
-    const second = await receivablesAccess.settle(actor, first.id, {
+    const second = await receivablesAccess.settle(checker, first.id, {
       amount: '150.0000',
       rowVersion: first.rowVersion,
       idempotencyKey: `rec-2-${crypto.randomUUID()}`,

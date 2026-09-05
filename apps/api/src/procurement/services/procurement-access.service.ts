@@ -8,6 +8,8 @@ import {
 import { SecurityAuditService } from '../../audit/services/security-audit.service';
 import { AUTHZ_ACTIONS } from '../../authorization/types/authz-actions';
 import type { IdentityAuthzContext } from '../../authorization/types/authz-decision';
+import { SodEnforcementService } from '../../authorization/services/sod-enforcement.service';
+import { SOD_DUTIES, resolveSodScope } from '../../authorization/domain/segregation-of-duties';
 import {
   ENTERPRISE_CORE_PORT,
   type CommercialSupplierPort,
@@ -54,6 +56,7 @@ export class ProcurementAccessService {
     private readonly repository: ProcurementRepository,
     private readonly authz: ProcurementAccessAuthz,
     private readonly securityAudit: SecurityAuditService,
+    private readonly sod: SodEnforcementService,
     private readonly failures: ProcurementFailureInjection,
     @Inject(ENTERPRISE_CORE_PORT.CommercialSupplier)
     private readonly suppliers: CommercialSupplierPort,
@@ -334,6 +337,20 @@ export class ProcurementAccessService {
         throw new ProcurementError('PROCUREMENT_NOT_FOUND');
       }
       await this.authz.assertProcurementAction(actor, action, { id: current.id });
+      if (
+        action === AUTHZ_ACTIONS.ProcurementRequestApprove ||
+        action === AUTHZ_ACTIONS.ProcurementRequestReject
+      ) {
+        const lines = await this.repository.listRequestLines(requestId);
+        const amount = sumMoneyAmounts(lines.map((line) => line.line_amount));
+        const scope = resolveSodScope(current.unit_id);
+        await this.sod.enforce(actor, {
+          duty: SOD_DUTIES.PurchaseApprove,
+          originatorIdentityId: current.requester_identity_id,
+          amount,
+          ...scope,
+        });
+      }
       const transition = await next(current.status);
       const updated = await this.repository.transitionRequest({
         requestId,

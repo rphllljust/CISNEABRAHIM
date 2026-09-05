@@ -4,8 +4,8 @@
 | ---------------------------- | ---------------------- |
 | Document ID                  | BR-REG-001             |
 | Source of register structure | SRC-000                |
-| Last updated                 | 2026-08-29 (Prompt 29-A corretivo) |
-| Confirmed rules              | **16**                             |
+| Last updated                 | 2026-09-03 (SRC-007 / BR-043..BR-045) |
+| Confirmed rules              | **20**                        |
 
 ## Status permitidos
 
@@ -19,7 +19,7 @@ DEPRECATED
 SUPERSEDED
 ```
 
-Regras **BR-025, BR-026..BR-040** promovidas a `CONFIRMED` via SRC-002 (Prompt 29-A corretivo, 2026-08-29). **BR-041** permanece `CONDITIONAL`. Demais entradas abaixo permanecem candidatas ou pendentes salvo indicação contrária.
+Regras **BR-025, BR-026..BR-040** promovidas a `CONFIRMED` via SRC-002 (Prompt 29-A corretivo, 2026-08-29). **BR-041** permanece `CONDITIONAL`. **BR-042** promovida a `CONFIRMED` via SRC-004 (2026-09-03). **BR-043, BR-044, BR-045** promovidas a `CONFIRMED` via SRC-007 (2026-09-03). Demais entradas abaixo permanecem candidatas ou pendentes salvo indicação contrária.
 
 Template: [`../templates/business-rule-template.md`](../templates/business-rule-template.md).
 
@@ -332,7 +332,7 @@ Template: [`../templates/business-rule-template.md`](../templates/business-rule-
 
 ## Próximos IDs
 
-Próximo livre: `BR-042`. Não reutilizar `BR-001`–`BR-041`.
+Próximo livre: `BR-052`. Não reutilizar `BR-001`–`BR-051`.
 
 ## BR-026
 
@@ -510,3 +510,157 @@ Próximo livre: `BR-042`. Não reutilizar `BR-001`–`BR-041`.
 | Status    | `CONDITIONAL`                                                                                              |
 | Source    | SRC-002 (item 16)                                                                                          |
 | Evidence  | Prompt 29-A corretivo                                                                                      |
+
+## BR-042
+
+| Campo     | Valor |
+| --------- | ----- |
+| ID        | BR-042 |
+| Title     | Sistema CISNE centralizado; sem conexão com ERP |
+| Statement | Não haverá conexão com ERP externo. O SISTEMA CISNE RONDÔNIA é o sistema empresarial centralizado e a autoridade interna dos dados operacionais, comerciais, financeiros, fiscais e contábeis nativos. |
+| Status    | `CONFIRMED` |
+| Source    | SRC-004 |
+| Evidence  | Observação do responsável, 2026-09-03T01:14:00-04:00; SC-001 RESOLVED |
+| Actor     | Organização operadora / direção |
+| Exceptions | Canais que não são ERP (SEFAZ/prefeitura, banco, rastreador, WhatsApp) permanecem `OPEN` se já estavam. `externalErpId` defensivo nunca é PK (BR-031). |
+| Financial / external effects | Integração ERP `REJECTED`. Módulos nativos permanecem no monolito; não autoriza go-live nem emissão fiscal oficial. |
+| Blocks implementation? | Não para o recorte operacional já implementado. Bloqueia ativar adapter/ACL de ERP. |
+
+## BR-043
+
+| Campo | Valor |
+| ----- | ----- |
+| ID | BR-043 |
+| Title | Transmissão de NF-e bloqueada sem credenciamento aprovado |
+| Statement | Se o credenciamento fiscal não estiver aprovado (`credentialing.approved` = falso), a transmissão de NF-e permanece `BLOCKED`. |
+| Status | `CONFIRMED` |
+| Source | SRC-007 (texto verbatim); SRC-006, página 1 — snapshot `NÃO CREDENCIADO` em 03/09/2026 |
+| Evidence | Observação do responsável, 2026-09-03T01:51:00-04:00; consulta SEFIN SRC-006 |
+| Actor | Organização operadora / emissão fiscal |
+| Exceptions | Não decide NFS-e municipal. Não inverte o snapshot SRC-006. Credenciamento futuro exige revalidação; esta regra não o declara aprovado. |
+| Financial / external effects | Bloqueia transmissão oficial de NF-e. Não autoriza `FEATURE_MODULE_FISCAL`, gateway, certificado nem go-live. |
+| Blocks implementation? | Sim para transmitir NF-e ou ligar gateway enquanto o credenciamento não estiver aprovado e revalidado. |
+
+## BR-044
+
+| Campo | Valor |
+| ----- | ----- |
+| ID | BR-044 |
+| Title | AUTHORIZED e DANFE oficial exigem protocolo SEFAZ |
+| Statement | Sem protocolo de autorização da SEFAZ (`sefazAuthorizationProtocol`), o `fiscalStatus` não pode ser `AUTHORIZED` e a DANFE oficial permanece `BLOCKED`. |
+| Status | `CONFIRMED` |
+| Source | SRC-007 (texto verbatim) |
+| Evidence | Observação do responsável, 2026-09-03T01:51:00-04:00 |
+| Actor | Organização operadora / emissão fiscal |
+| Exceptions | Rascunho, preview e documento de homologação não são DANFE oficial. `BillingDocument` interno permanece não fiscal. |
+| Financial / external effects | Impede tratar documento sem protocolo como nota autorizada. Não inventa protocolo, credencial ou tipo legal NF-e/NFS-e. |
+| Blocks implementation? | Sim para marcar `AUTHORIZED` ou emitir DANFE oficial sem protocolo SEFAZ. |
+
+## BR-045
+
+| Campo | Valor |
+| ----- | ----- |
+| ID | BR-045 |
+| Title | Legendas de validade fiscal por ambiente |
+| Statement | Documento em rascunho deve exibir `SEM VALIDADE FISCAL`. Ambiente de homologação deve exibir `AMBIENTE DE HOMOLOGAÇÃO - SEM VALOR FISCAL`. Documento oficial em produção somente após autorização oficial. |
+| Status | `CONFIRMED` |
+| Source | SRC-007 (texto verbatim) |
+| Evidence | Observação do responsável, 2026-09-03T01:51:00-04:00 |
+| Actor | Organização operadora / emissão fiscal |
+| Exceptions | `BillingDocument` interno da Release 1 continua com o disclaimer de não constituir NF-e/NFS-e. Esta regra não autoriza produção oficial agora. |
+| Financial / external effects | Impede apresentar rascunho ou homologação como documento com valor fiscal. Produção oficial permanece condicionada à autorização. |
+| Blocks implementation? | Sim para omitir as legendas ou tratar rascunho/homologação como documento oficial. |
+
+## BR-046
+
+| Campo | Valor |
+| ----- | ----- |
+| ID | BR-046 |
+| Title | Autoridade operacional máxima equivalente |
+| Statement | Somente as identidades com o conjunto de capabilities de autoridade operacional máxima podem criar rascunho de OS, liberar OS, cancelar OS, reabrir OS, registrar ou aprovar medições, autorizar exceção comercial/excedente de PO e liberar faturamento interno. Na R1 essas capabilities são atribuídas somente às duas autoridades máximas equivalentes (Abrahim e Mônica). A mesma pessoa pode criar e liberar a própria OS. Não há segregação obrigatória entre as duas autoridades. O backend é o boundary; frontend não basta. Nenhum cliente, motorista, funcionário ou papel operacional substitui essa autoridade por API. Nomes não são hardcoded no PDP. |
+| Status | `CONFIRMED` |
+| Source | SRC-008 |
+| Evidence | Instrução do responsável, 2026-09-03T02:22:00-04:00 |
+| Actor | Autoridade operacional máxima (duas identidades equivalentes) |
+| Exceptions | Alteração futura exige fonte explícita. Campos de auditoria (`createdBy`, `releasedBy`, `approvedBy`, `cancelledBy`, `reopenedBy`) permanecem separados mesmo sem SoD obrigatória. |
+| Financial / external effects | Impede automação, cliente ou usuário operacional de substituir a autoridade máxima. |
+| Blocks implementation? | Sim para conceder essas actions a perfil que não seja a autoridade máxima, ou para confiar só em UI. |
+
+## BR-047
+
+| Campo | Valor |
+| ----- | ----- |
+| ID | BR-047 |
+| Title | Solicitação e OS são entidades distintas |
+| Statement | Nenhuma solicitação se transforma automaticamente em OS. Uma solicitação pode ser recebida, analisada, recusada, arquivada ou convertida em uma ou mais OS somente pela autoridade operacional máxima. Cliente ou usuário operacional não abre nem libera OS diretamente. WhatsApp, quando usado, é origem da solicitação; após o registro, o Cisne é a fonte oficial do processo. |
+| Status | `CONFIRMED` |
+| Source | SRC-008 |
+| Evidence | Instrução do responsável, 2026-09-03T02:22:00-04:00 |
+| Actor | Autoridade operacional máxima na conversão; canal de entrada pode ser WhatsApp/outros como origem |
+| Exceptions | Não decide integração API de WhatsApp. Não inventa quem além da autoridade máxima pode *criar* a solicitação (ver DDP-028). |
+| Financial / external effects | Impede auto-abertura de OS a partir de demanda de cliente. |
+| Blocks implementation? | Sim para auto-converter solicitação em OS ou tratar WhatsApp como SoT do workflow. |
+
+## BR-048
+
+| Campo | Valor |
+| ----- | ----- |
+| ID | BR-048 |
+| Title | Máquina de estados da OS, cancelamento e reabertura |
+| Statement | Transições de OS são validadas no backend. Estados mínimos: rascunho, liberada, em execução, concluída, cancelada, além dos estados já existentes necessários a preparação/medição. Transição inválida é recusada. Cancelamento nunca apaga o registro. Reabertura é excepcional, exclusiva da autoridade máxima, exige justificativa obrigatória e registra estado anterior, novo estado, usuário, data/hora e motivo. |
+| Status | `CONFIRMED` |
+| Source | SRC-008 |
+| Evidence | Instrução do responsável, 2026-09-03T02:22:00-04:00 |
+| Actor | Autoridade operacional máxima (cancelar/reabrir); execução permanece com quem tiver capability de execução |
+| Exceptions | Estados PREPARED/PAUSED já existentes permanecem. Esta regra não define tipos de OS (DDP-001). |
+| Financial / external effects | Cancelamento e reabertura são fatos auditáveis, não exclusão. |
+| Blocks implementation? | Sim para apagar OS cancelada, reabrir sem justificativa ou aceitar transição inválida. |
+
+## BR-049
+
+| Campo | Valor |
+| ----- | ----- |
+| ID | BR-049 |
+| Title | PO configurável, saldo e vedação de estouro silencioso |
+| Statement | PO do cliente não é obrigatório globalmente. A exigência é configurável por cliente, contrato ou regra comercial (antes da execução, antes do faturamento, ou não exigido). A relação preferencial é 1 PO para N OS, sem arquitetura que impeça alocações futuras mais complexas. Operação que exceda o saldo autorizado é bloqueada por padrão. Override administrativo só com justificativa, auditoria e registro explícito do excedente autorizado. |
+| Status | `CONFIRMED` |
+| Source | SRC-008 |
+| Evidence | Instrução do responsável, 2026-09-03T02:22:00-04:00 |
+| Actor | Autoridade operacional máxima no override; cliente/contrato na configuração de obrigatoriedade |
+| Exceptions | Não fecha a origem interna vs externa do PO. Buckets de saldo não persistidos não devem ser inventados. |
+| Financial / external effects | Impede faturar ou executar além do autorizado sem override explícito. |
+| Blocks implementation? | Sim para exigir PO em todos os clientes sem configuração, ou para permitir estouro silencioso. |
+
+## BR-050
+
+| Campo | Valor |
+| ----- | ----- |
+| ID | BR-050 |
+| Title | Medição representa o executado |
+| Statement | Medição registra o que foi efetivamente executado, não a cópia da proposta ou do valor previsto da OS. Deve suportar unidades conforme o serviço. Na R1 a mesma pessoa pode registrar e aprovar; os campos de auditoria permanecem separados. Medição recusada não é apagada; mantém histórico e pode ser corrigida/reenviada. |
+| Status | `CONFIRMED` |
+| Source | SRC-008 |
+| Evidence | Instrução do responsável, 2026-09-03T02:22:00-04:00 |
+| Actor | Autoridade operacional máxima (registrar/enviar/aprovar/recusar na R1) |
+| Exceptions | Não inventa evidência mínima por tipo de serviço. Segregação registrar×aprovar pode ser exigida no futuro sem perder os campos atuais. |
+| Financial / external effects | Medição recusada não some; não gera direito a faturar enquanto não aprovada, quando a política exigir medição. |
+| Blocks implementation? | Sim para apagar medição recusada ou copiar proposta como medição. |
+
+## BR-051
+
+| Campo | Valor |
+| ----- | ----- |
+| ID | BR-051 |
+| Title | Direito a faturar, faturamento interno e emissão fiscal são fatos distintos |
+| Statement | Para serviço cuja política é medição aprovada, somente a medição aprovada gera direito a faturamento interno; execução concluída isoladamente não torna o serviço faturável. Para preço fixo, mensalidade, locação fixa ou marco contratual, a faturabilidade segue a política contratual sem forçar medição quantitativa artificial. Direito a faturar não equivale a faturamento interno preparado, e este não equivale a emissão fiscal. |
+| Status | `CONFIRMED` |
+| Source | SRC-008 |
+| Evidence | Instrução do responsável, 2026-09-03T02:22:00-04:00 |
+| Actor | Autoridade operacional máxima na liberação do faturamento interno |
+| Exceptions | Não autoriza NF-e/NFS-e, `FEATURE_MODULE_FISCAL` nem fecha residual tributário de DDP-023. `BillingDocument` interno permanece não fiscal (SRC-007). |
+| Financial / external effects | Impede tratar OS concluída ou billing interno como nota fiscal. |
+| Blocks implementation? | Sim para faturar serviço de medição sem medição aprovada, ou para unificar billing interno com emissão fiscal. |
+
+## Próximos IDs
+
+Próximo livre: `BR-052`. Não reutilizar `BR-001`–`BR-051`.

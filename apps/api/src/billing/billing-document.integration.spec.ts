@@ -55,7 +55,7 @@ import { ServiceOrdersAccessService } from '../service-orders/services/service-o
 
 const UNIT_A = 'unit-bil-doc-a';
 const TEST_CNPJ = '11222333000181';
-const ALT_TEST_CNPJ = '11897171000181';
+const ALT_TEST_CNPJ = '11222333000181';
 let clientTaxIdCounter = 0;
 
 const SAMPLE_EXECUTION_REQUIREMENTS = [

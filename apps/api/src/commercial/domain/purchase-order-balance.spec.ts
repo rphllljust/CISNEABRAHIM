@@ -41,7 +41,7 @@ describe('purchase-order-balance', () => {
     ).toBe('750');
   });
 
-  it('rejects consumption above authorized balance', () => {
+  it('rejects consumption above authorized balance without overrun', () => {
     expect(() =>
       assertPurchaseOrderConsumptionAllowed(
         {
@@ -53,5 +53,20 @@ describe('purchase-order-balance', () => {
         '200.0000',
       ),
     ).toThrow(PurchaseOrderBalanceError);
+  });
+
+  it('allows consumption when administrative overrun covers the excess', () => {
+    expect(() =>
+      assertPurchaseOrderConsumptionAllowed(
+        {
+          pricingStructure: PURCHASE_ORDER_PRICING_STRUCTURES.HeaderTotal,
+          totalAmount: '1000.0000',
+          lineTotals: [],
+          consumedAmount: '900.0000',
+          authorizedOverrunAmount: '100.0000',
+        },
+        '200.0000',
+      ),
+    ).not.toThrow();
   });
 });

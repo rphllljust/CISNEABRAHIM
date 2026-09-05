@@ -1,4 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
+import { AuthzHttpException } from '../../authorization/errors/authz-http.exception';
 import { BudgetError } from '../domain/budget';
 import { FINANCE_ERROR_CODES } from '../errors/finance-error-codes';
 import { FinanceHttpException } from '../errors/finance-http.exception';
@@ -8,6 +9,9 @@ export function budgetAccessDenied(): FinanceHttpException {
 }
 
 export function mapBudgetDomainError(error: unknown): FinanceHttpException {
+  if (error instanceof AuthzHttpException) {
+    throw error;
+  }
   if (error instanceof FinanceHttpException) {
     return error;
   }

@@ -8,6 +8,8 @@ import {
 import { SecurityAuditService } from '../../audit/services/security-audit.service';
 import { AUTHZ_ACTIONS } from '../../authorization/types/authz-actions';
 import type { IdentityAuthzContext } from '../../authorization/types/authz-decision';
+import { SodEnforcementService } from '../../authorization/services/sod-enforcement.service';
+import { SOD_DUTIES, resolveSodScope } from '../../authorization/domain/segregation-of-duties';
 import {
   type FinanceReceivablePort,
   type OpenReceivableFromBillingInput,
@@ -36,6 +38,7 @@ export class ReceivablesAccessService implements FinanceReceivablePort {
     private readonly repository: ReceivablesRepository,
     private readonly authz: ReceivablesAccessAuthz,
     private readonly securityAudit: SecurityAuditService,
+    private readonly sod: SodEnforcementService,
   ) {}
 
   async openFromBilling(
@@ -164,6 +167,13 @@ export class ReceivablesAccessService implements FinanceReceivablePort {
     });
     try {
       const validated = validateSettleReceivableInput(input);
+      const scope = resolveSodScope(row.unit_id);
+      await this.sod.enforce(actor, {
+        duty: SOD_DUTIES.ReceivableSettle,
+        originatorIdentityId: row.created_by_identity_id,
+        amount: validated.amount,
+        ...scope,
+      });
       const settled = await this.repository.settle({
         receivableId,
         amount: validated.amount,

@@ -181,8 +181,8 @@ describe('ServiceRequestsAccessService characterization (orchestration)', () => 
   });
 
   it('submit transition records audit after successful state change', async () => {
-    const current = buildRow();
-    const updated = buildRow({ status: 'SUBMITTED', row_version: 2 });
+    const current = buildRow({ description: 'Demand minimum for submit' });
+    const updated = buildRow({ description: 'Demand minimum for submit', status: 'SUBMITTED', row_version: 2 });
     repository.findById.mockResolvedValue(current);
     repository.transition.mockResolvedValue(updated);
     repository.listDocumentLinks.mockResolvedValue([]);

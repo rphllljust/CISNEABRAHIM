@@ -11,6 +11,7 @@ export type FiscalDocumentRow = {
   source_kind: string;
   source_id: string | null;
   billing_document_id: string | null;
+  establishment_id: string | null;
   description: string;
   currency_code: string;
   issued_on: string;
@@ -94,6 +95,7 @@ export type CreateFiscalPersistenceInput = {
   sourceKind: string;
   sourceId?: string;
   billingDocumentId?: string;
+  establishmentId?: string | null;
   description: string;
   currencyCode: string;
   issuedOn: string;

@@ -73,6 +73,17 @@ export type SyntheticBusinessSeedOptions = {
 
 type DbClient = Pool | PoolClient;
 
+function formatSeedError(error: unknown): string {
+  if (error && typeof error === 'object' && 'getResponse' in error && typeof error.getResponse === 'function') {
+    const body = error.getResponse();
+    return typeof body === 'string' ? body : JSON.stringify(body);
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
+}
+
 async function collectSyntheticCounts(client: DbClient): Promise<SyntheticSeedCounts> {
   const queries: Array<[keyof SyntheticSeedCounts, string]> = [
     ['clients', `SELECT count(*)::int AS n FROM pty.clients WHERE external_erp_id LIKE '${SYNTHETIC_SEED_NAMESPACE}:%' OR legal_name LIKE 'TESTE — %'`],
@@ -117,6 +128,8 @@ async function planAndAllocateExcavator(
     requirementKind: PLANNED_RESOURCE_KINDS.PhysicalResource,
     resourceTypeCode,
     plannedQuantity: '1',
+    operationalStart: '2026-07-01T08:00:00.000Z',
+    operationalEnd: '2026-07-01T18:00:00.000Z',
   });
   const asset = await services.assetsAccess.create(actor, {
     assetCode: `SYN-${resourceTypeCode}-${suffix}`,
@@ -188,31 +201,54 @@ async function runPartialFlow(
       return { key: scenario.key, outcome: 'created' };
     }
 
-    const category = await insertCatalogCategory(services.pool, {
-      code: `SYN-CAT-${suffix}`,
-      name: 'TESTE — Catálogo sintético',
-    });
+    const categoryCode = `SYN-CAT-${suffix}`;
+    const existingCategory = await services.pool.query<{ id: string }>(
+      `SELECT id FROM cat.service_categories WHERE code = $1 LIMIT 1`,
+      [categoryCode],
+    );
+    const category = existingCategory.rows[0]
+      ? { categoryId: existingCategory.rows[0].id }
+      : await insertCatalogCategory(services.pool, {
+          code: categoryCode,
+          name: 'TESTE — Catálogo sintético',
+        });
 
-    const draft = await services.catalogAccess.create(actor, {
-      code: `SYN-SRV-${suffix}`,
-      name: `TESTE — Serviço ${scenario.displayLabel}`,
-      categoryId: category.categoryId,
-      archetype: 'RENTAL',
-      measurementMode: 'BY_PERIOD',
-      measurementBasis: 'TIME',
-      allowedUnits: [{ unitCode: 'DAY', isDefault: true, sortOrder: 0 }],
-      pricingModels: [
-        { modelCode: 'GLOBAL_PRICE', salePrice: '2500.0000', internalCost: '1800.0000' },
-      ],
-      resourceRequirements: [{ resourceTypeCode: 'EXCAVATOR', requirementLevel: 'REQUIRED', minQuantity: 1, sortOrder: 0 }],
-      laborRequirements: [],
-      executionRequirements: [
-        { requirementType: 'OBSERVATION', requirementLevel: 'REQUIRED' },
-        { requirementType: 'QUANTITY', requirementLevel: 'REQUIRED' },
-      ],
-    });
-    const definition = await services.catalogAccess.getDefinition(actor, draft.serviceDefinitionId);
-    const published = await services.catalogAccess.publishVersion(actor, draft.serviceDefinitionId, 1, definition.version);
+    const existingPublished = await services.pool.query<{
+      serviceDefinitionId: string;
+      id: string;
+    }>(
+      `SELECT d.id AS "serviceDefinitionId", v.id
+       FROM cat.service_definitions d
+       INNER JOIN cat.service_definition_versions v ON v.service_definition_id = d.id
+       WHERE d.code = $1 AND v.status = 'ACTIVE'
+       ORDER BY v.version DESC
+       LIMIT 1`,
+      [`SYN-SRV-${suffix}`],
+    );
+    const published = existingPublished.rows[0]
+      ? existingPublished.rows[0]
+      : await (async () => {
+          const draft = await services.catalogAccess.create(actor, {
+            code: `SYN-SRV-${suffix}`,
+            name: `TESTE — Serviço ${scenario.displayLabel}`,
+            categoryId: category.categoryId,
+            archetype: 'RENTAL',
+            measurementMode: 'BY_PERIOD',
+            measurementBasis: 'TIME',
+            allowedUnits: [{ unitCode: 'DAY', isDefault: true, sortOrder: 0 }],
+            pricingModels: [
+              { modelCode: 'GLOBAL_PRICE', salePrice: '2500.0000', internalCost: '1800.0000' },
+            ],
+            resourceRequirements: [{ resourceTypeCode: 'EXCAVATOR', requirementLevel: 'REQUIRED', minQuantity: 1, sortOrder: 0 }],
+            laborRequirements: [],
+            executionRequirements: [
+              { requirementType: 'OBSERVATION', requirementLevel: 'REQUIRED' },
+              { requirementType: 'QUANTITY', requirementLevel: 'REQUIRED' },
+            ],
+          });
+          const definition = await services.catalogAccess.getDefinition(actor, draft.serviceDefinitionId);
+          return services.catalogAccess.publishVersion(actor, draft.serviceDefinitionId, 1, definition.version);
+        })();
 
     const proposal = await services.proposalsAccess.create(actor, {
       clientId: client.id,
@@ -355,7 +391,7 @@ async function runPartialFlow(
 
     return { key: scenario.key, outcome: 'skipped', error: `Unhandled partial flow ${scenario.flow.kind}` };
   } catch (error) {
-    throw error instanceof Error ? error : new Error(String(error));
+    throw new Error(formatSeedError(error));
   }
 }
 
@@ -439,8 +475,17 @@ export async function runSyntheticBusinessSeed(
           throw new Error(result.error ?? `Scenario ${scenario.key} failed`);
         }
       } catch (error) {
-        await compensateScenarioOnFailure(client, scenario.key);
-        throw error;
+        const original = formatSeedError(error);
+        try {
+          await compensateScenarioOnFailure(client, scenario.key);
+        } catch (compensationError) {
+          const compensation =
+            compensationError instanceof Error ? compensationError.message : String(compensationError);
+          throw new Error(
+            `SYNTHETIC_SEED_FAILED:${scenario.key}:${original}; compensation:${compensation}`,
+          );
+        }
+        throw new Error(`SYNTHETIC_SEED_FAILED:${scenario.key}:${original}`);
       }
     }
   });

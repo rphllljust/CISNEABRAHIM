@@ -1,4 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
+import { AuthzHttpException } from '../../authorization/errors/authz-http.exception';
 import { ReceivableError } from '../domain/receivable';
 import { ReceivableValidationError } from '../domain/receivable.validation';
 import { FINANCE_ERROR_CODES } from '../errors/finance-error-codes';
@@ -17,6 +18,9 @@ export function financeNotFound(): FinanceHttpException {
 }
 
 export function mapReceivableDomainError(error: unknown): FinanceHttpException {
+  if (error instanceof AuthzHttpException) {
+    throw error;
+  }
   if (error instanceof ReceivableValidationError) {
     return new FinanceHttpException(
       HttpStatus.BAD_REQUEST,

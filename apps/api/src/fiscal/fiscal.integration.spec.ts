@@ -13,10 +13,18 @@ import { AuthModule } from '../auth/auth.module';
 import { AUTH_TEST_PASSWORD, applyAuthTestEnv } from '../auth/test/auth-test-env';
 import { normalizeLoginIdentifier } from '../auth/crypto/token-crypto';
 import { AuthorizationModule } from '../authorization/authorization.module';
+import { ApprovalMatrixAccessService } from '../authorization/services/approval-matrix-access.service';
+import { enableCriticalSodFor } from '../authorization/test/critical-sod-harness';
 import { AUTHZ_ACTIONS } from '../authorization/types/authz-actions';
 import { AUTHZ_RESOURCE_TYPES } from '../authorization/types/authz-resources';
 import { AUTHZ_SCOPES } from '../authorization/types/authz-scopes';
 import { FISCAL_SOURCE_KINDS, FISCAL_STATUSES } from './domain/fiscal-document';
+import {
+  FISCAL_CREDENTIALING_STATUSES,
+  FISCAL_VALIDITY_LEGENDS,
+  OFFICIAL_DANFE,
+  type FiscalCredentialingSnapshot,
+} from './domain/fiscal-credentialing';
 import { FISCAL_ERROR_CODES } from './errors/fiscal-error-codes';
 import { FiscalHttpException } from './errors/fiscal-http.exception';
 import { FiscalModule } from './fiscal.module';
@@ -25,6 +33,7 @@ import {
   type FiscalAuthorizationGateway,
   type FiscalGatewaySubmitResult,
 } from './ports/fiscal-authorization-gateway.port';
+import { FISCAL_CREDENTIALING_PORT, type FiscalCredentialingPort } from './ports/fiscal-credentialing.port';
 import { FiscalAccessService } from './services/fiscal-access.service';
 import { FiscalRepository } from './repositories/fiscal.repository';
 
@@ -36,6 +45,20 @@ class ScriptedFiscalGateway implements FiscalAuthorizationGateway {
 
   async submit(): Promise<FiscalGatewaySubmitResult> {
     return this.next;
+  }
+}
+
+class ScriptedFiscalCredentialing implements FiscalCredentialingPort {
+  approved = true;
+
+  snapshot(): FiscalCredentialingSnapshot {
+    return {
+      status: this.approved
+        ? FISCAL_CREDENTIALING_STATUSES.Approved
+        : FISCAL_CREDENTIALING_STATUSES.NotCredentialed,
+      approved: this.approved,
+      source: 'LAB',
+    };
   }
 }
 
@@ -62,6 +85,8 @@ describe('Fiscal core PostgreSQL integration', () => {
   let fiscal: FiscalAccessService;
   let repository: FiscalRepository;
   let gateway: ScriptedFiscalGateway;
+  let credentialing: ScriptedFiscalCredentialing;
+  let matrices: ApprovalMatrixAccessService;
   const testDatabaseUrl = process.env['TEST_DATABASE_URL'];
 
   beforeAll(async () => {
@@ -70,14 +95,18 @@ describe('Fiscal core PostgreSQL integration', () => {
     }
     applyAuthTestEnv(testDatabaseUrl);
     gateway = new ScriptedFiscalGateway();
+    credentialing = new ScriptedFiscalCredentialing();
     const module: TestingModule = await Test.createTestingModule({
       imports: [AuthModule, AuditModule, AuthorizationModule, FiscalModule],
     })
       .overrideProvider(FISCAL_AUTHORIZATION_GATEWAY)
       .useValue(gateway)
+      .overrideProvider(FISCAL_CREDENTIALING_PORT)
+      .useValue(credentialing)
       .compile();
     fiscal = module.get(FiscalAccessService);
     repository = module.get(FiscalRepository);
+    matrices = module.get(ApprovalMatrixAccessService);
     pool = new Pool({ connectionString: testDatabaseUrl });
   });
 
@@ -85,6 +114,7 @@ describe('Fiscal core PostgreSQL integration', () => {
     await truncateFiscalTables(pool);
     await truncateIdentityAndAuthorizationTables(pool);
     gateway.next = { outcome: 'AUTHORIZED', protocolCode: 'PROT-1' };
+    credentialing.approved = true;
   });
 
   afterAll(async () => {
@@ -99,6 +129,13 @@ describe('Fiscal core PostgreSQL integration', () => {
       await grantFiscalAdmin(pool, identityId);
     }
     return { identityId, sessionId: 'test-session' };
+  }
+
+  async function seedFiscalPair() {
+    const originator = await seedActor();
+    const checker = await seedActor();
+    await enableCriticalSodFor(pool, matrices, [originator.identityId, checker.identityId]);
+    return { originator, checker };
   }
 
   function draftInput(overrides: Record<string, unknown> = {}) {
@@ -143,13 +180,14 @@ describe('Fiscal core PostgreSQL integration', () => {
   }
 
   it('walks draft/ready/submit/authorized and keeps BillingDocument as a reference only', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedFiscalPair();
     const ready = await readyDocument(actor);
     expect(ready.status).toBe(FISCAL_STATUSES.Ready);
     expect(ready.billingDocumentId).toBeTruthy();
-    const authorized = await fiscal.submit(actor, ready.id, { rowVersion: ready.rowVersion });
+    const authorized = await fiscal.submit(checker, ready.id, { rowVersion: ready.rowVersion });
     expect(authorized.status).toBe(FISCAL_STATUSES.Authorized);
     expect(authorized.authorizations[0]?.outcome).toBe('AUTHORIZED');
+    expect(authorized.officialDanfe).toBe(OFFICIAL_DANFE.Allowed);
     const table = await pool.query<{ relname: string }>(
       `SELECT relname FROM pg_class WHERE relname = 'fiscal_documents'`,
     );
@@ -165,13 +203,13 @@ describe('Fiscal core PostgreSQL integration', () => {
   });
 
   it('is idempotent on create and on resubmit of an authorized document', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedFiscalPair();
     const payload = draftInput();
     const first = await fiscal.createDraft(actor, payload);
     const second = await fiscal.createDraft(actor, payload);
     expect(second.id).toBe(first.id);
     const ready = await fiscal.markReady(actor, first.id, { rowVersion: first.rowVersion });
-    const authorized = await fiscal.submit(actor, ready.id, { rowVersion: ready.rowVersion });
+    const authorized = await fiscal.submit(checker, ready.id, { rowVersion: ready.rowVersion });
     const again = await fiscal.submit(actor, authorized.id, { rowVersion: authorized.rowVersion });
     expect(again.id).toBe(authorized.id);
     expect(again.status).toBe(FISCAL_STATUSES.Authorized);
@@ -179,7 +217,7 @@ describe('Fiscal core PostgreSQL integration', () => {
   });
 
   it('denies unauthorized submission and records rejection plus timeout recovery', async () => {
-    const admin = await seedActor(true);
+    const { originator: admin, checker } = await seedFiscalPair();
     const stranger = await seedActor(false);
     const ready = await readyDocument(admin);
     await expect(
@@ -187,24 +225,24 @@ describe('Fiscal core PostgreSQL integration', () => {
     ).rejects.toBeInstanceOf(FiscalHttpException);
 
     gateway.next = { outcome: 'REJECTED', message: 'gateway-rejected' };
-    const rejected = await fiscal.submit(admin, ready.id, { rowVersion: ready.rowVersion });
+    const rejected = await fiscal.submit(checker, ready.id, { rowVersion: ready.rowVersion });
     expect(rejected.status).toBe(FISCAL_STATUSES.Rejected);
     const revised = await fiscal.revise(admin, rejected.id, { rowVersion: rejected.rowVersion });
     expect(revised.status).toBe(FISCAL_STATUSES.Draft);
     const readyAgain = await fiscal.markReady(admin, revised.id, { rowVersion: revised.rowVersion });
     gateway.next = { outcome: 'TIMEOUT' };
-    const timedOut = await fiscal.submit(admin, readyAgain.id, { rowVersion: readyAgain.rowVersion });
+    const timedOut = await fiscal.submit(checker, readyAgain.id, { rowVersion: readyAgain.rowVersion });
     expect(timedOut.status).toBe(FISCAL_STATUSES.Submitted);
     expect(timedOut.authorizations.some((item) => item.outcome === 'TIMEOUT')).toBe(true);
     gateway.next = { outcome: 'AUTHORIZED', protocolCode: 'PROT-RECOVER' };
-    const recovered = await fiscal.recover(admin, timedOut.id, { rowVersion: timedOut.rowVersion });
+    const recovered = await fiscal.recover(checker, timedOut.id, { rowVersion: timedOut.rowVersion });
     expect(recovered.status).toBe(FISCAL_STATUSES.Authorized);
   });
 
   it('forbids silent mutation of an authorized document and keeps an audit trail', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedFiscalPair();
     const ready = await readyDocument(actor);
-    const authorized = await fiscal.submit(actor, ready.id, { rowVersion: ready.rowVersion });
+    const authorized = await fiscal.submit(checker, ready.id, { rowVersion: ready.rowVersion });
     await expect(
       fiscal.replaceSnapshots(actor, authorized.id, {
         rowVersion: authorized.rowVersion,
@@ -237,5 +275,29 @@ describe('Fiscal core PostgreSQL integration', () => {
         'security:fiscal:document:authorize',
       ]),
     );
+  });
+
+  it('blocks transmission when credentialing is not approved even if the gateway would authorize', async () => {
+    credentialing.approved = false;
+    const { originator: actor, checker } = await seedFiscalPair();
+    const ready = await readyDocument(actor);
+    expect(ready.validityLegend).toBe(FISCAL_VALIDITY_LEGENDS.NoFiscalValidity);
+    expect(ready.officialDanfe).toBe(OFFICIAL_DANFE.Blocked);
+    await expect(fiscal.submit(checker, ready.id, { rowVersion: ready.rowVersion })).rejects.toMatchObject({
+      code: FISCAL_ERROR_CODES.TRANSMISSION_BLOCKED,
+    });
+    const stored = await repository.findById(ready.id);
+    expect(stored?.document.status).toBe(FISCAL_STATUSES.Ready);
+  });
+
+  it('refuses AUTHORIZED without a SEFAZ protocol', async () => {
+    const { originator: actor, checker } = await seedFiscalPair();
+    const ready = await readyDocument(actor);
+    gateway.next = { outcome: 'AUTHORIZED', protocolCode: null };
+    await expect(fiscal.submit(checker, ready.id, { rowVersion: ready.rowVersion })).rejects.toMatchObject({
+      code: FISCAL_ERROR_CODES.OFFICIAL_AUTHORIZATION_BLOCKED,
+    });
+    const stored = await repository.findById(ready.id);
+    expect(stored?.document.status).toBe(FISCAL_STATUSES.Submitted);
   });
 });

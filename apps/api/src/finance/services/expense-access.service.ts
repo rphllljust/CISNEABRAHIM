@@ -6,10 +6,9 @@ import {
   SECURITY_AUDIT_RESOURCE_TYPES,
 } from '../../audit/types/security-audit.types';
 import { SecurityAuditService } from '../../audit/services/security-audit.service';
-import { ApprovalMatrixAccessService } from '../../authorization/services/approval-matrix-access.service';
-import { APPROVAL_OPERATIONS } from '../../authorization/domain/approval-matrix';
+import { SodEnforcementService } from '../../authorization/services/sod-enforcement.service';
+import { SOD_DUTIES, resolveSodScope } from '../../authorization/domain/segregation-of-duties';
 import { AUTHZ_ACTIONS } from '../../authorization/types/authz-actions';
-import { AUTHZ_SCOPES } from '../../authorization/types/authz-scopes';
 import type { IdentityAuthzContext } from '../../authorization/types/authz-decision';
 import { assertUuid } from '../../platform/kernel/uuid';
 import { ExpenseError, assertExpenseNotSelfApproval } from '../domain/expense';
@@ -33,7 +32,7 @@ export class ExpenseAccessService {
     private readonly repository: ExpenseRepository,
     private readonly authz: ExpenseAccessAuthz,
     private readonly securityAudit: SecurityAuditService,
-    private readonly approvalMatrix: ApprovalMatrixAccessService,
+    private readonly sod: SodEnforcementService,
     private readonly failures: ExpenseFailureInjection,
   ) {}
 
@@ -131,12 +130,12 @@ export class ExpenseAccessService {
         unitId: current.expense.unit_id,
       });
       assertExpenseNotSelfApproval(actor.identityId, current.expense.requester_identity_id);
-      const decision = await this.approvalMatrix.evaluate(actor, {
-        requesterIdentityId: current.expense.requester_identity_id,
-        operation: APPROVAL_OPERATIONS.Expense,
-        capability: 'expense.approve',
+      const scope = resolveSodScope(current.expense.unit_id);
+      const decision = await this.sod.enforce(actor, {
+        duty: SOD_DUTIES.ExpenseApprove,
+        originatorIdentityId: current.expense.requester_identity_id,
         amount: current.expense.total_amount,
-        scopeType: AUTHZ_SCOPES.Global,
+        ...scope,
       });
       const decided = await this.repository.decide(
         {

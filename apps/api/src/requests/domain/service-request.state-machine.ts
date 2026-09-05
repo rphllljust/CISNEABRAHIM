@@ -40,7 +40,7 @@ const TRANSITIONS: Record<ServiceRequestTransition, { from: ServiceRequestStatus
     to: SERVICE_REQUEST_STATUSES.Cancelled,
   },
   convert: {
-    from: [SERVICE_REQUEST_STATUSES.Approved],
+    from: [SERVICE_REQUEST_STATUSES.Approved, SERVICE_REQUEST_STATUSES.Converted],
     to: SERVICE_REQUEST_STATUSES.Converted,
   },
 };
@@ -67,7 +67,10 @@ export function assertConvertible(currentStatus: ServiceRequestStatus): void {
   if (NON_CONVERTIBLE_SERVICE_REQUEST_STATUSES.has(currentStatus)) {
     throw new ServiceRequestStateError('CONVERSION_NOT_ALLOWED');
   }
-  if (currentStatus !== SERVICE_REQUEST_STATUSES.Approved) {
+  if (
+    currentStatus !== SERVICE_REQUEST_STATUSES.Approved &&
+    currentStatus !== SERVICE_REQUEST_STATUSES.Converted
+  ) {
     throw new ServiceRequestStateError('INVALID_STATE_TRANSITION');
   }
 }

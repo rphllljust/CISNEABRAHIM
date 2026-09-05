@@ -29,10 +29,15 @@ import { CLIENT_ERROR_CODES } from '../errors/client-error-codes';
 import { ClientHttpException } from '../errors/client-http.exception';
 import { mapValidationCodeToStatus } from '../errors/client-validation-status';
 import { ClientsRepository } from '../repositories/clients.repository';
+import { CLIENT_STATUSES } from '../domain/client-status';
 import { toClientResponse, type ClientResponse } from '../serializers/client-response.serializer';
+import type {
+  CommercialClientPort,
+  CommercialClientView,
+} from '../../platform/bounded-contexts/enterprise-core-ports';
 
 @Injectable()
-export class ClientAccessService {
+export class ClientAccessService implements CommercialClientPort {
   constructor(
     private readonly clientsRepository: ClientsRepository,
     private readonly authorizationRepository: AuthorizationRepository,
@@ -68,6 +73,7 @@ export class ClientAccessService {
           externalErpId: input.externalErpId,
           contacts: input.contacts,
           addresses: input.addresses,
+          purchaseOrderRequirement: input.purchaseOrderRequirement,
         },
         async (client, clientId) => {
           await this.scopeContextRepository.insertScopeRef(client, AUTHZ_SCOPES.Client, clientId);
@@ -192,6 +198,7 @@ export class ClientAccessService {
       externalErpId: input.externalErpId,
       contacts: input.contacts,
       addresses: input.addresses,
+      purchaseOrderRequirement: input.purchaseOrderRequirement,
     });
 
     if (updated === null) {
@@ -348,6 +355,44 @@ export class ClientAccessService {
     return toClientResponse(updated);
   }
 
+  async findPublishedById(clientId: string): Promise<CommercialClientView | null> {
+    const row = await this.clientsRepository.findPublishedById(clientId);
+    if (!row) {
+      return null;
+    }
+    return {
+      id: row.id,
+      status: row.status,
+      purchaseOrderRequirement: row.purchase_order_requirement,
+    };
+  }
+
+  async requireActive(clientId: string): Promise<CommercialClientView> {
+    const published = await this.findPublishedById(clientId);
+    if (!published) {
+      throw this.notFound();
+    }
+    if (published.status !== CLIENT_STATUSES.Active) {
+      throw new ClientHttpException(
+        HttpStatus.CONFLICT,
+        CLIENT_ERROR_CODES.INACTIVE,
+        'Client is inactive.',
+      );
+    }
+    return published;
+  }
+
+  async assertNotInactive(clientId: string): Promise<void> {
+    const published = await this.findPublishedById(clientId);
+    if (published && published.status !== CLIENT_STATUSES.Active) {
+      throw new ClientHttpException(
+        HttpStatus.CONFLICT,
+        CLIENT_ERROR_CODES.INACTIVE,
+        'Client is inactive.',
+      );
+    }
+  }
+
   private async assertAction(
     actor: IdentityAuthzContext,
     action: AuthzAction,
@@ -412,6 +457,10 @@ export class ClientAccessService {
       return false;
     }
     const pgError = error as { code?: string; constraint?: string };
-    return pgError.code === '23505' && (pgError.constraint?.includes('tax_id') ?? true);
+    return (
+      pgError.code === '23505' &&
+      (pgError.constraint === 'clients_normalized_tax_id_uidx' ||
+        (typeof pgError.constraint === 'string' && pgError.constraint.includes('tax_id')))
+    );
   }
 }

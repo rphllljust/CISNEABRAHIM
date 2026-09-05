@@ -103,6 +103,19 @@ describe('Clients PostgreSQL integration', () => {
 
     expect(created.status).toBe('ACTIVE');
     expect(created.taxId).toBe(TEST_CNPJ);
+    expect(created.purchaseOrderRequirement).toBe('NOT_REQUIRED');
+
+    const audit = await pool.query<{ action: string }>(
+      `SELECT action FROM audit.security_audit_events
+       WHERE resource_id = $1 AND action = 'security:client:create'`,
+      [created.id],
+    );
+    expect(audit.rowCount).toBeGreaterThan(0);
+
+    await expect(clientAccess.requireActive(created.id)).resolves.toMatchObject({
+      id: created.id,
+      status: 'ACTIVE',
+    });
 
     const fetched = await clientAccess.getById(actor, created.id);
     expect(fetched.legalName).toBe('Cliente Integração LTDA');
@@ -120,6 +133,9 @@ describe('Clients PostgreSQL integration', () => {
       'Encerramento contratual',
     );
     expect(deactivated.status).toBe('INACTIVE');
+    await expect(clientAccess.requireActive(created.id)).rejects.toMatchObject({
+      code: CLIENT_ERROR_CODES.INACTIVE,
+    });
 
     const reactivated = await clientAccess.activate(
       actor,

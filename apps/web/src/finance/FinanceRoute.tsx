@@ -7,11 +7,14 @@ import {
   probeReceivableListAccess,
   probeReconciliationReadAccess,
   probeTreasuryListAccess,
+  probeExpenseReadAccess,
+  probeBudgetReadAccess,
+  probeForecastReadAccess,
 } from './api/finance-api';
 
 type FinanceRouteProps = {
   children: ReactNode;
-  access: 'overview' | 'receivables' | 'payables' | 'treasury' | 'reconciliation';
+  access: 'overview' | 'receivables' | 'payables' | 'treasury' | 'reconciliation' | 'expenses' | 'budgets' | 'forecast';
 };
 
 export function FinanceRoute({ children, access }: FinanceRouteProps) {
@@ -89,6 +92,15 @@ async function resolveFinanceAccess(
   }
   if (access === 'reconciliation') {
     return probeReconciliationReadAccess(signal);
+  }
+  if (access === 'expenses') {
+    return probeExpenseReadAccess(signal);
+  }
+  if (access === 'budgets') {
+    return probeBudgetReadAccess(signal);
+  }
+  if (access === 'forecast') {
+    return probeForecastReadAccess(signal);
   }
   const [receivables, payables, treasury] = await Promise.all([
     probeReceivableListAccess(signal),

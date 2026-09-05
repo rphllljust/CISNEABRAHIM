@@ -13,6 +13,8 @@ import { AuthModule } from '../auth/auth.module';
 import { AUTH_TEST_PASSWORD, applyAuthTestEnv } from '../auth/test/auth-test-env';
 import { normalizeLoginIdentifier } from '../auth/crypto/token-crypto';
 import { AuthorizationModule } from '../authorization/authorization.module';
+import { ApprovalMatrixAccessService } from '../authorization/services/approval-matrix-access.service';
+import { enableCriticalSodFor } from '../authorization/test/critical-sod-harness';
 import { AUTHZ_ACTIONS } from '../authorization/types/authz-actions';
 import { AUTHZ_RESOURCE_TYPES } from '../authorization/types/authz-resources';
 import { AUTHZ_SCOPES } from '../authorization/types/authz-scopes';
@@ -52,6 +54,7 @@ describe('Accounting double-entry PostgreSQL integration', () => {
   let pool: Pool;
   let accounting: AccountingAccessService;
   let repository: AccountingRepository;
+  let matrices: ApprovalMatrixAccessService;
   const testDatabaseUrl = process.env['TEST_DATABASE_URL'];
 
   beforeAll(async () => {
@@ -64,6 +67,7 @@ describe('Accounting double-entry PostgreSQL integration', () => {
     }).compile();
     accounting = module.get(AccountingAccessService);
     repository = module.get(AccountingRepository);
+    matrices = module.get(ApprovalMatrixAccessService);
     pool = new Pool({ connectionString: testDatabaseUrl });
   });
 
@@ -109,7 +113,9 @@ describe('Accounting double-entry PostgreSQL integration', () => {
       startsOn: '2026-09-01',
       endsOn: '2026-09-30',
     });
-    return { chart, cash, revenue, period };
+    const checker = await seedActor();
+    await enableCriticalSodFor(pool, matrices, [actor.identityId, checker.identityId]);
+    return { chart, cash, revenue, period, checker };
   }
 
   function balancedLines(cashId: string, revenueId: string, amount = '100.0000') {
@@ -131,7 +137,7 @@ describe('Accounting double-entry PostgreSQL integration', () => {
 
   it('posts a balanced entry and keeps source reference', async () => {
     const actor = await seedActor();
-    const { chart, cash, revenue, period } = await seedLedger(actor);
+    const { chart, cash, revenue, period, checker } = await seedLedger(actor);
     const sourceId = crypto.randomUUID();
     const draft = await accounting.createDraft(actor, {
       chartId: chart.id,
@@ -146,7 +152,7 @@ describe('Accounting double-entry PostgreSQL integration', () => {
       lines: balancedLines(cash.id, revenue.id),
     });
     expect(draft.status).toBe('DRAFT');
-    const posted = await accounting.post(actor, draft.id, { rowVersion: draft.rowVersion });
+    const posted = await accounting.post(checker, draft.id, { rowVersion: draft.rowVersion });
     expect(posted.status).toBe('POSTED');
     expect(posted.balanced).toBe(true);
     expect(posted.debitTotal).toBe('100');
@@ -157,7 +163,7 @@ describe('Accounting double-entry PostgreSQL integration', () => {
 
   it('rejects unbalanced entries before and at posting', async () => {
     const actor = await seedActor();
-    const { chart, cash, revenue, period } = await seedLedger(actor);
+    const { chart, cash, revenue, period, checker } = await seedLedger(actor);
     await expect(
       accounting.createDraft(actor, {
         chartId: chart.id,
@@ -198,7 +204,7 @@ describe('Accounting double-entry PostgreSQL integration', () => {
       idempotencyKey: `empty-${crypto.randomUUID()}`,
       lines: [],
     });
-    await expect(accounting.post(actor, empty.id, { rowVersion: empty.rowVersion })).rejects.toMatchObject({
+    await expect(accounting.post(checker, empty.id, { rowVersion: empty.rowVersion })).rejects.toMatchObject({
       code: ACCOUNTING_ERROR_CODES.LINES_REQUIRED,
     });
     const postedUnbalanced = await pool.query<{ count: string }>(
@@ -265,7 +271,7 @@ describe('Accounting double-entry PostgreSQL integration', () => {
 
   it('rejects posting into a closed period until authorized reopen', async () => {
     const actor = await seedActor();
-    const { chart, cash, revenue, period } = await seedLedger(actor);
+    const { chart, cash, revenue, period, checker } = await seedLedger(actor);
     const closed = await accounting.closePeriod(actor, period.id, {
       rowVersion: period.rowVersion,
       reason: 'Month close',
@@ -285,7 +291,7 @@ describe('Accounting double-entry PostgreSQL integration', () => {
         lines: balancedLines(cash.id, revenue.id),
       }),
     ).rejects.toMatchObject({ code: ACCOUNTING_ERROR_CODES.PERIOD_CLOSED });
-    const reopened = await accounting.reopenPeriod(actor, period.id, {
+    const reopened = await accounting.reopenPeriod(checker, period.id, {
       rowVersion: closed.rowVersion,
       reason: 'Authorized adjustment',
     });
@@ -303,13 +309,13 @@ describe('Accounting double-entry PostgreSQL integration', () => {
       idempotencyKey: `reopen-${crypto.randomUUID()}`,
       lines: balancedLines(cash.id, revenue.id),
     });
-    const posted = await accounting.post(actor, draft.id, { rowVersion: draft.rowVersion });
+    const posted = await accounting.post(checker, draft.id, { rowVersion: draft.rowVersion });
     expect(posted.status).toBe('POSTED');
   });
 
   it('corrects posted journals with reversal plus a new entry and never silent update', async () => {
     const actor = await seedActor();
-    const { chart, cash, revenue, period } = await seedLedger(actor);
+    const { chart, cash, revenue, period, checker } = await seedLedger(actor);
     const draft = await accounting.createDraft(actor, {
       chartId: chart.id,
       periodId: period.id,
@@ -322,7 +328,7 @@ describe('Accounting double-entry PostgreSQL integration', () => {
       idempotencyKey: `orig-${crypto.randomUUID()}`,
       lines: balancedLines(cash.id, revenue.id, '80.0000'),
     });
-    const posted = await accounting.post(actor, draft.id, { rowVersion: draft.rowVersion });
+    const posted = await accounting.post(checker, draft.id, { rowVersion: draft.rowVersion });
     await expect(
       accounting.replaceLines(actor, posted.id, {
         rowVersion: posted.rowVersion,
@@ -353,7 +359,7 @@ describe('Accounting double-entry PostgreSQL integration', () => {
       idempotencyKey: `fix-${crypto.randomUUID()}`,
       lines: balancedLines(cash.id, revenue.id, '75.0000'),
     });
-    const fixed = await accounting.post(actor, replacement.id, { rowVersion: replacement.rowVersion });
+    const fixed = await accounting.post(checker, replacement.id, { rowVersion: replacement.rowVersion });
     expect(fixed.status).toBe('POSTED');
     const storedAmount = await pool.query<{ amount: string }>(
       `SELECT amount::text AS amount FROM acc.journal_entry_lines WHERE journal_entry_id = $1 ORDER BY line_number`,
@@ -444,7 +450,7 @@ describe('Accounting double-entry PostgreSQL integration', () => {
 
   it('reconstructs the ledger as SUM(DEBIT) = SUM(CREDIT) across posted lines', async () => {
     const actor = await seedActor();
-    const { chart, cash, revenue, period } = await seedLedger(actor);
+    const { chart, cash, revenue, period, checker } = await seedLedger(actor);
     const first = await accounting.createDraft(actor, {
       chartId: chart.id,
       periodId: period.id,
@@ -457,7 +463,7 @@ describe('Accounting double-entry PostgreSQL integration', () => {
       idempotencyKey: `a-${crypto.randomUUID()}`,
       lines: balancedLines(cash.id, revenue.id, '120.0000'),
     });
-    await accounting.post(actor, first.id, { rowVersion: first.rowVersion });
+    await accounting.post(checker, first.id, { rowVersion: first.rowVersion });
     const second = await accounting.createDraft(actor, {
       chartId: chart.id,
       periodId: period.id,
@@ -470,7 +476,7 @@ describe('Accounting double-entry PostgreSQL integration', () => {
       idempotencyKey: `b-${crypto.randomUUID()}`,
       lines: balancedLines(cash.id, revenue.id, '30.0000'),
     });
-    await accounting.post(actor, second.id, { rowVersion: second.rowVersion });
+    await accounting.post(checker, second.id, { rowVersion: second.rowVersion });
     const ledger = await accounting.reconstructLedger(actor, chart.id);
     expect(ledger.balanced).toBe(true);
     expect(ledger.totalDebits).toBe('150');

@@ -302,6 +302,8 @@ export function createFinanceFetchMock(options: FinanceFetchMockOptions = {}) {
         taxDetails: [{ lineNumber: 1, componentLabel: 'ISS', amount: '5.0000', detailSnapshot: {} }],
         events: [],
         authorizations: [],
+        validityLegend: 'SEM VALIDADE FISCAL',
+        officialDanfe: 'BLOCKED',
       });
     }
 

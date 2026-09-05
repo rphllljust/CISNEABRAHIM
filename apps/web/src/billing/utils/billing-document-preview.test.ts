@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { BillingRecordDetail } from '../types/billing.types';
 import {
-  BILLING_EMITTER_PREVIEW,
+  BILLING_DOCUMENT_PREVIEW_LABELS,
   buildBillingDocumentPreview,
   hasActiveFinalizedDocument,
   resolveBillingRecordTermsDivergence,
@@ -62,16 +62,31 @@ describe('buildBillingDocumentPreview', () => {
       documentNumber: null,
       purchaseOrderNumber: 'PO-DEMO-01',
       commercialReferenceLabel: 'Pedido PO-DEMO-01',
+      emitter: {
+        legalName: 'EMPRESA EMISSORA PILOTO LTDA',
+        taxId: '11222333000181',
+        addressLine: 'Rua Demo, 100, Centro, Porto Velho, RO, 76801000',
+      },
     });
 
-    expect(preview.documentCategory).toBe(BILLING_EMITTER_PREVIEW.documentCategory);
+    expect(preview.documentCategory).toBe(BILLING_DOCUMENT_PREVIEW_LABELS.documentCategory);
     expect(preview.documentNumberLabel).toBe('Atribuído na emissão');
     expect(preview.clientLegalName).toBe('Cliente Demo LTDA');
-    expect(preview.emitterLegalName).toBe(BILLING_EMITTER_PREVIEW.legalName);
+    expect(preview.emitterLegalName).toBe('EMPRESA EMISSORA PILOTO LTDA');
+    expect(preview.emitterAddressLine).toBe('Rua Demo, 100, Centro, Porto Velho, RO, 76801000');
     expect(preview.dueDate).toBe('2026-02-14');
     expect(preview.purchaseOrderNumber).toBe('PO-DEMO-01');
     expect(preview.items).toHaveLength(1);
     expect(preview.fiscalDisclaimer).toContain('Não constitui NF-e');
+  });
+
+  it('never fabricates an issuer when no emitted document exists', () => {
+    const preview = buildBillingDocumentPreview(buildBillingFixture(), {
+      commercialReferenceLabel: 'Ref',
+    });
+    expect(preview.emitterLegalName).toBe('');
+    expect(preview.emitterTaxId).toBe('');
+    expect(preview.emitterAddressLine).toBe('');
   });
 
   it('uses issued document number when available', () => {

@@ -18,7 +18,7 @@ describe('validateCreateClientForm', () => {
   it('accepts contact with email only', () => {
     const errors = validateCreateClientForm({
       legalName: 'Empresa LTDA',
-      taxId: '11.897.171/0001-81',
+      taxId: '11.222.333/0001-81',
       contactName: 'Ops',
       contactEmail: 'ops@test.invalid',
       contactPhone: '',

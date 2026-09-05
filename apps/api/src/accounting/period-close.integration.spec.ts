@@ -13,6 +13,8 @@ import { AuthModule } from '../auth/auth.module';
 import { AUTH_TEST_PASSWORD, applyAuthTestEnv } from '../auth/test/auth-test-env';
 import { normalizeLoginIdentifier } from '../auth/crypto/token-crypto';
 import { AuthorizationModule } from '../authorization/authorization.module';
+import { ApprovalMatrixAccessService } from '../authorization/services/approval-matrix-access.service';
+import { enableCriticalSodFor } from '../authorization/test/critical-sod-harness';
 import { AUTHZ_ACTIONS } from '../authorization/types/authz-actions';
 import { AUTHZ_RESOURCE_TYPES } from '../authorization/types/authz-resources';
 import { AUTHZ_SCOPES } from '../authorization/types/authz-scopes';
@@ -50,6 +52,7 @@ async function grantAccountingAdmin(pool: Pool, identityId: string): Promise<voi
 describe('Financial and accounting period close PostgreSQL integration', () => {
   let pool: Pool;
   let accounting: AccountingAccessService;
+  let matrices: ApprovalMatrixAccessService;
   const testDatabaseUrl = process.env['TEST_DATABASE_URL'];
 
   beforeAll(async () => {
@@ -61,6 +64,7 @@ describe('Financial and accounting period close PostgreSQL integration', () => {
       imports: [AuthModule, AuditModule, AuthorizationModule, AccountingModule],
     }).compile();
     accounting = module.get(AccountingAccessService);
+    matrices = module.get(ApprovalMatrixAccessService);
     pool = new Pool({ connectionString: testDatabaseUrl });
   });
 
@@ -81,6 +85,13 @@ describe('Financial and accounting period close PostgreSQL integration', () => {
       await grantAccountingAdmin(pool, identityId);
     }
     return { identityId, sessionId: 'test-session' };
+  }
+
+  async function seedSodPair() {
+    const originator = await seedActor();
+    const checker = await seedActor();
+    await enableCriticalSodFor(pool, matrices, checker.identityId);
+    return { originator, checker };
   }
 
   async function seedLedger(actor: { identityId: string; sessionId: string }) {
@@ -117,11 +128,12 @@ describe('Financial and accounting period close PostgreSQL integration', () => {
   }
 
   async function postManual(
-    actor: { identityId: string; sessionId: string },
+    originator: { identityId: string; sessionId: string },
+    poster: { identityId: string; sessionId: string },
     input: { chartId: string; periodId: string; cashId: string; revenueId: string; sourceId?: string },
   ) {
     const sourceId = input.sourceId ?? crypto.randomUUID();
-    const draft = await accounting.createDraft(actor, {
+    const draft = await accounting.createDraft(originator, {
       chartId: input.chartId,
       periodId: input.periodId,
       description: 'Sale',
@@ -133,13 +145,13 @@ describe('Financial and accounting period close PostgreSQL integration', () => {
       idempotencyKey: `man-${sourceId}`,
       lines: lines(input.cashId, input.revenueId),
     });
-    return accounting.post(actor, draft.id, { rowVersion: draft.rowVersion });
+    return accounting.post(poster, draft.id, { rowVersion: draft.rowVersion });
   }
 
   it('closes successfully after reconciliation checks without requiring settlement', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSodPair();
     const { chart, cash, revenue, period } = await seedLedger(actor);
-    await postManual(actor, { chartId: chart.id, periodId: period.id, cashId: cash.id, revenueId: revenue.id });
+    await postManual(actor, checker, { chartId: chart.id, periodId: period.id, cashId: cash.id, revenueId: revenue.id });
     const closed = await accounting.closePeriod(actor, period.id, {
       rowVersion: period.rowVersion,
       reason: 'Month close',
@@ -158,7 +170,7 @@ describe('Financial and accounting period close PostgreSQL integration', () => {
   });
 
   it('blocks close on configured origin inconsistency and leaves the period open', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSodPair();
     const { chart, cash, revenue, period } = await seedLedger(actor);
     const draft = await accounting.createDraft(actor, {
       chartId: chart.id,
@@ -172,7 +184,7 @@ describe('Financial and accounting period close PostgreSQL integration', () => {
       idempotencyKey: `set-${crypto.randomUUID()}`,
       lines: lines(cash.id, revenue.id),
     });
-    await accounting.post(actor, draft.id, { rowVersion: draft.rowVersion });
+    await accounting.post(checker, draft.id, { rowVersion: draft.rowVersion });
     await expect(
       accounting.closePeriod(actor, period.id, {
         rowVersion: period.rowVersion,
@@ -192,9 +204,9 @@ describe('Financial and accounting period close PostgreSQL integration', () => {
   });
 
   it('serializes concurrent posting against period close', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSodPair();
     const { chart, cash, revenue, period } = await seedLedger(actor);
-    await postManual(actor, { chartId: chart.id, periodId: period.id, cashId: cash.id, revenueId: revenue.id });
+    await postManual(actor, checker, { chartId: chart.id, periodId: period.id, cashId: cash.id, revenueId: revenue.id });
     const lateDraft = {
       chartId: chart.id,
       periodId: period.id,
@@ -230,7 +242,7 @@ describe('Financial and accounting period close PostgreSQL integration', () => {
   });
 
   it('replays double close and rejects unauthorized reopen', async () => {
-    const admin = await seedActor(true);
+    const { originator: admin, checker } = await seedSodPair();
     const stranger = await seedActor(false);
     const { period } = await seedLedger(admin);
     const first = await accounting.closePeriod(admin, period.id, {
@@ -255,7 +267,7 @@ describe('Financial and accounting period close PostgreSQL integration', () => {
       [period.id],
     );
     expect(stillClosed.rows[0]?.status).toBe('CLOSED');
-    const reopened = await accounting.reopenPeriod(admin, period.id, {
+    const reopened = await accounting.reopenPeriod(checker, period.id, {
       rowVersion: second.rowVersion,
       reason: 'Authorized adjustment',
     });

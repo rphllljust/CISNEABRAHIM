@@ -33,6 +33,10 @@ export type PurchaseOrderRow = {
   pricing_structure: string;
   total_amount: string | null;
   consumed_amount: string;
+  authorized_overrun_amount: string;
+  overrun_justification: string | null;
+  overrun_authorized_at: string | null;
+  overrun_authorized_by_identity_id: string | null;
   items_line_total_amount: string | null;
   payment_terms: string | null;
   payment_method: string | null;

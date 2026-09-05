@@ -57,7 +57,13 @@ HML expõe `/api/v1/observability/metrics` e `/api/v1/observability/alerts` com 
 cp .env.hml.example .env.hml
 pnpm hml:up
 pnpm hml:deploy
+pnpm --filter @cisne/api hml:grant-pilot-operator
+pnpm --filter @cisne/api hml:seed-synthetic
 pnpm hml:smoke
 ```
+
+O bootstrap de produção **não** atribui papéis. Em HML, `hml:grant-pilot-operator` concede o perfil `control_admin` (inclui listagens) e `platform:diagnostics:read` à identidade sintética, somente quando `CISNE_ENV=hml` e o banco é dedicado. Idempotente. Não altera produção.
+
+Seed 2026-09-03: 15/15 cenários sintéticos presentes em `cisne_hml`. Jobs `NOTIFICATION` ficam `PENDING` enquanto o worker HML não consome a fila; isso não autoriza go-live.
 
 Parar: `pnpm hml:down`

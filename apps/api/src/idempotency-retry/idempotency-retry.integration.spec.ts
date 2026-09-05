@@ -103,7 +103,7 @@ describe('Idempotency, timeout, retry & double-submit (PostgreSQL integration)',
 
       await expect(
         context.services.serviceRequestsAccess.convert(actor, request.serviceRequest.id, { rowVersion }),
-      ).rejects.toMatchObject({ code: REQUESTS_ERROR_CODES.INVALID_STATE });
+      ).rejects.toMatchObject({ code: REQUESTS_ERROR_CODES.VERSION_CONFLICT });
 
       const orders = await context.pool.query<{ count: string }>(
         `SELECT COUNT(*)::text AS count FROM so.service_orders WHERE service_request_id = $1`,
@@ -485,6 +485,7 @@ describe('Idempotency, timeout, retry & double-submit (PostgreSQL integration)',
 
 describe('Integration inbox deduplication (PostgreSQL integration)', () => {
   let pool: Pool;
+  let module: TestingModule;
   let receiveService: IntegrationInboxReceiveService;
   let processor: IntegrationInboxProcessorService;
   let repository: IntegrationInboxRepository;
@@ -496,8 +497,9 @@ describe('Integration inbox deduplication (PostgreSQL integration)', () => {
     }
 
     process.env['DATABASE_URL'] = testDatabaseUrl;
+    process.env['INBOX_PROCESSOR_ENABLED'] = 'false';
 
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       imports: [DatabaseModule, IntegrationsInboxModule],
     }).compile();
 
@@ -519,6 +521,7 @@ describe('Integration inbox deduplication (PostgreSQL integration)', () => {
   });
 
   afterAll(async () => {
+    await module.close();
     await pool.end();
   });
 

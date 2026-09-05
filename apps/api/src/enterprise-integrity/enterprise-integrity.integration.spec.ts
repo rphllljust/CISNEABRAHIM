@@ -44,6 +44,7 @@ describe('Enterprise financial integrity gate', () => {
 
   it('walks Client→Accounting, keeps economic equality, recovers failed hops without duplicates', async () => {
     const actor = await ctx.seedAdminActor();
+    const checker = await ctx.seedFinancialChecker();
     const locacao = UAT_SCENARIOS.find((scenario) => scenario.id === 'locacao');
     expect(locacao).toBeDefined();
     const journey = await runUatVerticalScenario(ctx.services, locacao!, actor, MASTER_BUSINESS_UNIT, {
@@ -87,12 +88,12 @@ describe('Enterprise financial integrity gate', () => {
     ).toBe(1);
 
     const settleKey = `settle-${artifacts.billingDocumentId}`;
-    const paid = await ctx.services.receivablesAccess.settle(actor, receivable.id, {
+    const paid = await ctx.services.receivablesAccess.settle(checker, receivable.id, {
       amount: receivable.principal,
       rowVersion: receivable.rowVersion,
       idempotencyKey: settleKey,
     });
-    const paidAgain = await ctx.services.receivablesAccess.settle(actor, receivable.id, {
+    const paidAgain = await ctx.services.receivablesAccess.settle(checker, receivable.id, {
       amount: receivable.principal,
       rowVersion: paid.rowVersion,
       idempotencyKey: settleKey,
@@ -273,7 +274,7 @@ describe('Enterprise financial integrity gate', () => {
     const ready = await ctx.services.fiscalAccess.markReady(actor, fiscalCreated.id, {
       rowVersion: fiscalCreated.rowVersion,
     });
-    const authorized = await ctx.services.fiscalAccess.submit(actor, ready.id, { rowVersion: ready.rowVersion });
+    const authorized = await ctx.services.fiscalAccess.submit(checker, ready.id, { rowVersion: ready.rowVersion });
     const authorizedAgain = await ctx.services.fiscalAccess.submit(actor, authorized.id, {
       rowVersion: authorized.rowVersion,
     });
@@ -345,6 +346,7 @@ describe('Enterprise financial integrity gate', () => {
 
   it('serializes double settlement, posting, reconciliation and fiscal submission', async () => {
     const actor = await ctx.seedAdminActor();
+    const checker = await ctx.seedFinancialChecker();
     const locacao = UAT_SCENARIOS.find((scenario) => scenario.id === 'locacao')!;
     const journey = await runUatVerticalScenario(ctx.services, locacao, actor, MASTER_BUSINESS_UNIT, {
       captureArtifacts: true,
@@ -362,12 +364,12 @@ describe('Enterprise financial integrity gate', () => {
     expect(receivable).toBeDefined();
 
     const concurrentSettle = await Promise.allSettled([
-      ctx.services.receivablesAccess.settle(actor, receivable!.id, {
+      ctx.services.receivablesAccess.settle(checker, receivable!.id, {
         amount: receivable!.principal,
         rowVersion: receivable!.rowVersion,
         idempotencyKey: `c1-${crypto.randomUUID()}`,
       }),
-      ctx.services.receivablesAccess.settle(actor, receivable!.id, {
+      ctx.services.receivablesAccess.settle(checker, receivable!.id, {
         amount: receivable!.principal,
         rowVersion: receivable!.rowVersion,
         idempotencyKey: `c2-${crypto.randomUUID()}`,
@@ -478,8 +480,8 @@ describe('Enterprise financial integrity gate', () => {
     const draftId = proposed.suggested[0]?.id as string;
     expect(draftId).toBeTruthy();
     const concurrentConfirm = await Promise.allSettled([
-      ctx.services.bankReconciliationAccess.confirm(actor, draftId),
-      ctx.services.bankReconciliationAccess.confirm(actor, draftId),
+      ctx.services.bankReconciliationAccess.confirm(checker, draftId),
+      ctx.services.bankReconciliationAccess.confirm(checker, draftId),
     ]);
     expect(concurrentConfirm.filter((item) => item.status === 'fulfilled').length).toBeGreaterThanOrEqual(1);
     expect(
@@ -526,8 +528,8 @@ describe('Enterprise financial integrity gate', () => {
       rowVersion: fiscal.rowVersion,
     });
     const concurrentSubmit = await Promise.allSettled([
-      ctx.services.fiscalAccess.submit(actor, ready.id, { rowVersion: ready.rowVersion }),
-      ctx.services.fiscalAccess.submit(actor, ready.id, { rowVersion: ready.rowVersion }),
+      ctx.services.fiscalAccess.submit(checker, ready.id, { rowVersion: ready.rowVersion }),
+      ctx.services.fiscalAccess.submit(checker, ready.id, { rowVersion: ready.rowVersion }),
     ]);
     expect(concurrentSubmit.filter((item) => item.status === 'fulfilled').length).toBeGreaterThanOrEqual(1);
     expect(

@@ -38,6 +38,8 @@ export type FiscalDocument = {
     outcome: string;
     protocolCode: string | null;
   }>;
+  validityLegend: string;
+  officialDanfe: 'BLOCKED' | 'ALLOWED';
 };
 
 export type TaxRule = {
@@ -79,4 +81,29 @@ export type TaxReproduction = {
     resultAmount: string;
   };
   matches: boolean;
+};
+
+export type FiscalPeriod = {
+  id: string;
+  unitId: string;
+  periodKey: string;
+  status: string;
+  rowVersion: number;
+  closedAt: string | null;
+  reopenedAt: string | null;
+  reopenReason: string | null;
+  closeChecks: Array<{ kind: string; result: string; blocking: boolean; observedCount: number; detail: string }>;
+};
+
+export type TaxAssessment = {
+  id: string;
+  unitId: string;
+  taxCalculationId: string;
+  taxRuleId: string;
+  periodKey: string;
+  currencyCode: string;
+  assessedAmount: string;
+  status: string;
+  rowVersion: number;
+  obligation: { id: string; amount: string; status: string; payableId: string | null } | null;
 };

@@ -89,7 +89,21 @@ export class ScopeEnforcementService {
     if (hasGlobalListGrant) {
       return { clause: 'TRUE', params: [] };
     }
-    return { clause: 'FALSE', params: [] };
+
+    const clientIds = grants
+      .filter(
+        (grant) => grant.scope_type === AUTHZ_SCOPES.Client && grant.resource_id !== null,
+      )
+      .map((grant) => grant.resource_id as string);
+
+    if (clientIds.length === 0) {
+      return { clause: 'FALSE', params: [] };
+    }
+
+    return {
+      clause: 'id = ANY($1::uuid[])',
+      params: [clientIds],
+    };
   }
 
   buildPersonListFilter(grants: GrantRow[]): ScopeSqlPredicate {

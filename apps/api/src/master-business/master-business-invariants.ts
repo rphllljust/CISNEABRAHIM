@@ -109,6 +109,9 @@ async function assertMeasurementBillingIntegrity(
 
   const measurementItemIds = new Set(measurement.items.map((item) => item.id));
   for (const billingItem of billing.items) {
+    if (billingItem.measurementItemId === null) {
+      continue;
+    }
     expect(measurementItemIds.has(billingItem.measurementItemId)).toBe(true);
   }
 

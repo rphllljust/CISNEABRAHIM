@@ -145,3 +145,25 @@ export type BalanceSheet = {
   netIncome: string;
   balanced: boolean;
 };
+
+export type FixedAssetRegister = {
+  id: string;
+  unitId: string;
+  operationalAssetId: string;
+  currencyCode: string;
+  usefulLifeMonths: number;
+  costCenterCode: string | null;
+  status: string;
+  rowVersion: number;
+  bookValue: string;
+  acquiredOn: string | null;
+  disposedOn: string | null;
+  movements: Array<{
+    id: string;
+    kind: string;
+    status: string;
+    amount: string;
+    occurredOn: string;
+    journalEntryId: string | null;
+  }>;
+};

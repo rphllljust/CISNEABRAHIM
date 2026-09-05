@@ -69,7 +69,73 @@
     },
     "incidents": [],
     "criticalErrors": [],
-    "operationalResults": [],
+    "operationalResults": [
+      {
+        "recordedAt": "2026-09-03T08:48:54.530Z",
+        "httpErrorRate": null,
+        "httpLatencyP95Ms": null,
+        "httpRequests": null,
+        "outboxFailed": 0,
+        "allocationConflictSignals": 0,
+        "billingAgingRecords": 0,
+        "openBlockers": 0,
+        "workerPending": 51,
+        "source": "database+live HTTP telemetry absent (PILOT_LIVE_HTTP_ERROR_RATE / PILOT_LIVE_HTTP_LATENCY_P95_MS unset); Prompt 82 lab smoke was not copied as exit evidence",
+        "notes": "allocation_conflicts=0; billing_aging_7d=0; outbox_failed=0; worker_pending=51; worker_failed_or_dead=0; posted_unbalanced_journals=0; duplicate_postings=0; incident_blockers=0; http_error_rate=missing; http_p95_ms=missing; phase_unchanged"
+      },
+      {
+        "recordedAt": "2026-09-03T15:47:50.565Z",
+        "httpErrorRate": 0.5714285714285714,
+        "httpLatencyP95Ms": 345,
+        "httpRequests": 14,
+        "outboxFailed": 0,
+        "allocationConflictSignals": 0,
+        "billingAgingRecords": 0,
+        "openBlockers": 0,
+        "workerPending": 0,
+        "source": "database+live HML GET /api/v1/observability/metrics (process uptime sample; not a 14-day series)",
+        "notes": "allocation_conflicts=0; billing_aging_7d=0; outbox_failed=0; worker_pending=0; worker_failed_or_dead=0; posted_unbalanced_journals=0; duplicate_postings=0; incident_blockers=0; http_error_rate=0.5714285714285714; http_p95_ms=345; phase_unchanged"
+      },
+      {
+        "recordedAt": "2026-09-03T15:55:15.243Z",
+        "httpErrorRate": 0.47058823529411764,
+        "httpLatencyP95Ms": 345,
+        "httpRequests": 17,
+        "outboxFailed": 0,
+        "allocationConflictSignals": 0,
+        "billingAgingRecords": 0,
+        "openBlockers": 0,
+        "workerPending": 0,
+        "source": "database+live HML GET /api/v1/observability/metrics (process uptime sample; not a 14-day series)",
+        "notes": "allocation_conflicts=0; billing_aging_7d=0; outbox_failed=0; worker_pending=0; worker_failed_or_dead=0; posted_unbalanced_journals=0; duplicate_postings=0; incident_blockers=0; http_error_rate=0.47058823529411764; http_p95_ms=345; phase_unchanged"
+      },
+      {
+        "recordedAt": "2026-09-03T16:46:03.644Z",
+        "httpErrorRate": 0.3548387096774194,
+        "httpLatencyP95Ms": 251,
+        "httpRequests": 31,
+        "outboxFailed": 0,
+        "allocationConflictSignals": 0,
+        "billingAgingRecords": 0,
+        "openBlockers": 0,
+        "workerPending": 0,
+        "source": "database+live HML GET /api/v1/observability/metrics (process uptime sample; not a 14-day series)",
+        "notes": "allocation_conflicts=0; billing_aging_7d=0; outbox_failed=0; worker_pending=0; worker_failed_or_dead=0; posted_unbalanced_journals=0; duplicate_postings=0; incident_blockers=0; http_error_rate=0.3548387096774194; http_p95_ms=251; phase_unchanged"
+      },
+      {
+        "recordedAt": "2026-09-03T19:07:16.475Z",
+        "httpErrorRate": 0.2391304347826087,
+        "httpLatencyP95Ms": 191,
+        "httpRequests": 46,
+        "outboxFailed": 0,
+        "allocationConflictSignals": 0,
+        "billingAgingRecords": 0,
+        "openBlockers": 0,
+        "workerPending": 47,
+        "source": "database+live HML GET /api/v1/observability/metrics (process uptime sample; not a 14-day series)",
+        "notes": "allocation_conflicts=0; billing_aging_7d=0; outbox_failed=0; worker_pending=47; worker_failed_or_dead=0; posted_unbalanced_journals=0; duplicate_postings=0; incident_blockers=0; http_error_rate=0.2391304347826087; http_p95_ms=191; phase_unchanged"
+      }
+    ],
     "evidenceReference": "docs/19-operations/pilot-program.md",
     "criteriaReferences": [
       "docs/19-operations/pilot-program.md",
@@ -91,7 +157,8 @@
       "authorizedBy": "Abrahim Jabour Junior (Administrador)",
       "environment": "pilot-hml"
     },
-    "notes": "Critérios definidos. Piloto não iniciado — aguarda evento real de início."
+    "notes": "Critérios definidos. Piloto não iniciado — aguarda evento real de início.",
+    "observationWaiver": null
   },
   "manualUatUx": {
     "status": "PASSED",
@@ -305,6 +372,76 @@
         "version": "0.0.0-rc.1"
       },
       "notes": "Sessão real Administrador 2/operador; decisão formal UAT-UX-002."
+    },
+    {
+      "recordedAt": "2026-09-03T08:48:54.530Z",
+      "actor": "release-engineer",
+      "action": "PILOT_OPERATIONAL_SNAPSHOT_RECORDED",
+      "field": "pilot.operationalResults",
+      "previousValue": "0",
+      "newValue": "1",
+      "releaseCandidate": {
+        "commitSha": "5be4230",
+        "artifactDigest": null,
+        "version": "0.0.0-rc.1"
+      },
+      "notes": "allocation_conflicts=0; billing_aging_7d=0; outbox_failed=0; worker_pending=51; worker_failed_or_dead=0; posted_unbalanced_journals=0; duplicate_postings=0; incident_blockers=0; http_error_rate=missing; http_p95_ms=missing; phase_unchanged"
+    },
+    {
+      "recordedAt": "2026-09-03T15:47:50.565Z",
+      "actor": "release-engineer",
+      "action": "PILOT_OPERATIONAL_SNAPSHOT_RECORDED",
+      "field": "pilot.operationalResults",
+      "previousValue": "1",
+      "newValue": "2",
+      "releaseCandidate": {
+        "commitSha": "5be4230",
+        "artifactDigest": null,
+        "version": "0.0.0-rc.1"
+      },
+      "notes": "allocation_conflicts=0; billing_aging_7d=0; outbox_failed=0; worker_pending=0; worker_failed_or_dead=0; posted_unbalanced_journals=0; duplicate_postings=0; incident_blockers=0; http_error_rate=0.5714285714285714; http_p95_ms=345; phase_unchanged"
+    },
+    {
+      "recordedAt": "2026-09-03T15:55:15.243Z",
+      "actor": "release-engineer",
+      "action": "PILOT_OPERATIONAL_SNAPSHOT_RECORDED",
+      "field": "pilot.operationalResults",
+      "previousValue": "2",
+      "newValue": "3",
+      "releaseCandidate": {
+        "commitSha": "5be4230",
+        "artifactDigest": null,
+        "version": "0.0.0-rc.1"
+      },
+      "notes": "allocation_conflicts=0; billing_aging_7d=0; outbox_failed=0; worker_pending=0; worker_failed_or_dead=0; posted_unbalanced_journals=0; duplicate_postings=0; incident_blockers=0; http_error_rate=0.47058823529411764; http_p95_ms=345; phase_unchanged"
+    },
+    {
+      "recordedAt": "2026-09-03T16:46:03.644Z",
+      "actor": "release-engineer",
+      "action": "PILOT_OPERATIONAL_SNAPSHOT_RECORDED",
+      "field": "pilot.operationalResults",
+      "previousValue": "3",
+      "newValue": "4",
+      "releaseCandidate": {
+        "commitSha": "5be4230",
+        "artifactDigest": null,
+        "version": "0.0.0-rc.1"
+      },
+      "notes": "allocation_conflicts=0; billing_aging_7d=0; outbox_failed=0; worker_pending=0; worker_failed_or_dead=0; posted_unbalanced_journals=0; duplicate_postings=0; incident_blockers=0; http_error_rate=0.3548387096774194; http_p95_ms=251; phase_unchanged"
+    },
+    {
+      "recordedAt": "2026-09-03T19:07:16.475Z",
+      "actor": "release-engineer",
+      "action": "PILOT_OPERATIONAL_SNAPSHOT_RECORDED",
+      "field": "pilot.operationalResults",
+      "previousValue": "4",
+      "newValue": "5",
+      "releaseCandidate": {
+        "commitSha": "5be4230",
+        "artifactDigest": null,
+        "version": "0.0.0-rc.1"
+      },
+      "notes": "allocation_conflicts=0; billing_aging_7d=0; outbox_failed=0; worker_pending=47; worker_failed_or_dead=0; posted_unbalanced_journals=0; duplicate_postings=0; incident_blockers=0; http_error_rate=0.2391304347826087; http_p95_ms=191; phase_unchanged"
     }
   ]
 }

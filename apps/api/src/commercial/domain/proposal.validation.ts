@@ -1,4 +1,10 @@
-import { normalizeMoneyAmount, parseOptionalMoneyAmount, sumMoneyAmounts } from './money';
+import {
+  isPositiveMoneyAmount,
+  moneyAmountsEqual,
+  normalizeMoneyAmount,
+  parseOptionalMoneyAmount,
+  sumMoneyAmounts,
+} from './money';
 import {
   isProposalAcceptanceOrigin,
   isProposalDocumentLinkPurpose,
@@ -77,6 +83,21 @@ export class ProposalValidationError extends Error {
   }
 }
 
+function multiplyMoney(quantity: string, unitPrice: string): string {
+  const qtyParts = quantity.split('.');
+  const priceParts = unitPrice.split('.');
+  const qtyWhole = BigInt(qtyParts[0] ?? '0');
+  const qtyFrac = (qtyParts[1] ?? '').padEnd(4, '0').slice(0, 4);
+  const priceWhole = BigInt(priceParts[0] ?? '0');
+  const priceFrac = (priceParts[1] ?? '').padEnd(4, '0').slice(0, 4);
+  const qtyScaled = qtyWhole * 10000n + BigInt(qtyFrac || '0');
+  const priceScaled = priceWhole * 10000n + BigInt(priceFrac || '0');
+  const product = qtyScaled * priceScaled;
+  const whole = product / 100000000n;
+  const frac = (product % 100000000n).toString().padStart(8, '0').slice(0, 4);
+  return normalizeMoneyAmount(`${whole}.${frac}`);
+}
+
 function parseItems(items: ProposalItemInput[] | undefined): ProposalItemInput[] {
   if (!items || items.length === 0) {
     return [];
@@ -93,14 +114,26 @@ function parseItems(items: ProposalItemInput[] | undefined): ProposalItemInput[]
     if (!Number.isInteger(lineNumber) || lineNumber < 1) {
       throw new ProposalValidationError('INVALID_LINE_NUMBER');
     }
+    const quantity = item.quantity ? normalizeMoneyAmount(item.quantity) : undefined;
+    if (quantity && !isPositiveMoneyAmount(quantity)) {
+      throw new ProposalValidationError('INVALID_QUANTITY');
+    }
+    const unitSalePrice = parseOptionalMoneyAmount(item.unitSalePrice) ?? undefined;
+    const lineSaleAmount = parseOptionalMoneyAmount(item.lineSaleAmount) ?? undefined;
+    if (quantity && unitSalePrice && lineSaleAmount) {
+      const expected = multiplyMoney(quantity, unitSalePrice);
+      if (!moneyAmountsEqual(expected, lineSaleAmount)) {
+        throw new ProposalValidationError('LINE_TOTAL_MISMATCH');
+      }
+    }
     return {
       ...item,
       lineNumber,
       description,
-      quantity: item.quantity ? normalizeMoneyAmount(item.quantity) : undefined,
-      unitSalePrice: parseOptionalMoneyAmount(item.unitSalePrice) ?? undefined,
+      quantity,
+      unitSalePrice,
       unitInternalCost: parseOptionalMoneyAmount(item.unitInternalCost) ?? undefined,
-      lineSaleAmount: parseOptionalMoneyAmount(item.lineSaleAmount) ?? undefined,
+      lineSaleAmount,
       lineInternalCost: parseOptionalMoneyAmount(item.lineInternalCost) ?? undefined,
     };
   });

@@ -95,3 +95,44 @@ export async function markServiceRequestConverted(
   });
   return true;
 }
+
+export async function markServiceRequestAdditionalConversion(
+  client: PoolClient,
+  input: {
+    serviceRequestId: string;
+    rowVersion: number;
+    actorIdentityId: string;
+    serviceOrderId: string;
+  },
+): Promise<boolean> {
+  const updated = await client.query(
+    `UPDATE sr.service_requests
+     SET
+       updated_by_identity_id = $3,
+       updated_at = NOW(),
+       row_version = row_version + 1
+     WHERE id = $1
+       AND row_version = $2
+       AND status = $4::sr.service_request_status`,
+    [
+      input.serviceRequestId,
+      input.rowVersion,
+      input.actorIdentityId,
+      SERVICE_REQUEST_STATUSES.Converted,
+    ],
+  );
+  if ((updated.rowCount ?? 0) === 0) {
+    return false;
+  }
+  await insertServiceRequestHistoryEvent(client, {
+    serviceRequestId: input.serviceRequestId,
+    eventType: SERVICE_REQUEST_HISTORY_EVENTS.AdditionalConverted,
+    actorIdentityId: input.actorIdentityId,
+    payload: {
+      fromStatus: SERVICE_REQUEST_STATUSES.Converted,
+      toStatus: SERVICE_REQUEST_STATUSES.Converted,
+      serviceOrderId: input.serviceOrderId,
+    },
+  });
+  return true;
+}

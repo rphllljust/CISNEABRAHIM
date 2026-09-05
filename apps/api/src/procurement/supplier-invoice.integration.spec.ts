@@ -15,6 +15,8 @@ import { AuthModule } from '../auth/auth.module';
 import { AUTH_TEST_PASSWORD, applyAuthTestEnv } from '../auth/test/auth-test-env';
 import { normalizeLoginIdentifier } from '../auth/crypto/token-crypto';
 import { AuthorizationModule } from '../authorization/authorization.module';
+import { ApprovalMatrixAccessService } from '../authorization/services/approval-matrix-access.service';
+import { enableCriticalSodFor } from '../authorization/test/critical-sod-harness';
 import { AUTHZ_ACTIONS } from '../authorization/types/authz-actions';
 import { AUTHZ_RESOURCE_TYPES } from '../authorization/types/authz-resources';
 import { AUTHZ_SCOPES } from '../authorization/types/authz-scopes';
@@ -74,6 +76,7 @@ describe('Supplier invoice PostgreSQL integration', () => {
   let suppliers: SupplierAccessService;
   let payables: PayablesAccessService;
   let failures: ProcurementFailureInjection;
+  let matrices: ApprovalMatrixAccessService;
   const testDatabaseUrl = process.env['TEST_DATABASE_URL'];
 
   beforeAll(async () => {
@@ -89,6 +92,7 @@ describe('Supplier invoice PostgreSQL integration', () => {
     suppliers = module.get(SupplierAccessService);
     payables = module.get(PayablesAccessService);
     failures = module.get(ProcurementFailureInjection);
+    matrices = module.get(ApprovalMatrixAccessService);
     pool = new Pool({ connectionString: testDatabaseUrl });
   });
 
@@ -124,13 +128,15 @@ describe('Supplier invoice PostgreSQL integration', () => {
   }
 
   async function approvedOrder(actor: { identityId: string; sessionId: string }, quantity = '100') {
+    const checker = await seedActor();
+    await enableCriticalSodFor(pool, matrices, checker.identityId);
     const created = await procurement.createRequest(actor, {
       unitId: UNIT,
       justification: 'Compra faturada',
       lines: [{ description: 'Servico contratado', quantity, unitAmount: '1' }],
     });
     const submitted = await procurement.submitRequest(actor, created.id, { version: created.version });
-    const approved = await procurement.approveRequest(actor, created.id, { version: submitted.version });
+    const approved = await procurement.approveRequest(checker, created.id, { version: submitted.version });
     const supplier = await seedSupplier(actor);
     const order = await procurement.issueOrder(actor, approved.id, {
       version: approved.version,

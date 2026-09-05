@@ -13,6 +13,8 @@ import { AuthModule } from '../auth/auth.module';
 import { AUTH_TEST_PASSWORD, applyAuthTestEnv } from '../auth/test/auth-test-env';
 import { normalizeLoginIdentifier } from '../auth/crypto/token-crypto';
 import { AuthorizationModule } from '../authorization/authorization.module';
+import { ApprovalMatrixAccessService } from '../authorization/services/approval-matrix-access.service';
+import { enableCriticalSodFor } from '../authorization/test/critical-sod-harness';
 import { AUTHZ_ACTIONS } from '../authorization/types/authz-actions';
 import { AUTHZ_RESOURCE_TYPES } from '../authorization/types/authz-resources';
 import { AUTHZ_SCOPES } from '../authorization/types/authz-scopes';
@@ -65,6 +67,7 @@ describe('Fiscal period close PostgreSQL integration', () => {
   let fiscal: FiscalAccessService;
   let periods: FiscalPeriodAccessService;
   let failures: FiscalPeriodFailureInjection;
+  let matrices: ApprovalMatrixAccessService;
   const testDatabaseUrl = process.env['TEST_DATABASE_URL'];
 
   beforeAll(async () => {
@@ -78,6 +81,7 @@ describe('Fiscal period close PostgreSQL integration', () => {
     fiscal = module.get(FiscalAccessService);
     periods = module.get(FiscalPeriodAccessService);
     failures = module.get(FiscalPeriodFailureInjection);
+    matrices = module.get(ApprovalMatrixAccessService);
     pool = new Pool({ connectionString: testDatabaseUrl });
   });
 
@@ -99,6 +103,13 @@ describe('Fiscal period close PostgreSQL integration', () => {
       await grantFiscalCloseAdmin(pool, identityId);
     }
     return { identityId, sessionId: 'test-session' };
+  }
+
+  async function seedSodPair() {
+    const originator = await seedActor();
+    const checker = await seedActor();
+    await enableCriticalSodFor(pool, matrices, checker.identityId);
+    return { originator, checker };
   }
 
   function draftInput() {
@@ -180,10 +191,10 @@ describe('Fiscal period close PostgreSQL integration', () => {
   });
 
   it('reopens a closed period and then accepts ordinary writes', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSodPair();
     const opened = await periods.open(actor, { unitId: UNIT, periodKey: PERIOD_KEY });
     await periods.close(actor, opened.id);
-    const reopened = await periods.reopen(actor, opened.id, { reason: 'Authorized reopen' });
+    const reopened = await periods.reopen(checker, opened.id, { reason: 'Authorized reopen' });
     expect(reopened.status).toBe('OPEN');
     const draft = await fiscal.createDraft(actor, draftInput());
     expect(draft.status).toBe('DRAFT');

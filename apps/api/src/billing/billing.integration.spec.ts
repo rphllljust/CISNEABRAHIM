@@ -87,6 +87,7 @@ async function grantBillingAdmin(pool: Pool, identityId: string, grantedBy: stri
     AUTHZ_ACTIONS.CommercialPurchaseOrderCreate,
     AUTHZ_ACTIONS.CommercialPurchaseOrderRead,
     AUTHZ_ACTIONS.CommercialPurchaseOrderRegister,
+    AUTHZ_ACTIONS.CommercialPurchaseOrderAuthorizeOverrun,
   ];
 
   for (const action of actions) {
@@ -337,6 +338,44 @@ describe('Billing PostgreSQL integration', () => {
         paymentTerms: '30 DDL',
       }),
     ).rejects.toMatchObject({ code: BILLING_ERROR_CODES.MEASUREMENT_NOT_APPROVED });
+  });
+
+  it('rejects measurement-required billing when no measurement is supplied', async () => {
+    const { actor } = await seedActor();
+    const { completed } = await seedDraftMeasurement(actor);
+
+    await expect(
+      billingAccess.prepare(actor, completed.id, {
+        paymentTerms: '30 DDL',
+      }),
+    ).rejects.toMatchObject({ code: BILLING_ERROR_CODES.MEASUREMENT_NOT_FOUND });
+  });
+
+  it('prepares contractual billing without a measurement when the policy is fixed price', async () => {
+    const { actor } = await seedActor();
+    const { completed } = await seedDraftMeasurement(actor);
+
+    await pool.query(
+      `UPDATE so.service_orders
+       SET service_snapshot = COALESCE(service_snapshot, '{}'::jsonb) || $2::jsonb,
+           proposal_snapshot = $3::jsonb
+       WHERE id = $1`,
+      [
+        completed.id,
+        JSON.stringify({ billingEntitlementPolicy: 'FIXED_PRICE' }),
+        JSON.stringify({ globalSalePrice: '1000.0000', currencyCode: 'BRL' }),
+      ],
+    );
+
+    const billing = await billingAccess.prepare(actor, completed.id, {
+      paymentTerms: '30 DDL',
+    });
+    expect(billing.status).toBe(BILLING_RECORD_STATUSES.Prepared);
+    expect(billing.measurementId).toBeNull();
+    expect(billing.entitlementPolicy).toBe('FIXED_PRICE');
+    expect(billing.items).toHaveLength(1);
+    expect(billing.items[0]?.measurementItemId).toBeNull();
+    expect(billing.totalAmount).toBe('1000');
   });
 
   it('prepares billing record from approved measurement with item-derived total', async () => {
@@ -950,5 +989,19 @@ describe('Billing PostgreSQL integration', () => {
         paymentTerms: '30 DDL',
       }),
     ).rejects.toMatchObject({ code: BILLING_ERROR_CODES.PURCHASE_ORDER_BALANCE_EXCEEDED });
+
+    const poAfterFail = await purchaseOrdersAccess.getById(actor, registered.purchaseOrder.id);
+    const overridden = await purchaseOrdersAccess.authorizeOverrun(actor, registered.purchaseOrder.id, {
+      rowVersion: poAfterFail.purchaseOrder.rowVersion,
+      amount: '500.0000',
+      justification: 'Excedente comercial autorizado pela autoridade máxima.',
+    });
+    expect(overridden.balance.authorizedOverrunAmount).toBeTruthy();
+
+    const billing = await billingAccess.prepare(actor, completed.id, {
+      measurementId: approved.id,
+      paymentTerms: '30 DDL',
+    });
+    expect(billing.status).toBe(BILLING_RECORD_STATUSES.Prepared);
   });
 });

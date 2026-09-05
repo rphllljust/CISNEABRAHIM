@@ -124,6 +124,12 @@ export class ContractsController {
     }
   }
 
+  @Post(':contractId/expire')
+  @HttpCode(200)
+  expire(@CurrentAuth() auth: AccessTokenClaims, @Param('contractId') contractId: string) {
+    return this.contractsAccess.expire({ identityId: auth.sub, sessionId: auth.sid }, contractId);
+  }
+
   @Post(':contractId/documents')
   @HttpCode(200)
   linkDocument(

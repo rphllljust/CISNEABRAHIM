@@ -252,7 +252,7 @@ export function ClientDetailPage() {
             <dd>{formatCnpjDisplay(client.taxId)}</dd>
           </div>
           <div>
-            <dt>Referência ERP externa</dt>
+            <dt>Referência externa</dt>
             <dd>{client.externalErpId ?? '—'}</dd>
           </div>
         </dl>

@@ -22,6 +22,22 @@ export function purchaseOrdersVersionConflict(): CommercialHttpException {
   );
 }
 
+export function purchaseOrdersOverrunJustificationRequired(): CommercialHttpException {
+  return new CommercialHttpException(
+    HttpStatus.BAD_REQUEST,
+    COMMERCIAL_ERROR_CODES.PURCHASE_ORDER_OVERRUN_JUSTIFICATION_REQUIRED,
+    'Administrative purchase order overrun requires a justification.',
+  );
+}
+
+export function purchaseOrdersOverrunAmountRequired(): CommercialHttpException {
+  return new CommercialHttpException(
+    HttpStatus.BAD_REQUEST,
+    COMMERCIAL_ERROR_CODES.PURCHASE_ORDER_OVERRUN_AMOUNT_REQUIRED,
+    'Administrative purchase order overrun requires a positive amount.',
+  );
+}
+
 export function purchaseOrdersInvalidState(): CommercialHttpException {
   return new CommercialHttpException(
     HttpStatus.CONFLICT,

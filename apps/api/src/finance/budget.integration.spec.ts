@@ -17,6 +17,8 @@ import { AuthModule } from '../auth/auth.module';
 import { AUTH_TEST_PASSWORD, applyAuthTestEnv } from '../auth/test/auth-test-env';
 import { normalizeLoginIdentifier } from '../auth/crypto/token-crypto';
 import { AuthorizationModule } from '../authorization/authorization.module';
+import { ApprovalMatrixAccessService } from '../authorization/services/approval-matrix-access.service';
+import { enableCriticalSodFor } from '../authorization/test/critical-sod-harness';
 import { AUTHZ_ACTIONS } from '../authorization/types/authz-actions';
 import { AUTHZ_RESOURCE_TYPES } from '../authorization/types/authz-resources';
 import { AUTHZ_SCOPES } from '../authorization/types/authz-scopes';
@@ -76,6 +78,7 @@ describe('Finance budget PostgreSQL integration', () => {
   let budgets: BudgetAccessService;
   let payables: PayablesAccessService;
   let accounting: AccountingAccessService;
+  let matrices: ApprovalMatrixAccessService;
   const testDatabaseUrl = process.env['TEST_DATABASE_URL'];
 
   beforeAll(async () => {
@@ -89,6 +92,7 @@ describe('Finance budget PostgreSQL integration', () => {
     budgets = module.get(BudgetAccessService);
     payables = module.get(PayablesAccessService);
     accounting = module.get(AccountingAccessService);
+    matrices = module.get(ApprovalMatrixAccessService);
     pool = new Pool({ connectionString: testDatabaseUrl });
   });
 
@@ -118,6 +122,13 @@ describe('Finance budget PostgreSQL integration', () => {
       await grantAccountingAdmin(pool, identityId, identityId);
     }
     return { identityId, sessionId: 'test-session' };
+  }
+
+  async function seedBudgetChecker(originatorGrant = true) {
+    const originator = await seedActor({ withBudgetGrant: originatorGrant, withAccountingGrant: true });
+    const checker = await seedActor({ withBudgetGrant: true, withAccountingGrant: true });
+    await enableCriticalSodFor(pool, matrices, [originator.identityId, checker.identityId]);
+    return { originator, checker };
   }
 
   async function seedExpenseAccount(actor: { identityId: string; sessionId: string }) {
@@ -184,7 +195,7 @@ describe('Finance budget PostgreSQL integration', () => {
   });
 
   it('versions an approved budget and keeps the approved version immutable', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedBudgetChecker();
     const created = await budgets.create(actor, {
       unitId: UNIT,
       code: `BUD-${crypto.randomUUID().slice(0, 8)}`,
@@ -203,7 +214,7 @@ describe('Finance budget PostgreSQL integration', () => {
       costCenterCode: 'CC-OPS',
     });
     expect(withLine.versions[0]!.status).toBe('DRAFT');
-    const approved = await budgets.approve(actor, created.id);
+    const approved = await budgets.approve(checker, created.id);
     expect(approved.versions[0]!.status).toBe('APPROVED');
     await expect(
       budgets.addLine(actor, created.id, {
@@ -229,7 +240,7 @@ describe('Finance budget PostgreSQL integration', () => {
   });
 
   it('does not change journal entries when mutating budget only', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedBudgetChecker();
     const before = await countJournals();
     const created = await budgets.create(actor, {
       unitId: UNIT,
@@ -247,7 +258,7 @@ describe('Finance budget PostgreSQL integration', () => {
       amount: '800.0000',
       costCenterCode: 'CC-OPS',
     });
-    await budgets.approve(actor, created.id);
+    await budgets.approve(checker, created.id);
     await budgets.createVersion(actor, created.id);
     const after = await countJournals();
     expect(after).toBe(before);
@@ -255,7 +266,7 @@ describe('Finance budget PostgreSQL integration', () => {
   });
 
   it('compares budgeted, posted actual and variance on the backend', async () => {
-    const actor = await seedActor({ withAccountingGrant: true });
+    const { originator: actor, checker } = await seedBudgetChecker();
     const { chart, cash, expense, period } = await seedExpenseAccount(actor);
     const category = await payables.createExpenseCategory(actor, {
       code: `CAT-${crypto.randomUUID().slice(0, 8)}`,
@@ -286,7 +297,7 @@ describe('Finance budget PostgreSQL integration', () => {
         },
       ],
     });
-    await accounting.post(actor, draft.id, { rowVersion: draft.rowVersion });
+    await accounting.post(checker, draft.id, { rowVersion: draft.rowVersion });
     const journalsAfterPost = await countJournals();
 
     const created = await budgets.create(actor, {
@@ -316,7 +327,7 @@ describe('Finance budget PostgreSQL integration', () => {
       amount: '100.0000',
       costCenterCode: 'CC-OPS',
     });
-    const approved = await budgets.approve(actor, created.id);
+    const approved = await budgets.approve(checker, created.id);
     const comparison = await budgets.compare(actor, created.id);
     expect(comparison.budgeted).toBe('1300.0000');
     expect(comparison.actual).toBe('750.0000');

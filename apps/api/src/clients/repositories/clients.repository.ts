@@ -4,7 +4,7 @@ import { DatabaseService } from '../../infrastructure/database/database.service'
 import { FAULT_HOOKS } from '../../platform/fault-injection/fault-hook.ids';
 import { FAULT_INJECTION_PORT, type FaultInjectionPort } from '../../platform/fault-injection/fault-injection.port';
 import { maybeInjectFault } from '../../platform/fault-injection/fault-injection.util';
-import type { AddressPurpose, ContactPurpose } from '../domain/client-status';
+import type { AddressPurpose, ContactPurpose, PurchaseOrderRequirement } from '../domain/client-status';
 import type {
   ClientAddressRow,
   ClientContactRow,
@@ -35,6 +35,7 @@ export type CreateClientPersistenceInput = {
     postalCode?: string;
     country?: string;
   }>;
+  purchaseOrderRequirement?: PurchaseOrderRequirement;
 };
 
 export type UpdateClientPersistenceInput = {
@@ -45,7 +46,21 @@ export type UpdateClientPersistenceInput = {
   externalErpId?: string | null;
   contacts?: CreateClientPersistenceInput['contacts'];
   addresses?: CreateClientPersistenceInput['addresses'];
+  purchaseOrderRequirement?: PurchaseOrderRequirement;
 };
+
+const CLIENT_COLUMNS = `id,
+              legal_name,
+              trade_name,
+              normalized_tax_id,
+              external_erp_id,
+              status,
+              version,
+              created_at,
+              updated_at,
+              deactivated_at,
+              deactivation_reason,
+              COALESCE(purchase_order_requirement::text, 'NOT_REQUIRED') AS purchase_order_requirement`;
 
 @Injectable()
 export class ClientsRepository {
@@ -62,19 +77,29 @@ export class ClientsRepository {
     return connection.pool;
   }
 
+  async findPublishedById(clientId: string): Promise<{
+    id: string;
+    status: ClientRow['status'];
+    purchase_order_requirement: ClientRow['purchase_order_requirement'];
+  } | null> {
+    const result = await this.pool().query<{
+      id: string;
+      status: ClientRow['status'];
+      purchase_order_requirement: ClientRow['purchase_order_requirement'];
+    }>(
+      `SELECT id,
+              status,
+              COALESCE(purchase_order_requirement::text, 'NOT_REQUIRED') AS purchase_order_requirement
+       FROM pty.clients
+       WHERE id = $1`,
+      [clientId],
+    );
+    return result.rows[0] ?? null;
+  }
+
   async findById(clientId: string): Promise<ClientDetail | null> {
     const client = await this.pool().query<ClientRow>(
-      `SELECT id,
-              legal_name,
-              trade_name,
-              normalized_tax_id,
-              external_erp_id,
-              status,
-              version,
-              created_at,
-              updated_at,
-              deactivated_at,
-              deactivation_reason
+      `SELECT ${CLIENT_COLUMNS}
        FROM pty.clients
        WHERE id = $1`,
       [clientId],
@@ -93,17 +118,7 @@ export class ClientsRepository {
     offset: number,
   ): Promise<ClientRow[]> {
     const result = await this.pool().query<ClientRow>(
-      `SELECT id,
-              legal_name,
-              trade_name,
-              normalized_tax_id,
-              external_erp_id,
-              status,
-              version,
-              created_at,
-              updated_at,
-              deactivated_at,
-              deactivation_reason
+      `SELECT ${CLIENT_COLUMNS}
        FROM pty.clients
        WHERE ${whereClause}
        ORDER BY created_at ASC, id ASC
@@ -166,25 +181,17 @@ export class ClientsRepository {
            legal_name,
            trade_name,
            normalized_tax_id,
-           external_erp_id
+           external_erp_id,
+           purchase_order_requirement
          )
-         VALUES ($1, $2, $3, $4)
-         RETURNING id,
-                   legal_name,
-                   trade_name,
-                   normalized_tax_id,
-                   external_erp_id,
-                   status,
-                   version,
-                   created_at,
-                   updated_at,
-                   deactivated_at,
-                   deactivation_reason`,
+         VALUES ($1, $2, $3, $4, COALESCE($5::pty.purchase_order_requirement, 'NOT_REQUIRED'::pty.purchase_order_requirement))
+         RETURNING ${CLIENT_COLUMNS}`,
         [
           input.legalName.trim(),
           input.tradeName?.trim() ?? null,
           input.normalizedTaxId,
           input.externalErpId?.trim() ?? null,
+          input.purchaseOrderRequirement ?? null,
         ],
       );
       const row = inserted.rows[0];
@@ -230,22 +237,16 @@ export class ClientsRepository {
         sets.push(`external_erp_id = $${paramIndex++}`);
         params.push(input.externalErpId);
       }
+      if (input.purchaseOrderRequirement !== undefined) {
+        sets.push(`purchase_order_requirement = $${paramIndex++}::pty.purchase_order_requirement`);
+        params.push(input.purchaseOrderRequirement);
+      }
 
       const updated = await client.query<ClientRow>(
         `UPDATE pty.clients
          SET ${sets.join(', ')}
          WHERE id = $1 AND version = $2
-         RETURNING id,
-                   legal_name,
-                   trade_name,
-                   normalized_tax_id,
-                   external_erp_id,
-                   status,
-                   version,
-                   created_at,
-                   updated_at,
-                   deactivated_at,
-                   deactivation_reason`,
+         RETURNING ${CLIENT_COLUMNS}`,
         params,
       );
 
@@ -310,17 +311,7 @@ export class ClientsRepository {
            deactivated_by_identity_id = CASE WHEN $3::text = 'INACTIVE' THEN $4::uuid ELSE deactivated_by_identity_id END,
            deactivation_reason = CASE WHEN $3::text = 'INACTIVE' THEN $5 ELSE deactivation_reason END
        WHERE id = $1 AND version = $2
-       RETURNING id,
-                 legal_name,
-                 trade_name,
-                 normalized_tax_id,
-                 external_erp_id,
-                 status,
-                 version,
-                 created_at,
-                 updated_at,
-                 deactivated_at,
-                 deactivation_reason`,
+       RETURNING ${CLIENT_COLUMNS}`,
       [clientId, expectedVersion, status, actorIdentityId, reason ?? null],
     );
 

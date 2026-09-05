@@ -19,7 +19,7 @@ const CONTRACT_RETURNING = `
 const PERIOD_RETURNING = `
   id, unit_id, competence_year, competence_month,
   starts_on::text AS starts_on, ends_on::text AS ends_on,
-  status::text AS status, row_version, created_by_identity_id
+  status::text AS status, row_version, created_by_identity_id, updated_by_identity_id
 `;
 const EVENT_RETURNING = `
   id, unit_id, payroll_period_id, employment_contract_id,
@@ -28,7 +28,7 @@ const EVENT_RETURNING = `
 `;
 const CALCULATION_RETURNING = `
   id, unit_id, payroll_period_id, employment_contract_id,
-  calculation_number, formula_status::text AS formula_status
+  calculation_number, formula_status::text AS formula_status, created_by_identity_id
 `;
 const RESULT_RETURNING = `
   r.id, r.payroll_calculation_id, c.employment_contract_id,
@@ -116,6 +116,18 @@ export class PayrollRepository {
       [id],
     );
     return result.rows[0] ?? null;
+  }
+
+  async findLatestCalculationActor(payrollPeriodId: string): Promise<string | null> {
+    const result = await this.pool().query<{ created_by_identity_id: string }>(
+      `SELECT created_by_identity_id
+       FROM pay.payroll_calculations
+       WHERE payroll_period_id = $1
+       ORDER BY calculation_number DESC, calculated_at DESC
+       LIMIT 1`,
+      [payrollPeriodId],
+    );
+    return result.rows[0]?.created_by_identity_id ?? null;
   }
 
   async findEventByIdempotency(

@@ -1,4 +1,9 @@
 import { formatMoneyAmountForApi } from '../../platform/kernel/money-math';
+import {
+  SRC006_FISCAL_CREDENTIALING,
+  fiscalOfficialPresentation,
+  type FiscalCredentialingSnapshot,
+} from '../domain/fiscal-credentialing';
 import type { FiscalAggregate } from '../repositories/fiscal.repository.types';
 
 export type FiscalDocumentResponse = {
@@ -41,9 +46,21 @@ export type FiscalDocumentResponse = {
     outcome: string;
     protocolCode: string | null;
   }>;
+  validityLegend: string;
+  officialDanfe: 'BLOCKED' | 'ALLOWED';
 };
 
-export function toFiscalDocumentResponse(aggregate: FiscalAggregate): FiscalDocumentResponse {
+export function toFiscalDocumentResponse(
+  aggregate: FiscalAggregate,
+  credentialing: FiscalCredentialingSnapshot = SRC006_FISCAL_CREDENTIALING,
+): FiscalDocumentResponse {
+  const latestProtocol =
+    aggregate.authorizations.find((item) => item.protocol_code?.trim())?.protocol_code ?? null;
+  const presentation = fiscalOfficialPresentation({
+    status: aggregate.document.status,
+    protocolCode: latestProtocol,
+    credentialingApproved: credentialing.approved,
+  });
   return {
     id: aggregate.document.id,
     unitId: aggregate.document.unit_id,
@@ -87,5 +104,7 @@ export function toFiscalDocumentResponse(aggregate: FiscalAggregate): FiscalDocu
       outcome: authorization.outcome,
       protocolCode: authorization.protocol_code,
     })),
+    validityLegend: presentation.validityLegend,
+    officialDanfe: presentation.officialDanfe,
   };
 }

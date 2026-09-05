@@ -4,7 +4,7 @@ Esta pasta destina-se **apenas** a originais, exportações e cópias de trabalh
 
 ## Estado atual
 
-Nenhuma fonte empresarial foi depositada. Os tipos esperados estão em [`../01-foundation/source-registry.md`](../01-foundation/source-registry.md) como `NOT_PROVIDED`.
+Fontes registradas: SRC-001 a SRC-008 e sign-offs UAT-UX. SRC-005 e SRC-006 são transcrições controladas com hash dos PDFs cadastrais fornecidos; os originais não foram versionados enquanto DDP-019 permanecer `OPEN`. SRC-007 confirma gates de transmissão NF-e, autorização SEFAZ e legendas DANFE; não fornece credenciamento vigente nem tributação substantiva. SRC-008 confirma autoridade operacional máxima, solicitação≠OS, PO configurável, medição real e desacoplamento faturamento interno/emissão fiscal. Requisitos fiscais substantivos (alíquota, CFOP, NCM, código de serviço, credenciais e tipo legal de emissão) continuam `NOT_PROVIDED`/`OPEN`. Conexão com ERP foi rejeitada (SRC-004); documentação de ERP não é esperada.
 
 ## Regras
 

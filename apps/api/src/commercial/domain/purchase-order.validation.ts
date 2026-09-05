@@ -1,4 +1,4 @@
-import { normalizeMoneyAmount, parseOptionalMoneyAmount } from './money';
+import { isPositiveMoneyAmount, normalizeMoneyAmount, parseOptionalMoneyAmount } from './money';
 import {
   isPurchaseOrderDocumentLinkPurpose,
   isPurchaseOrderPricingStructure,
@@ -139,6 +139,9 @@ function parseItems(items: PurchaseOrderItemInput[] | undefined): PurchaseOrderI
       throw new PurchaseOrderValidationError('INVALID_LINE_NUMBER');
     }
     const quantity = item.quantity ? normalizeMoneyAmount(item.quantity) : undefined;
+    if (quantity && !isPositiveMoneyAmount(quantity)) {
+      throw new PurchaseOrderValidationError('INVALID_QUANTITY');
+    }
     const unitPrice = parseOptionalMoneyAmount(item.unitPrice) ?? undefined;
     const lineTotal = parseOptionalMoneyAmount(item.lineTotal) ?? undefined;
 

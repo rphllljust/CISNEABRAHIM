@@ -1,14 +1,15 @@
-﻿# Copias exportadas pelo split-repos - nao sao a fonte de verdade.
+# Copias exportadas pelo split-repos - nao sao a fonte de verdade.
 # Fonte: apps/web (front), apps/api (back), packages/database (banco).
 cisne-backend/
 cisne-frontend/
 cisne-infra/
 
 # Cache, dependencias e artefatos locais
+# tmp/ NAO entra aqui: rascunho do projeto fica em C:\CISNEABRAHIM\tmp (gitignore),
+# nao em %TEMP% / C:\Users\...\AppData.
 .turbo/
 node_modules/
 artifacts/
-tmp/
 .object-storage-dev-seed/
 .object-storage/
 .backup/

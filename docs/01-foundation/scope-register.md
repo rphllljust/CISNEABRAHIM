@@ -4,7 +4,7 @@
 | ------------ | ------------------------------------------- |
 | Document ID  | SCOPE-001                                   |
 | Source       | SRC-000; **atualizado** SRC-001 (Prompt 01) |
-| Last updated | 2026-09-02 (Release 1 closed scope)         |
+| Last updated | 2026-09-03 (SRC-008: autoridade operacional; SRC-007: gates NF-e/DANFE; emissão oficial permanece fora da Release 1) |
 
 Separação rigorosa. Não declarar MVP funcional.
 
@@ -23,7 +23,9 @@ Nenhum módulo empresarial está nesta seção.
 
 ## OUT_OF_SCOPE_CONFIRMED
 
-Nenhum item de produto foi **confirmado** como fora de escopo permanente.
+- Conexão, sincronização ou convivência com ERP externo (SRC-004 / BR-042 / SC-001). O SISTEMA CISNE RONDÔNIA é o sistema centralizado.
+
+Isto **não** coloca módulos nativos (financeiro, fiscal, contábil) em fora de escopo permanente — apenas a dependência de ERP externo.
 
 Fora de escopo **desta etapa (Prompt 00)** — restrição de fase, não de produto:
 
@@ -53,7 +55,7 @@ Escopo operacional fechado da Release 1 — registro canônico: [`release-1-clos
 
 **OUT_OF_RELEASE_1 (fail-closed):** financeiro; emissão fiscal oficial; contabilidade; estoque; folha; suprimentos; fornecedores; contratos; pessoas (módulo); verticais dedicadas locação/transporte; alertas; relatórios; matriz de aprovação financeira; rentabilidade operacional.
 
-Isto **não** move fiscal/contábil/ERP para `OUT_OF_SCOPE_CONFIRMED` permanente. São `OUT_OF_RELEASE_1` + `FUTURE_SCOPE_CANDIDATE`.
+Isto **não** move fiscal/contábil nativos para `OUT_OF_SCOPE_CONFIRMED` permanente. São `OUT_OF_RELEASE_1` + `FUTURE_SCOPE_CANDIDATE` **dentro do CISNE**. Conexão com ERP externo é `OUT_OF_SCOPE_CONFIRMED` (SRC-004).
 
 Faturamento interno da Release 1 **não** é emissão fiscal oficial (DDP-023).
 
@@ -61,7 +63,7 @@ Faturamento interno da Release 1 **não** é emissão fiscal oficial (DDP-023).
 
 Tudo que não está em `IN_SCOPE_CONFIRMED`, incluindo:
 
-- substituição ou convivência com ERP;
+- *(removido 2026-09-03)* substituição ou convivência com ERP — agora `OUT_OF_SCOPE_CONFIRMED` (SRC-004);
 - fiscal, contábil e jurídico (permanecem fora da Release 1; ver `OUT_OF_RELEASE_1`);
 - mobile / offline;
 - quais tipos de OS existem;

@@ -96,6 +96,13 @@ export const serviceOrders = soSchema.table(
     completedByIdentityId: uuid('completed_by_identity_id').references(() => identities.id, {
       onDelete: 'restrict',
     }),
+    statusBeforeCancel: serviceOrderStatusEnum('status_before_cancel'),
+    reopenedAt: timestamp('reopened_at', { withTimezone: true, mode: 'string' }),
+    reopenedByIdentityId: uuid('reopened_by_identity_id').references(() => identities.id, {
+      onDelete: 'restrict',
+    }),
+    reopenReason: text('reopen_reason'),
+    statusBeforeReopen: serviceOrderStatusEnum('status_before_reopen'),
     rowVersion: integer('row_version').notNull().default(1),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).notNull().defaultNow(),
@@ -109,7 +116,7 @@ export const serviceOrders = soSchema.table(
   (table) => [
     uniqueIndex('service_orders_internal_code_uidx').on(table.internalCode),
     uniqueIndex('service_orders_order_number_uidx').on(table.orderNumber),
-    uniqueIndex('service_orders_service_request_id_uidx').on(table.serviceRequestId),
+    index('service_orders_service_request_id_idx').on(table.serviceRequestId),
     index('service_orders_status_idx').on(table.status),
     index('service_orders_unit_id_idx').on(table.unitId),
     index('service_orders_client_id_idx').on(table.clientId),

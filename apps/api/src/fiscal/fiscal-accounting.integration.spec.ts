@@ -20,6 +20,8 @@ import { AuthModule } from '../auth/auth.module';
 import { AUTH_TEST_PASSWORD, applyAuthTestEnv } from '../auth/test/auth-test-env';
 import { normalizeLoginIdentifier } from '../auth/crypto/token-crypto';
 import { AuthorizationModule } from '../authorization/authorization.module';
+import { ApprovalMatrixAccessService } from '../authorization/services/approval-matrix-access.service';
+import { enableCriticalSodFor } from '../authorization/test/critical-sod-harness';
 import { AUTHZ_ACTIONS } from '../authorization/types/authz-actions';
 import { AUTHZ_RESOURCE_TYPES } from '../authorization/types/authz-resources';
 import { AUTHZ_SCOPES } from '../authorization/types/authz-scopes';
@@ -35,10 +37,15 @@ import {
 } from './domain/tax-engine';
 import { FiscalModule } from './fiscal.module';
 import {
+  FISCAL_CREDENTIALING_STATUSES,
+  type FiscalCredentialingSnapshot,
+} from './domain/fiscal-credentialing';
+import {
   FISCAL_AUTHORIZATION_GATEWAY,
   type FiscalAuthorizationGateway,
   type FiscalGatewaySubmitResult,
 } from './ports/fiscal-authorization-gateway.port';
+import { FISCAL_CREDENTIALING_PORT, type FiscalCredentialingPort } from './ports/fiscal-credentialing.port';
 import { FiscalAccessService } from './services/fiscal-access.service';
 import { FiscalAccountingIntegrationService } from './services/fiscal-accounting-integration.service';
 import { TaxEngineAccessService } from './services/tax-engine-access.service';
@@ -51,6 +58,20 @@ class ScriptedFiscalGateway implements FiscalAuthorizationGateway {
 
   async submit(): Promise<FiscalGatewaySubmitResult> {
     return this.next;
+  }
+}
+
+class ScriptedFiscalCredentialing implements FiscalCredentialingPort {
+  approved = true;
+
+  snapshot(): FiscalCredentialingSnapshot {
+    return {
+      status: this.approved
+        ? FISCAL_CREDENTIALING_STATUSES.Approved
+        : FISCAL_CREDENTIALING_STATUSES.NotCredentialed,
+      approved: this.approved,
+      source: 'LAB',
+    };
   }
 }
 
@@ -115,6 +136,8 @@ describe('Fiscal to accounting integration PostgreSQL', () => {
   let repository: AccountingRepository;
   let failures: PostingFailureInjection;
   let gateway: ScriptedFiscalGateway;
+  let credentialing: ScriptedFiscalCredentialing;
+  let matrices: ApprovalMatrixAccessService;
   const testDatabaseUrl = process.env['TEST_DATABASE_URL'];
 
   beforeAll(async () => {
@@ -123,11 +146,14 @@ describe('Fiscal to accounting integration PostgreSQL', () => {
     }
     applyAuthTestEnv(testDatabaseUrl);
     gateway = new ScriptedFiscalGateway();
+    credentialing = new ScriptedFiscalCredentialing();
     const module: TestingModule = await Test.createTestingModule({
       imports: [AuthModule, AuditModule, AuthorizationModule, FiscalModule, AccountingModule],
     })
       .overrideProvider(FISCAL_AUTHORIZATION_GATEWAY)
       .useValue(gateway)
+      .overrideProvider(FISCAL_CREDENTIALING_PORT)
+      .useValue(credentialing)
       .compile();
     fiscal = module.get(FiscalAccessService);
     tax = module.get(TaxEngineAccessService);
@@ -135,6 +161,7 @@ describe('Fiscal to accounting integration PostgreSQL', () => {
     integration = module.get(FiscalAccountingIntegrationService);
     repository = module.get(AccountingRepository);
     failures = module.get(PostingFailureInjection);
+    matrices = module.get(ApprovalMatrixAccessService);
     pool = new Pool({ connectionString: testDatabaseUrl });
   });
 
@@ -143,6 +170,7 @@ describe('Fiscal to accounting integration PostgreSQL', () => {
     await truncateAccountingTables(pool);
     await truncateIdentityAndAuthorizationTables(pool);
     gateway.next = { outcome: 'AUTHORIZED', protocolCode: 'PROT-ACC-1' };
+    credentialing.approved = true;
     failures.reset();
   });
 
@@ -243,10 +271,12 @@ describe('Fiscal to accounting integration PostgreSQL', () => {
     };
   }
 
-  async function authorizeDocument(actor: { identityId: string; sessionId: string }) {
-    const created = await fiscal.createDraft(actor, draftInput());
-    const ready = await fiscal.markReady(actor, created.id, { rowVersion: created.rowVersion });
-    return fiscal.submit(actor, ready.id, { rowVersion: ready.rowVersion });
+  async function authorizeDocument(originator: { identityId: string; sessionId: string }) {
+    const checker = await seedActor();
+    await enableCriticalSodFor(pool, matrices, checker.identityId);
+    const created = await fiscal.createDraft(originator, draftInput());
+    const ready = await fiscal.markReady(originator, created.id, { rowVersion: created.rowVersion });
+    return fiscal.submit(checker, ready.id, { rowVersion: ready.rowVersion });
   }
 
   async function countPosted() {

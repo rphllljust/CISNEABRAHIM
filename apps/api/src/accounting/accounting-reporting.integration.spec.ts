@@ -13,6 +13,8 @@ import { AuthModule } from '../auth/auth.module';
 import { AUTH_TEST_PASSWORD, applyAuthTestEnv } from '../auth/test/auth-test-env';
 import { normalizeLoginIdentifier } from '../auth/crypto/token-crypto';
 import { AuthorizationModule } from '../authorization/authorization.module';
+import { ApprovalMatrixAccessService } from '../authorization/services/approval-matrix-access.service';
+import { enableCriticalSodFor } from '../authorization/test/critical-sod-harness';
 import { AUTHZ_ACTIONS } from '../authorization/types/authz-actions';
 import { AUTHZ_RESOURCE_TYPES } from '../authorization/types/authz-resources';
 import { AUTHZ_SCOPES } from '../authorization/types/authz-scopes';
@@ -57,6 +59,7 @@ describe('Accounting reporting and period close PostgreSQL integration', () => {
   let pool: Pool;
   let accounting: AccountingAccessService;
   let reporting: AccountingReportingService;
+  let matrices: ApprovalMatrixAccessService;
   const testDatabaseUrl = process.env['TEST_DATABASE_URL'];
 
   beforeAll(async () => {
@@ -69,6 +72,7 @@ describe('Accounting reporting and period close PostgreSQL integration', () => {
     }).compile();
     accounting = module.get(AccountingAccessService);
     reporting = module.get(AccountingReportingService);
+    matrices = module.get(ApprovalMatrixAccessService);
     pool = new Pool({ connectionString: testDatabaseUrl });
   });
 
@@ -89,6 +93,13 @@ describe('Accounting reporting and period close PostgreSQL integration', () => {
       await grantAccountingAdmin(pool, identityId, identityId);
     }
     return { identityId, sessionId: 'test-session' };
+  }
+
+  async function seedSodPair() {
+    const originator = await seedActor();
+    const checker = await seedActor();
+    await enableCriticalSodFor(pool, matrices, checker.identityId);
+    return { originator, checker };
   }
 
   async function seedChart(actor: { identityId: string; sessionId: string }) {
@@ -156,7 +167,8 @@ describe('Accounting reporting and period close PostgreSQL integration', () => {
   }
 
   async function postManual(
-    actor: { identityId: string; sessionId: string },
+    originator: { identityId: string; sessionId: string },
+    poster: { identityId: string; sessionId: string },
     input: {
       chartId: string;
       periodId: string;
@@ -167,7 +179,7 @@ describe('Accounting reporting and period close PostgreSQL integration', () => {
       amount: string;
     },
   ) {
-    const draft = await accounting.createDraft(actor, {
+    const draft = await accounting.createDraft(originator, {
       chartId: input.chartId,
       periodId: input.periodId,
       description: input.description,
@@ -179,14 +191,14 @@ describe('Accounting reporting and period close PostgreSQL integration', () => {
       idempotencyKey: `rpt-${crypto.randomUUID()}`,
       lines: lines(input.debitAccountId, input.creditAccountId, input.amount),
     });
-    return accounting.post(actor, draft.id, { rowVersion: draft.rowVersion });
+    return accounting.post(poster, draft.id, { rowVersion: draft.rowVersion });
   }
 
   it('derives journal, general ledger, trial balance and income statement from POSTED journals only', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSodPair();
     const { chart, cash, revenue, expense, equity, september, october } = await seedChart(actor);
 
-    await postManual(actor, {
+    await postManual(actor, checker, {
       chartId: chart.id,
       periodId: september.id,
       occurredOn: '2026-09-10',
@@ -195,7 +207,7 @@ describe('Accounting reporting and period close PostgreSQL integration', () => {
       creditAccountId: revenue.id,
       amount: '100.0000',
     });
-    await postManual(actor, {
+    await postManual(actor, checker, {
       chartId: chart.id,
       periodId: september.id,
       occurredOn: '2026-09-12',
@@ -255,7 +267,7 @@ describe('Accounting reporting and period close PostgreSQL integration', () => {
     expect(sheet.balanced).toBe(true);
     expect(equity.code).toBe('3.1.01');
 
-    await postManual(actor, {
+    await postManual(actor, checker, {
       chartId: chart.id,
       periodId: october.id,
       occurredOn: '2026-10-05',
@@ -276,7 +288,7 @@ describe('Accounting reporting and period close PostgreSQL integration', () => {
   });
 
   it('does not invent income-statement classification when the chart has none', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSodPair();
     const chart = await accounting.createChart(actor, {
       unitId: UNIT,
       code: `COA-${crypto.randomUUID().slice(0, 8)}`,
@@ -299,7 +311,7 @@ describe('Accounting reporting and period close PostgreSQL integration', () => {
       startsOn: '2026-09-01',
       endsOn: '2026-09-30',
     });
-    await postManual(actor, {
+    await postManual(actor, checker, {
       chartId: chart.id,
       periodId: period.id,
       occurredOn: '2026-09-10',
@@ -323,10 +335,10 @@ describe('Accounting reporting and period close PostgreSQL integration', () => {
   });
 
   it('closes a period only after validation, authorization and audit, then rejects ordinary postings', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSodPair();
     const stranger = await seedActor(false);
     const { chart, cash, revenue, september } = await seedChart(actor);
-    const posted = await postManual(actor, {
+    const posted = await postManual(actor, checker, {
       chartId: chart.id,
       periodId: september.id,
       occurredOn: '2026-09-10',
@@ -398,9 +410,9 @@ describe('Accounting reporting and period close PostgreSQL integration', () => {
   });
 
   it('keeps trial balance and historical posted amounts after reversal', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSodPair();
     const { chart, cash, revenue, september } = await seedChart(actor);
-    const posted = await postManual(actor, {
+    const posted = await postManual(actor, checker, {
       chartId: chart.id,
       periodId: september.id,
       occurredOn: '2026-09-10',
@@ -433,10 +445,10 @@ describe('Accounting reporting and period close PostgreSQL integration', () => {
   });
 
   it('computes trial balance from a larger posted set within a bounded time', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSodPair();
     const { chart, cash, revenue, september } = await seedChart(actor);
     for (let index = 0; index < 40; index += 1) {
-      await postManual(actor, {
+      await postManual(actor, checker, {
         chartId: chart.id,
         periodId: september.id,
         occurredOn: '2026-09-10',
@@ -456,9 +468,9 @@ describe('Accounting reporting and period close PostgreSQL integration', () => {
   });
 
   it('isolates DRE and balance sheet by period and keeps them after close', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSodPair();
     const { chart, cash, revenue, expense, september, october } = await seedChart(actor);
-    await postManual(actor, {
+    await postManual(actor, checker, {
       chartId: chart.id,
       periodId: september.id,
       occurredOn: '2026-09-10',
@@ -467,7 +479,7 @@ describe('Accounting reporting and period close PostgreSQL integration', () => {
       creditAccountId: revenue.id,
       amount: '100.0000',
     });
-    await postManual(actor, {
+    await postManual(actor, checker, {
       chartId: chart.id,
       periodId: september.id,
       occurredOn: '2026-09-12',
@@ -476,7 +488,7 @@ describe('Accounting reporting and period close PostgreSQL integration', () => {
       creditAccountId: cash.id,
       amount: '20.0000',
     });
-    await postManual(actor, {
+    await postManual(actor, checker, {
       chartId: chart.id,
       periodId: october.id,
       occurredOn: '2026-10-05',
@@ -506,9 +518,9 @@ describe('Accounting reporting and period close PostgreSQL integration', () => {
   });
 
   it('updates DRE and balance sheet from posted reversal without rewriting history', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSodPair();
     const { chart, cash, revenue, september } = await seedChart(actor);
-    const posted = await postManual(actor, {
+    const posted = await postManual(actor, checker, {
       chartId: chart.id,
       periodId: september.id,
       occurredOn: '2026-09-10',
@@ -539,10 +551,10 @@ describe('Accounting reporting and period close PostgreSQL integration', () => {
   });
 
   it('denies unauthorized DRE and balance sheet and reconciles them to ledger and trial balance', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSodPair();
     const stranger = await seedActor(false);
     const { chart, cash, revenue, expense, september } = await seedChart(actor);
-    await postManual(actor, {
+    await postManual(actor, checker, {
       chartId: chart.id,
       periodId: september.id,
       occurredOn: '2026-09-10',
@@ -551,7 +563,7 @@ describe('Accounting reporting and period close PostgreSQL integration', () => {
       creditAccountId: revenue.id,
       amount: '120.0000',
     });
-    await postManual(actor, {
+    await postManual(actor, checker, {
       chartId: chart.id,
       periodId: september.id,
       occurredOn: '2026-09-11',

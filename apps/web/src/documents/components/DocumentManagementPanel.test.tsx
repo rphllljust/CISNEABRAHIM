@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { resetTokenStoreForTests, tokenStore } from '../../auth/storage/token-store';
@@ -151,11 +151,9 @@ describe('DocumentManagementPanel', () => {
     });
 
     const input = document.querySelector('.doc-upload input[type="file"]') as HTMLInputElement;
-    Object.defineProperty(input, 'files', {
-      configurable: true,
-      value: [new File(['plain'], 'notes.txt', { type: 'text/plain' })],
+    fireEvent.change(input, {
+      target: { files: [new File(['plain'], 'notes.txt', { type: 'text/plain' })] },
     });
-    input.dispatchEvent(new Event('change', { bubbles: true }));
 
     await waitFor(() => {
       expect(screen.getByText(/tipo de arquivo não permitido/i)).toBeInTheDocument();

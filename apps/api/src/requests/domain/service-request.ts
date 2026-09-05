@@ -52,6 +52,7 @@ export const SERVICE_REQUEST_HISTORY_EVENTS = {
   Rejected: 'REJECTED',
   Cancelled: 'CANCELLED',
   Converted: 'CONVERTED',
+  AdditionalConverted: 'ADDITIONAL_CONVERTED',
 } as const;
 
 export type ServiceRequestHistoryEventType =
@@ -113,5 +114,4 @@ export const TERMINAL_SERVICE_REQUEST_STATUSES = new Set<ServiceRequestStatus>([
 export const NON_CONVERTIBLE_SERVICE_REQUEST_STATUSES = new Set<ServiceRequestStatus>([
   SERVICE_REQUEST_STATUSES.Rejected,
   SERVICE_REQUEST_STATUSES.Cancelled,
-  SERVICE_REQUEST_STATUSES.Converted,
 ]);

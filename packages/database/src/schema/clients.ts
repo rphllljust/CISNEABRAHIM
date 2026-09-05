@@ -19,6 +19,12 @@ export const ptySchema = pgSchema('pty');
 
 export const clientStatusEnum = ptySchema.enum('client_status', ['ACTIVE', 'INACTIVE']);
 
+export const purchaseOrderRequirementEnum = ptySchema.enum('purchase_order_requirement', [
+  'NOT_REQUIRED',
+  'BEFORE_EXECUTION',
+  'BEFORE_BILLING',
+]);
+
 export const contactPurposeEnum = ptySchema.enum('contact_purpose', [
   'operational',
   'commercial',
@@ -53,6 +59,9 @@ export const clients = ptySchema.table(
       onUpdate: 'cascade',
     }),
     deactivationReason: text('deactivation_reason'),
+    purchaseOrderRequirement: purchaseOrderRequirementEnum('purchase_order_requirement')
+      .notNull()
+      .default('NOT_REQUIRED'),
   },
   (table) => [
     check('clients_legal_name_not_empty_chk', sql`length(trim(${table.legalName})) > 0`),

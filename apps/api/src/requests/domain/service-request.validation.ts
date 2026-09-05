@@ -188,6 +188,17 @@ export function validateApproveServiceRequestInput(
   return input;
 }
 
+export function validateSubmitReady(input: {
+  description?: string | null;
+  serviceDefinitionId?: string | null;
+}): void {
+  const hasDescription = Boolean(input.description?.trim());
+  const hasService = Boolean(input.serviceDefinitionId?.trim());
+  if (!hasDescription && !hasService) {
+    throw new ServiceRequestValidationError('DESCRIPTION_OR_SERVICE_REQUIRED');
+  }
+}
+
 export function validateRowVersionBody(input: { rowVersion: number }): { rowVersion: number } {
   if (!Number.isInteger(input.rowVersion) || input.rowVersion < 1) {
     throw new ServiceRequestValidationError('INVALID_ROW_VERSION');

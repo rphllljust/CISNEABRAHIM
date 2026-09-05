@@ -5,6 +5,15 @@ export const CLIENT_STATUSES = {
 
 export type ClientStatus = (typeof CLIENT_STATUSES)[keyof typeof CLIENT_STATUSES];
 
+export const PURCHASE_ORDER_REQUIREMENTS = {
+  NotRequired: 'NOT_REQUIRED',
+  BeforeExecution: 'BEFORE_EXECUTION',
+  BeforeBilling: 'BEFORE_BILLING',
+} as const;
+
+export type PurchaseOrderRequirement =
+  (typeof PURCHASE_ORDER_REQUIREMENTS)[keyof typeof PURCHASE_ORDER_REQUIREMENTS];
+
 export const CONTACT_PURPOSES = {
   Operational: 'operational',
   Commercial: 'commercial',
@@ -54,6 +63,7 @@ export type Client = {
   updatedAt: string;
   deactivatedAt: string | null;
   deactivationReason: string | null;
+  purchaseOrderRequirement: PurchaseOrderRequirement;
   contacts: ClientContact[];
   addresses: ClientAddress[];
 };
@@ -69,6 +79,7 @@ export type CreateClientPayload = {
   tradeName?: string;
   taxId: string;
   externalErpId?: string;
+  purchaseOrderRequirement?: PurchaseOrderRequirement;
   contacts: Array<{
     name: string;
     purpose: ContactPurpose;
@@ -93,6 +104,7 @@ export type UpdateClientPayload = {
   legalName?: string;
   tradeName?: string | null;
   externalErpId?: string | null;
+  purchaseOrderRequirement?: PurchaseOrderRequirement;
   contacts?: CreateClientPayload['contacts'];
   addresses?: CreateClientPayload['addresses'];
 };
@@ -103,6 +115,7 @@ export const CLIENT_ERROR_CODES = {
   TAX_ID_CONFLICT: 'CLIENT_TAX_ID_CONFLICT',
   VERSION_CONFLICT: 'CLIENT_VERSION_CONFLICT',
   INVALID_STATE: 'CLIENT_INVALID_STATE',
+  INACTIVE: 'CLIENT_INACTIVE',
   DENIED: 'CLIENT_DENIED',
 } as const;
 

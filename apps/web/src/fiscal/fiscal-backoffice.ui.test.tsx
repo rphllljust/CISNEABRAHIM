@@ -46,6 +46,8 @@ describe('Fiscal backoffice UI', () => {
     expect(screen.getByText(/100,00/)).toBeInTheDocument();
     expect(screen.getByText(/5,00/)).toBeInTheDocument();
     expect(screen.getByRole('table', { name: /tributos persistidos/i })).toBeInTheDocument();
+    expect(screen.getByText('SEM VALIDADE FISCAL')).toBeInTheDocument();
+    expect(screen.getByText('Bloqueada')).toBeInTheDocument();
   });
 
   it('shows denied when fiscal read is forbidden', async () => {

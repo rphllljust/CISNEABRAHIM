@@ -42,7 +42,7 @@ export class OutboxRepository {
          status,
          max_attempts
        )
-       VALUES ($1, $2, $3::uuid, $4::jsonb, $5, $6::timestamptz, COALESCE($7::timestamptz, $6::timestamptz), $8, $9, $10, $11)
+       VALUES ($1, $2, $3::uuid, $4::jsonb, $5, $6::timestamptz, COALESCE($7::timestamptz, NOW()), $8, $9, $10, $11)
        ON CONFLICT (idempotency_key) DO NOTHING
        RETURNING id`,
       [

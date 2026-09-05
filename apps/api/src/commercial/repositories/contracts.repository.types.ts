@@ -123,3 +123,10 @@ export type CloseContractPersistenceInput = {
   closureReason?: string;
   actorIdentityId: string;
 };
+
+export type ExpireContractPersistenceInput = {
+  contractId: string;
+  actorIdentityId: string;
+  /** Data de referência da expiração (default hoje, formato YYYY-MM-DD). */
+  expiredAsOf?: string;
+};

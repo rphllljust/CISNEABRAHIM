@@ -1,4 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
+import { AUTHZ_ERROR_CODES } from '../../authorization/errors/authz-error-codes';
+import { AuthzHttpException } from '../../authorization/errors/authz-http.exception';
 import {
   SECURITY_AUDIT_ACTIONS,
   SECURITY_AUDIT_CLASSIFICATIONS,
@@ -8,6 +10,8 @@ import {
 import { SecurityAuditService } from '../../audit/services/security-audit.service';
 import { AUTHZ_ACTIONS } from '../../authorization/types/authz-actions';
 import type { IdentityAuthzContext } from '../../authorization/types/authz-decision';
+import { SodEnforcementService } from '../../authorization/services/sod-enforcement.service';
+import { SOD_DUTIES, resolveSodScope } from '../../authorization/domain/segregation-of-duties';
 import type { PayrollContractPort } from '../../platform/bounded-contexts/enterprise-core-ports';
 import { assertUuid } from '../../platform/kernel/uuid';
 import {
@@ -52,6 +56,7 @@ export class PayrollAccessService implements PayrollContractPort {
     private readonly authz: PayrollAccessAuthz,
     private readonly securityAudit: SecurityAuditService,
     private readonly accountingIntegration: PayrollAccountingIntegrationService,
+    private readonly sod: SodEnforcementService,
   ) {}
 
   async createContract(
@@ -230,6 +235,22 @@ export class PayrollAccessService implements PayrollContractPort {
         id: periodId,
         unitId,
       });
+      const current = await this.repository.findPeriodById(periodId);
+      if (!current || current.unit_id !== unitId) {
+        throw new PayrollError('PAYROLL_NOT_FOUND');
+      }
+      if (current.status !== PAYROLL_PERIOD_STATUSES.Closed) {
+        assertPeriodCanClose(current.status);
+      }
+      const calculator = await this.repository.findLatestCalculationActor(periodId);
+      if (calculator) {
+        const scope = resolveSodScope(unitId);
+        await this.sod.enforce(actor, {
+          duty: SOD_DUTIES.PayrollClose,
+          originatorIdentityId: calculator,
+          ...scope,
+        });
+      }
       const closed = await this.closeLockedPeriod(periodId, unitId, actor.identityId);
       await this.accountingIntegration.tryPostClosedPeriod(actor, periodId);
       await this.securityAudit.record({
@@ -248,12 +269,12 @@ export class PayrollAccessService implements PayrollContractPort {
     }
   }
 
-  async closePeriod(input: { payrollPeriodId: string; unitId: string }): Promise<void> {
-    try {
-      await this.closeLockedPeriod(input.payrollPeriodId, input.unitId);
-    } catch (error) {
-      throw mapPayrollDomainError(error);
-    }
+  async closePeriod(_input: { payrollPeriodId: string; unitId: string }): Promise<void> {
+    throw new AuthzHttpException(
+      HttpStatus.FORBIDDEN,
+      AUTHZ_ERROR_CODES.SOD_DUTY_CONFLICT,
+      'Payroll close requires an authorized distinct checker.',
+    );
   }
 
   async reopenPeriod(
@@ -266,6 +287,16 @@ export class PayrollAccessService implements PayrollContractPort {
       await this.authz.assertPayrollAction(actor, AUTHZ_ACTIONS.PayrollPeriodReopen, {
         id: periodId,
         unitId,
+      });
+      const current = await this.repository.findPeriodById(periodId);
+      if (!current || current.unit_id !== unitId) {
+        throw new PayrollError('PAYROLL_NOT_FOUND');
+      }
+      const scope = resolveSodScope(unitId);
+      await this.sod.enforce(actor, {
+        duty: SOD_DUTIES.PayrollReopen,
+        originatorIdentityId: current.updated_by_identity_id,
+        ...scope,
       });
       const reopened = await this.repository.withLockedPeriod(periodId, async (client, period) => {
         this.assertPeriodUnit(period, unitId);

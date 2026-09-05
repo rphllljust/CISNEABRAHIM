@@ -6,7 +6,6 @@
     ".turbo": true,
     "node_modules": true,
     "artifacts": true,
-    "tmp": true,
     ".object-storage-dev-seed": true,
     ".object-storage": true,
     ".backup": true,
@@ -21,5 +20,10 @@
     "node_modules": true,
     "artifacts": true,
     "tmp": true
+  },
+  "terminal.integrated.env.windows": {
+    "CISNE_TMP": "${workspaceFolder}\\tmp",
+    "TEMP": "${workspaceFolder}\\tmp",
+    "TMP": "${workspaceFolder}\\tmp"
   }
 }

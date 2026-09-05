@@ -101,14 +101,6 @@ export function assertSyntheticBusinessSeedAllowed(
   const cisneEnv = env['CISNE_ENV']?.trim() ?? null;
   const databaseUrl = env['DATABASE_URL']?.trim();
 
-  if (nodeEnv === 'production' || cisneEnv === 'production') {
-    throw new Error(`${operation} is forbidden when NODE_ENV or CISNE_ENV is production.`);
-  }
-
-  if (containsProductionMarker(nodeEnv) || (cisneEnv && containsProductionMarker(cisneEnv))) {
-    throw new Error(`${operation} blocked: environment classification matches production markers.`);
-  }
-
   const databaseTarget = parseDatabaseTarget(databaseUrl);
   if (!databaseTarget) {
     throw new Error(`${operation} requires DATABASE_URL with a valid PostgreSQL connection.`);
@@ -131,6 +123,10 @@ export function assertSyntheticBusinessSeedAllowed(
         `${operation} in homologation requires database cisne_hml (got "${databaseTarget.database}").`,
       );
     }
+  } else if (nodeEnv === 'production' || cisneEnv === 'production') {
+    throw new Error(`${operation} is forbidden when NODE_ENV or CISNE_ENV is production.`);
+  } else if (containsProductionMarker(nodeEnv) || (cisneEnv && containsProductionMarker(cisneEnv))) {
+    throw new Error(`${operation} blocked: environment classification matches production markers.`);
   } else if (nodeEnv === 'development') {
     if (env[SYNTHETIC_SEED_CONFIRM_ENV] !== SYNTHETIC_SEED_CONFIRM_VALUE) {
       throw new Error(

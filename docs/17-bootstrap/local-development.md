@@ -47,3 +47,7 @@ Ver `.env.example`. Sem `DATABASE_URL` ativo no bootstrap.
 ## IDE
 
 TypeScript project references; ESLint flat config por app.
+
+## Rascunho local
+
+Arquivos temporários do projeto (dumps, auditoria SQL, worktree isolada, logs de agente) ficam em `C:\CISNEABRAHIM\tmp\` (ignorado pelo Git). Não usar `%TEMP%` nem `C:\Users\<usuario>\AppData\...`.

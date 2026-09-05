@@ -13,6 +13,8 @@ import { AuthModule } from '../auth/auth.module';
 import { AUTH_TEST_PASSWORD, applyAuthTestEnv } from '../auth/test/auth-test-env';
 import { normalizeLoginIdentifier } from '../auth/crypto/token-crypto';
 import { AuthorizationModule } from '../authorization/authorization.module';
+import { ApprovalMatrixAccessService } from '../authorization/services/approval-matrix-access.service';
+import { enableCriticalSodFor } from '../authorization/test/critical-sod-harness';
 import { AUTHZ_ACTIONS } from '../authorization/types/authz-actions';
 import { AUTHZ_RESOURCE_TYPES } from '../authorization/types/authz-resources';
 import { AUTHZ_SCOPES } from '../authorization/types/authz-scopes';
@@ -49,6 +51,7 @@ describe('Payroll foundation PostgreSQL integration', () => {
   let pool: Pool;
   let payroll: PayrollAccessService;
   let repository: PayrollRepository;
+  let matrices: ApprovalMatrixAccessService;
   const testDatabaseUrl = process.env['TEST_DATABASE_URL'];
 
   beforeAll(async () => {
@@ -61,6 +64,7 @@ describe('Payroll foundation PostgreSQL integration', () => {
     }).compile();
     payroll = module.get(PayrollAccessService);
     repository = module.get(PayrollRepository);
+    matrices = module.get(ApprovalMatrixAccessService);
     pool = new Pool({ connectionString: testDatabaseUrl });
   });
 
@@ -81,6 +85,13 @@ describe('Payroll foundation PostgreSQL integration', () => {
       await grantPayrollAdmin(pool, identityId);
     }
     return { identityId, sessionId: 'test-session' };
+  }
+
+  async function seedSodPair() {
+    const originator = await seedActor();
+    const checker = await seedActor();
+    await enableCriticalSodFor(pool, matrices, [originator.identityId, checker.identityId]);
+    return { originator, checker };
   }
 
   async function seedPeriod(actor: { identityId: string; sessionId: string }) {
@@ -214,7 +225,7 @@ describe('Payroll foundation PostgreSQL integration', () => {
   });
 
   it('makes a CLOSED period immutable and requires authorized reopen for correction', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSodPair();
     const { contractA, period } = await seedPeriod(actor);
     await payroll.recordEvent(actor, {
       unitId: UNIT,
@@ -230,11 +241,11 @@ describe('Payroll foundation PostgreSQL integration', () => {
       code: PAYROLL_ERROR_CODES.PERIOD_NOT_CALCULATED,
     });
     await payroll.calculatePeriod(actor, period.id, UNIT);
-    const closed = await payroll.closePeriodAuthorized(actor, period.id, UNIT);
+    const closed = await payroll.closePeriodAuthorized(checker, period.id, UNIT);
     expect(closed.status).toBe('CLOSED');
     const concurrent = await Promise.allSettled([
-      payroll.closePeriodAuthorized(actor, period.id, UNIT),
-      payroll.closePeriodAuthorized(actor, period.id, UNIT),
+      payroll.closePeriodAuthorized(checker, period.id, UNIT),
+      payroll.closePeriodAuthorized(checker, period.id, UNIT),
     ]);
     expect(concurrent.filter((result) => result.status === 'fulfilled')).toHaveLength(2);
     await expect(
@@ -295,7 +306,9 @@ describe('Payroll foundation PostgreSQL integration', () => {
       idempotencyKey: `aud-${crypto.randomUUID()}`,
     });
     await payroll.calculatePeriod(admin, period.id, UNIT);
-    await payroll.closePeriodAuthorized(admin, period.id, UNIT);
+    const checker = await seedActor(true);
+    await enableCriticalSodFor(pool, matrices, [admin.identityId, checker.identityId]);
+    await payroll.closePeriodAuthorized(checker, period.id, UNIT);
     const audit = await pool.query<{ action: string }>(
       `SELECT action FROM audit.security_audit_events WHERE resource_id = $1`,
       [period.id],

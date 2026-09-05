@@ -101,6 +101,8 @@ function FiscalDocumentView({
             { label: 'Versão', value: String(document.rowVersion) },
             { label: 'Origem', value: document.sourceKind },
             { label: 'Faturamento', value: document.billingDocumentId ?? '—' },
+            { label: 'Validade fiscal', value: document.validityLegend || 'SEM VALIDADE FISCAL' },
+            { label: 'DANFE oficial', value: document.officialDanfe === 'ALLOWED' ? 'Liberada' : 'Bloqueada' },
           ]}
         />
       </div>

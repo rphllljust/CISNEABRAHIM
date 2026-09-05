@@ -27,6 +27,14 @@ import {
   PAYMENT_TERMS_SOURCES,
   type BillingAddressSnapshot,
 } from '../domain/billing';
+import {
+  assertBillingRight,
+  assertPurchaseOrderRequirement,
+  BillingEntitlementError,
+  requiresApprovedMeasurement,
+  resolveBillingEntitlementPolicy,
+  resolveContractualBillingLine,
+} from '../domain/billing-entitlement';
 import { buildBillingCostSummaryFromMeasurementItems } from '../domain/billing-cost-summary';
 import {
   assertBillingItemsTraceable,
@@ -99,60 +107,190 @@ export class BillingAccessService {
       throw this.validationFailed();
     }
 
-    const measurement = await this.billingRepository.findMeasurementForBilling(
-      validated.measurementId,
-      order.id,
-    );
-    if (!measurement) {
+    const policy = resolveBillingEntitlementPolicy(order.service_snapshot);
+    if (requiresApprovedMeasurement(policy) && !validated.measurementId) {
       throw this.mapBillingError(new BillingError('MEASUREMENT_NOT_FOUND'));
     }
 
+    const clientRequirement = order.client_id
+      ? await this.serviceOrdersRepository.findClientById(order.client_id)
+      : null;
     try {
-      assertMeasurementApprovedForBilling(measurement.status);
+      assertPurchaseOrderRequirement({
+        requirement: clientRequirement?.purchase_order_requirement,
+        phase: 'BILLING',
+        purchaseOrderId: order.purchase_order_id,
+        catalogRequiresPurchaseOrder: order.service_snapshot?.['requiresPurchaseOrder'] === true,
+      });
     } catch (error) {
-      throw this.mapBillingError(error);
+      if (error instanceof BillingEntitlementError && error.code === 'PURCHASE_ORDER_REQUIRED') {
+        throw new BillingHttpException(
+          HttpStatus.CONFLICT,
+          BILLING_ERROR_CODES.PURCHASE_ORDER_REQUIRED,
+          'A purchase order is required before billing preparation.',
+        );
+      }
+      throw error;
     }
 
-    const measurementItems = await this.billingRepository.listMeasurementItemsForBilling(measurement.id);
-    try {
-      assertBillingItemsPresent(measurementItems.length);
-    } catch (error) {
-      throw this.mapBillingError(error);
-    }
+    type ItemDraft = {
+      measurementItemId: string | null;
+      sourceExecutionEntryId: string | null;
+      lineNumber: number;
+      unitCode: string;
+      quantity: string;
+      unitPrice: string | null;
+      lineAmount: string;
+      pricingLineSnapshot: Record<string, unknown>;
+      lineLabel: string;
+    };
 
-    const itemDrafts = measurementItems.map((item) => {
-      if (!item.line_amount) {
+    let itemDrafts: ItemDraft[];
+    let measurementId: string | null = validated.measurementId ?? null;
+    let computedTotal: string;
+    let currencyCode: string;
+    let commercialReferenceSnapshot: Record<string, unknown>;
+
+    if (requiresApprovedMeasurement(policy)) {
+      const measurement = await this.billingRepository.findMeasurementForBilling(
+        validated.measurementId!,
+        order.id,
+      );
+      if (!measurement) {
+        throw this.mapBillingError(new BillingError('MEASUREMENT_NOT_FOUND'));
+      }
+
+      try {
+        assertMeasurementApprovedForBilling(measurement.status);
+        assertBillingRight({
+          policy,
+          serviceOrderStatus: order.status,
+          measurementStatus: measurement.status,
+        });
+      } catch (error) {
+        throw this.mapBillingError(error);
+      }
+
+      const measurementItems = await this.billingRepository.listMeasurementItemsForBilling(measurement.id);
+      try {
+        assertBillingItemsPresent(measurementItems.length);
+      } catch (error) {
+        throw this.mapBillingError(error);
+      }
+
+      itemDrafts = measurementItems.map((item) => {
+        if (!item.line_amount) {
+          throw this.mapBillingError(new BillingError('BILLING_ITEMS_REQUIRED'));
+        }
+        return {
+          measurementItemId: item.id,
+          sourceExecutionEntryId: item.source_execution_entry_id,
+          lineNumber: item.line_number,
+          unitCode: item.unit_code,
+          quantity: item.measured_quantity,
+          unitPrice: item.unit_price,
+          lineAmount: item.line_amount,
+          pricingLineSnapshot: item.pricing_line_snapshot,
+          lineLabel: `Linha ${item.line_number}`,
+        };
+      });
+
+      try {
+        assertBillingItemsTraceable(
+          itemDrafts.map((item) => ({
+            measurementItemId: item.measurementItemId,
+            sourceExecutionEntryId: item.sourceExecutionEntryId,
+            lineNumber: item.lineNumber,
+            unitCode: item.unitCode,
+            quantity: item.quantity,
+            lineAmount: item.lineAmount,
+          })),
+        );
+      } catch {
         throw this.mapBillingError(new BillingError('BILLING_ITEMS_REQUIRED'));
       }
-      return {
-        measurementItemId: item.id,
-        sourceExecutionEntryId: item.source_execution_entry_id,
-        lineNumber: item.line_number,
-        unitCode: item.unit_code,
-        quantity: item.measured_quantity,
-        unitPrice: item.unit_price,
-        lineAmount: item.line_amount,
-        pricingLineSnapshot: item.pricing_line_snapshot,
-        lineLabel: `Linha ${item.line_number}`,
-      };
-    });
 
-    try {
-      assertBillingItemsTraceable(
-        itemDrafts.map((item) => ({
-          measurementItemId: item.measurementItemId,
-          sourceExecutionEntryId: item.sourceExecutionEntryId,
-          lineNumber: item.lineNumber,
-          unitCode: item.unitCode,
-          quantity: item.quantity,
-          lineAmount: item.lineAmount,
-        })),
+      computedTotal = sumMoneyAmounts(itemDrafts.map((item) => item.lineAmount));
+      const measurementCurrencyCode = measurement.commercial_reference_snapshot['currencyCode'];
+      currencyCode = assertCurrencyCode(
+        typeof measurementCurrencyCode === 'string' ? measurementCurrencyCode : 'BRL',
       );
-    } catch {
-      throw this.mapBillingError(new BillingError('BILLING_ITEMS_REQUIRED'));
+      commercialReferenceSnapshot = {
+        ...measurement.commercial_reference_snapshot,
+        costSummary: buildBillingCostSummaryFromMeasurementItems(measurementItems),
+        billingOrigin: buildBillingOriginSnapshot({
+          serviceOrderId: order.id,
+          measurementId: measurement.id,
+          clientId: order.client_id!,
+          proposalId: order.proposal_id,
+          purchaseOrderId: order.purchase_order_id,
+          contractReference: order.contract_reference,
+          itemCount: itemDrafts.length,
+          totalAmount: computedTotal,
+          currencyCode,
+          entitlementPolicy: policy,
+        }),
+      };
+      measurementId = measurement.id;
+    } else {
+      try {
+        assertBillingRight({
+          policy,
+          serviceOrderStatus: order.status,
+        });
+        const contractual = resolveContractualBillingLine({
+          policy,
+          serviceSnapshot: order.service_snapshot,
+          proposalSnapshot: order.proposal_snapshot,
+          purchaseOrderSnapshot: order.purchase_order_snapshot,
+        });
+        itemDrafts = [
+          {
+            measurementItemId: null,
+            sourceExecutionEntryId: null,
+            lineNumber: 1,
+            unitCode: contractual.unitCode,
+            quantity: contractual.quantity,
+            unitPrice: contractual.unitPrice,
+            lineAmount: contractual.lineAmount,
+            pricingLineSnapshot: { source: 'CONTRACTUAL_ENTITLEMENT', policy },
+            lineLabel: contractual.lineLabel,
+          },
+        ];
+        assertBillingItemsTraceable(
+          itemDrafts.map((item) => ({
+            measurementItemId: item.measurementItemId,
+            sourceExecutionEntryId: item.sourceExecutionEntryId,
+            lineNumber: item.lineNumber,
+            unitCode: item.unitCode,
+            quantity: item.quantity,
+            lineAmount: item.lineAmount,
+          })),
+          { requireMeasurementOrigin: false },
+        );
+        computedTotal = contractual.lineAmount;
+        currencyCode = assertCurrencyCode(contractual.currencyCode);
+        commercialReferenceSnapshot = {
+          source: 'CONTRACTUAL_ENTITLEMENT',
+          billingOrigin: buildBillingOriginSnapshot({
+            serviceOrderId: order.id,
+            measurementId: null,
+            clientId: order.client_id!,
+            proposalId: order.proposal_id,
+            purchaseOrderId: order.purchase_order_id,
+            contractReference: order.contract_reference,
+            itemCount: 1,
+            totalAmount: computedTotal,
+            currencyCode,
+            entitlementPolicy: policy,
+          }),
+        };
+        measurementId = null;
+      } catch (error) {
+        throw this.mapBillingError(error);
+      }
     }
 
-    const computedTotal = sumMoneyAmounts(itemDrafts.map((item) => item.lineAmount));
     if (
       validated.assertedTotalAmount &&
       !moneyAmountsEqual(validated.assertedTotalAmount, computedTotal)
@@ -189,32 +327,12 @@ export class BillingAccessService {
     const addresses = await this.billingRepository.listClientAddresses(order.client_id);
     const billingAddressSnapshot = this.buildBillingAddressSnapshot(addresses, order);
 
-    const measurementCurrencyCode = measurement.commercial_reference_snapshot['currencyCode'];
-    const currencyCode = assertCurrencyCode(
-      typeof measurementCurrencyCode === 'string' ? measurementCurrencyCode : 'BRL',
-    );
-
-    const commercialReferenceSnapshot = {
-      ...measurement.commercial_reference_snapshot,
-      costSummary: buildBillingCostSummaryFromMeasurementItems(measurementItems),
-      billingOrigin: buildBillingOriginSnapshot({
-        serviceOrderId: order.id,
-        measurementId: measurement.id,
-        clientId: order.client_id,
-        proposalId: order.proposal_id,
-        purchaseOrderId: order.purchase_order_id,
-        contractReference: order.contract_reference,
-        itemCount: itemDrafts.length,
-        totalAmount: computedTotal,
-        currencyCode,
-      }),
-    };
-
     let result;
     try {
       result = await this.billingRepository.prepareBillingRecord({
         serviceOrderId: order.id,
-        measurementId: measurement.id,
+        measurementId,
+        entitlementPolicy: policy,
         clientId: order.client_id,
         unitId: order.unit_id,
         proposalId: order.proposal_id,
@@ -251,8 +369,9 @@ export class BillingAccessService {
 
     await this.audit(actor, SECURITY_AUDIT_ACTIONS.BillingBillingRecordPrepare, order.id, {
       billingRecordId: result.billingRecord.id,
-      measurementId: measurement.id,
+      measurementId,
       totalAmount: computedTotal,
+      entitlementPolicy: policy,
     });
 
     return this.loadDetail(result.billingRecord);
@@ -560,6 +679,9 @@ export class BillingAccessService {
   }
 
   private mapBillingError(error: unknown): BillingHttpException {
+    if (error instanceof BillingEntitlementError) {
+      return this.mapBillingError(new BillingError(error.code));
+    }
     if (!(error instanceof BillingError)) {
       return new BillingHttpException(
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -592,6 +714,18 @@ export class BillingAccessService {
           HttpStatus.CONFLICT,
           BILLING_ERROR_CODES.CLIENT_NOT_FOUND,
           'Client not found for billing preparation.',
+        );
+      case 'SERVICE_NOT_BILLABLE_YET':
+        return new BillingHttpException(
+          HttpStatus.CONFLICT,
+          BILLING_ERROR_CODES.SERVICE_NOT_BILLABLE_YET,
+          'Service order is not yet billable under its entitlement policy.',
+        );
+      case 'PURCHASE_ORDER_REQUIRED':
+        return new BillingHttpException(
+          HttpStatus.CONFLICT,
+          BILLING_ERROR_CODES.PURCHASE_ORDER_REQUIRED,
+          'A purchase order is required before billing preparation.',
         );
       default:
         return new BillingHttpException(

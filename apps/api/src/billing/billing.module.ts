@@ -8,6 +8,7 @@ import { OutboxModule } from '../platform/outbox/outbox.module';
 import { CommercialModule } from '../commercial/commercial.module';
 import { MeasurementsModule } from '../measurements/measurements.module';
 import { ServiceOrdersModule } from '../service-orders/service-orders.module';
+import { IssuerRegistryModule } from '../establishments/issuer-registry.module';
 import { BillingController } from './controllers/billing.controller';
 import { BillingDocumentController } from './controllers/billing-document.controller';
 import { BillingRepository } from './repositories/billing.repository';
@@ -28,6 +29,7 @@ import { BillingDocumentArtifactService } from './services/billing-document-arti
     CommercialModule,
     ServiceOrdersModule,
     MeasurementsModule,
+    IssuerRegistryModule,
   ],
   controllers: [BillingController, BillingDocumentController],
   providers: [

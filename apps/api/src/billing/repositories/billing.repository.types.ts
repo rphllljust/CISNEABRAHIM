@@ -1,7 +1,8 @@
 export type BillingRecordRow = {
   id: string;
   service_order_id: string;
-  measurement_id: string;
+  measurement_id: string | null;
+  entitlement_policy: string;
   client_id: string;
   unit_id: string;
   status: string;
@@ -33,7 +34,7 @@ export type BillingItemRow = {
   id: string;
   billing_record_id: string;
   line_number: number;
-  measurement_item_id: string;
+  measurement_item_id: string | null;
   source_execution_entry_id: string | null;
   unit_code: string;
   quantity: string;
@@ -94,7 +95,8 @@ export type PurchaseOrderTermsRow = {
 
 export type PrepareBillingPersistenceInput = {
   serviceOrderId: string;
-  measurementId: string;
+  measurementId: string | null;
+  entitlementPolicy: string;
   clientId: string;
   unitId: string;
   proposalId: string | null;
@@ -111,7 +113,7 @@ export type PrepareBillingPersistenceInput = {
   totalAmount: string;
   actorIdentityId: string;
   items: Array<{
-    measurementItemId: string;
+    measurementItemId: string | null;
     sourceExecutionEntryId: string | null;
     lineNumber: number;
     unitCode: string;

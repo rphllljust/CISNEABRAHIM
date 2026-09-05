@@ -1,4 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
+import { AuthzHttpException } from '../../authorization/errors/authz-http.exception';
 import { SupplierError } from '../domain/supplier';
 import { SUPPLIER_ERROR_CODES } from '../errors/supplier-error-codes';
 import { SupplierHttpException } from '../errors/supplier-http.exception';
@@ -8,6 +9,9 @@ export function supplierAccessDenied(): SupplierHttpException {
 }
 
 export function mapSupplierDomainError(error: unknown): SupplierHttpException {
+  if (error instanceof AuthzHttpException) {
+    throw error;
+  }
   if (error instanceof SupplierHttpException) {
     return error;
   }

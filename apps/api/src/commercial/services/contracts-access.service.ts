@@ -142,6 +142,16 @@ export class ContractsAccessService {
         throw contractsInvalidState();
       }
 
+      await this.securityAudit.record({
+        actorIdentityId: actor.identityId,
+        actorSessionId: actor.sessionId,
+        action: SECURITY_AUDIT_ACTIONS.CommercialContractUpdate,
+        resourceType: SECURITY_AUDIT_RESOURCE_TYPES.CommercialContract,
+        resourceId: contractId,
+        outcome: SECURITY_AUDIT_OUTCOMES.Success,
+        classification: SECURITY_AUDIT_CLASSIFICATIONS.Standard,
+      });
+
       const documentLinks = await this.contractsRepository.listDocumentLinks(contractId);
       return toContractDetailResponse(updated.contract, updated.items, documentLinks);
     } catch (error) {
@@ -171,6 +181,7 @@ export class ContractsAccessService {
       validTo: contract.valid_to,
     });
 
+    await this.referenceValidation.assertClientActive(contract.client_id);
     const client = await this.contractsRepository.findClientById(contract.client_id);
     if (!client) {
       throw contractsClientNotFound();
@@ -277,6 +288,42 @@ export class ContractsAccessService {
     const items = await this.contractsRepository.listItems(contractId);
     const documentLinks = await this.contractsRepository.listDocumentLinks(contractId);
     return toContractDetailResponse(closed, items, documentLinks);
+  }
+
+  /**
+   * Expiração por vencimento: ACTIVE além de valid_to -> EXPIRED. Transição
+   * persistida com evento de histórico; contratos terminais permanecem
+   * imutáveis (histórico nunca é reescrito).
+   */
+  async expire(
+    actor: IdentityAuthzContext,
+    contractId: string,
+  ): Promise<ContractDetailResponse> {
+    assertValidContractId(contractId);
+    await this.requireContract(actor, contractId, AUTHZ_ACTIONS.CommercialContractExpire);
+
+    const expired = await this.contractsRepository.markExpired({
+      contractId,
+      actorIdentityId: actor.identityId,
+    });
+
+    if (expired === 'INVALID_STATE') {
+      throw contractsInvalidState();
+    }
+
+    await this.securityAudit.record({
+      actorIdentityId: actor.identityId,
+      actorSessionId: actor.sessionId,
+      action: SECURITY_AUDIT_ACTIONS.CommercialContractExpire,
+      resourceType: SECURITY_AUDIT_RESOURCE_TYPES.CommercialContract,
+      resourceId: contractId,
+      outcome: SECURITY_AUDIT_OUTCOMES.Success,
+      classification: SECURITY_AUDIT_CLASSIFICATIONS.Standard,
+    });
+
+    const items = await this.contractsRepository.listItems(contractId);
+    const documentLinks = await this.contractsRepository.listDocumentLinks(contractId);
+    return toContractDetailResponse(expired, items, documentLinks);
   }
 
   async linkDocument(

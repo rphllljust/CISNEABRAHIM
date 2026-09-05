@@ -14,6 +14,8 @@ import { AuthModule } from '../auth/auth.module';
 import { AUTH_TEST_PASSWORD, applyAuthTestEnv } from '../auth/test/auth-test-env';
 import { normalizeLoginIdentifier } from '../auth/crypto/token-crypto';
 import { AuthorizationModule } from '../authorization/authorization.module';
+import { ApprovalMatrixAccessService } from '../authorization/services/approval-matrix-access.service';
+import { enableCriticalSodFor } from '../authorization/test/critical-sod-harness';
 import { AUTHZ_ACTIONS } from '../authorization/types/authz-actions';
 import { AUTHZ_RESOURCE_TYPES } from '../authorization/types/authz-resources';
 import { AUTHZ_SCOPES } from '../authorization/types/authz-scopes';
@@ -83,6 +85,7 @@ describe('Automated accounting posting PostgreSQL integration', () => {
   let repository: AccountingRepository;
   let receivables: ReceivablesAccessService;
   let payables: PayablesAccessService;
+  let matrices: ApprovalMatrixAccessService;
   const testDatabaseUrl = process.env['TEST_DATABASE_URL'];
 
   beforeAll(async () => {
@@ -97,6 +100,7 @@ describe('Automated accounting posting PostgreSQL integration', () => {
     repository = module.get(AccountingRepository);
     receivables = module.get(ReceivablesAccessService);
     payables = module.get(PayablesAccessService);
+    matrices = module.get(ApprovalMatrixAccessService);
     pool = new Pool({ connectionString: testDatabaseUrl });
   });
 
@@ -118,6 +122,13 @@ describe('Automated accounting posting PostgreSQL integration', () => {
       await grantPostingAdmin(pool, identityId);
     }
     return { identityId, sessionId: 'test-session' };
+  }
+
+  async function seedSodPair() {
+    const originator = await seedActor();
+    const checker = await seedActor();
+    await enableCriticalSodFor(pool, matrices, checker.identityId);
+    return { originator, checker };
   }
 
   async function seedLedger(actor: { identityId: string; sessionId: string }) {
@@ -181,7 +192,7 @@ describe('Automated accounting posting PostgreSQL integration', () => {
   }
 
   it('posts receivable recognition and settlement from confirmed finance events using published rules', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSodPair();
     const { debit, credit } = await seedLedger(actor);
     await publishRule(actor, POSTING_EVENTS.ReceivableRecognized, debit.id, credit.id);
     await publishRule(actor, POSTING_EVENTS.SettlementConfirmed, debit.id, credit.id);
@@ -210,7 +221,7 @@ describe('Automated accounting posting PostgreSQL integration', () => {
       actorIdentityId: actor.identityId,
     });
     expect(recognized.idempotent).toBe(false);
-    const settled = await receivables.settle(actor, receivable.id, {
+    const settled = await receivables.settle(checker, receivable.id, {
       amount: receivable.principal,
       rowVersion: receivable.rowVersion,
       idempotencyKey: `set-${crypto.randomUUID()}`,
@@ -232,7 +243,7 @@ describe('Automated accounting posting PostgreSQL integration', () => {
   });
 
   it('posts payable recognition and payment confirmation without callers supplying accounts', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSodPair();
     const { debit, credit } = await seedLedger(actor);
     await publishRule(actor, POSTING_EVENTS.PayableRecognized, debit.id, credit.id);
     await publishRule(actor, POSTING_EVENTS.PaymentConfirmed, debit.id, credit.id);
@@ -264,7 +275,7 @@ describe('Automated accounting posting PostgreSQL integration', () => {
       occurredOn: '2026-09-12',
       actorIdentityId: actor.identityId,
     });
-    const paid = await payables.pay(actor, payable.id, {
+    const paid = await payables.pay(checker, payable.id, {
       amount: payable.principal,
       rowVersion: payable.rowVersion,
       idempotencyKey: `pay-${crypto.randomUUID()}`,

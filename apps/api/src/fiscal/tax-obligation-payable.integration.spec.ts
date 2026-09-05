@@ -14,6 +14,8 @@ import { AuthModule } from '../auth/auth.module';
 import { AUTH_TEST_PASSWORD, applyAuthTestEnv } from '../auth/test/auth-test-env';
 import { normalizeLoginIdentifier } from '../auth/crypto/token-crypto';
 import { AuthorizationModule } from '../authorization/authorization.module';
+import { ApprovalMatrixAccessService } from '../authorization/services/approval-matrix-access.service';
+import { enableCriticalSodFor } from '../authorization/test/critical-sod-harness';
 import { AUTHZ_ACTIONS } from '../authorization/types/authz-actions';
 import { AUTHZ_RESOURCE_TYPES } from '../authorization/types/authz-resources';
 import { AUTHZ_SCOPES } from '../authorization/types/authz-scopes';
@@ -71,6 +73,7 @@ describe('Tax obligation to payable PostgreSQL integration', () => {
   let assessments: TaxAssessmentAccessService;
   let payables: PayablesAccessService;
   let failures: TaxPayableFailureInjection;
+  let matrices: ApprovalMatrixAccessService;
   const testDatabaseUrl = process.env['TEST_DATABASE_URL'];
 
   beforeAll(async () => {
@@ -85,6 +88,7 @@ describe('Tax obligation to payable PostgreSQL integration', () => {
     assessments = module.get(TaxAssessmentAccessService);
     payables = module.get(PayablesAccessService);
     failures = module.get(TaxPayableFailureInjection);
+    matrices = module.get(ApprovalMatrixAccessService);
     pool = new Pool({ connectionString: testDatabaseUrl });
   });
 
@@ -107,6 +111,13 @@ describe('Tax obligation to payable PostgreSQL integration', () => {
       await grantTaxPayableAdmin(pool, identityId);
     }
     return { identityId, sessionId: 'test-session' };
+  }
+
+  async function seedSodPair() {
+    const originator = await seedActor();
+    const checker = await seedActor();
+    await enableCriticalSodFor(pool, matrices, checker.identityId);
+    return { originator, checker };
   }
 
   async function publishAndCalculate(
@@ -172,7 +183,7 @@ describe('Tax obligation to payable PostgreSQL integration', () => {
   }
 
   it('finalizes a valid assessment into one obligation and one payable', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSodPair();
     const journalsBefore = await pool.query<{ count: string }>(
       `SELECT count(*)::text AS count FROM acc.journal_entries`,
     );
@@ -184,7 +195,7 @@ describe('Tax obligation to payable PostgreSQL integration', () => {
     expect(draft.status).toBe('DRAFT');
     expect(draft.assessedAmount).toBe('5');
     expect(draft.periodKey).toBe('2026-03');
-    const finalized = await assessments.finalize(actor, draft.id, await payableFields(actor));
+    const finalized = await assessments.finalize(checker, draft.id, await payableFields(actor));
     expect(finalized.status).toBe('FINALIZED');
     expect(finalized.obligation?.status).toBe('OPEN');
     expect(finalized.obligation?.amount).toBe('5');
@@ -214,7 +225,7 @@ describe('Tax obligation to payable PostgreSQL integration', () => {
   });
 
   it('replays finalize without duplicating assessment, obligation or payable', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSodPair();
     const { calculation } = await publishAndCalculate(actor, '100.0000');
     const key = `asm-${crypto.randomUUID()}`;
     const firstDraft = await assessments.create(actor, {
@@ -227,8 +238,8 @@ describe('Tax obligation to payable PostgreSQL integration', () => {
     });
     expect(replayDraft.id).toBe(firstDraft.id);
     const fields = await payableFields(actor);
-    const first = await assessments.finalize(actor, firstDraft.id, fields);
-    const replay = await assessments.finalize(actor, firstDraft.id, fields);
+    const first = await assessments.finalize(checker, firstDraft.id, fields);
+    const replay = await assessments.finalize(checker, firstDraft.id, fields);
     expect(replay.id).toBe(first.id);
     expect(replay.obligation?.id).toBe(first.obligation?.id);
     expect(replay.obligation?.payableId).toBe(first.obligation?.payableId);
@@ -239,7 +250,7 @@ describe('Tax obligation to payable PostgreSQL integration', () => {
   });
 
   it('keeps a single payable under concurrent finalize workers', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSodPair();
     const { calculation } = await publishAndCalculate(actor, '100.0000');
     const draft = await assessments.create(actor, {
       taxCalculationId: calculation.id,
@@ -247,8 +258,8 @@ describe('Tax obligation to payable PostgreSQL integration', () => {
     });
     const fields = await payableFields(actor);
     const [left, right] = await Promise.all([
-      assessments.finalize(actor, draft.id, fields),
-      assessments.finalize(actor, draft.id, fields),
+      assessments.finalize(checker, draft.id, fields),
+      assessments.finalize(checker, draft.id, fields),
     ]);
     expect(left.obligation?.id).toBe(right.obligation?.id);
     expect(left.obligation?.payableId).toBe(right.obligation?.payableId);
@@ -263,14 +274,14 @@ describe('Tax obligation to payable PostgreSQL integration', () => {
   });
 
   it('rolls back obligation insert so nothing is leftover', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSodPair();
     const { calculation } = await publishAndCalculate(actor, '100.0000');
     const draft = await assessments.create(actor, {
       taxCalculationId: calculation.id,
       idempotencyKey: `asm-${crypto.randomUUID()}`,
     });
     failures.stage = TAX_PAYABLE_FAILURE_STAGES.AfterObligationInsert;
-    await expect(assessments.finalize(actor, draft.id, await payableFields(actor))).rejects.toMatchObject({
+    await expect(assessments.finalize(checker, draft.id, await payableFields(actor))).rejects.toMatchObject({
       code: FISCAL_ERROR_CODES.VALIDATION_FAILED,
     });
     const leftover = await assessments.getById(actor, draft.id);
@@ -287,20 +298,22 @@ describe('Tax obligation to payable PostgreSQL integration', () => {
   });
 
   it('adjusts by cancelling the current obligation and opening a new payable without deleting history', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSodPair();
     const firstCalc = await publishAndCalculate(actor, '100.0000');
     const draft = await assessments.create(actor, {
       taxCalculationId: firstCalc.calculation.id,
       idempotencyKey: `asm-${crypto.randomUUID()}`,
     });
-    const first = await assessments.finalize(actor, draft.id, await payableFields(actor));
+    const first = await assessments.finalize(checker, draft.id, await payableFields(actor));
     const secondCalc = await publishAndCalculate(actor, '200.0000');
-    const adjusted = await assessments.adjust(actor, first.id, {
+    const successor = await assessments.adjust(actor, first.id, {
       taxCalculationId: secondCalc.calculation.id,
       idempotencyKey: `asm-${crypto.randomUUID()}`,
       reason: 'Recalculated stored base',
       ...(await payableFields(actor)),
     });
+    expect(successor.status).toBe('DRAFT');
+    const adjusted = await assessments.finalize(checker, successor.id, await payableFields(actor));
     expect(adjusted.status).toBe('FINALIZED');
     expect(adjusted.supersedesAssessmentId).toBe(first.id);
     expect(adjusted.assessedAmount).toBe('10');
@@ -341,13 +354,13 @@ describe('Tax obligation to payable PostgreSQL integration', () => {
   });
 
   it('reconciles fiscal obligation amount to finance payable principal', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSodPair();
     const { calculation } = await publishAndCalculate(actor, '100.0000');
     const draft = await assessments.create(actor, {
       taxCalculationId: calculation.id,
       idempotencyKey: `asm-${crypto.randomUUID()}`,
     });
-    const finalized = await assessments.finalize(actor, draft.id, await payableFields(actor));
+    const finalized = await assessments.finalize(checker, draft.id, await payableFields(actor));
     const read = await assessments.getById(actor, finalized.id);
     expect(read.reconciliation.matched).toBe(true);
     expect(read.reconciliation.assessedAmount).toBe(read.reconciliation.obligationAmount);

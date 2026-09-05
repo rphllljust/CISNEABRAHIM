@@ -8,9 +8,11 @@ import {
 import { SecurityAuditService } from '../../audit/services/security-audit.service';
 import { AUTHZ_ACTIONS } from '../../authorization/types/authz-actions';
 import type { IdentityAuthzContext } from '../../authorization/types/authz-decision';
+import { SodEnforcementService } from '../../authorization/services/sod-enforcement.service';
+import { SOD_DUTIES, resolveSodScope } from '../../authorization/domain/segregation-of-duties';
 import type { CommercialSupplierPort, CommercialSupplierView } from '../../platform/bounded-contexts/enterprise-core-ports';
 import { assertUuid } from '../../platform/kernel/uuid';
-import { SupplierError, assertSupplierActive } from '../domain/supplier';
+import { SupplierError, SUPPLIER_HISTORY_KINDS, assertSupplierActive } from '../domain/supplier';
 import {
   assertCreateSupplierInput,
   assertDeactivationReason,
@@ -33,6 +35,7 @@ export class SupplierAccessService implements CommercialSupplierPort {
     private readonly repository: SuppliersRepository,
     private readonly authz: SupplierAccessAuthz,
     private readonly securityAudit: SecurityAuditService,
+    private readonly sod: SodEnforcementService,
   ) {}
 
   async create(actor: IdentityAuthzContext, input: CreateSupplierInput): Promise<SupplierResponse> {
@@ -157,6 +160,14 @@ export class SupplierAccessService implements CommercialSupplierPort {
         throw new SupplierError('SUPPLIER_NOT_FOUND');
       }
       await this.authz.assertSupplierAction(actor, AUTHZ_ACTIONS.SupplierActivate, { id: existing.id });
+      const history = await this.repository.listHistory(supplierId);
+      const created = history.find((event) => event.event_kind === SUPPLIER_HISTORY_KINDS.Created);
+      const scope = resolveSodScope();
+      await this.sod.enforce(actor, {
+        duty: SOD_DUTIES.SupplierActivate,
+        originatorIdentityId: created?.actor_identity_id,
+        ...scope,
+      });
       const updated = await this.repository.setStatus({
         supplierId,
         expectedVersion: version,

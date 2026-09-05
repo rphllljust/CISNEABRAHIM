@@ -53,4 +53,22 @@ describe('billing-invariants', () => {
       ]),
     ).toThrow(BillingInvariantError);
   });
+
+  it('allows contractual items without measurement origin when the policy does not require it', () => {
+    expect(() =>
+      assertBillingItemsTraceable(
+        [
+          {
+            measurementItemId: null,
+            sourceExecutionEntryId: null,
+            lineNumber: 1,
+            unitCode: 'SERVICE',
+            quantity: '1',
+            lineAmount: '1000.0000',
+          },
+        ],
+        { requireMeasurementOrigin: false },
+      ),
+    ).not.toThrow();
+  });
 });

@@ -9,11 +9,12 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot '..\lib\resolve-cisne-tmp.ps1')
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $commit = git -C $repo rev-parse --verify "$Commit^{commit}"
 if ($LASTEXITCODE -ne 0) { throw "invalid commit: $Commit" }
 
-$tmp = Join-Path $env:TEMP ('cisne-selfcheck-' + $commit.Substring(0, 12))
+$tmp = Join-Path (Resolve-CisneTmpRoot -RepoRoot $repo) ('cisne-selfcheck-' + $commit.Substring(0, 12))
 if (Test-Path $tmp) { Remove-Item -Recurse -Force $tmp }
 New-Item -ItemType Directory -Path $tmp | Out-Null
 try {

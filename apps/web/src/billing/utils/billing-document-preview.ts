@@ -1,19 +1,22 @@
 import type { BillingDocumentItem, BillingRecordDetail } from '../types/billing.types';
 import { formatAddressLine } from './billing-document-format';
 
-export const BILLING_EMITTER_PREVIEW = {
-  legalName: 'CISNE RONDÔNIA COMÉRCIO E SERVIÇOS LTDA',
-  taxId: '11897171000181',
-  address: {
-    street: 'Av. Sete de Setembro',
-    city: 'Porto Velho',
-    state: 'RO',
-    postalCode: '76801000',
-  },
+/**
+ * Rótulos do documento interno de cobrança (Release 1). Não contêm dados de
+ * identidade fiscal da empresa emissora — o emissor chega do documento emitido
+ * (originado no registro do estabelecimento, no backend).
+ */
+export const BILLING_DOCUMENT_PREVIEW_LABELS = {
   documentCategory: 'NOTA FATURA',
   fiscalDisclaimer:
     'Faturamento interno da Release 1. Documento de cobrança operacional. Não constitui NF-e, NFS-e nem documento fiscal oficial autorizado.',
 } as const;
+
+export type BillingEmitterPreviewInput = {
+  legalName?: string | null;
+  taxId?: string | null;
+  addressLine?: string | null;
+};
 
 export type BillingDocumentPreviewModel = {
   documentNumberLabel: string;
@@ -42,15 +45,18 @@ export function buildBillingDocumentPreview(
     documentNumber?: string | null;
     purchaseOrderNumber?: string | null;
     commercialReferenceLabel: string;
+    /** Emissor vindo do documento emitido (backend/registry). Nunca hardcoded. */
+    emitter?: BillingEmitterPreviewInput | null;
   },
 ): BillingDocumentPreviewModel {
+  const emitter = options.emitter ?? null;
   return {
     documentNumberLabel: options.documentNumber?.trim() || 'Atribuído na emissão',
-    documentCategory: BILLING_EMITTER_PREVIEW.documentCategory,
-    fiscalDisclaimer: BILLING_EMITTER_PREVIEW.fiscalDisclaimer,
-    emitterLegalName: BILLING_EMITTER_PREVIEW.legalName,
-    emitterTaxId: BILLING_EMITTER_PREVIEW.taxId,
-    emitterAddressLine: formatAddressLine(BILLING_EMITTER_PREVIEW.address),
+    documentCategory: BILLING_DOCUMENT_PREVIEW_LABELS.documentCategory,
+    fiscalDisclaimer: BILLING_DOCUMENT_PREVIEW_LABELS.fiscalDisclaimer,
+    emitterLegalName: emitter?.legalName?.trim() || '',
+    emitterTaxId: emitter?.taxId?.trim() || '',
+    emitterAddressLine: emitter?.addressLine?.trim() || '',
     clientLegalName: billing.clientLegalNameSnapshot,
     clientTaxId: billing.clientTaxIdSnapshot,
     billingAddressLine: formatAddressLine(billing.billingAddressSnapshot),

@@ -11446,17 +11446,17 @@ WORKING TREE: DIRTY (WIP anterior mantido) | NEXT: proxima rodada do programa
 ```
 
 ```text
-PROMPT: BUSINESS FRONTEND GAP CLOSURE — Rodada 3 (Inventory x Procurement)
+PROMPT: BUSINESS FRONTEND GAP CLOSURE ï¿½ Rodada 3 (Inventory x Procurement)
 TITLE: Fechar lacunas criticas de Inventory e Procurement na UI (gates de estado, campos obrigatorios, recebimento parcial, mapas de erro, feedback de reserva)
 STARTED_AT: 2026-09-04T13:00:00-04:00
 FINISHED_AT: 2026-09-04T13:30:00-04:00
-STATUS: PASS (Rodada 3; programa ativo — proximas rodadas)
+STATUS: PASS (Rodada 3; programa ativo ï¿½ proximas rodadas)
 CLASSIFICATION: Fechamento frontend-only com contratos/endpoints existentes; sem regra de negocio/endpoint/capability novos; /app/access-admin intocado.
 SCOPE:
   - Procurement: approve/reject passam a exigir PENDING_APPROVAL (backend nunca emite SUBMITTED); labels/tone PENDING_APPROVAL e ISSUED (removidos SUBMITTED/ORDERED/OPEN inexistentes); recebimento por linha com inputs de quantidade (default = saldo restante), payload por quantidades informadas, bloqueio de over-receipt e de linha zerada; cancela pedido desabilitado com recebimento; mensagens explicitas HAS_ORDER/HAS_RECEIPTS/NOT_APPROVED/OVER_RECEIPT/DUPLICATE_ORDER/INVOICE_*/MATCH_NOT_FOUND.
   - Inventory: movimento TRANSFER passa a enviar destinationWarehouseId e ADJUSTMENT adjustmentEffect INCREASE/DECREASE (helpers puros unit-testados); mapas INVENTORY_NEGATIVE_STOCK/INVALID_TRANSFER/INVALID_ADJUSTMENT/COSTING_RULE_NOT_CONFIGURED; Reservar exibe id criado, autopreenche liberacao e recarrega saldo.
 RESULT:
-  BROKEN (Inventory/Procurement): aprovacao de requisicao, TRANSFER/ADJUSTMENT e recebimento parcial — fechados na UI.
+  BROKEN (Inventory/Procurement): aprovacao de requisicao, TRANSFER/ADJUSTMENT e recebimento parcial ï¿½ fechados na UI.
 QUALITY GATES (Rodada 3):
   typecheck web: exit 0
   specs novas: partial-receive 10/10, movement-payload 7/7 + regressao financial-ui labels 2/2 (19/19)
@@ -11468,11 +11468,11 @@ NOTES:
 WORKING TREE: DIRTY (WIP anterior mantido) | NEXT: proxima rodada do programa
 ```
 ```text
-PROMPT: BUSINESS FRONTEND GAP CLOSURE — Rodada 4 (Payroll + CreateRecordForm compartilhado)
+PROMPT: BUSINESS FRONTEND GAP CLOSURE ï¿½ Rodada 4 (Payroll + CreateRecordForm compartilhado)
 TITLE: Payroll: mapas de erro por codigo real, acoes por status do periodo, ack idempotente, resultados honestos; CreateRecordForm (VersionedActionForm) com banner de conflito/periodo fechado
 STARTED_AT: 2026-09-04T13:40:00-04:00
 FINISHED_AT: 2026-09-04T14:05:00-04:00
-STATUS: PASS (Rodada 4; programa ativo — proximas rodadas)
+STATUS: PASS (Rodada 4; programa ativo ï¿½ proximas rodadas)
 CLASSIFICATION: Fechamento frontend-only com contratos existentes; sem regra de negocio/endpoint/capability novos; /app/access-admin intocado.
 SCOPE:
   - payroll-api mapper: PAYROLL_VALIDATION_FAILED, INVALID_AMOUNT, INVALID_EVENT_KIND, PERIOD_CLOSED, PERIOD_NOT_OPEN, PERIOD_NOT_CALCULATED, PERIOD_NOT_CLOSED, FORMULA_NOT_DECIDED, OPERATIONS_COUPLING_FORBIDDEN; 401/403 e >=500 antes do switch (5xx nunca mais 'VALIDATION_FAILED'); response tipada com idempotent.
@@ -11480,7 +11480,7 @@ SCOPE:
   - VersionedActionForm (CreateRecordForm): conflito de versao / periodo fechado exibem banner com recarregar (onConflictReload/onSuccess opcionais); nunca limpa campos em silencio.
   - Helpers puros + specs: period-action-state, is-idempotent-ack.
 RESULT:
-  FALSE SUCCESS/empty (Payroll) e 409-degradado em CreateRecordForm — fechados.
+  FALSE SUCCESS/empty (Payroll) e 409-degradado em CreateRecordForm ï¿½ fechados.
 QUALITY GATES (Rodada 4):
   typecheck web: exit 0
   specs novas: period-action-state 5/5, is-idempotent-ack 3/3 + financial-ui 2/2 (10/10)
@@ -11488,17 +11488,17 @@ QUALITY GATES (Rodada 4):
   build web: PASS (dist gerado)
 NOTES:
   Modulos apps/web/src/payroll e financial-ui estavam UNTRACKED (WIP anterior); commit da rodada os introduz com as correcoes.
-  Restricao honesta: postagem contabil em fechar/reabrir e engolida pelo backend (tryPost*), sem codigo ACCOUNTING_* no HTTP — nao inventado.
+  Restricao honesta: postagem contabil em fechar/reabrir e engolida pelo backend (tryPost*), sem codigo ACCOUNTING_* no HTTP ï¿½ nao inventado.
   Commits: feat(web) 2e92506.
   Proxima rodada: Comercial (Contratos UI) e/ou Finance (reverse/tesouraria/recon/collections).
 WORKING TREE: DIRTY (WIP anterior mantido) | NEXT: proxima rodada do programa
 ```
 ```text
-PROMPT: BUSINESS FRONTEND GAP CLOSURE — Rodada 5 (Comercial: Contratos UI)
+PROMPT: BUSINESS FRONTEND GAP CLOSURE ï¿½ Rodada 5 (Comercial: Contratos UI)
 TITLE: Criar modulo UI de contratos comerciais (list/create/detail, update versionado, activate/close/expire, document links) sobre controller existente
 STARTED_AT: 2026-09-04T14:10:00-04:00
 FINISHED_AT: 2026-09-04T14:30:00-04:00
-STATUS: PASS (Rodada 5; programa ativo — proximas rodadas)
+STATUS: PASS (Rodada 5; programa ativo ï¿½ proximas rodadas)
 CLASSIFICATION: Novo modulo frontend-only com contrato/backend existentes; sem regra de negocio/endpoint/capability novos; /app/access-admin intocado.
 SCOPE:
   apps/web/src/contracts/: types, api client (envelope error aninhado), error-messages PT, ContractsRoute (401/403/outage+retry), capabilities hook, status badge, form fields, list (filtros/paginacao), create, detail com acoes por status (PATCH versionado, activate, close c/ motivo, expire sem corpo), document links client; util labels + form-values.
@@ -11514,25 +11514,25 @@ NOTES:
 WORKING TREE: DIRTY (WIP anterior mantido) | NEXT: proxima rodada do programa
 ```
 ```text
-PROMPT: BUSINESS FRONTEND GAP CLOSURE — Rodada 6 (Finance)
+PROMPT: BUSINESS FRONTEND GAP CLOSURE ï¿½ Rodada 6 (Finance)
 TITLE: Finance: reverse de pagamento, escrita de tesouraria, acoes de conciliacao bancaria, correcoes de false-success (overview/treasury/recon/collection)
 STARTED_AT: 2026-09-04T14:40:00-04:00
 FINISHED_AT: 2026-09-04T15:05:00-04:00
-STATUS: PASS (Rodada 6; programa ativo — proximas rodadas)
+STATUS: PASS (Rodada 6; programa ativo ï¿½ proximas rodadas)
 CLASSIFICATION: Fechamento frontend-only com contratos existentes; sem regra de negocio/endpoint/capability novos; /app/access-admin intocado.
 SCOPE:
   - Payables reverse (POST /finance/payables/:id/payments/:paymentId/reverse {rowVersion,idempotencyKey,paymentReference,amount?,reason}) + UI na pagina de titulo com motivo/versao/reload.
   - Tesouraria: abrir conta (BANK/CASH), registrar movimento (MANUAL_AUTHORIZED), transferir, estornar movimento e transferencia (payloads reais; CLOSED desabilita).
   - Conciliacao bancaria: match manual (POST /matches), confirm e unreconcile (banner 409 + reload); reconciliacoes rastreadas em sessao (sem GET list).
-  - False-success: FinanceOverviewPage per-card erro/retry (sem mascarar 500 em '—'), TreasuryAccountDetailPage expoe erro do GET, BankReconciliationPage nao descarta extrato em falha de import/match, CollectionPanel nao mais abre cegamente com 404 e refresh do pai (key=rowVersion + onChanged).
+  - False-success: FinanceOverviewPage per-card erro/retry (sem mascarar 500 em 'ï¿½'), TreasuryAccountDetailPage expoe erro do GET, BankReconciliationPage nao descarta extrato em falha de import/match, CollectionPanel nao mais abre cegamente com 404 e refresh do pai (key=rowVersion + onChanged).
 RESULT:
-  MISSING; BROKEN; FALSE SUCCESS (Finance): reverse payable, escrita de tesouraria, acoes de conciliacao e falso vazio/erros silenciosos — fechados.
+  MISSING; BROKEN; FALSE SUCCESS (Finance): reverse payable, escrita de tesouraria, acoes de conciliacao e falso vazio/erros silenciosos ï¿½ fechados.
 QUALITY GATES (Rodada 6):
   typecheck web: exit 0
   specs novas: payable-actions 12/12, treasury-forms 6/6, payable-reverse.ui 2/2 + regressao financial-ui 2/2 e idempotency-retry 4/4
   build web: PASS (dist regenerado)
 NOTES:
-  Endpoint real de reverse e por pagamento (nao /payables/:id/reverse como auditado) — implementado contra o controller real.
+  Endpoint real de reverse e por pagamento (nao /payables/:id/reverse como auditado) ï¿½ implementado contra o controller real.
   Sem endpoints GET de listas de movimentos/transferencias/reconcil: formas usam ids explicitos (sem inventar UUIDs).
   Commits: feat(web) fd1c7b5.
   Proxima rodada: Fiscal/Accounting (emissao fiscal, regras tributarias, lancamento manual, posting rules, issuer) e/ou Assets/Rental/Transport.
@@ -11640,4 +11640,62 @@ QUALITY GATES: typecheck api PASS; eslint limpo
 COMMIT: DONE (feat(platform): enterprise module registry ... 909d63f)
 WORKING TREE: DIRTY (WIP pre-existente preservado)
 NEXT: STOP
+```
+```text
+PROMPT: ATUE COMO PRINCIPAL SOFTWARE ENGINEER - CENTRAL DE GOVERNANCA DA PAGINA SISTEMA>MODULOS
+TITLE: Central de Governanca dos Modulos - semantica de status pela fonte real (release-scope flags), summary sem tech, detalhe tecnico admin-gated, painel de governanca no frontend
+STATUS: PASS
+CLASSIFICATION: Interpretacao de engenharia. Nenhum modulo/registry recriado; nenhuma flag/capability/catalogo de autorizacao/regra de negocio duplicada ou alterada para fins visuais. Status derivados somente da fonte backend (available/enabled/not_released com reasons); blocked/in_preparation/not_configured NAO implementados por nao existir sinal backend - lacuna documentada (nada inventado).
+SCOPE:
+  - Backend platform/module-registry: definicoes com description/domain/dependencies; statusFor = gate ausente -> available, flag true -> enabled, senao not_released (isReleaseModuleEnabled fail-closed); availability = status != not_released; reasons (FEATURE_DISABLED/RELEASE_SCOPE_GATED); payload de SUMMARY sem capabilities/resources/routes/featureFlag; GET :moduleCode retorna DETAIL tecnico (moduleCode, featureFlag, capabilities, resources, routes, deps, estado do registry) protegido por PDP (AUTHZ_ACTIONS.AccessAdminRead + AUTHZ_RESOURCE_TYPES.AccessAdmin) -> 403 AUTHZ_DENIED sem grant; desconhecido -> 404. assertRegistryDefinitions mantem CLIENT-INVENTED 0.
+  - Frontend modules-registry: types summary/detail; api client com RegistryApiError (unauthenticated/denied/not_found/network/unknown); governance.ts (copy de status/reasons, summarize, filtros query/status/dominio derivados dos dados, sort pt-BR); ModulesRegistryPage = PageHeader + KPIs (registrados/disponiveis/habilitados/nao liberados + dominios) calculados do registry + filtros + cards (nome/descricao/status/indicadores/Ver detalhes SEM info tecnica na camada principal) + Drawer de detalhe tecnico com estados loading/skeleton/denied(403)/not_found/network-retry; EmptyState busca-sem-resultado; ErrorState+retry; responsivo 3/2/1 (xl/md/base), a11y (labels, aria-live, aria-busy, dialogo nomeado, status nao so cor). UI kit reutilizado (PageHeader/KpiCard/Input/Select/Button/Badge/StatusBadge/Drawer/EmptyState/ErrorState/Skeleton/LoadingState/Alert).
+RESULT:
+  - BACKEND: unit module-registry 6/6 PASS; e2e module-registry 4/4 PASS (401 sem token; summary sem campos tecnicos p/ autenticado; detail 403 sem access-admin / 200 com grant / 404 desconhecido; gated not_released com flag off); typecheck api PASS; eslint limpo.
+  - FRONTEND: typecheck PASS; eslint limpo; testes governance+pagina 19/19 PASS (render/KPIs/status por flag/disponivel-habilitado-nao-liberado/filtros/busca/sem-resultado/drawer tecnico/403 restrito/not_found/API failure retry/401/sessao/fechamento drawer); build @cisne/web rc=0.
+  - HML (redeploy para HEAD, imagens hml-api+hml-web reconstruidas): smoke PASS - 21 modulos (available=8, enabled=13, todas flags on); summary expoe apenas chaves de governanca; detail finance 200 (featureFlag/capabilities/routes); modulo desconhecido 404; web 200. Operador piloto HML recebeu grant authz:access-admin:read (84 grants ativos) para exercitar o drawer tecnico no ambiente isolado HML.
+COMMIT: DONE (3f0b7a5 backend; af9e355 web)
+RISKS/GAPS: drawer detail 403 explicito p/ quem nao tem authz:access-admin:read (UX tratada); grant do operador HML tambem torna visivel o console Acesso>Administracao de acesso no ambiente isolado - em PROD manter principio do menor privilegio; statuses blocked/disabled/in_preparation/not_configured sem fonte backend -> nao exibidos (somente available/enabled/not_released).
+WORKING TREE: DIRTY (WIP pre-existente preservado; 260+ arquivos nao tocados por este prompt)
+NEXT: STOP
+```
+```text
+PROMPT: HARDENING DE PRODUCAO (etapa 2) - Module Registry / autorizacao administrativa / feature gates / release
+TITLE: Coerencia e seguranca para producao da Central de Governanca de Modulos (sem refazer pagina/registry, sem estados ficticios, sem capability sem prova)
+STATUS: PASS_WITH_RESTRICTIONS (criterios 8/9 do prompt com blocker externo documentado abaixo)
+CLASSIFICATION: Interpretacao de engenharia. Nenhum modulo/registry recriado; nenhuma flag alterada; capabilities novas somente apos mapeamento (decisao abaixo).
+SCOPE E DECISOES:
+  1) SEMANTICA DE STATUS confirmada/testada no backend (fonte unica = release-scope flags): available = modulo SEM feature gate (nunca 'ativado manualmente' - inexistente); enabled = gated com flag exatamente true (fail-closed); not_released = gated off/ausente (reasons FEATURE_DISABLED/RELEASE_SCOPE_GATED). Frontend: copia inequivoca (available 'nao e ativacao manual'; enabled 'flag true') em legenda StatusLegend + hints (governance.ts meaning).
+  2) CAPABILITY: mapeado que authz:access-admin:read libera TODO o console de Access Administration (GET catalog/roles/identities/grants/assignments/sod/approval-rules; telas Acesso>Administracao de acesso e tabs). Compartilha-la com o detail do registry = leitura ampla de meta-seguranca para ver rotas (e vice-versa). DECISAO: menor mudanca compativel = nova capability platform-scoped platform:module-registry:read (resource Platform), deny-by-default; detail do registry migrado; e2e prova separacao cruzada (access-admin reader -> registry detail 403; registry reader -> access-admin catalog/grants 403) - sem privilege escalation.
+  3) HML: revogado (auditavel, revoked_at/revoked_by) o grant TEMPORARIO authz:access-admin:read do operador piloto (84 -> 83 grants). Matriz validada em runtime HML: anon summary 401; operador summary 200 (21 modulos, chaves so de governanca); operador detail 403; operador access-admin/catalog 403; admin detail 200 coberto por e2e em DB real (identidade dedicada com platform:module-registry:read).
+  4) AUDITORIA 84 GRANTS (sem alteracao em massa): 77 = perfil control_admin (09-03, operacional p/ piloto sintetico; contem mutacoes - nota para PROD); platform:diagnostics:read = diagnostico; 6 (09-05) = correcoes de leitura de telas (necessario ao piloto); 1 authz:access-admin:read = TEMPORARIO -> REVOGADO. Sinalizados como potencialmente redundantes 4 pares antigos de resource_type nao canonico (billing/measurements sob service-orders vs pares alternativos) - NAO removidos sem confirmacao de mapeamento de controllers (pendencia anotada).
+  5) FEATURE GATE enforcement real no backend comprovado por HTTP: ReleaseScopeGuard e APP_GUARD global; chamada direta gated com flag OFF -> 403 FEATURE_DISABLED antes do controller (release-scope.http.spec 5/5) + invariante: todo modulo gated do registry declara rota sob o proprio prefixo GATED_API_PATH_PREFIXES e todo prefixo usado tem flag (GATE_WITHOUT_API_PREFIX detectado p/ rentals). Nota: flags 'rentals'/'transport' nao tem prefixo backend (gating frontend do design existente) - fora do claim; registrado.
+  6) DEPENDENCIES do registry = metadata declarativa (sem runtime block). Auditoria: atualmente nenhuma dependencia declarada; validator automatico criado p/ inexistente/self/duplicada/ciclo; nada vira bloqueio runtime.
+  7) INVARIANTS do registry (fail fast boot+build, MODULE_REGISTRY_INTEGRITY_FAILED): moduleCode duplicado, nome duplicado, rota duplicada, dependency missing/self/dup/cycle, gate sem prefixo API, rota gated em modulo nao-gated, flag compartilhada, gate invalido (assert), capability/resource fora do catalogo (existente). Metadata corrigida: rota supplier-invoices movida de commercial p/ procurement (fonte real dos controllers).
+  8) RELEASE BUILD LIMPO: criado scripts/hml/build-approved-commit.ps1 (worktree detached limpa + compose build; falha rc!=0 sem deploy). PROVA EXECUTADA contra commit aprovado 5443112: FALHA documentada - HEAD nao e AUTOCONTIDO: web (App.tsx/nav commitados importam paginas finance/accounting/fiscal/suppliers/financial-ui/BackofficeCapabilityRoute que so existem em WIP NAO COMMITADO do programa concorrente) e api (authorization.module importa sod-enforcement/segregation-of-duties/operational-authority WIP). Blocker externo: exigido commit (pelo dono) do WIP para build limpo; nenhum arquivo WIP alheio foi committado por este prompt.
+  9) IDENTIDADE DO ARTEFATO: novo GET /api/v1/observability/artifact (JwtAuth + PlatformDiagnosticsRead), sanitizacao fail-safe (release/commit/build/env allowlists; nunca ecoa valor malformado). HML expoe commit=4888289d6fd9..., build=hml-...-dirty-20260905, env=hml (marcador '-dirty-' reflete arvore com WIP do blocker 8; quando HEAD autocontido, build limpo gera mesmo SHA sem dirty).
+  10) TESTES: api typecheck PASS; unit 36/36 (registry 16 incl. semantica+invariants; release-scope guard 4 + http 5; artifact 4; pilot-op 2); e2e DB real 7/7 (module-registry 4 c/ matriz capability/escalation; artifact 3 c/ 401/403/200/sanitize); web typecheck/lint PASS; web testes 19/19 (legenda semantica + copia drawer); web build rc=0; api lint: erros 14 PRE-EXISTENTES em arquivos WIP intocados (access-admin rules/dto/service, establishments, reconciliation spec, payroll, transport spec, synthetic seed) - nao causados por este prompt.
+COMMIT: DONE (5443112 hardening; 4888289 gate script) - HML redeployado a partir da arvore (contem HEAD + WIP obrigatorio); API+HML validados em runtime.
+SHA: 5443112 (hardening) / 4888289 (gate script / HEAD atual)
+WORKING TREE: DIRTY (WIP pre-existente preservado; 260+ arquivos nao tocados)
+NEXT: (a) dono do programa WIP commitar paginas/dominios referenciados por HEAD; (b) rodar build-approved-commit.ps1 ate rc=0; (c) remover marcador '-dirty-' e revalidar matriz; senao blocker persiste.
+```
+```text
+PROMPT: HARDENING DE PRODUCAO (etapa 2) - ROUND 1 (continuacao automatica)
+STATUS: EM EXECUCAO - blocker criterios 8/9 re-verificado (observacao 1/3)
+EVIDENCIA: novo probe commitado scripts/hml/check-commit-self-contained.ps1 - HEAD 2b3d050 e linha de base 909d63f reportam o MESMO conjunto de 22 imports relativos que resolvem somente para WIP nao commitado (web: App.tsx -> accounting/finance/fiscal/suppliers/financial-ui pages; api: authorization.module/access-admin-rules/PDP -> sod-enforcement.service, segregation-of-duties, operational-authority). Prova de que o HEAD NAO autocontido pre-datas este hardening e nao foi causado por estes commits. Nenhum arquivo WIP alheio commitado (preservacao).
+COMMIT: DONE (2b3d050 probe)
+NEXT: aguardar commit do WIP (dono do programa concorrente) para build-approved-commit.ps1 rc=0 e remocao do marcador '-dirty-'; revalidar matriz.
+```
+```text
+PROMPT: HARDENING DE PRODUCAO (etapa 2) - ROUND 2 (continuacao automatica; observacao 2/3 do blocker 8/9)
+STATUS: EM EXECUCAO
+PROGRESSO:
+  - Criado usuario TECNICO de auditoria em HML (registry-tech-auditor@cisne.invalid) com perfil de menor privilegio: 1 grant platform:module-registry:read (Platform). Nova tooling commitada 7f8642a (apps/api/src/ops/hml/hml-tech-auditor.ts + cli/create-hml-tech-auditor.ts + spec 2/2; script package hml:create-tech-auditor). Credenciais sinteticas persistidas em .env.hml (gitignored) para futuros testes administrativos.
+  - MATRIZ HML validada em runtime (API 127.0.0.1:3100):
+      OPERADOR hml-admin: summary 200 | detail 403 | access-admin/catalog 403 (83 grants)
+      AUDITOR tecnico:      summary 200 | detail 200 (finance: enabled, FEATURE_MODULE_FINANCE, caps 37, routes 1) | access-admin/catalog 403 (sem escalada) | observability/artifact 403 (menor privilegio: sem diagnostics) | grants=1
+    Criterio 'administrador autorizado -> detail 200' agora comprovado em runtime HML (alem do e2e em DB real).
+COMMIT: DONE (7f8642a)
+BLOCKER 8/9 (persiste, observacao 2/3): HEAD nao autocontido - 22 imports (probe commitado) resolvem apenas para WIP nao commitado do programa concorrente; aguardando commit do WIP para build limpo rc=0.
+NEXT: round 3 -> se WIP nao committado, registrar blocker formal com condicao concreta.
 ```

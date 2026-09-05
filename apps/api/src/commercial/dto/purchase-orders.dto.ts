@@ -171,6 +171,21 @@ export function parseCancelPurchaseOrderInput(body: unknown): CancelPurchaseOrde
   };
 }
 
+export function parseAuthorizePurchaseOrderOverrunInput(body: unknown): {
+  rowVersion: number;
+  amount: string;
+  justification: string;
+} {
+  const record = assertRecordBody(body);
+  const amount = typeof record['amount'] === 'string' ? record['amount'] : '';
+  const justification = typeof record['justification'] === 'string' ? record['justification'] : '';
+  return {
+    rowVersion: Number(record['rowVersion']),
+    amount,
+    justification,
+  };
+}
+
 export function parseLinkPurchaseOrderDocumentInput(
   body: unknown,
 ): LinkPurchaseOrderDocumentInput {

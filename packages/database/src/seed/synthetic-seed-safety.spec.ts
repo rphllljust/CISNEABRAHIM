@@ -26,13 +26,37 @@ describe('synthetic-seed-safety', () => {
     expect(ctx.nodeEnv).toBe('development');
   });
 
-  it('blocks production NODE_ENV', () => {
+  it('blocks production NODE_ENV outside HML', () => {
     expect(() =>
       assertSyntheticBusinessSeedAllowed('TEST', {
         ...baseEnv,
         NODE_ENV: 'production',
       }),
     ).toThrow(/forbidden/);
+  });
+
+  it('allows HML cisne_hml even when NODE_ENV is production', () => {
+    const ctx = assertSyntheticBusinessSeedAllowed('TEST', {
+      NODE_ENV: 'production',
+      CISNE_ENV: 'hml',
+      DATABASE_URL: 'postgresql://cisne_hml:secret@127.0.0.1:5433/cisne_hml',
+      HML_SYNTHETIC_SEED_CONFIRM: 'I_UNDERSTAND',
+      HML_INTEGRATIONS_SANDBOX: 'true',
+    });
+    expect(ctx.cisneEnv).toBe('hml');
+    expect(ctx.databaseTarget.database).toBe('cisne_hml');
+  });
+
+  it('blocks HML against a production-named database', () => {
+    expect(() =>
+      assertSyntheticBusinessSeedAllowed('TEST', {
+        NODE_ENV: 'production',
+        CISNE_ENV: 'hml',
+        DATABASE_URL: 'postgresql://cisne_hml:secret@127.0.0.1:5433/cisne_production',
+        HML_SYNTHETIC_SEED_CONFIRM: 'I_UNDERSTAND',
+        HML_INTEGRATIONS_SANDBOX: 'true',
+      }),
+    ).toThrow(/production markers/);
   });
 
   it('blocks production database markers', () => {

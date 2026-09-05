@@ -19,6 +19,7 @@ export type PayrollPeriodRow = {
   status: string;
   row_version: number;
   created_by_identity_id: string;
+  updated_by_identity_id: string;
 };
 
 export type PayrollEventRow = {
@@ -41,6 +42,7 @@ export type PayrollCalculationRow = {
   employment_contract_id: string;
   calculation_number: number;
   formula_status: string;
+  created_by_identity_id: string;
 };
 
 export type PayrollResultRow = {

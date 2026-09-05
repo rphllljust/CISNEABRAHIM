@@ -10,6 +10,10 @@ import { AUTHZ_ACTIONS } from '../../authorization/types/authz-actions';
 import type { AuthzAction } from '../../authorization/types/authz-actions';
 import type { IdentityAuthzContext } from '../../authorization/types/authz-decision';
 import {
+  assertPurchaseOrderOverrunAuthorization,
+  PurchaseOrderBalanceError,
+} from '../domain/purchase-order-balance';
+import {
   buildPurchaseOrderCommercialSnapshot,
   buildPurchaseOrderItemCommercialSnapshot,
 } from '../domain/purchase-order-commercial-snapshot';
@@ -35,6 +39,8 @@ import {
   purchaseOrdersDuplicatePo,
   purchaseOrdersInUse,
   purchaseOrdersInvalidState,
+  purchaseOrdersOverrunAmountRequired,
+  purchaseOrdersOverrunJustificationRequired,
   purchaseOrdersVersionConflict,
 } from './purchase-orders-access.errors';
 import {
@@ -321,6 +327,65 @@ export class PurchaseOrdersAccessService {
     const billingRules = await this.purchaseOrdersRepository.listBillingRules(purchaseOrderId);
     const documentLinks = await this.purchaseOrdersRepository.listDocumentLinks(purchaseOrderId);
     return toPurchaseOrderDetailResponse(cancelled, items, billingRules, documentLinks);
+  }
+
+  async authorizeOverrun(
+    actor: IdentityAuthzContext,
+    purchaseOrderId: string,
+    input: { rowVersion: number; amount: string; justification: string },
+  ): Promise<PurchaseOrderDetailResponse> {
+    assertValidPurchaseOrderId(purchaseOrderId);
+    await this.requirePurchaseOrder(
+      actor,
+      purchaseOrderId,
+      AUTHZ_ACTIONS.CommercialPurchaseOrderAuthorizeOverrun,
+    );
+
+    let amount: string;
+    try {
+      amount = assertPurchaseOrderOverrunAuthorization({
+        amount: input.amount,
+        justification: input.justification,
+      });
+    } catch (error) {
+      if (error instanceof PurchaseOrderBalanceError) {
+        if (error.code === 'OVERRUN_JUSTIFICATION_REQUIRED') {
+          throw purchaseOrdersOverrunJustificationRequired();
+        }
+        throw purchaseOrdersOverrunAmountRequired();
+      }
+      throw error;
+    }
+
+    const updated = await this.purchaseOrdersRepository.authorizeOverrun({
+      purchaseOrderId,
+      rowVersion: input.rowVersion,
+      amount,
+      justification: input.justification.trim(),
+      actorIdentityId: actor.identityId,
+    });
+    if (updated === 'VERSION_CONFLICT') {
+      throw purchaseOrdersVersionConflict();
+    }
+    if (updated === 'INVALID_STATE') {
+      throw purchaseOrdersInvalidState();
+    }
+
+    await this.securityAudit.record({
+      actorIdentityId: actor.identityId,
+      actorSessionId: actor.sessionId,
+      action: SECURITY_AUDIT_ACTIONS.CommercialPurchaseOrderAuthorizeOverrun,
+      resourceType: SECURITY_AUDIT_RESOURCE_TYPES.CommercialPurchaseOrder,
+      resourceId: purchaseOrderId,
+      outcome: SECURITY_AUDIT_OUTCOMES.Success,
+      classification: SECURITY_AUDIT_CLASSIFICATIONS.Standard,
+      metadata: { authorizedOverrunAmount: amount, justification: input.justification.trim() },
+    });
+
+    const items = await this.purchaseOrdersRepository.listItems(purchaseOrderId);
+    const billingRules = await this.purchaseOrdersRepository.listBillingRules(purchaseOrderId);
+    const documentLinks = await this.purchaseOrdersRepository.listDocumentLinks(purchaseOrderId);
+    return toPurchaseOrderDetailResponse(updated, items, billingRules, documentLinks);
   }
 
   async linkDocument(

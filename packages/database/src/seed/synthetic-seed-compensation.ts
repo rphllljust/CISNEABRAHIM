@@ -101,7 +101,10 @@ async function deleteMeasurementsForServiceOrders(client: DbClient, serviceOrder
     [serviceOrderIds],
   );
   await client.query(
-    `DELETE FROM msr.measurement_command_idempotency WHERE service_order_id = ANY($1::uuid[])`,
+    `DELETE FROM msr.measurement_command_idempotency
+     WHERE measurement_id IN (
+       SELECT id FROM msr.measurements WHERE service_order_id = ANY($1::uuid[])
+     )`,
     [serviceOrderIds],
   );
   await client.query(`DELETE FROM msr.measurements WHERE service_order_id = ANY($1::uuid[])`, [
@@ -121,10 +124,7 @@ async function deleteExecutionForServiceOrders(client: DbClient, serviceOrderIds
     [serviceOrderIds],
   );
   await client.query(
-    `DELETE FROM so.execution_evidence
-     WHERE execution_entry_id IN (
-       SELECT id FROM so.execution_entries WHERE service_order_id = ANY($1::uuid[])
-     )`,
+    `DELETE FROM so.execution_evidence WHERE service_order_id = ANY($1::uuid[])`,
     [serviceOrderIds],
   );
   await client.query(
@@ -146,7 +146,7 @@ async function deletePlanningForServiceOrders(client: DbClient, serviceOrderIds:
   }
   await client.query(
     `DELETE FROM res.resource_allocation_history_events
-     WHERE allocation_id IN (
+     WHERE resource_allocation_id IN (
        SELECT id FROM res.resource_allocations WHERE service_order_id = ANY($1::uuid[])
      )`,
     [serviceOrderIds],
@@ -165,9 +165,8 @@ async function deletePlanningForServiceOrders(client: DbClient, serviceOrderIds:
 
 async function deleteServiceRequestsForClient(client: DbClient, clientId: string): Promise<void> {
   await client.query(
-    `UPDATE sr.service_requests
-     SET converted_service_order_id = NULL
-     WHERE client_id = $1::uuid`,
+    `DELETE FROM sr.service_request_history_events
+     WHERE service_request_id IN (SELECT id FROM sr.service_requests WHERE client_id = $1::uuid)`,
     [clientId],
   );
   await client.query(
@@ -222,8 +221,12 @@ async function deleteClientGraph(client: DbClient, clientId: string): Promise<vo
   await deleteBillingForServiceOrders(client, serviceOrderIds);
   await deleteMeasurementsForServiceOrders(client, serviceOrderIds);
   await deleteExecutionForServiceOrders(client, serviceOrderIds);
-  await deletePlanningForServiceOrders(client, serviceOrderIds);
+  await client.query(
+    `UPDATE so.service_orders SET service_request_id = NULL WHERE client_id = $1::uuid`,
+    [clientId],
+  );
   await deleteServiceRequestsForClient(client, clientId);
+  await deletePlanningForServiceOrders(client, serviceOrderIds);
   await deleteCommercialForClient(client, clientId);
 
   await client.query(`DELETE FROM pty.client_addresses WHERE client_id = $1::uuid`, [clientId]);
@@ -242,10 +245,17 @@ async function deleteScenarioCatalogArtifacts(client: DbClient, scenarioKey: str
   const uatServicePattern = `%${suffix}%`;
 
   const defs = await client.query<{ id: string }>(
-    `SELECT id FROM cat.service_definitions
-     WHERE code = $1
-        OR (code LIKE 'UAT-SRV-%' AND code LIKE $2)
-        OR code LIKE 'UAT-SRV-' || $3`,
+    `SELECT d.id
+     FROM cat.service_definitions d
+     WHERE (d.code = $1
+        OR (d.code LIKE 'UAT-SRV-%' AND d.code LIKE $2)
+        OR d.code LIKE 'UAT-SRV-' || $3)
+       AND NOT EXISTS (
+         SELECT 1
+         FROM cat.service_definition_versions v
+         WHERE v.service_definition_id = d.id
+           AND v.status IN ('ACTIVE', 'RETIRED')
+       )`,
     [synServiceCode, `%${suffix}%`, suffix],
   );
 
@@ -271,10 +281,22 @@ async function deleteScenarioCatalogArtifacts(client: DbClient, scenarioKey: str
     await client.query(`DELETE FROM cat.service_definitions WHERE id = $1::uuid`, [def.id]);
   }
 
-  await client.query(`DELETE FROM cat.service_categories WHERE code = $1`, [synCategoryCode]);
-  await client.query(`DELETE FROM cat.service_categories WHERE code LIKE 'UAT-%' AND code LIKE $1`, [
-    uatServicePattern,
-  ]);
+  await client.query(
+    `DELETE FROM cat.service_categories c
+     WHERE c.code = $1
+       AND NOT EXISTS (
+         SELECT 1 FROM cat.service_definition_versions v WHERE v.category_id = c.id
+       )`,
+    [synCategoryCode],
+  );
+  await client.query(
+    `DELETE FROM cat.service_categories c
+     WHERE c.code LIKE 'UAT-%' AND c.code LIKE $1
+       AND NOT EXISTS (
+         SELECT 1 FROM cat.service_definition_versions v WHERE v.category_id = c.id
+       )`,
+    [uatServicePattern],
+  );
 
   return defs.rows.length;
 }

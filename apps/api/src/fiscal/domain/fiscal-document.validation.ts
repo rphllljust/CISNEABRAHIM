@@ -21,6 +21,8 @@ export type CreateFiscalDocumentInput = {
   sourceKind: string;
   sourceId?: string;
   billingDocumentId?: string;
+  /** Estabelecimento emissor (registry da própria empresa). Obrigatório na emissão nova. */
+  establishmentId?: string;
   description: string;
   currencyCode: string;
   issuedOn: string;
@@ -57,10 +59,13 @@ export function validateCreateFiscalDocumentInput(
   if (input.billingDocumentId) {
     assertUuid(input.billingDocumentId, 'billingDocumentId');
   }
+  if (input.establishmentId) {
+    assertUuid(input.establishmentId, 'establishmentId');
+  }
   const parties = input.parties ?? [];
   const items = input.items ?? [];
   const taxDetails = input.taxDetails ?? [];
-  assertParties(parties);
+  assertParties(parties, { requireIssuer: input.establishmentId ? false : true });
   assertItems(items);
   assertTaxDetails(taxDetails);
   return {
@@ -68,6 +73,7 @@ export function validateCreateFiscalDocumentInput(
     sourceKind,
     sourceId: input.sourceId,
     billingDocumentId: input.billingDocumentId,
+    establishmentId: input.establishmentId,
     description: requireNonEmpty(input.description, 'description'),
     currencyCode: assertCurrencyCode(input.currencyCode),
     issuedOn: requireDate(input.issuedOn, 'issuedOn'),

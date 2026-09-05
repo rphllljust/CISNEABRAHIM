@@ -85,7 +85,7 @@ export function loadTechnicalAlertPolicy(env: NodeJS.ProcessEnv = process.env): 
     diskUsageWarningPercent: readInt(env, 'TECH_ALERT_DISK_WARNING_PERCENT', 85),
     diskUsageCriticalPercent: readInt(env, 'TECH_ALERT_DISK_CRITICAL_PERCENT', 95),
     diskUsageDurationMs: readInt(env, 'TECH_ALERT_DISK_DURATION_MS', 300_000),
-    erpProviderPatterns: readPatterns(env, 'TECH_ALERT_ERP_PROVIDER_PATTERNS', ['erp', 'dygnus']),
+    erpProviderPatterns: readPatterns(env, 'TECH_ALERT_ERP_PROVIDER_PATTERNS', ['erp']),
     trackingProviderPatterns: readPatterns(env, 'TECH_ALERT_TRACKING_PROVIDER_PATTERNS', [
       'tracking',
       'rastre',

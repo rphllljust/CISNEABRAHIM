@@ -51,6 +51,7 @@ export type ReconciliationRow = {
   status: string;
   match_method: string;
   match_criteria: string;
+  created_by_identity_id: string;
 };
 
 export type ReconciliationMatchRow = {

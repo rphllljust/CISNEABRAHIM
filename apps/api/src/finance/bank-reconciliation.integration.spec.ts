@@ -13,6 +13,8 @@ import { AuthModule } from '../auth/auth.module';
 import { AUTH_TEST_PASSWORD, applyAuthTestEnv } from '../auth/test/auth-test-env';
 import { normalizeLoginIdentifier } from '../auth/crypto/token-crypto';
 import { AuthorizationModule } from '../authorization/authorization.module';
+import { ApprovalMatrixAccessService } from '../authorization/services/approval-matrix-access.service';
+import { enableCriticalSodFor } from '../authorization/test/critical-sod-harness';
 import { AUTHZ_ACTIONS } from '../authorization/types/authz-actions';
 import { AUTHZ_RESOURCE_TYPES } from '../authorization/types/authz-resources';
 import { AUTHZ_SCOPES } from '../authorization/types/authz-scopes';
@@ -55,6 +57,7 @@ describe('Bank reconciliation PostgreSQL integration', () => {
   let pool: Pool;
   let treasury: TreasuryAccessService;
   let recon: BankReconciliationAccessService;
+  let matrices: ApprovalMatrixAccessService;
   const testDatabaseUrl = process.env['TEST_DATABASE_URL'];
 
   beforeAll(async () => {
@@ -67,6 +70,7 @@ describe('Bank reconciliation PostgreSQL integration', () => {
     }).compile();
     treasury = module.get(TreasuryAccessService);
     recon = module.get(BankReconciliationAccessService);
+    matrices = module.get(ApprovalMatrixAccessService);
     pool = new Pool({ connectionString: testDatabaseUrl });
   });
 
@@ -89,6 +93,13 @@ describe('Bank reconciliation PostgreSQL integration', () => {
     return { identityId, sessionId: 'test-session' };
   }
 
+  async function seedReconPair() {
+    const originator = await seedActor();
+    const checker = await seedActor();
+    await enableCriticalSodFor(pool, matrices, [originator.identityId, checker.identityId]);
+    return { originator, checker };
+  }
+
   async function openBank(actor: { identityId: string; sessionId: string }) {
     return treasury.openAccount(actor, {
       unitId: UNIT,
@@ -102,7 +113,7 @@ describe('Bank reconciliation PostgreSQL integration', () => {
   }
 
   it('auto-matches exact settlement/payment/transfer and leaves approximation and leftover partial unmatched', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedReconPair();
     const bank = await openBank(actor);
     const cash = await treasury.openAccount(actor, {
       unitId: UNIT,
@@ -146,7 +157,7 @@ describe('Bank reconciliation PostgreSQL integration', () => {
       originReference: 'PAY-25',
       occurredAt: OCCURRED,
     });
-    await treasury.transfer(actor, {
+    await treasury.transfer(checker, {
       fromAccountId: bank.id,
       toAccountId: cash.id,
       amount: '15.0000',
@@ -232,7 +243,7 @@ describe('Bank reconciliation PostgreSQL integration', () => {
       ]),
     );
     for (const item of proposed.suggested) {
-      const confirmed = await recon.confirm(actor, item.id);
+      const confirmed = await recon.confirm(checker, item.id);
       expect(confirmed.status).toBe('CONFIRMED');
     }
     await recon.assertIntegrity(statement.id);
@@ -299,7 +310,9 @@ describe('Bank reconciliation PostgreSQL integration', () => {
 
   it('prevents double reconciliation under concurrency and requires authorized unreconcile', async () => {
     const admin = await seedActor(true);
+    const checker = await seedActor(true);
     const stranger = await seedActor(false);
+    await enableCriticalSodFor(pool, matrices, [admin.identityId, checker.identityId]);
     const bank = await openBank(admin);
     await treasury.postMovement(admin, bank.id, {
       direction: FINANCIAL_DIRECTIONS.Credit,
@@ -342,8 +355,8 @@ describe('Bank reconciliation PostgreSQL integration', () => {
     const proposed = await recon.autoMatch(admin, statement.id);
     const draftId = proposed.suggested[0]?.id as string;
     const concurrent = await Promise.allSettled([
-      recon.confirm(admin, draftId),
-      recon.confirm(admin, draftId),
+      recon.confirm(checker, draftId),
+      recon.confirm(checker, draftId),
     ]);
     const fulfilled = concurrent.filter((item) => item.status === 'fulfilled');
     expect(fulfilled.length).toBeGreaterThanOrEqual(1);
@@ -355,7 +368,7 @@ describe('Bank reconciliation PostgreSQL integration', () => {
     );
     expect(confirmedCount.rows[0]?.count).toBe('1');
     await expect(recon.confirm(stranger, draftId)).rejects.toBeInstanceOf(FinanceHttpException);
-    const confirmed = await recon.confirm(admin, draftId);
+    const confirmed = await recon.confirm(checker, draftId);
     await expect(
       recon.matchManual(admin, {
         bankStatementLineId: statement.lines[0]!.id,

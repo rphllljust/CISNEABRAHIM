@@ -1,5 +1,6 @@
 # Export monorepo into cisne-backend, cisne-frontend, cisne-infra (standalone repos)
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'lib\resolve-cisne-tmp.ps1')
 $Root = Split-Path -Parent $PSScriptRoot
 if (-not (Test-Path (Join-Path $Root 'pnpm-workspace.yaml'))) {
   throw "Monorepo root not found near script ($Root). Run from a checkout that contains pnpm-workspace.yaml."
@@ -21,7 +22,7 @@ function Copy-Tree {
 function Backup-RepoMeta {
   param([string]$RepoName)
   $src = Join-Path $Root $RepoName
-  $dest = Join-Path $env:TEMP "cisne-export-meta\$RepoName"
+  $dest = Join-Path (Resolve-CisneTmpRoot -RepoRoot $Root) "cisne-export-meta\$RepoName"
   if (-not (Test-Path $src)) { return $null }
   if (Test-Path $dest) { Remove-Item -Recurse -Force $dest }
   New-Item -ItemType Directory -Force -Path $dest | Out-Null

@@ -45,6 +45,13 @@ export const serviceDefinitionVersionStatusEnum = catSchema.enum(
   ['DRAFT', 'ACTIVE', 'RETIRED'],
 );
 
+export const billingEntitlementPolicyEnum = catSchema.enum('billing_entitlement_policy', [
+  'MEASUREMENT_APPROVED',
+  'FIXED_PRICE',
+  'PERIODIC',
+  'MILESTONE',
+]);
+
 export const operationalArchetypeEnum = catSchema.enum('operational_archetype', [
   'RENTAL',
   'TRANSPORT',
@@ -251,6 +258,9 @@ export const serviceDefinitionVersions = catSchema.table(
         requiresPurchaseOrder: false,
         requiresContractReference: false,
       }),
+    billingEntitlementPolicy: billingEntitlementPolicyEnum('billing_entitlement_policy')
+      .notNull()
+      .default('MEASUREMENT_APPROVED'),
     publishedAt: timestamp('published_at', { withTimezone: true, mode: 'string' }),
     publishedByIdentityId: uuid('published_by_identity_id').references(() => identities.id, {
       onDelete: 'restrict',

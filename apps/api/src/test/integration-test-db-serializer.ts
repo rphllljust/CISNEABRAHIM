@@ -12,6 +12,12 @@ if (!testDatabaseUrl) {
 }
 
 process.env['DATABASE_POOL_MAX'] ??= '1';
+// Integration files share one Vitest worker. Auto-started pollers race
+// explicit claimPending/publishBatch/processBatch and leak across files
+// when TestingModule.init() is not paired with close(). Production default
+// remains enabled unless these env vars are === 'false'.
+process.env['OUTBOX_PUBLISHER_ENABLED'] = 'false';
+process.env['INBOX_PROCESSOR_ENABLED'] = 'false';
 
 let serializerPool = new Pool({ connectionString: testDatabaseUrl, max: 1 });
 let serializerPoolEnded = false;

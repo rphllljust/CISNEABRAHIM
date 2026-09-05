@@ -17,6 +17,7 @@ export type BudgetVersionRow = {
   status: string;
   approved_at: Date | null;
   approved_by_identity_id: string | null;
+  created_by_identity_id: string;
   created_at: Date;
 };
 

@@ -54,6 +54,10 @@ export function MoneyActionForm({
     setOpen(true);
   }
 
+  function releaseInflight(): void {
+    inflight.current = false;
+  }
+
   async function handleConfirm() {
     if (inflight.current) {
       return;
@@ -73,17 +77,20 @@ export function MoneyActionForm({
       setAmount('');
       setReason('');
       setExtra('');
+      releaseInflight();
     } catch (caught) {
       if (caught instanceof BackofficeApiError && caught.kind === 'version_conflict') {
         setConflict(true);
         setError(mapError(caught.code, caught.status));
+        // Keep the confirm spent until cancel/reload so a second click cannot POST again.
       } else if (caught instanceof BackofficeApiError) {
         setError(mapError(caught.code, caught.status));
+        releaseInflight();
       } else {
         setError(mapError(undefined, 0));
+        releaseInflight();
       }
     } finally {
-      inflight.current = false;
       setProcessing(false);
     }
   }
@@ -145,8 +152,12 @@ export function MoneyActionForm({
         description={confirmDescription}
         confirmLabel={confirmLabel}
         loading={processing}
+        confirmDisabled={conflict}
         onConfirm={() => void handleConfirm()}
-        onCancel={() => setOpen(false)}
+        onCancel={() => {
+          setOpen(false);
+          releaseInflight();
+        }}
       />
     </FormSection>
   );

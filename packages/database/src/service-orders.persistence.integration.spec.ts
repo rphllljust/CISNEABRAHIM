@@ -48,7 +48,7 @@ describe('Service orders persistence migration', () => {
     expect(await tableExists(pool, 'so.service_order_history_events')).toBe(true);
   });
 
-  it('enforces unique service_request_id for conversion', async () => {
+  it('indexes service_request_id without requiring one OS per request', async () => {
     const hasServiceOrders = await tableExists(pool, 'so.service_orders');
     if (!hasServiceOrders) {
       await applyMigration(pool, '0019_service_orders_baseline.sql');
@@ -59,8 +59,11 @@ describe('Service orders persistence migration', () => {
        FROM pg_indexes
        WHERE schemaname = 'so'
          AND tablename = 'service_orders'
-         AND indexname = 'service_orders_service_request_id_uidx'`,
+         AND indexname IN (
+           'service_orders_service_request_id_idx',
+           'service_orders_service_request_id_uidx'
+         )`,
     );
-    expect(indexes.rowCount).toBe(1);
+    expect(indexes.rowCount).toBeGreaterThanOrEqual(1);
   });
 });

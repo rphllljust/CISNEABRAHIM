@@ -17,6 +17,10 @@ describe('web release feature flags', () => {
     expect(matchGatedWebPath('/app/accounting/journals')).toBe('accounting');
     expect(matchGatedWebPath('/app/people')).toBe('people');
     expect(matchGatedWebPath('/app/rentals')).toBe('rentals');
+    expect(matchGatedWebPath('/app/inventory')).toBe('inventory');
+    expect(matchGatedWebPath('/app/payroll/periods/1')).toBe('payroll');
+    expect(matchGatedWebPath('/app/procurement/invoices')).toBe('procurement');
+    expect(matchGatedWebPath('/app/suppliers')).toBe('suppliers');
     expect(matchGatedWebPath('/app/clients')).toBeNull();
     expect(matchGatedWebPath('/app/billing')).toBeNull();
     expect(matchGatedWebPath('/app/service-orders/1/planning')).toBeNull();
@@ -31,6 +35,10 @@ describe('web release feature flags', () => {
     expect(isNavItemVisible('finance-receivables', { 'finance-receivables': true }, false)).toBe(
       false,
     );
+    expect(isNavItemVisible('inventory', { inventory: true }, false)).toBe(false);
+    expect(isNavItemVisible('payroll', { payroll: true }, false)).toBe(false);
+    expect(isNavItemVisible('procurement', { procurement: true }, false)).toBe(false);
+    expect(isNavItemVisible('suppliers', { suppliers: true }, false)).toBe(false);
     expect(isNavItemVisible('billing', { billing: true }, false)).toBe(true);
     expect(isNavItemVisible('clients', { clients: true }, false)).toBe(true);
   });

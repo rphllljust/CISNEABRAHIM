@@ -41,7 +41,7 @@ describe('ClientCreatePage', () => {
     });
 
     await user.type(screen.getByLabelText(/razão social/i), 'Outra LTDA');
-    await user.type(screen.getByLabelText(/^cnpj$/i), '11.897.171/0001-81');
+    await user.type(screen.getByLabelText(/^cnpj$/i), '11.222.333/0001-81');
     await user.type(screen.getByLabelText(/nome do contato/i), 'Ops');
     await user.type(screen.getByLabelText(/^e-mail$/i), 'ops@demo.invalid');
     await user.click(screen.getByRole('button', { name: /cadastrar cliente/i }));

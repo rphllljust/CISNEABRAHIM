@@ -8,7 +8,7 @@ import type { BillingHistoryEventRow, BillingItemRow, BillingRecordRow } from '.
 export type BillingItemResponse = {
   id: string;
   lineNumber: number;
-  measurementItemId: string;
+  measurementItemId: string | null;
   sourceExecutionEntryId: string | null;
   unitCode: string;
   quantity: string;
@@ -23,7 +23,8 @@ export type BillingHistoryEventResponse = HistoryEventResponse;
 export type BillingRecordDetailResponse = {
   id: string;
   serviceOrderId: string;
-  measurementId: string;
+  measurementId: string | null;
+  entitlementPolicy?: string;
   clientId: string;
   unitId: string;
   status: string;
@@ -75,6 +76,7 @@ export function toBillingRecordResponse(row: BillingRecordRow): Omit<BillingReco
     id: row.id,
     serviceOrderId: row.service_order_id,
     measurementId: row.measurement_id,
+    entitlementPolicy: row.entitlement_policy,
     clientId: row.client_id,
     unitId: row.unit_id,
     status: row.status,

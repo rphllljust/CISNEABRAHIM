@@ -160,7 +160,7 @@ export function ClientCreatePage() {
             ) : null}
           </div>
           <div className="form-field">
-            <label htmlFor={externalErpIdId}>Referência ERP externa (opcional)</label>
+            <label htmlFor={externalErpIdId}>Referência externa (opcional)</label>
             <input
               id={externalErpIdId}
               value={externalErpId}

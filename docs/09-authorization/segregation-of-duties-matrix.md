@@ -43,3 +43,11 @@
 | 016 | —        | —        | —        | —            | —           | SOD-007 | SOD-007 |
 
 `?` = PENDING_SOURCE_VALIDATION
+
+## Engenharia 2026-09-03 (ED-006)
+
+Este bloco **não** confirma SOD-001..012. O status documental das linhas acima permanece CANDIDATE/PENDING.
+
+Pedido autorizado `SOD HARDENING`: o backend aplica maker-checker em fornecedor, compra, despesa, pagamento, baixa, conciliação, ajuste contábil, reabertura de período, fiscal e folha, via papel + capability + escopo + matriz publicada — sem nomes de pessoas.
+
+SRC-008 / BR-046 / BR-050: as duas autoridades operacionais equivalentes podem criar/liberar a própria OS e aprovar a própria medição. Esses pares (SOD-002 / SOD-004 no catálogo documental) **não** entram no catálogo de enforcement.

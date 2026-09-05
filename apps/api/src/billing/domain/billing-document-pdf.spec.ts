@@ -9,8 +9,8 @@ const SAMPLE_SNAPSHOT: BillingDocumentPdfSnapshot = {
   fiscalDisclaimer: 'Documento interno de cobrança.',
   issuedAt: '2026-08-29T12:00:00.000Z',
   dueDate: '2026-09-28',
-  emitterLegalName: 'CISNE RONDÔNIA COMÉRCIO E SERVIÇOS LTDA',
-  emitterTaxId: '11897171000181',
+  emitterLegalName: 'EMPRESA EMISSORA PILOTO LTDA',
+  emitterTaxId: '11222333000181',
   emitterAddress: {
     street: 'Av. Sete de Setembro',
     city: 'Porto Velho',

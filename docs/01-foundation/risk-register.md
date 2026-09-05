@@ -127,7 +127,7 @@ Impacto qualitativo preliminar (`HIGH`/`MEDIUM`/`LOW`) é julgamento de engenhar
 | Probability     | `UNKNOWN`                                                              |
 | Impact          | HIGH                                                                   |
 | Status          | `OPEN`                                                                 |
-| Nearby controls | fontes `NOT_PROVIDED`; proibição SRC-000                               |
+| Nearby controls | fontes `NOT_PROVIDED` para alíquota/CFOP/NCM; SRC-007 / BR-043..BR-045 só confirmam gates, não tributação; proibição SRC-000 |
 
 ## RISK-013 — Permissão excessiva
 
@@ -230,7 +230,7 @@ Impacto qualitativo preliminar (`HIGH`/`MEDIUM`/`LOW`) é julgamento de engenhar
 | Title           | Mesma pessoa ou fluxo confunde rascunho com OS liberada ou solicitação com autorização |
 | Probability     | `UNKNOWN`                                                                              |
 | Impact          | HIGH                                                                                   |
-| Status          | `OPEN`                                                                                 |
+| Status          | `OPEN` — regras de autoridade (SRC-008 / DDP-022) confirmam que a mesma pessoa **pode** criar e liberar; o risco residual é confusão operacional, não vedação de SoD |
 | Source          | SRC-001 EV-041, EV-042, EV-043                                                         |
 | Nearby controls | BR-007, BR-025, DDP-022                                                                |
 
@@ -256,6 +256,18 @@ Impacto qualitativo preliminar (`HIGH`/`MEDIUM`/`LOW`) é julgamento de engenhar
 | Source          | SRC-001 EV-078; Prompt 03                                                             |
 | Nearby controls | NFR-029, NFR-039; auditability-and-accountability-requirements.md                     |
 
+## RISK-025 — Ativação de NF-e sem credenciamento vigente
+
+| Campo | Valor |
+| ----- | ----- |
+| Title | Ativar emissão ou transmissão de NF-e sem credenciamento vigente e sem gateway autorizado |
+| Probability | `UNKNOWN` |
+| Impact | HIGH |
+| Status | `OPEN` |
+| Source | SRC-006, página 1 — situação da NF-e `NÃO CREDENCIADO` em 03/09/2026; SRC-007 / BR-043 |
+| Nearby controls | `FEATURE_MODULE_FISCAL` fail-closed; DDP-023 residual `OPEN`; BR-043 transmissão `BLOCKED` sem credenciamento; BR-044 DANFE oficial `BLOCKED` sem protocolo; ausência de certificado/credenciais; production gate `NO-GO` |
+| Mitigation | Não ativar gateway/feature fiscal; obter credenciamento e requisitos oficiais, validar novamente o status e executar testes de homologação antes de nova decisão. SRC-007 não autoriza essa ativação. |
+
 ## Próximo ID
 
-`RISK-025`.
+`RISK-026`.

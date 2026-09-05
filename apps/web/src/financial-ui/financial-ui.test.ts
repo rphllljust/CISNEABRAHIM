@@ -8,6 +8,11 @@ describe('financial UI helpers', () => {
     expect(classifyBackofficeError(409, 'FINANCE_VERSION_CONFLICT')).toBe('version_conflict');
     expect(classifyBackofficeError(409, 'ACCOUNTING_PERIOD_CLOSED')).toBe('closed_period');
     expect(classifyBackofficeError(403, 'FINANCE_DENIED')).toBe('denied');
+    expect(classifyBackofficeError(403, 'PROCUREMENT_DENIED')).toBe('denied');
+    expect(classifyBackofficeError(403, 'INVENTORY_DENIED')).toBe('denied');
+    expect(classifyBackofficeError(403, 'PAYROLL_DENIED')).toBe('denied');
+    expect(classifyBackofficeError(409, 'PROCUREMENT_VERSION_CONFLICT')).toBe('version_conflict');
+    expect(classifyBackofficeError(409, 'SUPPLIER_VERSION_CONFLICT')).toBe('version_conflict');
     expect(classifyBackofficeError(0, undefined)).toBe('unknown');
   });
 

@@ -13,6 +13,8 @@ import { AuthModule } from '../auth/auth.module';
 import { AUTH_TEST_PASSWORD, applyAuthTestEnv } from '../auth/test/auth-test-env';
 import { normalizeLoginIdentifier } from '../auth/crypto/token-crypto';
 import { AuthorizationModule } from '../authorization/authorization.module';
+import { ApprovalMatrixAccessService } from '../authorization/services/approval-matrix-access.service';
+import { enableCriticalSodFor } from '../authorization/test/critical-sod-harness';
 import { AUTHZ_ACTIONS } from '../authorization/types/authz-actions';
 import { AUTHZ_RESOURCE_TYPES } from '../authorization/types/authz-resources';
 import { AUTHZ_SCOPES } from '../authorization/types/authz-scopes';
@@ -63,6 +65,7 @@ describe('Receivable collections PostgreSQL integration', () => {
   let pool: Pool;
   let receivables: ReceivablesAccessService;
   let collections: CollectionsAccessService;
+  let matrices: ApprovalMatrixAccessService;
   const testDatabaseUrl = process.env['TEST_DATABASE_URL'];
 
   beforeAll(async () => {
@@ -75,6 +78,7 @@ describe('Receivable collections PostgreSQL integration', () => {
     }).compile();
     receivables = module.get(ReceivablesAccessService);
     collections = module.get(CollectionsAccessService);
+    matrices = module.get(ApprovalMatrixAccessService);
     pool = new Pool({ connectionString: testDatabaseUrl });
   });
 
@@ -95,6 +99,13 @@ describe('Receivable collections PostgreSQL integration', () => {
       await grantCollections(pool, identityId);
     }
     return { identityId, sessionId: 'test-session' };
+  }
+
+  async function seedSodPair() {
+    const originator = await seedActor();
+    const checker = await seedActor();
+    await enableCriticalSodFor(pool, matrices, checker.identityId);
+    return { originator, checker };
   }
 
   async function openReceivable(
@@ -139,10 +150,10 @@ describe('Receivable collections PostgreSQL integration', () => {
   });
 
   it('keeps the case open after a partial settlement and records history', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSodPair();
     const receivable = await openReceivable(actor);
     const opened = await collections.open(actor, receivable.id);
-    const settled = await receivables.settle(actor, receivable.id, {
+    const settled = await receivables.settle(checker, receivable.id, {
       amount: '40.0000',
       rowVersion: receivable.rowVersion,
       idempotencyKey: `partial-${crypto.randomUUID()}`,
@@ -158,7 +169,7 @@ describe('Receivable collections PostgreSQL integration', () => {
   });
 
   it('closes collection on full settlement and keeps promises as kept', async () => {
-    const actor = await seedActor();
+    const { originator: actor, checker } = await seedSodPair();
     const receivable = await openReceivable(actor);
     const opened = await collections.open(actor, receivable.id);
     await collections.recordPromise(actor, opened.id, {
@@ -166,7 +177,7 @@ describe('Receivable collections PostgreSQL integration', () => {
       promisedOn: '2026-09-15',
       idempotencyKey: `ptp-${crypto.randomUUID()}`,
     });
-    await receivables.settle(actor, receivable.id, {
+    await receivables.settle(checker, receivable.id, {
       amount: '100.0000',
       rowVersion: receivable.rowVersion,
       idempotencyKey: `full-${crypto.randomUUID()}`,

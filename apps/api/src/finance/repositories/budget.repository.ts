@@ -14,7 +14,8 @@ const BUDGET_RETURNING = `
 `;
 
 const VERSION_RETURNING = `
-  id, budget_id, version_number, status::text AS status, approved_at, approved_by_identity_id, created_at
+  id, budget_id, version_number, status::text AS status, approved_at, approved_by_identity_id,
+  created_by_identity_id, created_at
 `;
 
 const PERIOD_RETURNING = `

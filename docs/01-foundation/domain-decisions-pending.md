@@ -3,8 +3,8 @@
 | Campo             | Valor                                                   |
 | ----------------- | ------------------------------------------------------- |
 | Document ID       | DDP-REG-001                                             |
-| Last updated      | 2026-09-02 (Release 1 closed scope)                     |
-| Status of answers | **PARTIAL** — DDP-020 (CLIENT), DDP-026 (fatia R1), DDP-028, DDP-041; demais abertas |
+| Last updated      | 2026-09-03 (SRC-007 gates; alinhamento SRC-002 §§2/14/15/19/20) |
+| Status of answers | **PARTIAL** — DDP-014 (ERP), DDP-020, DDP-026 (fatia R1), DDP-028, DDP-041; demais abertas |
 
 Status típicos: `OPEN`, `BLOCKING`, `ANSWERED`, `SUPERSEDED`. Todas as entradas abaixo estão `OPEN` e `BLOCKING` para implementação do tema.
 
@@ -22,25 +22,47 @@ Quais tipos de Ordem de Serviço existem? Quem os define? Um tipo por atividade 
 
 Como uma solicitação nasce, quem pode criá-la, o que a torna válida, e se toda solicitação gera OS?
 
-**Status:** `OPEN` · **Bloqueia implementação de solicitação/OS:** sim
+**Status:** `PARTIALLY_ANSWERED` (SRC-008, 2026-09-03)
+
+**Respondido:** solicitação e OS são entidades distintas. Nem toda solicitação gera OS. Conversão em uma ou mais OS somente pela autoridade operacional máxima. Solicitação pode ser recebida, analisada, recusada ou arquivada. WhatsApp, se usado, é origem — não SoT.
+
+**Residual `OPEN`:** quem além da autoridade máxima pode *criar* a ficha de solicitação (ver DDP-028); campos mínimos de validade além dos já implementados.
+
+**Bloqueia implementação de solicitação/OS:** não para o recorte já respondido.
 
 ## DDP-003 — Liberação da OS
 
 Existe liberação? Por quem? Com base em quê (crédito, PO, agenda, frota)? O que ocorre se não houver liberação?
 
-**Status:** `OPEN` · **Bloqueia implementação de OS:** sim
+**Status:** `PARTIALLY_ANSWERED` (SRC-008, 2026-09-03)
+
+**Respondido:** existe liberação. Somente a autoridade operacional máxima libera OS para execução. A mesma pessoa pode criar e liberar. Sem liberação, a OS não entra em execução. PO pode ser exigido antes da execução se a configuração do cliente/contrato/catálogo assim determinar.
+
+**Residual `OPEN`:** crédito, agenda e frota como critérios adicionais de liberação.
+
+**Bloqueia implementação de OS:** não para quem libera e para PO configurável.
 
 ## DDP-004 — Cancelamento
 
 Quem cancela solicitação, OS, PO, medição ou fatura? Quais efeitos colaterais (alocação, documentos, financeiro)?
 
-**Status:** `OPEN` · **Bloqueia implementação dos cancelamentos:** sim
+**Status:** `PARTIALLY_ANSWERED` (SRC-008, 2026-09-03)
+
+**Respondido para OS:** somente a autoridade operacional máxima cancela OS. Cancelamento nunca apaga o registro; permanece auditado.
+
+**Residual `OPEN`:** cancelamento de PO, medição (recusa ≠ cancelamento) e fatura; efeitos colaterais de alocação/financeiro além da trilha da OS.
+
+**Bloqueia implementação dos cancelamentos:** não para cancelamento de OS.
 
 ## DDP-005 — Reabertura
 
 Reabertura é permitida? De quais artefatos? Com quais restrições de auditoria e financeiro?
 
-**Status:** `OPEN`
+**Status:** `PARTIALLY_ANSWERED` (SRC-008, 2026-09-03)
+
+**Respondido para OS:** reabertura é excepcional, exclusiva da autoridade máxima, exige justificativa obrigatória e registra estado anterior, novo estado, usuário, data/hora e motivo.
+
+**Residual `OPEN`:** reabertura de medição, PO ou fatura; efeitos financeiros além da trilha da OS.
 
 ## DDP-006 — Mão de obra
 
@@ -64,19 +86,33 @@ Controle de frota própria, agregados, rastreador, jornada, documentos do veícu
 
 O PO é obrigatório? Origem (cliente interno vs cliente externo)? Um PO para N OS ou N PO para uma OS? Estouro de saldo?
 
-**Status:** `OPEN` · **Bloqueia implementação de PO e de OS ligada a PO:** sim
+**Status:** `PARTIALLY_ANSWERED` (SRC-008, 2026-09-03)
+
+**Respondido:** PO não é obrigatório globalmente. Obrigatoriedade configurável por cliente, contrato ou regra comercial (antes da execução, antes do faturamento, ou não exigido). Relação preferencial 1 PO → N OS, sem impedir alocações futuras mais complexas. Estouro bloqueado por padrão; override administrativo com justificativa, auditoria e excedente explícito; nunca silencioso.
+
+**Residual `OPEN`:** origem interna vs externa do PO.
+
+**Bloqueia implementação de PO e de OS ligada a PO:** não para o recorte respondido.
 
 ## DDP-010 — Medição
 
 O que é medido, quem mede, com qual evidência, e quando a medição é recusada?
 
-**Status:** `OPEN`
+**Status:** `PARTIALLY_ANSWERED` (SRC-008, 2026-09-03)
+
+**Respondido:** medição = executado real, não cópia da proposta. Unidades conforme o serviço. Na R1 a autoridade máxima registra, envia, aprova ou recusa; a mesma pessoa pode registrar e aprovar. Recusa não apaga; permite correção/reenvio.
+
+**Residual `OPEN`:** evidência mínima por tipo de serviço.
 
 ## DDP-011 — Faturamento
 
 O que gera direito a faturar? Relação com medição, contrato, NF-e e outros documentos fiscais (regras fiscais **não** inventadas)?
 
-**Status:** `OPEN`
+**Status:** `PARTIALLY_ANSWERED` (SRC-008, 2026-09-03)
+
+**Respondido:** direito a faturar, faturamento interno e emissão fiscal são fatos distintos. Política `MEASUREMENT_APPROVED`: só medição aprovada gera direito a faturar; execução concluída isoladamente não basta. Políticas `FIXED_PRICE` / `PERIODIC` / `MILESTONE`: faturabilidade contratual sem medição quantitativa artificial.
+
+**Residual `OPEN`:** tipo legal NF-e/NFS-e, alíquotas e emissão oficial (DDP-023).
 
 ## DDP-012 — Pagamento
 
@@ -94,13 +130,25 @@ Quais documentos lógicos existem, obrigatoriedade, versões, validade, e quem �
 
 Quais sistemas externos existem (ERP, fiscal, rastreamento, bancos)? Quem é Source of Truth por dado?
 
-**Status:** `OPEN`
+**Status:** `PARTIALLY_ANSWERED` (SRC-004, 2026-09-03)
+
+**ERP:** conexão `REJECTED`. Não haverá ERP externo. O SISTEMA CISNE RONDÔNIA é o sistema empresarial centralizado.
+
+**Demais sistemas (ainda OPEN):** fiscal/SEFAZ/prefeitura, rastreamento, bancos, WhatsApp. SRC-004 não decide esses canais — não são ERP.
+
+**Source of Truth:** ver DDP-020 + SRC-004 + BR-042.
 
 ## DDP-015 — Permissões
 
 Quais funções, segregações e incompatibilidades (maker-checker) existem? Sem inventar papéis.
 
-**Status:** `OPEN` · **Bloqueia implementação de autorização de negócio:** sim
+**Status:** `PARTIALLY_ANSWERED` (SRC-008, 2026-09-03)
+
+**Respondido:** capabilities explícitas (criar/liberar/cancelar/reabrir OS, converter solicitação, aprovar medição, autorizar excedente de PO, preparar faturamento interno). Na R1, atribuídas somente às duas autoridades máximas equivalentes. Não há maker-checker obrigatório entre elas. Campos de auditoria separados permitem SoD futura.
+
+**Residual `OPEN`:** demais funções operacionais (não inventar organograma). Perfis UAT `executor`/`finance` são mapeamento de engenharia, não papéis empresariais novos.
+
+**Bloqueia implementação de autorização de negócio:** não para o recorte da autoridade máxima.
 
 ## DDP-016 — RPO e RTO
 
@@ -110,7 +158,7 @@ Quais funções, segregações e incompatibilidades (maker-checker) existem? Sem
 | Proposta técnica | `docs/19-operations/ddp-016-rpo-rto-proposal.json` |
 | Evidência implementação | Prompt 84 (backup), 85 (DR), `ddp-016-proposal.ts` |
 
-**Classificação:** proposta técnica fundamentada na arquitetura as-built (pg_dump lógico, sem WAL/PITR). Valores comerciais **não aprovados** — aguarda decisão humana.
+**Classificação:** proposta técnica fundamentada na arquitetura as-built (pg_dump lógico, sem WAL/PITR). Valores da tier conservadora **aprovados** em `readiness-evidence.json` (Abrahim Jabour Junior, 2026-08-30): RPO 24h / RTO 4h.
 
 ### Capacidade técnica atual (as-built)
 
@@ -132,7 +180,7 @@ Quais funções, segregações e incompatibilidades (maker-checker) existem? Sem
 | Recomendada | 6h | 2h | REQUIRES_OPERATIONAL_CHANGE (agendamento 6h) |
 | Alta disponibilidade | 15min | 1h | NOT_ACHIEVABLE_WITH_CURRENT_ARCHITECTURE |
 
-**Decisão humana necessária:** escolher tier, registrar `rpo`/`rto` aprovados + `approvedBy`/`approvedAt` em `readiness-evidence.json`.
+**Decisão humana:** tier conservadora registrada em `readiness-evidence.json` (`approvedBy` Abrahim Jabour Junior, 2026-08-30). Não reabrir como `PENDING`.
 
 **Status anterior:** `OPEN` → atualizado 2026-08-30 após análise técnica.
 
@@ -158,15 +206,15 @@ Prazos legais e empresariais de guarda de dados e documentos? `NOT_PROVIDED`.
 
 Para cada conceito crítico (OS, saldo de PO, medição, fatura, pagamento, cadastro), qual sistema é autoritativo?
 
-**Status:** `ANSWERED` (realinhamento arquitetural 2026-09-01)
+**Status:** `ANSWERED` (realinhamento arquitetural 2026-09-01; evidência empresarial SRC-004 em 2026-09-03)
 
-**Decisão empresarial:** CISNE é o **sistema empresarial principal**. Não haverá ERP externo como autoridade necessária para financeiro, fiscal ou contabilidade. Módulos nativos (FINANCE, FISCAL, ACCOUNTING, INVENTORY, PAYROLL) serão implementados futuramente dentro do monolito modular.
+**Decisão empresarial:** CISNE é o **sistema empresarial centralizado**. Não haverá conexão com ERP externo (SRC-004). Não haverá ERP externo como autoridade para financeiro, fiscal ou contabilidade. Módulos nativos (FINANCE, FISCAL, ACCOUNTING, INVENTORY, PAYROLL) serão implementados no próprio monolito modular, sem SoT híbrido com ERP.
 
-**Escopo operacional já implementado:** CISNE = SoT de Cliente, OS, PO, medição, preparação de faturamento (BillingDocument interno), documentos, execução, alocação e custos operacionais. `externalErpId` permanece opcional, nunca PK.
+**Escopo operacional já implementado:** CISNE = SoT de Cliente, OS, PO, medição, preparação de faturamento (BillingDocument interno), documentos, execução, alocação e custos operacionais. `externalErpId` permanece campo defensivo opcional, nunca PK (BR-031); não é pré-requisito de cadastro nem canal de integração.
 
-**Integrações externas:** ACL/adapters existentes preservados como gateways opcionais (sync, importação, emissão via terceiro quando configurado) — não como pré-requisito de autoridade.
+**Integrações externas:** adapter/ACL de ERP permanece desligado e **não** será ativado (SRC-004). Gateways de SEFAZ/prefeitura, banco e rastreio — quando existirem — não são ERP e continuam opcionais, nunca como pré-requisito de autoridade.
 
-**Pendências residuais (não bloqueiam fronteira):** detalhes de legislação fiscal/tributária (DDP-023), regras de pagamento/conciliação (DDP-012), canal WhatsApp (DDP-021).
+**Pendências residuais (não bloqueiam fronteira):** detalhes de legislação fiscal/tributária (DDP-023), regras de pagamento/conciliação (DDP-012). Canal WhatsApp: origem da solicitação (DDP-021 / SRC-008); Cisne permanece SoT do processo após o registro.
 
 **Evidência:** [`source-of-truth-by-context.md`](../06-domain-boundaries/source-of-truth-by-context.md), `apps/api/src/platform/bounded-contexts/`.
 
@@ -176,21 +224,29 @@ Para cada conceito crítico (OS, saldo de PO, medição, fatura, pagamento, cada
 
 WhatsApp continuará sendo canal oficial de solicitação? O sistema substituirá ou apenas registrará conversas? Qual o Source of Truth da mensagem?
 
-**Status:** `OPEN` · **Fonte:** SRC-001 EV-027, EV-032, EV-033 · **Risco:** RISK-018
+**Status:** `PARTIALLY_ANSWERED` (SRC-008, 2026-09-03) · **Fonte:** SRC-001 EV-027, EV-032, EV-033; SRC-008 · **Risco:** RISK-018
+
+**Respondido:** WhatsApp pode continuar como canal real de entrada na R1, tratado como **origem** da solicitação, não como fonte oficial do workflow. Após registro no Cisne (origem, cliente, solicitante, data/hora, descrição e anexos quando necessário), o Cisne é a fonte oficial do processo.
+
+**Residual `OPEN`:** integração API/WhatsApp Business; SoT da mensagem bruta no aplicativo de mensagens.
 
 ## DDP-022 — Criar vs liberar OS (mesma pessoa)
 
 A mesma pessoa pode criar rascunho e liberar OS? Existe segregação maker-checker obrigatória?
 
-**Status:** `OPEN` · **Bloqueia:** autorização de OS · **Fonte:** EV-043 · **Risco:** RISK-022
+**Status:** `ANSWERED` (SRC-008, 2026-09-03)
+
+**Resposta:** sim, a mesma pessoa pode criar rascunho e liberar a própria OS. Não há segregação maker-checker obrigatória entre as duas autoridades máximas equivalentes. Os campos de auditoria permanecem separados.
+
+**Bloqueia:** não · **Fonte:** SRC-008 · **Risco residual:** RISK-022 (confusão operacional, não vedação de SoD)
 
 ## DDP-023 — Modo de emissão fiscal
 
 O Sistema Cisne emitirá documento fiscal oficial, registrará documento externo, integrará ERP/fiscal/municipal ou apenas fatura/recibo não fiscal?
 
-**Status:** `PARTIALLY_ANSWERED` (prompts FISCAL CORE e TAX ENGINE FOUNDATION, 2026-09-01; Release 1 closed scope 2026-09-02) — CISNE é SoT do `FiscalDocument` oficial; SEFAZ/prefeitura apenas autorizam/transmitem via port; `BillingDocument` interno ≠ documento fiscal. A Release 1 expõe somente faturamento interno; o módulo fiscal permanece fail-closed (`FEATURE_MODULE_FISCAL`). Estrutura versionada `TaxRule`/`TaxRuleVersion`/`TaxCalculation` existe em `fis.*` sem alíquota oficial cadastrada. Tributação substantiva (alíquota legal, CFOP, NCM, código de serviço, ISS, ICMS, retenções) e tipo legal NF-e/NFS-e permanecem `OPEN` sem fonte oficial.
+**Status:** `PARTIALLY_ANSWERED` (prompts FISCAL CORE e TAX ENGINE FOUNDATION, 2026-09-01; Release 1 closed scope 2026-09-02; SRC-007 gates, 2026-09-03) — CISNE é SoT do `FiscalDocument` oficial; SEFAZ/prefeitura apenas autorizam/transmitem via port; `BillingDocument` interno ≠ documento fiscal. A Release 1 expõe somente faturamento interno; o módulo fiscal permanece fail-closed (`FEATURE_MODULE_FISCAL`). Estrutura versionada `TaxRule`/`TaxRuleVersion`/`TaxCalculation` existe em `fis.*` sem alíquota oficial cadastrada. Tributação substantiva (alíquota legal, CFOP, NCM, código de serviço, ISS, ICMS, retenções) e tipo legal NF-e/NFS-e permanecem `OPEN` sem fonte normativa. SRC-005 (RFB) e SRC-006 (SEFIN, 2026-09-03) corroboram cadastro, IE, CNAEs e o regime exibido no snapshot estadual, mas não fornecem regras de cálculo, certificado ou credenciais. SRC-006 registra NF-e `NÃO CREDENCIADO`, evidência temporal contrária a qualquer ativação presumida de gateway NF-e. SRC-007 confirma os gates: transmissão NF-e `BLOCKED` sem credenciamento aprovado (BR-043); `fiscalStatus` ≠ `AUTHORIZED` e DANFE oficial `BLOCKED` sem protocolo SEFAZ (BR-044); legendas de rascunho/homologação e produção somente após autorização oficial (BR-045). SRC-004 rejeita conexão com ERP e **não** fecha o residual: SEFAZ/prefeitura não são ERP.
 
-**Bloqueia:** emissão legal específica e preenchimento de alíquota oficial · **Não bloqueia:** núcleo de documento/eventos/imutabilidade nem estrutura do motor versionado · **Fonte:** EV-064, EV-065, EV-066 · **Risco:** RISK-012
+**Bloqueia:** emissão legal específica, gateway, DANFE oficial e preenchimento de alíquota oficial · **Não bloqueia:** núcleo de documento/eventos/imutabilidade nem estrutura do motor versionado · **Fonte:** EV-064, EV-065, EV-066; SRC-005; SRC-006 página 1; SRC-007 · **Risco:** RISK-012, RISK-025
 
 ## DDP-024 — Faixas de aging
 
